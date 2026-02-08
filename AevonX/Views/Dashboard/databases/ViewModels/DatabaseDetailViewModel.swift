@@ -1,0 +1,862 @@
+//
+//  DatabaseDetailViewModel.swift
+//  AevonX
+//
+//  ViewModel for the Database Detail page
+//  Handles tables, structure, data browsing, queries, and backups
+//
+
+import Foundation
+import SwiftUI
+import AevonXCore
+import Combine
+import AppKit
+import UniformTypeIdentifiers
+
+// MARK: - Section Navigation
+
+public enum DatabaseDetailSection: String, CaseIterable, Identifiable {
+    case overview = "Overview"
+    case tables = "Tables"
+    case queryConsole = "SQL Console"
+    case backup = "Backup"
+    case activityLog = "Activity Log"
+
+    public var id: String { rawValue }
+
+    var iconName: String {
+        switch self {
+        case .overview: return "chart.bar"
+        case .tables: return "tablecells"
+        case .queryConsole: return "terminal"
+        case .backup: return "arrow.down.doc"
+        case .activityLog: return "list.bullet.clipboard"
+        }
+    }
+}
+
+public enum TableDetailTab: String, CaseIterable, Identifiable {
+    case structure = "Structure"
+    case data = "Data"
+    case indexes = "Indexes"
+
+    public var id: String { rawValue }
+}
+
+// MARK: - Alert Types
+
+public enum DatabaseDetailAlert: Identifiable {
+    case confirmDropTable(String)
+    case confirmTruncateTable(String)
+    case confirmDeleteDatabase
+    case confirmDropColumn(String)
+    case confirmDeleteRow(Int)
+    case confirmDeleteSelectedRows
+    case confirmDeleteBackup(String)
+
+    public var id: String {
+        switch self {
+        case .confirmDropTable(let name): return "drop_\(name)"
+        case .confirmTruncateTable(let name): return "truncate_\(name)"
+        case .confirmDeleteDatabase: return "delete_db"
+        case .confirmDropColumn(let name): return "dropcol_\(name)"
+        case .confirmDeleteRow(let idx): return "deleterow_\(idx)"
+        case .confirmDeleteSelectedRows: return "delete_selected_rows"
+        case .confirmDeleteBackup(let id): return "deletebak_\(id)"
+        }
+    }
+}
+
+// MARK: - Query History Entry
+
+public struct QueryHistoryEntry: Identifiable {
+    public let id = UUID()
+    public let query: String
+    public let timestamp: Date
+    public let success: Bool
+    public let executionTime: TimeInterval
+}
+
+// MARK: - Activity Log Entry
+
+public struct ActivityLogEntry: Identifiable {
+    public let id = UUID()
+    public let action: String
+    public let detail: String
+    public let timestamp: Date
+    public let success: Bool
+    public let errorMessage: String?
+
+    public init(action: String, detail: String, success: Bool, errorMessage: String? = nil) {
+        self.action = action
+        self.detail = detail
+        self.timestamp = Date()
+        self.success = success
+        self.errorMessage = errorMessage
+    }
+}
+
+// MARK: - ViewModel
+
+@MainActor
+public final class DatabaseDetailViewModel: ObservableObject {
+
+    // MARK: - Database Info
+
+    @Published public var database: DatabaseInfo
+    private let serverId: String?
+
+    // MARK: - Navigation
+
+    @Published public var currentSection: DatabaseDetailSection = .overview
+    @Published public var tableDetailTab: TableDetailTab = .structure
+
+    // MARK: - Tables
+
+    @Published public var tables: [TableInfo] = []
+    @Published public var selectedTable: TableInfo?
+    @Published public var tableStructure: TableStructure?
+    @Published public var showCreateTable = false
+    @Published public var tableIndexes: [TableIndex] = []
+    @Published public var tableSearchText = ""
+
+    public var filteredTables: [TableInfo] {
+        if tableSearchText.isEmpty { return tables }
+        return tables.filter { $0.name.localizedCaseInsensitiveContains(tableSearchText) }
+    }
+
+    // MARK: - Data Browsing
+
+    @Published public var browseResult: QueryResult?
+    @Published public var currentPage: Int = 0
+    @Published public var pageSize: Int = 50
+    @Published public var sortColumn: String?
+    @Published public var sortAscending: Bool = true
+
+    public var totalPages: Int {
+        guard let table = selectedTable else { return 0 }
+        let total = Int(table.rowCount)
+        return max(1, (total + pageSize - 1) / pageSize)
+    }
+
+    public var hasNextPage: Bool {
+        currentPage < totalPages - 1
+    }
+
+    public var hasPreviousPage: Bool {
+        currentPage > 0
+    }
+
+    // MARK: - Row Management
+
+    @Published public var selectedRows: Set<Int> = []
+    @Published public var showAddRow = false
+    @Published public var showEditRow = false
+    @Published public var editingRowIndex: Int?
+    @Published public var editingRowValues: [String: String?] = [:]
+    @Published public var dataSearchText = ""
+    @Published public var isSearching = false
+
+    // MARK: - SQL Console
+
+    @Published public var queryText = ""
+    @Published public var queryResult: QueryResult?
+    @Published public var queryHistory: [QueryHistoryEntry] = []
+    @Published public var isExecutingQuery = false
+
+    // MARK: - Backup
+
+    @Published public var backups: [BackupInfo] = []
+    @Published public var isCreatingBackup = false
+    @Published public var showImportSQL = false
+    @Published public var isDownloadingBackup = false
+
+    // MARK: - Activity Log
+
+    @Published public var activityLog: [ActivityLogEntry] = []
+
+    private func log(action: String, detail: String, success: Bool, error: String? = nil) {
+        activityLog.insert(ActivityLogEntry(action: action, detail: detail, success: success, errorMessage: error), at: 0)
+    }
+
+    // MARK: - State
+
+    @Published public var isLoading = false
+    @Published public var operationResult: OperationResult = .idle
+    @Published public var activeAlert: DatabaseDetailAlert?
+
+    // MARK: - Init
+
+    public init(database: DatabaseInfo, serverId: String?) {
+        self.database = database
+        self.serverId = serverId
+    }
+
+    // MARK: - Loading
+
+    public func loadTables() async {
+        guard let serverId = serverId else { return }
+
+        isLoading = true
+        do {
+            tables = try await CoreDatabaseService.shared.listTables(
+                database: database.name,
+                type: database.type,
+                serverId: serverId
+            )
+            log(action: "Load Tables", detail: "Loaded \(tables.count) tables from '\(database.name)'", success: true)
+        } catch {
+            log(action: "Load Tables", detail: "Database '\(database.name)'", success: false, error: error.localizedDescription)
+            GlobalToastManager.shared.showError("Failed to load tables: \(error.localizedDescription)")
+        }
+        isLoading = false
+    }
+
+    public func selectTable(_ table: TableInfo) {
+        selectedTable = table
+        tableDetailTab = .structure
+        tableStructure = nil
+        tableIndexes = []
+        browseResult = nil
+        currentPage = 0
+        sortColumn = nil
+        Task {
+            await loadTableStructure()
+        }
+    }
+
+    public func deselectTable() {
+        selectedTable = nil
+        tableStructure = nil
+        tableIndexes = []
+        browseResult = nil
+    }
+
+    public func loadTableStructure() async {
+        guard let serverId = serverId, let table = selectedTable else { return }
+
+        isLoading = true
+        do {
+            async let structure = CoreDatabaseService.shared.describeTable(
+                database: database.name,
+                table: table.name,
+                type: database.type,
+                serverId: serverId
+            )
+            async let indexes = CoreDatabaseService.shared.getTableIndexes(
+                database: database.name,
+                table: table.name,
+                type: database.type,
+                serverId: serverId
+            )
+
+            tableStructure = try await structure
+            tableIndexes = try await indexes
+        } catch {
+            GlobalToastManager.shared.showError("Failed to load table structure: \(error.localizedDescription)")
+        }
+        isLoading = false
+    }
+
+    public func loadTableData() async {
+        guard let serverId = serverId, let table = selectedTable else { return }
+
+        isLoading = true
+        do {
+            browseResult = try await CoreDatabaseService.shared.browseRows(
+                database: database.name,
+                table: table.name,
+                page: currentPage,
+                pageSize: pageSize,
+                orderBy: sortColumn,
+                ascending: sortAscending,
+                type: database.type,
+                serverId: serverId
+            )
+        } catch {
+            GlobalToastManager.shared.showError("Failed to load data: \(error.localizedDescription)")
+        }
+        isLoading = false
+    }
+
+    public func nextPage() async {
+        guard hasNextPage else { return }
+        currentPage += 1
+        await loadTableData()
+    }
+
+    public func previousPage() async {
+        guard hasPreviousPage else { return }
+        currentPage -= 1
+        await loadTableData()
+    }
+
+    public func sortBy(_ column: String) async {
+        if sortColumn == column {
+            sortAscending.toggle()
+        } else {
+            sortColumn = column
+            sortAscending = true
+        }
+        currentPage = 0
+        await loadTableData()
+    }
+
+    // MARK: - SQL Console
+
+    public func executeQuery() async {
+        guard let serverId = serverId else { return }
+        let query = queryText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !query.isEmpty else { return }
+
+        isExecutingQuery = true
+        let startTime = Date()
+
+        do {
+            queryResult = try await CoreDatabaseService.shared.executeQuery(
+                database: database.name,
+                query: query,
+                type: database.type,
+                serverId: serverId
+            )
+
+            queryHistory.insert(QueryHistoryEntry(
+                query: query,
+                timestamp: Date(),
+                success: true,
+                executionTime: Date().timeIntervalSince(startTime)
+            ), at: 0)
+
+            log(action: "Execute Query", detail: query.prefix(100) + (query.count > 100 ? "..." : ""), success: true)
+
+        } catch {
+            GlobalToastManager.shared.showError(error.localizedDescription)
+
+            queryHistory.insert(QueryHistoryEntry(
+                query: query,
+                timestamp: Date(),
+                success: false,
+                executionTime: Date().timeIntervalSince(startTime)
+            ), at: 0)
+
+            log(action: "Execute Query", detail: query.prefix(100) + (query.count > 100 ? "..." : ""), success: false, error: error.localizedDescription)
+        }
+
+        isExecutingQuery = false
+    }
+
+    // MARK: - Backup
+
+    public func createBackup() async {
+        guard let serverId = serverId else { return }
+
+        isCreatingBackup = true
+        operationResult = .inProgress(message: "Creating backup of '\(database.name)'...", progress: nil)
+
+        do {
+            let backup = try await CoreDatabaseService.shared.createBackup(
+                database: database.name,
+                type: database.type,
+                serverId: serverId
+            )
+            backups.insert(backup, at: 0)
+            GlobalToastManager.shared.showSuccess("Backup created successfully (\(String(format: "%.1f", backup.size)) MB)")
+            log(action: "Create Backup", detail: "Database '\(database.name)' — \(String(format: "%.1f", backup.size)) MB", success: true)
+        } catch {
+            GlobalToastManager.shared.showError("Backup failed: \(error.localizedDescription)")
+            log(action: "Create Backup", detail: "Database '\(database.name)'", success: false, error: error.localizedDescription)
+        }
+
+        isCreatingBackup = false
+    }
+
+    public func loadBackups() async {
+        guard let serverId = serverId else { return }
+
+        do {
+            backups = try await CoreDatabaseService.shared.listBackups(
+                type: database.type,
+                serverId: serverId
+            )
+        } catch {
+            // Non-critical, don't show error
+        }
+    }
+
+    // MARK: - Table Actions
+
+    public func confirmDropTable(_ tableName: String) {
+        activeAlert = .confirmDropTable(tableName)
+    }
+
+    public func confirmTruncateTable(_ tableName: String) {
+        activeAlert = .confirmTruncateTable(tableName)
+    }
+
+    public func dropTable(_ tableName: String) async {
+        guard let serverId = serverId else { return }
+
+        operationResult = .inProgress(message: "Dropping table '\(tableName)'...", progress: nil)
+        do {
+            try await CoreDatabaseService.shared.dropTable(
+                database: database.name,
+                table: tableName,
+                type: database.type,
+                serverId: serverId
+            )
+            GlobalToastManager.shared.showSuccess("Table '\(tableName)' dropped successfully")
+            log(action: "Drop Table", detail: "Table '\(tableName)' from '\(database.name)'", success: true)
+            if selectedTable?.name == tableName {
+                deselectTable()
+            }
+            await loadTables()
+        } catch {
+            GlobalToastManager.shared.showError("Failed to drop table: \(error.localizedDescription)")
+            log(action: "Drop Table", detail: "Table '\(tableName)'", success: false, error: error.localizedDescription)
+        }
+    }
+
+    public func truncateTable(_ tableName: String) async {
+        guard let serverId = serverId else { return }
+
+        operationResult = .inProgress(message: "Truncating table '\(tableName)'...", progress: nil)
+        do {
+            try await CoreDatabaseService.shared.truncateTable(
+                database: database.name,
+                table: tableName,
+                type: database.type,
+                serverId: serverId
+            )
+            GlobalToastManager.shared.showSuccess("Table '\(tableName)' truncated successfully")
+            log(action: "Truncate Table", detail: "Table '\(tableName)'", success: true)
+            await loadTables()
+            if selectedTable?.name == tableName {
+                await loadTableData()
+            }
+        } catch {
+            GlobalToastManager.shared.showError("Failed to truncate table: \(error.localizedDescription)")
+            log(action: "Truncate Table", detail: "Table '\(tableName)'", success: false, error: error.localizedDescription)
+        }
+    }
+
+    public func optimizeTable(_ tableName: String) async {
+        guard let serverId = serverId else { return }
+
+        operationResult = .inProgress(message: "Optimizing table '\(tableName)'...", progress: nil)
+        do {
+            let result = try await CoreDatabaseService.shared.optimizeTable(
+                database: database.name,
+                table: tableName,
+                type: database.type,
+                serverId: serverId
+            )
+            GlobalToastManager.shared.showSuccess("Table '\(tableName)' optimized")
+            log(action: "Optimize Table", detail: "Table '\(tableName)'", success: true)
+        } catch {
+            GlobalToastManager.shared.showError("Failed to optimize table: \(error.localizedDescription)")
+            log(action: "Optimize Table", detail: "Table '\(tableName)'", success: false, error: error.localizedDescription)
+        }
+    }
+
+    public func analyzeTable(_ tableName: String) async {
+        guard let serverId = serverId else { return }
+
+        operationResult = .inProgress(message: "Analyzing table '\(tableName)'...", progress: nil)
+        do {
+            let result = try await CoreDatabaseService.shared.analyzeTable(
+                database: database.name,
+                table: tableName,
+                type: database.type,
+                serverId: serverId
+            )
+            GlobalToastManager.shared.showSuccess("Table '\(tableName)' analyzed")
+            log(action: "Analyze Table", detail: "Table '\(tableName)'", success: true)
+        } catch {
+            GlobalToastManager.shared.showError("Failed to analyze table: \(error.localizedDescription)")
+            log(action: "Analyze Table", detail: "Table '\(tableName)'", success: false, error: error.localizedDescription)
+        }
+    }
+
+    // MARK: - Create Table
+
+    public func createTable(name: String, columns: [CreateTableColumnDefinition]) async {
+        guard let serverId = serverId else { return }
+
+        operationResult = .inProgress(message: "Creating table '\(name)'...", progress: nil)
+        do {
+            try await CoreDatabaseService.shared.createTable(
+                database: database.name,
+                table: name,
+                columns: columns,
+                type: database.type,
+                serverId: serverId
+            )
+            GlobalToastManager.shared.showSuccess("Table '\(name)' created successfully")
+            log(action: "Create Table", detail: "Table '\(name)' with \(columns.count) columns in '\(database.name)'", success: true)
+            showCreateTable = false
+            await loadTables()
+        } catch {
+            GlobalToastManager.shared.showError("Failed to create table: \(error.localizedDescription)")
+            log(action: "Create Table", detail: "Table '\(name)'", success: false, error: error.localizedDescription)
+        }
+    }
+
+    // MARK: - Edit Table Structure
+
+    @Published public var showAddColumn = false
+
+    public func addColumn(_ column: CreateTableColumnDefinition, afterColumn: String?) async {
+        guard let serverId = serverId, let table = selectedTable else { return }
+
+        operationResult = .inProgress(message: "Adding column '\(column.name)'...", progress: nil)
+        do {
+            try await CoreDatabaseService.shared.addColumn(
+                database: database.name,
+                table: table.name,
+                column: column,
+                afterColumn: afterColumn,
+                type: database.type,
+                serverId: serverId
+            )
+            GlobalToastManager.shared.showSuccess("Column '\(column.name)' added successfully")
+            log(action: "Add Column", detail: "Column '\(column.name)' (\(column.type)) to table '\(table.name)'", success: true)
+            showAddColumn = false
+            await loadTableStructure()
+        } catch {
+            GlobalToastManager.shared.showError("Failed to add column: \(error.localizedDescription)")
+            log(action: "Add Column", detail: "Column '\(column.name)' to table '\(table.name)'", success: false, error: error.localizedDescription)
+        }
+    }
+
+    public func dropColumn(_ columnName: String) async {
+        guard let serverId = serverId, let table = selectedTable else { return }
+
+        operationResult = .inProgress(message: "Dropping column '\(columnName)'...", progress: nil)
+        do {
+            try await CoreDatabaseService.shared.dropColumn(
+                database: database.name,
+                table: table.name,
+                columnName: columnName,
+                type: database.type,
+                serverId: serverId
+            )
+            GlobalToastManager.shared.showSuccess("Column '\(columnName)' dropped successfully")
+            log(action: "Drop Column", detail: "Column '\(columnName)' from table '\(table.name)'", success: true)
+            await loadTableStructure()
+        } catch {
+            GlobalToastManager.shared.showError("Failed to drop column: \(error.localizedDescription)")
+            log(action: "Drop Column", detail: "Column '\(columnName)' from table '\(table.name)'", success: false, error: error.localizedDescription)
+        }
+    }
+
+    // MARK: - Row Management Methods
+
+    public func insertRow(_ values: [String: String?]) async {
+        guard let serverId = serverId, let table = selectedTable else { return }
+
+        do {
+            try await CoreDatabaseService.shared.insertRow(
+                database: database.name,
+                table: table.name,
+                values: values,
+                type: database.type,
+                serverId: serverId
+            )
+            GlobalToastManager.shared.showSuccess("Row inserted successfully")
+            log(action: "Insert Row", detail: "Table '\(table.name)'", success: true)
+            showAddRow = false
+            await loadTableData()
+            await loadTables()
+        } catch {
+            GlobalToastManager.shared.showError("Failed to insert row: \(error.localizedDescription)")
+            log(action: "Insert Row", detail: "Table '\(table.name)'", success: false, error: error.localizedDescription)
+        }
+    }
+
+    public func updateRow(primaryKey: [String: String], values: [String: String?]) async {
+        guard let serverId = serverId, let table = selectedTable else { return }
+
+        do {
+            try await CoreDatabaseService.shared.updateRow(
+                database: database.name,
+                table: table.name,
+                primaryKey: primaryKey,
+                values: values,
+                type: database.type,
+                serverId: serverId
+            )
+            GlobalToastManager.shared.showSuccess("Row updated successfully")
+            log(action: "Update Row", detail: "Table '\(table.name)'", success: true)
+            showEditRow = false
+            editingRowIndex = nil
+            await loadTableData()
+        } catch {
+            GlobalToastManager.shared.showError("Failed to update row: \(error.localizedDescription)")
+            log(action: "Update Row", detail: "Table '\(table.name)'", success: false, error: error.localizedDescription)
+        }
+    }
+
+    public func deleteRow(at index: Int) async {
+        guard let pk = primaryKeyValues(forRowAt: index), let table = selectedTable else {
+            GlobalToastManager.shared.showError("Cannot determine primary key for this row")
+            return
+        }
+        guard let serverId = serverId else { return }
+
+        do {
+            try await CoreDatabaseService.shared.deleteRow(
+                database: database.name,
+                table: table.name,
+                primaryKey: pk,
+                type: database.type,
+                serverId: serverId
+            )
+            GlobalToastManager.shared.showSuccess("Row deleted successfully")
+            log(action: "Delete Row", detail: "Table '\(table.name)'", success: true)
+            selectedRows.remove(index)
+            await loadTableData()
+            await loadTables()
+        } catch {
+            GlobalToastManager.shared.showError("Failed to delete row: \(error.localizedDescription)")
+            log(action: "Delete Row", detail: "Table '\(table.name)'", success: false, error: error.localizedDescription)
+        }
+    }
+
+    public func deleteSelectedRows() async {
+        guard let serverId = serverId, let table = selectedTable else { return }
+
+        var pks: [[String: String]] = []
+        for index in selectedRows.sorted() {
+            if let pk = primaryKeyValues(forRowAt: index) {
+                pks.append(pk)
+            }
+        }
+
+        guard !pks.isEmpty else {
+            GlobalToastManager.shared.showError("Cannot determine primary keys for selected rows")
+            return
+        }
+
+        do {
+            try await CoreDatabaseService.shared.deleteRows(
+                database: database.name,
+                table: table.name,
+                primaryKeys: pks,
+                type: database.type,
+                serverId: serverId
+            )
+            GlobalToastManager.shared.showSuccess("\(pks.count) row(s) deleted successfully")
+            log(action: "Delete Rows", detail: "\(pks.count) rows from '\(table.name)'", success: true)
+            selectedRows.removeAll()
+            await loadTableData()
+            await loadTables()
+        } catch {
+            GlobalToastManager.shared.showError("Failed to delete rows: \(error.localizedDescription)")
+            log(action: "Delete Rows", detail: "\(selectedRows.count) rows from '\(table.name)'", success: false, error: error.localizedDescription)
+        }
+    }
+
+    public func toggleRowSelection(_ index: Int) {
+        if selectedRows.contains(index) {
+            selectedRows.remove(index)
+        } else {
+            selectedRows.insert(index)
+        }
+    }
+
+    public func selectAllRows() {
+        guard let result = browseResult else { return }
+        selectedRows = Set(0..<result.rows.count)
+    }
+
+    public func deselectAllRows() {
+        selectedRows.removeAll()
+    }
+
+    public func searchData() async {
+        guard let serverId = serverId, let table = selectedTable else { return }
+        let search = dataSearchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !search.isEmpty else {
+            await clearSearch()
+            return
+        }
+
+        isSearching = true
+        let columns = browseResult?.columns ?? tableStructure?.columns.map(\.name) ?? []
+        guard !columns.isEmpty else {
+            isSearching = false
+            return
+        }
+
+        do {
+            browseResult = try await CoreDatabaseService.shared.searchRows(
+                database: database.name,
+                table: table.name,
+                searchText: search,
+                columns: columns,
+                page: currentPage,
+                pageSize: pageSize,
+                orderBy: sortColumn,
+                ascending: sortAscending,
+                type: database.type,
+                serverId: serverId
+            )
+            selectedRows.removeAll()
+        } catch {
+            GlobalToastManager.shared.showError("Search failed: \(error.localizedDescription)")
+        }
+        isSearching = false
+    }
+
+    public func clearSearch() async {
+        dataSearchText = ""
+        isSearching = false
+        currentPage = 0
+        selectedRows.removeAll()
+        await loadTableData()
+    }
+
+    public func startEditingRow(_ index: Int) {
+        guard let result = browseResult, index < result.rows.count else { return }
+        editingRowIndex = index
+        let row = result.rows[index]
+        var values: [String: String?] = [:]
+        for (colIdx, col) in result.columns.enumerated() {
+            values[col] = colIdx < row.count ? row[colIdx] : nil
+        }
+        editingRowValues = values
+        showEditRow = true
+    }
+
+    private func primaryKeyValues(forRowAt index: Int) -> [String: String]? {
+        guard let structure = tableStructure,
+              let result = browseResult,
+              index < result.rows.count else { return nil }
+
+        let pkColumns = structure.columns.filter { $0.isPrimaryKey }.map(\.name)
+        guard !pkColumns.isEmpty else {
+            // Fallback: use first column as pseudo-PK
+            if let firstCol = result.columns.first, !result.rows[index].isEmpty {
+                if let val = result.rows[index].first, let v = val {
+                    return [firstCol: v]
+                }
+            }
+            return nil
+        }
+
+        var pk: [String: String] = [:]
+        for pkCol in pkColumns {
+            if let colIdx = result.columns.firstIndex(of: pkCol),
+               colIdx < result.rows[index].count,
+               let val = result.rows[index][colIdx] {
+                pk[pkCol] = val
+            }
+        }
+
+        return pk.isEmpty ? nil : pk
+    }
+
+    // MARK: - Backup Enhancements
+
+    public func deleteBackup(_ backupId: String) async {
+        guard let serverId = serverId else { return }
+
+        do {
+            try await CoreDatabaseService.shared.deleteBackup(
+                backupId: backupId,
+                type: database.type,
+                serverId: serverId
+            )
+            backups.removeAll { $0.id == backupId }
+            GlobalToastManager.shared.showSuccess("Backup deleted")
+            log(action: "Delete Backup", detail: backupId, success: true)
+        } catch {
+            GlobalToastManager.shared.showError("Failed to delete backup: \(error.localizedDescription)")
+            log(action: "Delete Backup", detail: backupId, success: false, error: error.localizedDescription)
+        }
+    }
+
+    public func downloadBackup(_ backupId: String) async {
+        guard let serverId = serverId else { return }
+
+        isDownloadingBackup = true
+        let progressId = GlobalToastManager.shared.showProgress("Downloading backup...")
+
+        do {
+            let data = try await CoreDatabaseService.shared.downloadBackup(
+                backupId: backupId,
+                type: database.type,
+                serverId: serverId
+            )
+
+            GlobalToastManager.shared.dismiss(id: progressId)
+
+            // Present Save As panel
+            let panel = NSSavePanel()
+            panel.nameFieldStringValue = URL(fileURLWithPath: backupId).lastPathComponent
+            panel.allowedContentTypes = [UTType(filenameExtension: "sql") ?? .plainText]
+            panel.canCreateDirectories = true
+            let response = panel.runModal()
+            if response == .OK, let url = panel.url {
+                try data.write(to: url)
+                GlobalToastManager.shared.showSuccess("Backup saved successfully")
+                log(action: "Download Backup", detail: url.lastPathComponent, success: true)
+            }
+        } catch {
+            GlobalToastManager.shared.dismiss(id: progressId)
+            GlobalToastManager.shared.showError("Download failed: \(error.localizedDescription)")
+            log(action: "Download Backup", detail: backupId, success: false, error: error.localizedDescription)
+        }
+
+        isDownloadingBackup = false
+    }
+
+    public func importSQL(_ sqlContent: String) async {
+        guard let serverId = serverId else { return }
+        let content = sqlContent.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !content.isEmpty else {
+            GlobalToastManager.shared.showError("SQL content is empty")
+            return
+        }
+
+        let progressId = GlobalToastManager.shared.showProgress("Importing SQL...")
+
+        do {
+            let result = try await CoreDatabaseService.shared.importSQL(
+                database: database.name,
+                sqlContent: content,
+                type: database.type,
+                serverId: serverId
+            )
+            GlobalToastManager.shared.dismiss(id: progressId)
+            GlobalToastManager.shared.showSuccess("SQL imported successfully")
+            log(action: "Import SQL", detail: "\(content.count) characters into '\(database.name)'", success: true)
+            showImportSQL = false
+            await loadTables()
+        } catch {
+            GlobalToastManager.shared.dismiss(id: progressId)
+            GlobalToastManager.shared.showError("Import failed: \(error.localizedDescription)")
+            log(action: "Import SQL", detail: "Into '\(database.name)'", success: false, error: error.localizedDescription)
+        }
+    }
+
+    public func confirmDeleteBackup(_ backupId: String) {
+        activeAlert = .confirmDeleteBackup(backupId)
+    }
+
+    // MARK: - Helpers
+
+    public func dismissResult() {
+        operationResult = .idle
+    }
+
+    public func formatBytes(_ bytes: Int64) -> String {
+        let kb = Double(bytes) / 1024
+        let mb = kb / 1024
+        let gb = mb / 1024
+        if gb >= 1 { return String(format: "%.1f GB", gb) }
+        if mb >= 1 { return String(format: "%.1f MB", mb) }
+        if kb >= 1 { return String(format: "%.1f KB", kb) }
+        return "\(bytes) B"
+    }
+}

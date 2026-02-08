@@ -1,0 +1,311 @@
+//
+//  ErrorResolutionView.swift
+//  AevonX
+//
+//  Created by AevonX on 2026.
+//
+
+import SwiftUI
+import AevonXCore
+
+public struct ErrorResolutionView: View {
+    @StateObject private var viewModel: ErrorResolutionViewModel
+    @Environment(\.dismiss) private var dismiss
+    
+    public init(
+        databaseType: DatabaseType,
+        serverId: String,
+        erroredStep: InstallationStep?,
+        errorLog: InstallationLog?
+    ) {
+        _viewModel = StateObject(wrappedValue: ErrorResolutionViewModel(
+            databaseType: databaseType,
+            serverId: serverId,
+            erroredStep: erroredStep,
+            errorLog: errorLog
+        ))
+    }
+    
+    public var body: some View {
+        VStack(spacing: 0) {
+            headerView
+            
+            Divider()
+                .background(Color.axBorder)
+            
+            contentView
+                .padding(AXSpacing.xl)
+        }
+        .frame(minWidth: 600, minHeight: 500)
+        .background(Color.axBackground)
+        .onAppear {
+            Task {
+                await viewModel.startAnalysis()
+            }
+        }
+    }
+    
+    // MARK: - Header
+    
+    private var headerView: some View {
+        HStack {
+            VStack(alignment: .leading, spacing: AXSpacing.xs) {
+                Text("Error Resolution")
+                    .font(AXTypography.title)
+                    .foregroundColor(.axTextPrimary)
+                
+                Text(viewModel.erroredStep?.title ?? "Installation Error")
+                    .font(AXTypography.subheadline)
+                    .foregroundColor(.axError)
+            }
+            
+            Spacer()
+            
+            Button(action: { dismiss() }) {
+                Image(systemName: "xmark")
+                    .font(.system(size: 14))
+                    .foregroundColor(.axTextSecondary)
+                    .frame(width: 28, height: 28)
+                    .background(Color.axSurface)
+                    .cornerRadius(AXCornerRadius.sm)
+            }
+            .buttonStyle(PlainButtonStyle())
+        }
+        .padding(AXSpacing.xl)
+    }
+    
+    // MARK: - Content
+    
+    @ViewBuilder
+    private var contentView: some View {
+        switch viewModel.state {
+        case .analyzing:
+            loadingView
+        case .solutionsReady:
+            solutionsView
+        case .executing:
+            executingView
+        case .resolved:
+            successView
+        case .failed:
+            errorView
+        default:
+            EmptyView()
+        }
+    }
+    
+    // MARK: - States
+    
+    private var loadingView: some View {
+        VStack(spacing: AXSpacing.lg) {
+            ProgressView()
+                .scaleEffect(1.5)
+            
+            Text("Analyzing Error...")
+                .font(AXTypography.headline)
+                .foregroundColor(.axTextPrimary)
+            
+            Text("AI is diagnosing the issue and finding solutions")
+                .font(AXTypography.subheadline)
+                .foregroundColor(.axTextSecondary)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+    
+    private var solutionsView: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: AXSpacing.xl) {
+                // Analysis Section
+                if let analysis = viewModel.analysis {
+                    VStack(alignment: .leading, spacing: AXSpacing.md) {
+                        Text("Diagnosis")
+                            .font(AXTypography.headline)
+                            .foregroundColor(.axTextPrimary)
+                        
+                        Text(analysis.analysis)
+                            .font(AXTypography.body)
+                            .foregroundColor(.axTextSecondary)
+                        
+                        HStack {
+                            Text("Root Cause:")
+                                .fontWeight(.semibold)
+                            Text(analysis.rootCause)
+                        }
+                        .font(AXTypography.caption)
+                        .foregroundColor(.axTextMuted)
+                        .padding(AXSpacing.sm)
+                        .background(Color.axSurface)
+                        .cornerRadius(AXCornerRadius.sm)
+                    }
+                    
+                    Divider().background(Color.axBorder)
+                    
+                    // Solutions Section
+                    Text("Suggested Solutions")
+                        .font(AXTypography.headline)
+                        .foregroundColor(.axTextPrimary)
+                    
+                    ForEach(analysis.solutions) { solution in
+                        SolutionCard(solution: solution) {
+                            Task {
+                                await viewModel.executeSolution(solution)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    private var executingView: some View {
+        VStack(spacing: AXSpacing.lg) {
+            ProgressView()
+                .scaleEffect(1.5)
+            Text("Executing Solution...")
+                .font(AXTypography.headline)
+                .foregroundColor(.axTextPrimary)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+    
+    private var successView: some View {
+        VStack(spacing: AXSpacing.xl) {
+            Image(systemName: "checkmark.circle.fill")
+                .font(.system(size: 64))
+                .foregroundColor(.axSuccess)
+            
+            Text("Issue Resolved")
+                .font(AXTypography.title2)
+                .foregroundColor(.axTextPrimary)
+            
+            Button("Resume Installation") {
+                dismiss() // Logic to resume needs to be handled by parent
+            }
+            .buttonStyle(PrimaryButtonStyle())
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+    
+    private var errorView: some View {
+        VStack(spacing: AXSpacing.lg) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .font(.system(size: 48))
+                .foregroundColor(.axError)
+            
+            Text("Resolution Failed")
+                .font(AXTypography.headline)
+                .foregroundColor(.axTextPrimary)
+            
+            Text(viewModel.errorMessage ?? "Unknown error")
+                .font(AXTypography.body)
+                .foregroundColor(.axTextSecondary)
+                .multilineTextAlignment(.center)
+            
+            Button("Try Again") {
+                Task {
+                    await viewModel.startAnalysis()
+                }
+            }
+            .buttonStyle(SecondaryButtonStyle())
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+}
+
+// MARK: - Components
+
+private struct SolutionCard: View {
+    let solution: AIErrorSolution
+    let onExecute: () -> Void
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: AXSpacing.md) {
+            HStack {
+                Text(solution.title)
+                    .font(AXTypography.subheadline)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.axTextPrimary)
+                
+                Spacer()
+                
+                RiskBadge(level: solution.riskLevel)
+            }
+            
+            Text(solution.description)
+                .font(AXTypography.caption)
+                .foregroundColor(.axTextSecondary)
+            
+            if let command = solution.command {
+                Text(command)
+                    .font(.system(.caption, design: .monospaced))
+                    .padding(AXSpacing.sm)
+                    .background(Color.axBackground)
+                    .cornerRadius(AXCornerRadius.sm)
+            }
+            
+            Button(action: onExecute) {
+                Text(solution.isAutomated ? "Auto-Fix" : "Execute Manually")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(PrimaryButtonStyle())
+            .padding(.top, AXSpacing.sm)
+        }
+        .padding(AXSpacing.lg)
+        .background(Color.axSurface)
+        .cornerRadius(AXCornerRadius.md)
+        .overlay(
+            RoundedRectangle(cornerRadius: AXCornerRadius.md)
+                .stroke(Color.axBorder, lineWidth: 1)
+        )
+    }
+}
+
+private struct RiskBadge: View {
+    let level: SolutionRiskLevel
+    
+    var body: some View {
+        Text(level.rawValue.uppercased())
+            .font(AXTypography.caption2)
+            .fontWeight(.bold)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(color.opacity(0.1))
+            .foregroundColor(color)
+            .cornerRadius(4)
+    }
+    
+    var color: Color {
+        switch level {
+        case .safe: return .axSuccess
+        case .medium: return .axWarning
+        case .high: return .axError
+        }
+    }
+}
+
+// Helper Button Styles (Assuming these exist or creating simple ones)
+struct PrimaryButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .padding()
+            .background(Color.axAccentBlue)
+            .foregroundColor(.white)
+            .cornerRadius(AXCornerRadius.md)
+            .opacity(configuration.isPressed ? 0.8 : 1.0)
+    }
+}
+
+struct SecondaryButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .padding()
+            .background(Color.axSurface)
+            .foregroundColor(.axTextPrimary)
+            .cornerRadius(AXCornerRadius.md)
+            .overlay(
+                RoundedRectangle(cornerRadius: AXCornerRadius.md)
+                    .stroke(Color.axBorder, lineWidth: 1)
+            )
+            .opacity(configuration.isPressed ? 0.8 : 1.0)
+    }
+}
