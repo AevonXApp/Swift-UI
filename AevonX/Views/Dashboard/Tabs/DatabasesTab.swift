@@ -745,7 +745,7 @@ struct DatabaseUserRow: View {
             HStack(spacing: AXSpacing.sm) {
                 Image(systemName: "person.circle")
                     .font(.system(size: 20))
-                    .foregroundColor(.axAccentBlue)
+                    .foregroundColor(.axAccentBlue) // Keeping blue for users as they might be multi-engine in the future
                 
                 Text(user.username)
                     .font(AXTypography.body)
@@ -949,10 +949,10 @@ struct DatabaseInfoCard: View {
                             Text("Console")
                         }
                         .font(AXTypography.caption)
-                        .foregroundColor(.axAccentBlue)
+                        .foregroundColor(database.type.brandColor)
                         .padding(.horizontal, AXSpacing.sm)
                         .padding(.vertical, AXSpacing.xs)
-                        .background(Color.axAccentBlue.opacity(0.1))
+                        .background(database.type.brandColor.opacity(0.1))
                         .cornerRadius(AXCornerRadius.sm)
                     }
                     .buttonStyle(PlainButtonStyle())
@@ -1010,24 +1010,7 @@ struct DatabaseInfoCard: View {
     }
     
     private var databaseColor: Color {
-        switch database.type {
-        case .mysql, .mariadb:
-            return .axInfo
-        case .postgresql, .cockroachdb:
-            return .axAccentBlue
-        case .redis:
-            return .axError
-        case .mongodb:
-            return .axSuccess
-        case .sqlite:
-            return .axWarning
-        case .cassandra:
-            return .axWarning
-        case .elasticsearch:
-            return .axInfo
-        case .unknown:
-            return .axTextSecondary
-        }
+        database.type.brandColor
     }
     
     private func formatSize(_ mb: Double) -> String {

@@ -16,6 +16,7 @@ public struct AXGlassCard<Content: View>: View {
     var padding: CGFloat = AXSpacing.lg
     var cornerRadius: CGFloat = AXCornerRadius.xl
     var showBorder: Bool = true
+    var accentColor: Color = .axAccentBlue
     
     @State private var isHovered = false
     
@@ -23,11 +24,13 @@ public struct AXGlassCard<Content: View>: View {
         padding: CGFloat = AXSpacing.lg,
         cornerRadius: CGFloat = AXCornerRadius.xl,
         showBorder: Bool = true,
+        accentColor: Color = .axAccentBlue,
         @ViewBuilder content: () -> Content
     ) {
         self.padding = padding
         self.cornerRadius = cornerRadius
         self.showBorder = showBorder
+        self.accentColor = accentColor
         self.content = content()
     }
     
@@ -47,7 +50,7 @@ public struct AXGlassCard<Content: View>: View {
                     .stroke(
                         LinearGradient(
                             colors: isHovered 
-                                ? [Color.axAccentBlue.opacity(0.5), Color.axAccentGreen.opacity(0.3)]
+                                ? [accentColor.opacity(0.5), Color.axAccentGreen.opacity(0.3)]
                                 : [Color.axGlassBorder, Color.axBorder],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
@@ -55,7 +58,7 @@ public struct AXGlassCard<Content: View>: View {
                         lineWidth: isHovered ? 1.5 : 1
                     )
             )
-            .shadow(color: isHovered ? Color.axAccentBlue.opacity(0.15) : .clear, radius: 20, y: 8)
+            .shadow(color: isHovered ? accentColor.opacity(0.15) : .clear, radius: 20, y: 8)
             .scaleEffect(isHovered ? 1.01 : 1.0)
             .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isHovered)
             .onHover { hovering in
@@ -192,6 +195,7 @@ public struct AXTextField: View {
     @Binding var text: String
     var isSecure: Bool = false
     var icon: String? = nil
+    var accentColor: Color = .axAccentBlue
     var validation: ((String) -> Bool)? = nil
     
     @State private var isFocused = false
@@ -208,7 +212,7 @@ public struct AXTextField: View {
                 if let icon = icon {
                     Image(systemName: icon)
                         .font(.system(size: 14))
-                        .foregroundColor(isFocused ? .axAccentBlue : .axTextMuted)
+                        .foregroundColor(isFocused ? accentColor : .axTextMuted)
                         .animation(.easeInOut(duration: 0.2), value: isFocused)
                 }
                 
@@ -216,7 +220,7 @@ public struct AXTextField: View {
                     // Floating label
                     Text(placeholder)
                         .font(isFocused || !text.isEmpty ? AXTypography.caption : AXTypography.body)
-                        .foregroundColor(isFocused ? .axAccentBlue : .axTextMuted)
+                        .foregroundColor(isFocused ? accentColor : .axTextMuted)
                         .offset(y: isFocused || !text.isEmpty ? -20 : 0)
                         .animation(.spring(response: 0.3, dampingFraction: 0.8), value: isFocused || !text.isEmpty)
                     
@@ -245,7 +249,7 @@ public struct AXTextField: View {
             .overlay(
                 RoundedRectangle(cornerRadius: AXCornerRadius.md)
                     .stroke(
-                        isFocused ? Color.axAccentBlue :
+                        isFocused ? accentColor :
                         (!isValid ? Color.axError : Color.axBorder),
                         lineWidth: isFocused ? 2 : 1
                     )
@@ -296,8 +300,9 @@ public struct AXPrimaryButton: View {
             }
         }
     }
+        @State private var isPressed = false
     
-    @State private var isPressed = false
+    public var accentColor: Color = .axAccentBlue
     
     public var body: some View {
         Button(action: action) {
@@ -321,14 +326,14 @@ public struct AXPrimaryButton: View {
             .frame(minWidth: 120)
             .background(
                 RoundedRectangle(cornerRadius: AXCornerRadius.md)
-                    .fill(isDisabled ? Color.axBackgroundTertiary : style.backgroundColor)
+                    .fill(isDisabled ? Color.axBackgroundTertiary : (style == .primary ? accentColor : style.backgroundColor))
             )
             .overlay(
                 RoundedRectangle(cornerRadius: AXCornerRadius.md)
                     .stroke(style == .secondary ? Color.axBorder : .clear, lineWidth: 1)
             )
             .scaleEffect(isPressed ? 0.97 : 1.0)
-            .shadow(color: style == .primary ? Color.axAccentBlue.opacity(0.3) : .clear, radius: isPressed ? 0 : 8, y: isPressed ? 0 : 4)
+            .shadow(color: style == .primary ? accentColor.opacity(0.3) : .clear, radius: isPressed ? 0 : 8, y: isPressed ? 0 : 4)
         }
         .buttonStyle(PlainButtonStyle())
         .disabled(isDisabled || isLoading)
@@ -347,6 +352,7 @@ public struct AXSectionHeader: View {
     var subtitle: String? = nil
     var action: (() -> Void)? = nil
     var actionLabel: String = "See All"
+    var accentColor: Color = .axAccentBlue
     
     public var body: some View {
         HStack(alignment: .firstTextBaseline) {
@@ -373,7 +379,7 @@ public struct AXSectionHeader: View {
                     }
                     .font(AXTypography.caption)
                     .fontWeight(.medium)
-                    .foregroundColor(.axAccentBlue)
+                    .foregroundColor(accentColor)
                 }
                 .buttonStyle(PlainButtonStyle())
             }
@@ -389,6 +395,7 @@ public struct AXEmptyState: View {
     let description: String
     var actionLabel: String? = nil
     var action: (() -> Void)? = nil
+    var accentColor: Color = .axAccentBlue
     
     public var body: some View {
         VStack(spacing: AXSpacing.xl) {
@@ -397,7 +404,7 @@ public struct AXEmptyState: View {
                 Circle()
                     .fill(
                         LinearGradient(
-                            colors: [Color.axAccentBlue.opacity(0.15), Color.axAccentGreen.opacity(0.1)],
+                            colors: [accentColor.opacity(0.15), Color.axAccentGreen.opacity(0.1)],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         )
@@ -408,7 +415,7 @@ public struct AXEmptyState: View {
                     .font(.system(size: 32))
                     .foregroundStyle(
                         LinearGradient(
-                            colors: [.axAccentBlue, .axAccentGreen],
+                            colors: [accentColor, .axAccentGreen],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         )
@@ -429,7 +436,7 @@ public struct AXEmptyState: View {
             }
             
             if let actionLabel = actionLabel, let action = action {
-                AXPrimaryButton(title: actionLabel, icon: "plus", action: action)
+                AXPrimaryButton(title: actionLabel, icon: "plus", action: action, accentColor: accentColor)
             }
         }
         .padding(AXSpacing.xxxl)

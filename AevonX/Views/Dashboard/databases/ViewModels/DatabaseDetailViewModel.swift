@@ -444,7 +444,7 @@ public final class DatabaseDetailViewModel: ObservableObject {
 
         operationResult = .inProgress(message: "Optimizing table '\(tableName)'...", progress: nil)
         do {
-            let result = try await CoreDatabaseService.shared.optimizeTable(
+            _ = try await CoreDatabaseService.shared.optimizeTable(
                 database: database.name,
                 table: tableName,
                 type: database.type,
@@ -463,7 +463,7 @@ public final class DatabaseDetailViewModel: ObservableObject {
 
         operationResult = .inProgress(message: "Analyzing table '\(tableName)'...", progress: nil)
         do {
-            let result = try await CoreDatabaseService.shared.analyzeTable(
+            _ = try await CoreDatabaseService.shared.analyzeTable(
                 database: database.name,
                 table: tableName,
                 type: database.type,
@@ -822,7 +822,7 @@ public final class DatabaseDetailViewModel: ObservableObject {
         let progressId = GlobalToastManager.shared.showProgress("Importing SQL...")
 
         do {
-            let result = try await CoreDatabaseService.shared.importSQL(
+            _ = try await CoreDatabaseService.shared.importSQL(
                 database: database.name,
                 sqlContent: content,
                 type: database.type,

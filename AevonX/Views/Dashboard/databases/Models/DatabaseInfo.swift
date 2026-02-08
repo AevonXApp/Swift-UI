@@ -159,14 +159,14 @@ public struct DatabaseInfo: Identifiable, Codable, Hashable {
 // MARK: - Database Status
 
 public enum DatabaseStatus: String, Codable, CaseIterable {
-    case online = "Online"
-    case offline = "Offline"
-    case starting = "Starting"
-    case stopping = "Stopping"
-    case error = "Error"
-    case maintenance = "Maintenance"
-    case unknown = "Unknown"
-    case notInstalled = "Not Installed"
+    case online = "online"
+    case offline = "offline"
+    case starting = "starting"
+    case stopping = "stopping"
+    case error = "error"
+    case maintenance = "maintenance"
+    case unknown = "unknown"
+    case notInstalled = "not_installed"
     
     public var isActive: Bool {
         self == .online

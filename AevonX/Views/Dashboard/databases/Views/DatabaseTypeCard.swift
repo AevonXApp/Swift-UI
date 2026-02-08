@@ -29,7 +29,7 @@ public struct DatabaseTypeCard: View {
     }
     
     public var body: some View {
-        AXCard(padding: 20) {
+        AXCard(padding: 20, accentColor: installationState.type.brandColor) {
             VStack(alignment: .leading, spacing: AXSpacing.lg) {
                 // Header with icon and status
                 HStack(spacing: AXSpacing.md) {
@@ -159,10 +159,10 @@ public struct DatabaseTypeCard: View {
                     .font(AXTypography.subheadline)
                     .fontWeight(.medium)
             }
-            .foregroundColor(installationState.isInstalled ? .axAccentBlue : .axBackground)
+            .foregroundColor(installationState.isInstalled ? installationState.type.brandColor : .axBackground)
             .frame(maxWidth: .infinity)
             .padding(.vertical, AXSpacing.sm)
-            .background(installationState.isInstalled ? Color.axAccentBlue.opacity(0.1) : Color.axAccentBlue)
+            .background(installationState.isInstalled ? installationState.type.brandColor.opacity(0.1) : installationState.type.brandColor)
             .cornerRadius(AXCornerRadius.md)
         }
         .buttonStyle(PlainButtonStyle())

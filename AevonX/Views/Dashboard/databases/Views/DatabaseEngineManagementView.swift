@@ -156,7 +156,7 @@ public struct DatabaseEngineManagementView: View {
             VStack(spacing: AXSpacing.lg) {
                 ProgressView()
                     .scaleEffect(1.5)
-                    .tint(.axAccentBlue)
+                    .tint(viewModel.databaseType.brandColor)
 
                 Text(viewModel.operationResult.message ?? "Working...")
                     .font(AXTypography.headline)
@@ -166,7 +166,7 @@ public struct DatabaseEngineManagementView: View {
                     VStack(spacing: AXSpacing.xs) {
                         ProgressView(value: progress)
                             .progressViewStyle(.linear)
-                            .tint(.axAccentBlue)
+                            .tint(viewModel.databaseType.brandColor)
                             .frame(width: 240)
 
                         Text("\(Int(progress * 100))%")
@@ -234,7 +234,8 @@ public struct DatabaseEngineManagementView: View {
                             NavigationRow(
                                 title: section.rawValue,
                                 icon: section.icon,
-                                isSelected: viewModel.currentSection == section
+                                isSelected: viewModel.currentSection == section,
+                                themeColor: viewModel.databaseType.brandColor
                             ) {
                                 withAnimation(.easeInOut(duration: 0.2)) {
                                     viewModel.currentSection = section
@@ -376,6 +377,7 @@ private struct NavigationRow: View {
     let title: String
     let icon: String
     let isSelected: Bool
+    let themeColor: Color
     let action: () -> Void
 
     var body: some View {
@@ -383,7 +385,7 @@ private struct NavigationRow: View {
             HStack(spacing: AXSpacing.md) {
                 Image(systemName: icon)
                     .font(.system(size: 16))
-                    .foregroundColor(isSelected ? .axAccentBlue : .axTextMuted)
+                    .foregroundColor(isSelected ? themeColor : .axTextMuted)
                     .frame(width: 24)
 
                 Text(title)
@@ -397,11 +399,11 @@ private struct NavigationRow: View {
             .padding(.vertical, AXSpacing.sm)
             .background(
                 RoundedRectangle(cornerRadius: AXCornerRadius.md)
-                    .fill(isSelected ? Color.axAccentBlue.opacity(0.1) : Color.clear)
+                    .fill(isSelected ? themeColor.opacity(0.1) : Color.clear)
             )
             .overlay(
                 RoundedRectangle(cornerRadius: AXCornerRadius.md)
-                    .stroke(isSelected ? Color.axAccentBlue.opacity(0.3) : Color.clear, lineWidth: 1)
+                    .stroke(isSelected ? themeColor.opacity(0.3) : Color.clear, lineWidth: 1)
             )
         }
         .buttonStyle(.plain)
@@ -470,16 +472,16 @@ private struct OverviewSection: View {
 
                     // Metrics Grid
                     if let metrics = viewModel.metrics {
-                        MetricsGrid(metrics: metrics)
+                        MetricsGrid(metrics: metrics, themeColor: viewModel.databaseType.brandColor)
                     }
 
                     // Performance Stats
                     if let stats = viewModel.performanceStats {
-                        PerformanceCard(stats: stats)
+                        PerformanceCard(stats: stats, themeColor: viewModel.databaseType.brandColor)
                     }
 
                     // Danger Zone
-                    AXGlassCard {
+                    AXGlassCard(accentColor: viewModel.databaseType.brandColor) {
                         VStack(alignment: .leading, spacing: AXSpacing.lg) {
                             HStack {
                                 Text("Danger Zone")
@@ -547,7 +549,7 @@ private struct ConfigurationSection: View {
                 }
 
                 // Config File Path
-                AXGlassCard {
+                AXGlassCard(accentColor: viewModel.databaseType.brandColor) {
                     VStack(alignment: .leading, spacing: AXSpacing.lg) {
                         HStack {
                             Text("Configuration File")
@@ -564,7 +566,7 @@ private struct ConfigurationSection: View {
                                 }
                             }
                             .font(AXTypography.subheadline)
-                            .foregroundColor(.axAccentBlue)
+                            .foregroundColor(viewModel.databaseType.brandColor)
                             .disabled(viewModel.isOperationInProgress)
                         }
 
@@ -578,7 +580,7 @@ private struct ConfigurationSection: View {
                 }
 
                 // Version Management
-                AXGlassCard {
+                AXGlassCard(accentColor: viewModel.databaseType.brandColor) {
                     VStack(alignment: .leading, spacing: AXSpacing.lg) {
                         HStack {
                             Text("Version Management")
@@ -591,7 +593,7 @@ private struct ConfigurationSection: View {
                                 viewModel.showVersionSwitcher = true
                             }
                             .font(AXTypography.subheadline)
-                            .foregroundColor(.axAccentBlue)
+                            .foregroundColor(viewModel.databaseType.brandColor)
                             .disabled(viewModel.isOperationInProgress)
                         }
 
@@ -620,7 +622,7 @@ private struct ConfigurationSection: View {
 
                 // Redis Security Section
                 if viewModel.databaseType == .redis {
-                    AXGlassCard {
+                    AXGlassCard(accentColor: viewModel.databaseType.brandColor) {
                         VStack(alignment: .leading, spacing: AXSpacing.lg) {
                             HStack {
                                 Text("Security")
@@ -630,7 +632,7 @@ private struct ConfigurationSection: View {
                                 Spacer()
                                 
                                 Image(systemName: "lock.shield")
-                                    .foregroundColor(.axAccentBlue)
+                                    .foregroundColor(viewModel.databaseType.brandColor)
                             }
                             
                             Divider()
@@ -664,7 +666,7 @@ private struct ConfigurationSection: View {
                                             .foregroundColor(.axBackground)
                                             .padding(.horizontal, AXSpacing.lg)
                                             .padding(.vertical, AXSpacing.md)
-                                            .background(Color.axAccentBlue)
+                                            .background(viewModel.databaseType.brandColor)
                                             .cornerRadius(AXCornerRadius.md)
                                     }
                                     .buttonStyle(.plain)
@@ -717,10 +719,10 @@ private struct LogsSection: View {
                         }
                         .font(AXTypography.subheadline)
                         .fontWeight(viewModel.selectedLogType == logType ? .semibold : .regular)
-                        .foregroundColor(viewModel.selectedLogType == logType ? .axAccentBlue : .axTextSecondary)
+                        .foregroundColor(viewModel.selectedLogType == logType ? viewModel.databaseType.brandColor : .axTextSecondary)
                         .padding(.horizontal, AXSpacing.md)
                         .padding(.vertical, AXSpacing.sm)
-                        .background(viewModel.selectedLogType == logType ? Color.axAccentBlue.opacity(0.1) : Color.clear)
+                        .background(viewModel.selectedLogType == logType ? viewModel.databaseType.brandColor.opacity(0.1) : Color.clear)
                         .cornerRadius(AXCornerRadius.md)
                         .buttonStyle(.plain)
                     }
@@ -739,7 +741,7 @@ private struct LogsSection: View {
                     }
                 }
                 .font(AXTypography.subheadline)
-                .foregroundColor(.axAccentBlue)
+                .foregroundColor(viewModel.databaseType.brandColor)
                 .padding(.leading, AXSpacing.md)
                 .disabled(viewModel.isOperationInProgress)
             }
@@ -799,7 +801,7 @@ private struct OptimizationSection: View {
                 }
 
                 // AI Analysis Card
-                AXGlassCard {
+                AXGlassCard(accentColor: viewModel.databaseType.brandColor) {
                     VStack(alignment: .leading, spacing: AXSpacing.lg) {
                         Text("Performance Analysis")
                             .font(AXTypography.headline)
@@ -817,7 +819,7 @@ private struct OptimizationSection: View {
                         .foregroundColor(.axBackground)
                         .padding(.horizontal, AXSpacing.lg)
                         .padding(.vertical, AXSpacing.md)
-                        .background(Color.axAccentBlue)
+                        .background(viewModel.databaseType.brandColor)
                         .cornerRadius(AXCornerRadius.md)
                         .disabled(viewModel.isOperationInProgress)
                     }
@@ -825,7 +827,7 @@ private struct OptimizationSection: View {
                 }
 
                 // Quick Presets
-                AXGlassCard {
+                AXGlassCard(accentColor: viewModel.databaseType.brandColor) {
                     VStack(alignment: .leading, spacing: AXSpacing.lg) {
                         Text("Quick Presets")
                             .font(AXTypography.headline)
@@ -880,14 +882,14 @@ private struct VersionsSection: View {
                             Text("Refresh")
                                 .font(AXTypography.subheadline)
                         }
-                        .foregroundColor(.axAccentBlue)
+                        .foregroundColor(viewModel.databaseType.brandColor)
                     }
                     .buttonStyle(.plain)
                     .disabled(viewModel.isOperationInProgress)
                 }
 
                 // Current Version
-                AXGlassCard {
+                AXGlassCard(accentColor: viewModel.databaseType.brandColor) {
                     VStack(alignment: .leading, spacing: AXSpacing.lg) {
                         Text("Current Version")
                             .font(AXTypography.headline)
@@ -913,7 +915,7 @@ private struct VersionsSection: View {
                 }
 
                 // Available Versions
-                AXGlassCard {
+                AXGlassCard(accentColor: viewModel.databaseType.brandColor) {
                     VStack(alignment: .leading, spacing: AXSpacing.lg) {
                         HStack {
                             Text("Available Versions")
@@ -930,7 +932,7 @@ private struct VersionsSection: View {
                             .foregroundColor(.axBackground)
                             .padding(.horizontal, AXSpacing.md)
                             .padding(.vertical, AXSpacing.sm)
-                            .background(Color.axAccentBlue)
+                            .background(viewModel.databaseType.brandColor)
                             .cornerRadius(AXCornerRadius.md)
                             .disabled(viewModel.isOperationInProgress)
                         }
@@ -954,7 +956,7 @@ private struct VersionsSection: View {
                                     Task { await viewModel.fetchAvailableVersions() }
                                 }
                                 .font(AXTypography.subheadline)
-                                .foregroundColor(.axAccentBlue)
+                                .foregroundColor(viewModel.databaseType.brandColor)
                             }
                             .frame(maxWidth: .infinity)
                             .padding(AXSpacing.lg)
@@ -972,10 +974,10 @@ private struct VersionsSection: View {
                                                 Text("LTS")
                                                     .font(AXTypography.caption2)
                                                     .fontWeight(.bold)
-                                                    .foregroundColor(.axAccentBlue)
+                                                    .foregroundColor(viewModel.databaseType.brandColor)
                                                     .padding(.horizontal, AXSpacing.xs)
                                                     .padding(.vertical, AXSpacing.xxxs)
-                                                    .background(Color.axAccentBlue.opacity(0.15))
+                                                    .background(viewModel.databaseType.brandColor.opacity(0.15))
                                                     .cornerRadius(AXCornerRadius.xs)
                                             }
 
@@ -1017,10 +1019,10 @@ private struct VersionsSection: View {
                                         }
                                         .font(AXTypography.caption)
                                         .fontWeight(.semibold)
-                                        .foregroundColor(.axAccentBlue)
+                                        .foregroundColor(viewModel.databaseType.brandColor)
                                         .padding(.horizontal, AXSpacing.md)
                                         .padding(.vertical, AXSpacing.xs)
-                                        .background(Color.axAccentBlue.opacity(0.1))
+                                        .background(viewModel.databaseType.brandColor.opacity(0.1))
                                         .cornerRadius(AXCornerRadius.md)
                                         .buttonStyle(.plain)
                                         .disabled(viewModel.isOperationInProgress)
@@ -1071,14 +1073,14 @@ private struct AccessSection: View {
                             Text("Refresh")
                                 .font(AXTypography.subheadline)
                         }
-                        .foregroundColor(.axAccentBlue)
+                        .foregroundColor(viewModel.databaseType.brandColor)
                     }
                     .buttonStyle(.plain)
                     .disabled(viewModel.isOperationInProgress)
                 }
 
                 // Users Management
-                AXGlassCard {
+                AXGlassCard(accentColor: viewModel.databaseType.brandColor) {
                     VStack(alignment: .leading, spacing: AXSpacing.lg) {
                         HStack {
                             Text("Database Users")
@@ -1110,7 +1112,7 @@ private struct AccessSection: View {
                                 HStack(spacing: AXSpacing.md) {
                                     Image(systemName: "person.circle.fill")
                                         .font(.system(size: 20))
-                                        .foregroundColor(.axAccentBlue)
+                                        .foregroundColor(viewModel.databaseType.brandColor)
 
                                     VStack(alignment: .leading, spacing: AXSpacing.xxs) {
                                         Text(user.username)
@@ -1168,7 +1170,7 @@ private struct EngineInfoCard: View {
     @ObservedObject var viewModel: DatabaseEngineDetailViewModel
 
     var body: some View {
-        AXGlassCard {
+        AXGlassCard(accentColor: viewModel.databaseType.brandColor) {
             VStack(alignment: .leading, spacing: AXSpacing.lg) {
                 Text("Engine Information")
                     .font(AXTypography.headline)
@@ -1191,6 +1193,7 @@ private struct EngineInfoCard: View {
 
 private struct MetricsGrid: View {
     let metrics: AevonXCore.DatabaseMetrics
+    let themeColor: Color
 
     var body: some View {
         LazyVGrid(columns: [
@@ -1202,7 +1205,7 @@ private struct MetricsGrid: View {
                 title: "Uptime",
                 value: formatUptime(metrics.uptime),
                 icon: "clock",
-                color: .axAccentBlue
+                color: themeColor
             )
 
             DBEMMetricCard(
@@ -1238,9 +1241,10 @@ private struct MetricsGrid: View {
 
 private struct PerformanceCard: View {
     let stats: AevonXCore.PerformanceStatistics
+    let themeColor: Color
 
     var body: some View {
-        AXGlassCard {
+        AXGlassCard(accentColor: themeColor) { // Generic performance stats use app accent
             VStack(alignment: .leading, spacing: AXSpacing.lg) {
                 Text("Performance Statistics")
                     .font(AXTypography.headline)
@@ -1267,7 +1271,7 @@ private struct DBEMMetricCard: View {
     let color: Color
 
     var body: some View {
-        AXGlassCard {
+        AXGlassCard(accentColor: color) {
             VStack(spacing: AXSpacing.md) {
                 HStack {
                     Image(systemName: icon)

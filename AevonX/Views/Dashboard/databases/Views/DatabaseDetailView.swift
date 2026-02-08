@@ -49,7 +49,7 @@ struct DatabaseDetailView: View {
                 Button(action: onBack) {
                     Image(systemName: "chevron.left")
                         .font(.system(size: 13, weight: .semibold))
-                        .foregroundColor(.axAccentBlue)
+                        .foregroundColor(viewModel.database.type.brandColor)
                 }
                 .buttonStyle(.plain)
 
@@ -92,7 +92,7 @@ struct DatabaseDetailView: View {
             HStack(spacing: AXSpacing.sm) {
                 Image(systemName: section.iconName)
                     .font(.system(size: 13))
-                    .foregroundColor(isSelected ? .axAccentBlue : .axTextSecondary)
+                    .foregroundColor(isSelected ? viewModel.database.type.brandColor : .axTextSecondary)
                     .frame(width: 20)
                 Text(section.rawValue)
                     .font(AXTypography.subheadline)
@@ -120,7 +120,7 @@ struct DatabaseDetailView: View {
             }
             .padding(.horizontal, AXSpacing.md)
             .padding(.vertical, AXSpacing.sm)
-            .background(isSelected ? Color.axAccentBlue.opacity(0.1) : Color.clear)
+            .background(isSelected ? viewModel.database.type.brandColor.opacity(0.1) : Color.clear)
             .cornerRadius(AXCornerRadius.md)
         }
         .buttonStyle(.plain)
@@ -245,7 +245,7 @@ private struct DBOverviewSection: View {
             GridItem(.flexible()),
             GridItem(.flexible())
         ], spacing: AXSpacing.lg) {
-            overviewStat(icon: "cylinder", label: "Engine", value: viewModel.database.type.displayName, color: .axAccentBlue)
+            overviewStat(icon: "cylinder", label: "Engine", value: viewModel.database.type.displayName, color: viewModel.database.type.brandColor)
             overviewStat(icon: "internaldrive", label: "Size", value: formatSize(viewModel.database.size), color: .axAccentGreen)
             overviewStat(icon: "tablecells", label: "Tables", value: "\(viewModel.tables.count)", color: .axWarning)
             overviewStat(icon: "bolt.horizontal", label: "Connections", value: "\(viewModel.database.connections)", color: .axInfo)
@@ -297,7 +297,7 @@ private struct DBOverviewSection: View {
                                 .font(AXTypography.caption)
                                 .fontWeight(.semibold)
                         }
-                        .foregroundColor(.axAccentBlue)
+                        .foregroundColor(viewModel.database.type.brandColor)
                     }
                     .buttonStyle(.plain)
                 }
@@ -327,7 +327,7 @@ private struct DBOverviewSection: View {
         HStack {
             Image(systemName: "tablecells")
                 .font(.system(size: 12))
-                .foregroundColor(.axAccentBlue)
+                .foregroundColor(viewModel.database.type.brandColor)
                 .frame(width: 20)
             Text(table.name)
                 .font(AXTypography.subheadline)
@@ -386,9 +386,9 @@ private struct DBTablesSection: View {
                 Button { viewModel.showCreateTable = true } label: {
                     Image(systemName: "plus")
                         .font(.system(size: 12, weight: .semibold))
-                        .foregroundColor(.axAccentBlue)
+                        .foregroundColor(viewModel.database.type.brandColor)
                         .frame(width: 24, height: 24)
-                        .background(Color.axAccentBlue.opacity(0.1))
+                        .background(viewModel.database.type.brandColor.opacity(0.1))
                         .cornerRadius(AXCornerRadius.sm)
                 }
                 .buttonStyle(.plain)
@@ -432,7 +432,7 @@ private struct DBTablesSection: View {
                         .foregroundColor(.axBackground)
                         .padding(.horizontal, AXSpacing.lg)
                         .padding(.vertical, AXSpacing.sm)
-                        .background(Color.axAccentBlue)
+                        .background(viewModel.database.type.brandColor)
                         .cornerRadius(AXCornerRadius.md)
                     }
                     .buttonStyle(.plain)
@@ -474,7 +474,7 @@ private struct DBTablesSection: View {
             HStack(spacing: AXSpacing.sm) {
                 Image(systemName: "tablecells")
                     .font(.system(size: 11))
-                    .foregroundColor(isSelected ? .axAccentBlue : .axTextMuted)
+                    .foregroundColor(isSelected ? viewModel.database.type.brandColor : .axTextMuted)
                     .frame(width: 16)
                 VStack(alignment: .leading, spacing: AXSpacing.xxxs) {
                     Text(table.name)
@@ -493,7 +493,7 @@ private struct DBTablesSection: View {
             }
             .padding(.horizontal, AXSpacing.md)
             .padding(.vertical, AXSpacing.sm)
-            .background(isSelected ? Color.axAccentBlue.opacity(0.1) : Color.clear)
+            .background(isSelected ? viewModel.database.type.brandColor.opacity(0.1) : Color.clear)
         }
         .buttonStyle(.plain)
         .contextMenu {
@@ -530,7 +530,7 @@ private struct DBTablesSection: View {
                 Button { viewModel.deselectTable() } label: {
                     Image(systemName: "chevron.left")
                         .font(.system(size: 11))
-                        .foregroundColor(.axAccentBlue)
+                        .foregroundColor(viewModel.database.type.brandColor)
                 }
                 .buttonStyle(.plain)
 
@@ -598,13 +598,13 @@ private struct DBTablesSection: View {
             Text(tab.rawValue)
                 .font(AXTypography.subheadline)
                 .fontWeight(isSelected ? .semibold : .regular)
-                .foregroundColor(isSelected ? .axAccentBlue : .axTextSecondary)
+                .foregroundColor(isSelected ? viewModel.database.type.brandColor : .axTextSecondary)
                 .padding(.horizontal, AXSpacing.md)
                 .padding(.vertical, AXSpacing.sm)
                 .overlay(alignment: .bottom) {
                     if isSelected {
                         Rectangle()
-                            .fill(Color.axAccentBlue)
+                            .fill(viewModel.database.type.brandColor)
                             .frame(height: 2)
                     }
                 }
@@ -646,7 +646,7 @@ private struct DBTableStructureView: View {
                             .font(AXTypography.caption)
                             .fontWeight(.semibold)
                     }
-                    .foregroundColor(.axAccentBlue)
+                    .foregroundColor(viewModel.database.type.brandColor)
                 }
                 .buttonStyle(.plain)
             }
@@ -734,7 +734,7 @@ private struct DBTableStructureView: View {
 
             Text(col.type)
                 .font(.system(size: 11, design: .monospaced))
-                .foregroundColor(.axAccentBlue)
+                .foregroundColor(viewModel.database.type.brandColor)
                 .frame(width: 140, alignment: .leading)
                 .padding(.horizontal, AXSpacing.sm)
 
@@ -896,7 +896,7 @@ private struct DBTableDataView: View {
                             .font(AXTypography.caption)
                             .fontWeight(.semibold)
                     }
-                    .foregroundColor(.axAccentBlue)
+                    .foregroundColor(viewModel.database.type.brandColor)
                 }
                 .buttonStyle(.plain)
 
@@ -950,10 +950,10 @@ private struct DBTableDataView: View {
                 .foregroundColor(.axTextMuted)
             Text(sortCol)
                 .font(.system(size: 11, design: .monospaced))
-                .foregroundColor(.axAccentBlue)
+                .foregroundColor(viewModel.database.type.brandColor)
             Image(systemName: viewModel.sortAscending ? "arrow.up" : "arrow.down")
                 .font(.system(size: 9))
-                .foregroundColor(.axAccentBlue)
+                .foregroundColor(viewModel.database.type.brandColor)
             Button {
                 viewModel.sortColumn = nil
                 viewModel.currentPage = 0
@@ -967,7 +967,7 @@ private struct DBTableDataView: View {
         }
         .padding(.horizontal, AXSpacing.sm)
         .padding(.vertical, AXSpacing.xxs)
-        .background(Color.axAccentBlue.opacity(0.1))
+        .background(viewModel.database.type.brandColor.opacity(0.1))
         .cornerRadius(AXCornerRadius.sm)
     }
 
@@ -987,7 +987,7 @@ private struct DBTableDataView: View {
                         Image(systemName: viewModel.selectedRows.count == result.rows.count && !result.rows.isEmpty
                               ? "checkmark.square.fill" : "square")
                             .font(.system(size: 12))
-                            .foregroundColor(.axAccentBlue)
+                            .foregroundColor(viewModel.database.type.brandColor)
                     }
                     .buttonStyle(.plain)
                     .frame(width: 32)
@@ -1005,7 +1005,7 @@ private struct DBTableDataView: View {
                                 if viewModel.sortColumn == col {
                                     Image(systemName: viewModel.sortAscending ? "chevron.up" : "chevron.down")
                                         .font(.system(size: 8))
-                                        .foregroundColor(.axAccentBlue)
+                                        .foregroundColor(viewModel.database.type.brandColor)
                                 }
                             }
                         }
@@ -1045,7 +1045,7 @@ private struct DBTableDataView: View {
             } label: {
                 Image(systemName: isSelected ? "checkmark.square.fill" : "square")
                     .font(.system(size: 12))
-                    .foregroundColor(isSelected ? .axAccentBlue : .axTextMuted)
+                    .foregroundColor(isSelected ? viewModel.database.type.brandColor : .axTextMuted)
             }
             .buttonStyle(.plain)
             .frame(width: 32)
@@ -1068,9 +1068,9 @@ private struct DBTableDataView: View {
                 } label: {
                     Image(systemName: "pencil")
                         .font(.system(size: 10))
-                        .foregroundColor(.axAccentBlue)
+                        .foregroundColor(viewModel.database.type.brandColor)
                         .frame(width: 22, height: 22)
-                        .background(Color.axAccentBlue.opacity(0.1))
+                        .background(viewModel.database.type.brandColor.opacity(0.1))
                         .cornerRadius(AXCornerRadius.sm)
                 }
                 .buttonStyle(.plain)
@@ -1089,7 +1089,7 @@ private struct DBTableDataView: View {
             }
             .padding(.horizontal, AXSpacing.sm)
         }
-        .background(isSelected ? Color.axAccentBlue.opacity(0.08) : (index % 2 == 0 ? Color.clear : Color.axSurface.opacity(0.3)))
+        .background(isSelected ? viewModel.database.type.brandColor.opacity(0.08) : (index % 2 == 0 ? Color.clear : Color.axSurface.opacity(0.3)))
         .contextMenu {
             Button {
                 viewModel.startEditingRow(index)
@@ -1164,7 +1164,7 @@ private struct DBTableDataView: View {
                 .buttonStyle(.plain)
                 .disabled(!viewModel.hasNextPage)
             }
-            .foregroundColor(.axAccentBlue)
+            .foregroundColor(viewModel.database.type.brandColor)
         }
         .padding(.horizontal, AXSpacing.lg)
         .padding(.vertical, AXSpacing.sm)
@@ -1242,7 +1242,7 @@ private struct DBTableIndexesView: View {
 
             Text(index.columns.joined(separator: ", "))
                 .font(.system(size: 11, design: .monospaced))
-                .foregroundColor(.axAccentBlue)
+                .foregroundColor(viewModel.database.type.brandColor)
                 .frame(width: 250, alignment: .leading)
                 .padding(.horizontal, AXSpacing.sm)
 
@@ -1306,7 +1306,7 @@ private struct DBSQLConsoleSection: View {
                         Text("History")
                             .font(AXTypography.caption)
                     }
-                    .foregroundColor(.axAccentBlue)
+                    .foregroundColor(viewModel.database.type.brandColor)
                 }
                 .menuStyle(.borderlessButton)
                 .frame(width: 90)
@@ -1352,9 +1352,9 @@ private struct DBSQLConsoleSection: View {
                             .fontWeight(.semibold)
                     }
                     .foregroundColor(.axBackground)
-                    .padding(.horizontal, AXSpacing.lg)
-                    .padding(.vertical, AXSpacing.sm)
-                    .background(viewModel.queryText.isEmpty || viewModel.isExecutingQuery ? Color.axTextMuted.opacity(0.5) : Color.axAccentBlue)
+                    .padding(.horizontal, AXSpacing.xl)
+                    .padding(.vertical, AXSpacing.md)
+                    .background(viewModel.queryText.isEmpty || viewModel.isExecutingQuery ? Color.axTextMuted.opacity(0.5) : viewModel.database.type.brandColor)
                     .cornerRadius(AXCornerRadius.md)
                 }
                 .buttonStyle(.plain)
@@ -1478,7 +1478,7 @@ private struct DBBackupSection: View {
             HStack(spacing: AXSpacing.md) {
                 Image(systemName: "arrow.down.doc.fill")
                     .font(.system(size: 24))
-                    .foregroundColor(.axAccentBlue)
+                    .foregroundColor(viewModel.database.type.brandColor)
 
                 VStack(alignment: .leading, spacing: AXSpacing.xxs) {
                     Text("Create Backup")
@@ -1506,7 +1506,7 @@ private struct DBBackupSection: View {
                     .foregroundColor(.axBackground)
                     .padding(.horizontal, AXSpacing.lg)
                     .padding(.vertical, AXSpacing.sm)
-                    .background(viewModel.isCreatingBackup ? Color.axTextMuted.opacity(0.5) : Color.axAccentBlue)
+                    .background(viewModel.isCreatingBackup ? Color.axTextMuted.opacity(0.5) : viewModel.database.type.brandColor)
                     .cornerRadius(AXCornerRadius.md)
                 }
                 .buttonStyle(.plain)
@@ -1592,7 +1592,7 @@ private struct DBBackupSection: View {
         HStack(spacing: AXSpacing.md) {
             Image(systemName: "doc.zipper")
                 .font(.system(size: 16))
-                .foregroundColor(.axAccentBlue)
+                .foregroundColor(viewModel.database.type.brandColor)
                 .frame(width: 24)
 
             VStack(alignment: .leading, spacing: AXSpacing.xxxs) {
@@ -1617,7 +1617,7 @@ private struct DBBackupSection: View {
             } label: {
                 Image(systemName: "arrow.down.circle")
                     .font(.system(size: 14))
-                    .foregroundColor(.axAccentBlue)
+                    .foregroundColor(viewModel.database.type.brandColor)
             }
             .buttonStyle(.plain)
             .disabled(viewModel.isDownloadingBackup)
@@ -1726,7 +1726,7 @@ private struct DBCreateTableView: View {
                             .font(AXTypography.caption)
                             .fontWeight(.semibold)
                     }
-                    .foregroundColor(.axAccentBlue)
+                    .foregroundColor(viewModel.database.type.brandColor)
                 }
                 .buttonStyle(.plain)
             }
@@ -1861,7 +1861,7 @@ private struct DBCreateTableView: View {
                 .foregroundColor(.axBackground)
                 .padding(.horizontal, AXSpacing.xl)
                 .padding(.vertical, AXSpacing.md)
-                .background(isFormValid && !isSubmitting ? Color.axAccentBlue : Color.axTextMuted.opacity(0.5))
+                .background(isFormValid && !isSubmitting ? viewModel.database.type.brandColor : Color.axTextMuted.opacity(0.5))
                 .cornerRadius(AXCornerRadius.md)
             }
             .buttonStyle(.plain)
@@ -1978,7 +1978,7 @@ private struct DBAddColumnView: View {
                     .foregroundColor(.axBackground)
                     .padding(.horizontal, AXSpacing.xl)
                     .padding(.vertical, AXSpacing.md)
-                    .background(!column.name.isEmpty && !isSubmitting ? Color.axAccentBlue : Color.axTextMuted.opacity(0.5))
+                    .background(!column.name.isEmpty && !isSubmitting ? viewModel.database.type.brandColor : Color.axTextMuted.opacity(0.5))
                     .cornerRadius(AXCornerRadius.md)
                 }
                 .buttonStyle(.plain)
@@ -2226,7 +2226,7 @@ private struct DBAddRowView: View {
                 .foregroundColor(.axBackground)
                 .padding(.horizontal, AXSpacing.xl)
                 .padding(.vertical, AXSpacing.md)
-                .background(isSubmitting ? Color.axTextMuted.opacity(0.5) : Color.axAccentBlue)
+                .background(isSubmitting ? Color.axTextMuted.opacity(0.5) : viewModel.database.type.brandColor)
                 .cornerRadius(AXCornerRadius.md)
             }
             .buttonStyle(.plain)
@@ -2393,7 +2393,7 @@ private struct DBEditRowView: View {
                 .foregroundColor(.axBackground)
                 .padding(.horizontal, AXSpacing.xl)
                 .padding(.vertical, AXSpacing.md)
-                .background(isSubmitting ? Color.axTextMuted.opacity(0.5) : Color.axAccentBlue)
+                .background(isSubmitting ? Color.axTextMuted.opacity(0.5) : viewModel.database.type.brandColor)
                 .cornerRadius(AXCornerRadius.md)
             }
             .buttonStyle(.plain)
@@ -2485,10 +2485,10 @@ private struct DBImportSQLView: View {
                             .font(AXTypography.subheadline)
                             .fontWeight(.semibold)
                     }
-                    .foregroundColor(.axAccentBlue)
+                    .foregroundColor(viewModel.database.type.brandColor)
                     .padding(.horizontal, AXSpacing.lg)
                     .padding(.vertical, AXSpacing.sm)
-                    .background(Color.axAccentBlue.opacity(0.1))
+                    .background(viewModel.database.type.brandColor.opacity(0.1))
                     .cornerRadius(AXCornerRadius.md)
                 }
                 .buttonStyle(.plain)

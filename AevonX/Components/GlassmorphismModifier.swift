@@ -63,12 +63,14 @@ struct AXCard<Content: View>: View {
     let content: Content
     var padding: CGFloat = 16
     var cornerRadius: CGFloat = 12
+    var accentColor: Color = Color(hex: "#00D4FF")
     
     @State private var isHovered = false
     
-    init(padding: CGFloat = 16, cornerRadius: CGFloat = 12, @ViewBuilder content: () -> Content) {
+    init(padding: CGFloat = 16, cornerRadius: CGFloat = 12, accentColor: Color = Color(hex: "#00D4FF"), @ViewBuilder content: () -> Content) {
         self.padding = padding
         self.cornerRadius = cornerRadius
+        self.accentColor = accentColor
         self.content = content()
     }
     
@@ -83,7 +85,7 @@ struct AXCard<Content: View>: View {
                             .stroke(Color(hex: "#27272A"), lineWidth: 1)
                     )
                     .shadow(
-                        color: isHovered ? Color(hex: "#00D4FF").opacity(0.05) : Color.clear,
+                        color: isHovered ? accentColor.opacity(0.05) : Color.clear,
                         radius: isHovered ? 8 : 0,
                         x: 0,
                         y: isHovered ? 2 : 0
@@ -181,6 +183,7 @@ struct HoverableButtonStyle: ButtonStyle {
 struct InteractiveRowModifier: ViewModifier {
     var isSelected: Bool = false
     var cornerRadius: CGFloat = 12
+    var accentColor: Color = Color(hex: "#00D4FF")
     
     @State private var isHovered = false
     
@@ -188,10 +191,10 @@ struct InteractiveRowModifier: ViewModifier {
         content
             .background(
                 RoundedRectangle(cornerRadius: cornerRadius)
-                    .fill(isSelected ? Color(hex: "#00D4FF").opacity(0.08) : (isHovered ? Color(hex: "#2A2A2A").opacity(0.5) : Color.clear))
+                    .fill(isSelected ? accentColor.opacity(0.08) : (isHovered ? Color(hex: "#2A2A2A").opacity(0.5) : Color.clear))
                     .overlay(
                         RoundedRectangle(cornerRadius: cornerRadius)
-                            .stroke(isSelected ? Color(hex: "#00D4FF").opacity(0.3) : Color.clear, lineWidth: 1)
+                            .stroke(isSelected ? accentColor.opacity(0.3) : Color.clear, lineWidth: 1)
                     )
             )
             .contentShape(Rectangle())
@@ -204,7 +207,7 @@ struct InteractiveRowModifier: ViewModifier {
 }
 
 extension View {
-    func interactiveRow(isSelected: Bool = false, cornerRadius: CGFloat = 12) -> some View {
-        modifier(InteractiveRowModifier(isSelected: isSelected, cornerRadius: cornerRadius))
+    func interactiveRow(isSelected: Bool = false, cornerRadius: CGFloat = 12, accentColor: Color = Color(hex: "#00D4FF")) -> some View {
+        modifier(InteractiveRowModifier(isSelected: isSelected, cornerRadius: cornerRadius, accentColor: accentColor))
     }
 }

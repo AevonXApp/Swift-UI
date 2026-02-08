@@ -61,14 +61,15 @@ public struct ModernDatabasesTab: View {
             )
         }
         .sheet(isPresented: $viewModel.showAddUser) {
-            ModernAddUserView { username, password, host in
-                Task {
-                    try? await viewModel.createUser(
-                        username: username,
-                        password: password,
-                        host: host,
-                        databaseType: .mysql // Default to MySQL for now
-                    )
+            ModernAddUserView(accentColor: viewModel.selectedDatabaseType?.brandColor ?? .axAccentBlue) { username, password, host in
+                if let type = viewModel.selectedDatabaseType {
+                    Task {
+                        do {
+                            try await viewModel.createUser(username: username, password: password, host: host, databaseType: type)
+                        } catch {
+                            viewModel.errorMessage = error.localizedDescription
+                        }
+                    }
                 }
             }
         }
@@ -238,7 +239,7 @@ public struct ModernDatabasesTab: View {
                 noDatabasesView
             } else {
                 // Show actual database list
-                actualDatabasesGridView
+                actualDatabasesListView
             }
         }
     }
@@ -247,7 +248,7 @@ public struct ModernDatabasesTab: View {
 
     private var allDatabasesToolbar: some View {
         HStack(spacing: AXSpacing.md) {
-            SearchField(text: $viewModel.searchText, placeholder: "Search...")
+            SearchField(text: $viewModel.searchText, placeholder: "Search...", accentColor: .axAccentBlue)
                 .frame(width: 220)
 
             // View Mode Toggle
@@ -336,13 +337,13 @@ public struct ModernDatabasesTab: View {
             VStack(spacing: 1) {
                 // Table Header
                 HStack(spacing: AXSpacing.md) {
-                    Text("Name").frame(width: 200, alignment: .leading)
-                    Text("Engine").frame(width: 100, alignment: .leading)
-                    Text("Version").frame(width: 80, alignment: .leading)
-                    Text("Size").frame(width: 80, alignment: .leading)
-                    Text("Tables").frame(width: 60, alignment: .trailing)
+                    Text("Name").frame(maxWidth: .infinity, alignment: .leading)
+                    Text("Engine").frame(width: 120, alignment: .leading)
+                    Text("Version").frame(width: 100, alignment: .leading)
+                    Text("Size").frame(width: 100, alignment: .leading)
+                    Text("Tables").frame(width: 80, alignment: .trailing)
                     Text("Status").frame(width: 80, alignment: .center)
-                    Spacer()
+                    Text("Actions").frame(width: 100, alignment: .trailing)
                 }
                 .font(AXTypography.caption)
                 .foregroundColor(.axTextMuted)
@@ -504,7 +505,7 @@ public struct ModernDatabasesTab: View {
     private func engineInstallCard(for type: DatabaseType) -> some View {
         let isInstalled = viewModel.isEngineInstalled(type)
         
-        return AXGlassCard(padding: AXSpacing.lg) {
+        return AXGlassCard(padding: AXSpacing.lg, accentColor: type.brandColor) {
             VStack(alignment: .leading, spacing: AXSpacing.md) {
                 HStack {
                     ZStack {
@@ -574,7 +575,7 @@ public struct ModernDatabasesTab: View {
                         .foregroundColor(.axBackground)
                         .padding(.horizontal, AXSpacing.md)
                         .padding(.vertical, AXSpacing.sm)
-                        .background(Color.axAccentBlue)
+                        .background(type.brandColor)
                         .cornerRadius(AXCornerRadius.md)
                     }
                     .buttonStyle(.plain)
@@ -612,8 +613,30 @@ public struct ModernDatabasesTab: View {
             // Toolbar with service controls
             HStack(spacing: AXSpacing.md) {
                 // Search
-                SearchField(text: $viewModel.searchText, placeholder: "Search databases...")
+                SearchField(text: $viewModel.searchText, placeholder: "Search databases...", accentColor: viewModel.selectedDatabaseType?.brandColor ?? .axAccentBlue)
                     .frame(width: 280)
+                
+                // View Mode Toggle
+                HStack(spacing: 0) {
+                    ForEach(DatabaseManagementViewModel.DatabaseViewMode.allCases) { mode in
+                        Button {
+                            withAnimation(.spring(response: 0.3)) {
+                                viewModel.databaseViewMode = mode
+                            }
+                        } label: {
+                            Image(systemName: mode == .grid ? "square.grid.2x2.fill" : "list.bullet")
+                                .font(.system(size: 12))
+                                .foregroundColor(viewModel.databaseViewMode == mode ? .axTextPrimary : .axTextMuted)
+                                .frame(width: 32, height: 32)
+                                .background(viewModel.databaseViewMode == mode ? Color.axSurfaceHover : Color.clear)
+                                .cornerRadius(AXCornerRadius.sm)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .background(Color.axSurface.opacity(0.5))
+                .cornerRadius(AXCornerRadius.md)
+                .padding(.leading, AXSpacing.sm)
                 
                 Spacer()
                 
@@ -682,7 +705,7 @@ public struct ModernDatabasesTab: View {
                         .foregroundColor(.axBackground)
                         .padding(.horizontal, AXSpacing.md)
                         .padding(.vertical, AXSpacing.sm)
-                        .background(Color.axAccentBlue)
+                        .background(type.brandColor)
                         .cornerRadius(AXCornerRadius.md)
                     }
                     .buttonStyle(PlainButtonStyle())
@@ -718,6 +741,34 @@ public struct ModernDatabasesTab: View {
             } else {
                 databaseListView
             }
+        }
+    }
+    
+    private var databaseListView: some View {
+        Group {
+            if viewModel.databaseViewMode == .grid {
+                databaseGridView
+            } else {
+                databaseTableView
+            }
+        }
+    }
+    
+    private var databaseGridView: some View {
+        ScrollView {
+            LazyVGrid(columns: [
+                GridItem(.flexible(), spacing: AXSpacing.lg),
+                GridItem(.flexible(), spacing: AXSpacing.lg),
+                GridItem(.flexible(), spacing: AXSpacing.lg)
+            ], spacing: AXSpacing.lg) {
+                ForEach(viewModel.filteredDatabases) { database in
+                    databaseCardWithActions(database)
+                        .contextMenu {
+                            databaseContextMenu(database)
+                        }
+                }
+            }
+            .padding(.horizontal, AXSpacing.xl)
         }
     }
     
@@ -769,25 +820,6 @@ public struct ModernDatabasesTab: View {
             Spacer()
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
-    
-    // MARK: - Database List View
-    
-    private var databaseListView: some View {
-        ScrollView {
-            LazyVGrid(columns: [
-                GridItem(.flexible(), spacing: AXSpacing.lg),
-                GridItem(.flexible(), spacing: AXSpacing.lg)
-            ], spacing: AXSpacing.lg) {
-                ForEach(viewModel.filteredDatabases) { database in
-                    databaseCardWithActions(database)
-                        .contextMenu {
-                            databaseContextMenu(database)
-                        }
-                }
-            }
-            .padding(.horizontal, AXSpacing.xl)
-        }
     }
     
     // MARK: - Toolbar View (Legacy - kept for compatibility)
@@ -864,10 +896,10 @@ public struct ModernDatabasesTab: View {
                 viewModel.showAddDatabase = true
             }
             .font(AXTypography.subheadline)
-            .foregroundColor(.axAccentBlue)
+            .foregroundColor(type.brandColor)
             .padding(.horizontal, AXSpacing.lg)
             .padding(.vertical, AXSpacing.sm)
-            .background(Color.axAccentBlue.opacity(0.1))
+            .background(type.brandColor.opacity(0.1))
             .cornerRadius(AXCornerRadius.md)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -1104,51 +1136,48 @@ private struct ModernDatabaseCard: View {
 
                     Spacer()
 
-                    // Action buttons (visible on hover)
-                    if isHovered {
-                        HStack(spacing: AXSpacing.xs) {
-                            Button { onOpen?() } label: {
-                                Image(systemName: "arrow.right.circle")
-                                    .font(.system(size: 13))
-                                    .foregroundColor(.axAccentBlue)
-                                    .frame(width: 26, height: 26)
-                                    .background(Color.axAccentBlue.opacity(0.1))
-                                    .cornerRadius(AXCornerRadius.sm)
-                            }
-                            .buttonStyle(.plain)
-                            .help("Open Details")
-
-                            Button { onBackup?() } label: {
-                                Image(systemName: "arrow.down.doc")
-                                    .font(.system(size: 13))
-                                    .foregroundColor(.axAccentGreen)
-                                    .frame(width: 26, height: 26)
-                                    .background(Color.axAccentGreen.opacity(0.1))
-                                    .cornerRadius(AXCornerRadius.sm)
-                            }
-                            .buttonStyle(.plain)
-                            .help("Create Backup")
-
-                            Button { onDelete?() } label: {
-                                Image(systemName: "trash")
-                                    .font(.system(size: 12))
-                                    .foregroundColor(.axError)
-                                    .frame(width: 26, height: 26)
-                                    .background(Color.axError.opacity(0.1))
-                                    .cornerRadius(AXCornerRadius.sm)
-                            }
-                            .buttonStyle(.plain)
-                            .help("Delete Database")
+                    // Action buttons (Permanently visible for easier access)
+                    HStack(spacing: AXSpacing.xs) {
+                        Button { onOpen?() } label: {
+                            Image(systemName: "arrow.right.circle")
+                                .font(.system(size: 13))
+                                .foregroundColor(database.type.brandColor)
+                                .frame(width: 26, height: 26)
+                                .background(database.type.brandColor.opacity(0.1))
+                                .cornerRadius(AXCornerRadius.sm)
                         }
-                        .transition(.opacity)
-                    } else {
-                        // Status badge with glow
-                        AXStatusBadge(
-                            status: database.status == .online ? .online : .offline,
-                            showLabel: false,
-                            size: 8
-                        )
+                        .buttonStyle(.plain)
+                        .help("Open Details")
+
+                        Button { onBackup?() } label: {
+                            Image(systemName: "arrow.down.doc")
+                                .font(.system(size: 13))
+                                .foregroundColor(.axAccentGreen)
+                                .frame(width: 26, height: 26)
+                                .background(Color.axAccentGreen.opacity(0.1))
+                                .cornerRadius(AXCornerRadius.sm)
+                        }
+                        .buttonStyle(.plain)
+                        .help("Create Backup")
+
+                        Button { onDelete?() } label: {
+                            Image(systemName: "trash")
+                                .font(.system(size: 12))
+                                .foregroundColor(.axError)
+                                .frame(width: 26, height: 26)
+                                .background(Color.axError.opacity(0.1))
+                                .cornerRadius(AXCornerRadius.sm)
+                        }
+                        .buttonStyle(.plain)
+                        .help("Delete Database")
                     }
+                    
+                    // Status badge with glow
+                    AXStatusBadge(
+                        status: database.status == .online ? .online : .offline,
+                        showLabel: false,
+                        size: 8
+                    )
                 }
                 
                 // Divider with gradient
@@ -1225,7 +1254,7 @@ private struct ModernDatabaseCard: View {
                     lineWidth: 1
                 )
         )
-        .shadow(color: isHovered ? database.type.brandColor.opacity(0.1) : .clear, radius: 12, y: 4)
+        .shadow(color: isHovered ? database.type.brandColor.opacity(0.15) : .clear, radius: 12, y: 4)
         .scaleEffect(isHovered ? 1.02 : 1.0)
         .animation(.spring(response: 0.3), value: isHovered)
         .onHover { hovering in
@@ -1375,14 +1404,14 @@ private struct ModernAddDatabaseView: View {
                     .font(AXTypography.caption2)
                     .fontWeight(.medium)
             }
-            .foregroundColor(isSelected ? .axAccentBlue : .axTextSecondary)
+            .foregroundColor(isSelected ? engine.type.brandColor : .axTextSecondary)
             .frame(maxWidth: .infinity)
             .frame(height: 60)
-            .background(isSelected ? Color.axAccentBlue.opacity(0.1) : Color.axSurface)
+            .background(isSelected ? engine.type.brandColor.opacity(0.1) : Color.axSurface)
             .cornerRadius(AXCornerRadius.md)
             .overlay(
                 RoundedRectangle(cornerRadius: AXCornerRadius.md)
-                    .stroke(isSelected ? Color.axAccentBlue : Color.axBorder, lineWidth: 1)
+                    .stroke(isSelected ? engine.type.brandColor : Color.axBorder, lineWidth: 1)
             )
         }
         .buttonStyle(.plain)
@@ -1407,7 +1436,7 @@ private struct ModernAddDatabaseView: View {
                     RoundedRectangle(cornerRadius: AXCornerRadius.md)
                         .stroke(viewModel.nameError != nil ? Color.axError : Color.axBorder, lineWidth: 1)
                 )
-                .onChange(of: viewModel.databaseName) { _ in
+                .onChange(of: viewModel.databaseName) { _, _ in
                     viewModel.validateDatabaseName()
                 }
 
@@ -1422,7 +1451,7 @@ private struct ModernAddDatabaseView: View {
     private var encodingSection: some View {
         HStack(spacing: AXSpacing.lg) {
             pickerField(title: "Encoding", selection: $viewModel.selectedCharset, options: viewModel.availableCharsets)
-                .onChange(of: viewModel.selectedCharset) { _ in
+                .onChange(of: viewModel.selectedCharset) { _, _ in
                     let collations = viewModel.availableCollations
                     if !collations.contains(viewModel.selectedCollation) {
                         viewModel.selectedCollation = collations.first ?? "default"
@@ -1468,7 +1497,7 @@ private struct ModernAddDatabaseView: View {
                     HStack(spacing: AXSpacing.sm) {
                         Image(systemName: "person.badge.plus")
                             .font(.system(size: 14))
-                            .foregroundColor(.axAccentBlue)
+                            .foregroundColor(viewModel.selectedType?.brandColor ?? .axAccentBlue)
                         Text("Create database user")
                             .font(AXTypography.subheadline)
                             .fontWeight(.medium)
@@ -1476,7 +1505,7 @@ private struct ModernAddDatabaseView: View {
                     }
                 }
                 .toggleStyle(.switch)
-                .tint(.axAccentBlue)
+                .tint(viewModel.selectedType?.brandColor ?? .axAccentBlue)
 
                 if viewModel.shouldCreateUser {
                     userFieldsCard
@@ -1517,7 +1546,7 @@ private struct ModernAddDatabaseView: View {
                     RoundedRectangle(cornerRadius: AXCornerRadius.md)
                         .stroke(viewModel.usernameError != nil ? Color.axError : Color.axBorder, lineWidth: 1)
                 )
-                .onChange(of: viewModel.username) { _ in
+                .onChange(of: viewModel.username) { _, _ in
                     viewModel.validateUsername()
                 }
 
@@ -1544,7 +1573,7 @@ private struct ModernAddDatabaseView: View {
                 }
                 .font(.system(.body, design: .monospaced))
                 .foregroundColor(.axTextPrimary)
-                .onChange(of: viewModel.password) { _ in
+                .onChange(of: viewModel.password) { _, _ in
                     viewModel.validatePassword()
                 }
 
@@ -1668,7 +1697,7 @@ private struct ModernAddDatabaseView: View {
     }
 
     private var defaultFooter: some View {
-        Group {
+        HStack {
             Spacer()
             Button(action: { dismiss() }) {
                 Text("Cancel")
@@ -1696,7 +1725,7 @@ private struct ModernAddDatabaseView: View {
                 .foregroundColor(.axBackground)
                 .padding(.horizontal, AXSpacing.xl)
                 .padding(.vertical, AXSpacing.md)
-                .background(viewModel.isFormValid && !viewModel.isSubmitting ? Color.axAccentBlue : Color.axTextMuted.opacity(0.5))
+                .background(viewModel.isFormValid && !viewModel.isSubmitting ? (viewModel.selectedType?.brandColor ?? .axAccentBlue) : Color.axTextMuted.opacity(0.5))
                 .cornerRadius(AXCornerRadius.md)
             }
             .buttonStyle(.plain)
@@ -1759,6 +1788,7 @@ private struct ModernAddUserView: View {
     @State private var host = "localhost"
     @State private var password = ""
     
+    let accentColor: Color
     let onCreate: (String, String, String) -> Void
     
     var body: some View {
@@ -1859,7 +1889,7 @@ private struct ModernAddUserView: View {
                         .foregroundColor(.axBackground)
                         .padding(.horizontal, AXSpacing.lg)
                         .padding(.vertical, AXSpacing.sm)
-                        .background(Color.axAccentBlue)
+                        .background(accentColor)
                         .cornerRadius(AXCornerRadius.md)
                 }
                 .buttonStyle(PlainButtonStyle())
@@ -1878,12 +1908,12 @@ private struct SearchField: View {
     @Binding var text: String
     let placeholder: String
     @FocusState private var isFocused: Bool
+    let accentColor: Color
     
     var body: some View {
         HStack(spacing: AXSpacing.sm) {
             Image(systemName: "magnifyingglass")
-                .font(.system(size: 14))
-                .foregroundColor(isFocused ? .axAccentBlue : .axTextMuted)
+                .foregroundColor(isFocused ? accentColor : .axTextMuted)
             
             TextField(placeholder, text: $text)
                 .font(AXTypography.body)
@@ -1905,7 +1935,7 @@ private struct SearchField: View {
         .cornerRadius(AXCornerRadius.md)
         .overlay(
             RoundedRectangle(cornerRadius: AXCornerRadius.md)
-                .stroke(isFocused ? Color.axAccentBlue.opacity(0.5) : Color.axBorder, lineWidth: 1)
+                .stroke(isFocused ? accentColor.opacity(0.5) : Color.axBorder, lineWidth: 1)
         )
         .animation(.easeInOut(duration: 0.2), value: isFocused)
     }
@@ -1940,31 +1970,31 @@ private struct DatabaseTableRow: View {
                     .foregroundColor(.axTextPrimary)
                     .lineLimit(1)
             }
-            .frame(width: 200, alignment: .leading)
+            .frame(maxWidth: .infinity, alignment: .leading)
             
             // Engine
             Text(database.type.displayName)
                 .font(AXTypography.caption)
                 .foregroundColor(.axTextSecondary)
-                .frame(width: 100, alignment: .leading)
+                .frame(width: 120, alignment: .leading)
             
             // Version
             Text(database.version ?? "-")
                 .font(.system(size: 11, design: .monospaced))
                 .foregroundColor(.axTextTertiary)
-                .frame(width: 80, alignment: .leading)
+                .frame(width: 100, alignment: .leading)
             
             // Size
             Text(database.formattedSize)
                 .font(AXTypography.caption)
                 .foregroundColor(.axTextSecondary)
-                .frame(width: 80, alignment: .leading)
+                .frame(width: 100, alignment: .leading)
             
             // Tables
             Text("\(database.tables)")
                 .font(.system(size: 12, weight: .semibold, design: .monospaced))
                 .foregroundColor(.axTextPrimary)
-                .frame(width: 60, alignment: .trailing)
+                .frame(width: 80, alignment: .trailing)
             
             // Status
             HStack {
@@ -1976,9 +2006,7 @@ private struct DatabaseTableRow: View {
             }
             .frame(width: 80, alignment: .center)
             
-            Spacer()
-            
-            // Inline Actions (visible on hover)
+            // Inline Actions (Permanently visible for easier access)
             HStack(spacing: AXSpacing.sm) {
                 Button { onOpen?() } label: {
                     Image(systemName: "arrow.right.circle")
@@ -2004,7 +2032,7 @@ private struct DatabaseTableRow: View {
                 .buttonStyle(.plain)
                 .help("Delete Database")
             }
-            .opacity(isHovered ? 1 : 0)
+            .frame(width: 100, alignment: .trailing)
         }
         .padding(.horizontal, AXSpacing.lg)
         .padding(.vertical, AXSpacing.sm)

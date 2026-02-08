@@ -153,7 +153,7 @@ public struct DatabaseEngineDetailView: View {
             VStack(spacing: AXSpacing.lg) {
                 ProgressView()
                     .scaleEffect(1.5)
-                    .tint(.axAccentBlue)
+                    .tint(viewModel.databaseType.brandColor)
 
                 Text(viewModel.operationResult.message ?? "Working...")
                     .font(AXTypography.headline)
@@ -163,7 +163,7 @@ public struct DatabaseEngineDetailView: View {
                     VStack(spacing: AXSpacing.xs) {
                         ProgressView(value: progress)
                             .progressViewStyle(.linear)
-                            .tint(.axAccentBlue)
+                            .tint(viewModel.databaseType.brandColor)
                             .frame(width: 240)
 
                         Text("\(Int(progress * 100))%")
@@ -322,7 +322,7 @@ public struct DatabaseEngineDetailView: View {
             ServiceControlButton(
                 title: viewModel.isBootEnabled ? "Disable Boot" : "Enable Boot",
                 icon: viewModel.isBootEnabled ? "poweroff" : "power",
-                color: viewModel.isBootEnabled ? .axTextMuted : .axAccentBlue,
+                color: viewModel.isBootEnabled ? .axTextMuted : viewModel.databaseType.brandColor,
                 isEnabled: !viewModel.isOperationInProgress
             ) {
                 Task {
@@ -466,7 +466,7 @@ public struct DatabaseEngineDetailView: View {
                 title: "Uptime",
                 value: formatUptime(metrics.uptime),
                 icon: "clock",
-                color: .axAccentBlue
+                color: viewModel.databaseType.brandColor
             )
 
             MetricCard(
@@ -530,7 +530,7 @@ public struct DatabaseEngineDetailView: View {
                                 }
                             }
                             .buttonStyle(.plain)
-                            .foregroundColor(.axAccentBlue)
+                            .foregroundColor(viewModel.databaseType.brandColor)
                             .disabled(viewModel.isOperationInProgress)
                         }
 
@@ -558,7 +558,7 @@ public struct DatabaseEngineDetailView: View {
                                 viewModel.showVersionSwitcher = true
                             }
                             .buttonStyle(.plain)
-                            .foregroundColor(.axAccentBlue)
+                            .foregroundColor(viewModel.databaseType.brandColor)
                             .disabled(viewModel.isOperationInProgress)
                         }
 
@@ -597,7 +597,7 @@ public struct DatabaseEngineDetailView: View {
                                 Spacer()
                                 
                                 Image(systemName: "lock.shield")
-                                    .foregroundColor(.axAccentBlue)
+                                    .foregroundColor(viewModel.databaseType.brandColor)
                             }
                             
                             Divider()
@@ -631,7 +631,7 @@ public struct DatabaseEngineDetailView: View {
                                             .foregroundColor(.axBackground)
                                             .padding(.horizontal, AXSpacing.lg)
                                             .padding(.vertical, AXSpacing.md)
-                                            .background(Color.axAccentBlue)
+                                            .background(viewModel.databaseType.brandColor)
                                             .cornerRadius(AXCornerRadius.md)
                                     }
                                     .buttonStyle(.plain)
@@ -686,7 +686,7 @@ public struct DatabaseEngineDetailView: View {
                     }
                 }
                 .buttonStyle(.plain)
-                .foregroundColor(.axAccentBlue)
+                .foregroundColor(viewModel.databaseType.brandColor)
                 .disabled(viewModel.isOperationInProgress)
             }
             .padding(AXSpacing.lg)
@@ -747,7 +747,7 @@ public struct DatabaseEngineDetailView: View {
                         .foregroundColor(.axBackground)
                         .padding(.horizontal, AXSpacing.lg)
                         .padding(.vertical, AXSpacing.md)
-                        .background(Color.axAccentBlue)
+                        .background(viewModel.databaseType.brandColor)
                         .cornerRadius(AXCornerRadius.md)
                         .disabled(viewModel.isOperationInProgress)
                     }

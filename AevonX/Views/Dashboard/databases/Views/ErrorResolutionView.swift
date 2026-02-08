@@ -146,7 +146,7 @@ public struct ErrorResolutionView: View {
                         .foregroundColor(.axTextPrimary)
                     
                     ForEach(analysis.solutions) { solution in
-                        SolutionCard(solution: solution) {
+                        SolutionCard(solution: solution, accentColor: viewModel.databaseType.brandColor) {
                             Task {
                                 await viewModel.executeSolution(solution)
                             }
@@ -181,7 +181,7 @@ public struct ErrorResolutionView: View {
             Button("Resume Installation") {
                 dismiss() // Logic to resume needs to be handled by parent
             }
-            .buttonStyle(PrimaryButtonStyle())
+            .buttonStyle(PrimaryButtonStyle(accentColor: viewModel.databaseType.brandColor))
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
@@ -216,6 +216,7 @@ public struct ErrorResolutionView: View {
 
 private struct SolutionCard: View {
     let solution: AIErrorSolution
+    let accentColor: Color
     let onExecute: () -> Void
     
     var body: some View {
@@ -247,7 +248,7 @@ private struct SolutionCard: View {
                 Text(solution.isAutomated ? "Auto-Fix" : "Execute Manually")
                     .frame(maxWidth: .infinity)
             }
-            .buttonStyle(PrimaryButtonStyle())
+            .buttonStyle(PrimaryButtonStyle(accentColor: accentColor))
             .padding(.top, AXSpacing.sm)
         }
         .padding(AXSpacing.lg)
@@ -285,10 +286,12 @@ private struct RiskBadge: View {
 
 // Helper Button Styles (Assuming these exist or creating simple ones)
 struct PrimaryButtonStyle: ButtonStyle {
+    var accentColor: Color = .axAccentBlue
+    
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .padding()
-            .background(Color.axAccentBlue)
+            .background(accentColor)
             .foregroundColor(.white)
             .cornerRadius(AXCornerRadius.md)
             .opacity(configuration.isPressed ? 0.8 : 1.0)

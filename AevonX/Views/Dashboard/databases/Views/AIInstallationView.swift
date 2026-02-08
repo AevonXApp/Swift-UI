@@ -146,10 +146,10 @@ public struct AIInstallationView: View {
                 }
             }
             .font(AXTypography.subheadline)
-            .foregroundColor(.axAccentBlue)
+            .foregroundColor(databaseType.brandColor)
             .padding(.horizontal, AXSpacing.lg)
             .padding(.vertical, AXSpacing.sm)
-            .background(Color.axAccentBlue.opacity(0.1))
+            .background(databaseType.brandColor.opacity(0.1))
             .cornerRadius(AXCornerRadius.md)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -239,6 +239,7 @@ public struct AIInstallationView: View {
                     VersionRecommendationCard(
                         recommendation: rec,
                         isSelected: viewModel.selectedVersion?.version == rec.version,
+                        accentColor: databaseType.brandColor,
                         onSelect: {
                             viewModel.selectedVersion = rec
                         }
@@ -306,7 +307,7 @@ public struct AIInstallationView: View {
             .foregroundColor(.axBackground)
             .padding(.horizontal, AXSpacing.xxl)
             .padding(.vertical, AXSpacing.md)
-            .background(Color.axAccentBlue)
+            .background(databaseType.brandColor)
             .cornerRadius(AXCornerRadius.md)
             .buttonStyle(PlainButtonStyle())
         }
@@ -340,7 +341,7 @@ public struct AIInstallationView: View {
                 .foregroundColor(.axBackground)
                 .padding(.horizontal, AXSpacing.lg)
                 .padding(.vertical, AXSpacing.sm)
-                .background(viewModel.selectedVersion != nil ? Color.axAccentBlue : Color.axTextMuted)
+                .background(viewModel.selectedVersion != nil ? databaseType.brandColor : Color.axTextMuted)
                 .cornerRadius(AXCornerRadius.md)
             }
             .buttonStyle(PlainButtonStyle())
@@ -362,7 +363,7 @@ public struct AIInstallationView: View {
                     Text("\(Int(viewModel.installationProgress))%")
                         .font(AXTypography.title2)
                         .fontWeight(.bold)
-                        .foregroundColor(.axAccentBlue)
+                        .foregroundColor(databaseType.brandColor)
                     
                     Spacer()
                     
@@ -489,6 +490,7 @@ private struct RequirementItem: View {
 private struct VersionRecommendationCard: View {
     let recommendation: DatabaseVersionRecommendation
     let isSelected: Bool
+    let accentColor: Color
     let onSelect: () -> Void
     
     var body: some View {
@@ -497,12 +499,12 @@ private struct VersionRecommendationCard: View {
                 // Selection indicator
                 ZStack {
                     Circle()
-                        .stroke(isSelected ? Color.axAccentBlue : Color.axBorder, lineWidth: 2)
+                        .stroke(isSelected ? accentColor : Color.axBorder, lineWidth: 2)
                         .frame(width: 20, height: 20)
                     
                     if isSelected {
                         Circle()
-                            .fill(Color.axAccentBlue)
+                            .fill(accentColor)
                             .frame(width: 10, height: 10)
                     }
                 }
@@ -547,10 +549,10 @@ private struct VersionRecommendationCard: View {
                 }
             }
             .padding(AXSpacing.md)
-            .background(isSelected ? Color.axAccentBlue.opacity(0.05) : Color.axSurface)
+            .background(isSelected ? accentColor.opacity(0.05) : Color.axSurface)
             .overlay(
                 RoundedRectangle(cornerRadius: AXCornerRadius.md)
-                    .stroke(isSelected ? Color.axAccentBlue : Color.axBorder, lineWidth: 1)
+                    .stroke(isSelected ? accentColor : Color.axBorder, lineWidth: 1)
             )
             .cornerRadius(AXCornerRadius.md)
         }

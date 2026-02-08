@@ -142,7 +142,7 @@ struct Database: Identifiable {
     var tables: Int
     var connections: Int
 }
-
+ 
 struct Application: Identifiable {
     let id = UUID()
     var name: String
