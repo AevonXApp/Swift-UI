@@ -1,0 +1,167 @@
+//
+//  InstalledDatabaseView.swift
+//  AevonX
+//
+//  Created by Automation on 2026-02-08.
+//
+
+import SwiftUI
+import AevonXCore
+
+struct InstalledDatabaseView: View {
+    let type: DatabaseType
+    @ObservedObject var viewModel: DatabaseManagementViewModel
+    let onManageEngine: (DatabaseType) -> Void
+    let onOpenDatabase: (DatabaseInfo) -> Void
+    let onDeleteDatabase: (DatabaseInfo) -> Void
+    
+    var body: some View {
+        VStack(spacing: 0) {
+            // Toolbar with service controls
+            HStack(spacing: AXSpacing.md) {
+                // Search
+                SearchField(text: $viewModel.searchText, placeholder: "Search databases...", accentColor: type.brandColor)
+                    .frame(width: 280)
+                
+                // View Mode Toggle
+                HStack(spacing: 0) {
+                    ForEach(DatabaseManagementViewModel.DatabaseViewMode.allCases) { mode in
+                        Button {
+                            withAnimation(.spring(response: 0.3)) {
+                                viewModel.databaseViewMode = mode
+                            }
+                        } label: {
+                            Image(systemName: mode == .grid ? "square.grid.2x2.fill" : "list.bullet")
+                                .font(.system(size: 12))
+                                .foregroundColor(viewModel.databaseViewMode == mode ? .axTextPrimary : .axTextMuted)
+                                .frame(width: 32, height: 32)
+                                .background(viewModel.databaseViewMode == mode ? Color.axSurfaceHover : Color.clear)
+                                .cornerRadius(AXCornerRadius.sm)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .background(Color.axSurface.opacity(0.5))
+                .cornerRadius(AXCornerRadius.md)
+                .padding(.leading, AXSpacing.sm)
+                
+                Spacer()
+                
+                // Service controls
+                HStack(spacing: AXSpacing.sm) {
+                    // Manage Engine Button
+                    Button {
+                        onManageEngine(type)
+                    } label: {
+                        HStack(spacing: AXSpacing.sm) {
+                            Image(systemName: "gearshape.fill")
+                                .font(.system(size: 12))
+                            Text("Manage Engine")
+                                .font(AXTypography.caption)
+                                .fontWeight(.semibold)
+                        }
+                        .foregroundColor(.axTextPrimary)
+                        .padding(.horizontal, AXSpacing.md)
+                        .padding(.vertical, AXSpacing.sm)
+                        .background(Color.axSurface)
+                        .cornerRadius(AXCornerRadius.md)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: AXCornerRadius.md)
+                                .stroke(Color.axBorder, lineWidth: 1)
+                        )
+                    }
+                    .buttonStyle(.plain)
+                    
+                    Divider()
+                        .frame(height: 24)
+                    
+                    AXServiceControlButton(
+                        icon: "play.fill",
+                        color: .axSuccess,
+                        action: {
+                            Task { try? await viewModel.startService(type: type) }
+                        }
+                    )
+                    
+                    AXServiceControlButton(
+                        icon: "stop.fill",
+                        color: .axError,
+                        action: {
+                            Task { try? await viewModel.stopService(type: type) }
+                        }
+                    )
+                    
+                    AXServiceControlButton(
+                        icon: "arrow.clockwise",
+                        color: .axWarning,
+                        action: {
+                            Task { try? await viewModel.restartService(type: type) }
+                        }
+                    )
+                    
+                    Divider()
+                        .frame(height: 24)
+                    
+                    Button(action: { viewModel.showAddDatabase = true }) {
+                        HStack(spacing: AXSpacing.sm) {
+                            Image(systemName: "plus")
+                            Text("New Database")
+                        }
+                        .font(AXTypography.subheadline)
+                        .fontWeight(.medium)
+                        .foregroundColor(.axBackground)
+                        .padding(.horizontal, AXSpacing.md)
+                        .padding(.vertical, AXSpacing.sm)
+                        .background(type.brandColor)
+                        .cornerRadius(AXCornerRadius.md)
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    
+                    Button(action: { Task { await viewModel.loadData() } }) {
+                        HStack(spacing: AXSpacing.sm) {
+                            Image(systemName: "arrow.clockwise")
+                                .rotationEffect(.degrees(viewModel.isLoading ? 360 : 0))
+                                .animation(viewModel.isLoading ? Animation.linear(duration: 1).repeatForever(autoreverses: false) : .default, value: viewModel.isLoading)
+                            Text("Refresh")
+                        }
+                        .font(AXTypography.subheadline)
+                        .fontWeight(.medium)
+                        .foregroundColor(.axTextSecondary)
+                        .padding(.horizontal, AXSpacing.md)
+                        .padding(.vertical, AXSpacing.sm)
+                        .background(Color.axSurface)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: AXCornerRadius.md)
+                                .stroke(Color.axBorder, lineWidth: 1)
+                        )
+                        .cornerRadius(AXCornerRadius.md)
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                }
+            }
+            .padding(.horizontal, AXSpacing.xl)
+            .padding(.bottom, AXSpacing.lg)
+            
+            // Database list
+            if viewModel.filteredDatabases.isEmpty {
+                 VStack {
+                     Spacer()
+                     AXEmptyState(
+                        icon: "cylinder",
+                        title: "No Databases",
+                        description: "No databases found for \(type.displayName). Create one to get started.",
+                        actionLabel: "Create Database",
+                        action: { viewModel.showAddDatabase = true }
+                     )
+                     Spacer()
+                 }
+            } else {
+                DatabaseListView(
+                    viewModel: viewModel,
+                    onOpen: onOpenDatabase,
+                    onDelete: onDeleteDatabase
+                )
+            }
+        }
+    }
+}

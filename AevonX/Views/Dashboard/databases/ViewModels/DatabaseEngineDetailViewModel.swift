@@ -468,7 +468,38 @@ public final class DatabaseEngineDetailViewModel: ObservableObject {
         
         isPerformingServiceAction = false
     }
-    
+
+    /// Save configuration from editor
+    public func saveConfiguration() async {
+        guard let serverId = serverId, let currentConfig = configuration else { return }
+        
+        isPerformingServiceAction = true
+        operationResult = .inProgress(message: "Saving configuration...", progress: nil)
+        
+        do {
+            let newConfig = AevonXCore.DatabaseConfiguration(
+                engineType: databaseType,
+                settings: currentConfig.settings,
+                rawContent: configEditContent
+            )
+            
+            try await CoreDatabaseService.shared.updateConfiguration(newConfig, type: databaseType, serverId: serverId)
+            
+            // Reload to confirm changes
+            await loadConfiguration()
+            
+            operationResult = .success(message: "Configuration saved successfully!")
+            activeAlert = .operationSuccess(message: "Configuration has been saved. You may need to restart the service for changes to take effect.")
+            showConfigEditor = false
+            
+        } catch {
+            operationResult = .failure(message: "Failed to save: \(error.localizedDescription)")
+            activeAlert = .operationFailure(message: "Failed to save configuration: \(error.localizedDescription)")
+        }
+        
+        isPerformingServiceAction = false
+    }
+
     // MARK: - Version Management
     
     /// Fetch available versions from Core

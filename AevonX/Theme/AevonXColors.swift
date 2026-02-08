@@ -22,6 +22,7 @@ extension Color {
     public static let axSurfaceActive = Color(hex: "#333333")
     
     // Accent Colors - Electric Blue & Emerald Green
+    public static let axPrimary = axAccentBlue
     public static let axAccentBlue = Color(hex: "#00D4FF")
     public static let axAccentBlueDimmed = Color(hex: "#00D4FF").opacity(0.6)
     public static let axAccentGreen = Color(hex: "#10B981")
