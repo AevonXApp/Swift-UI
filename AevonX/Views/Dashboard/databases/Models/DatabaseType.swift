@@ -124,9 +124,9 @@ extension DatabaseType {
     /// Whether the database supports multiple databases/schemas
     public var supportsMultipleDatabases: Bool {
         switch self {
-        case .mysql, .postgresql, .mariadb, .cockroachdb, .mongodb, .redis:
+        case .mysql, .postgresql, .mariadb, .cockroachdb, .mongodb, .redis, .sqlite:
             return true
-        case .sqlite, .cassandra, .elasticsearch, .unknown:
+        case .cassandra, .elasticsearch, .unknown:
             return false
         @unknown default:
             return false

@@ -52,10 +52,8 @@ public class ErrorResolutionViewModel: ObservableObject {
             .assign(to: \.errorMessage, on: self)
             .store(in: &cancellables)
             
-        service.$isAnalyzing
-            .map { $0 ? .analyzing : .idle } // Simplified mapping, needs refinement based on flow
-            .assign(to: \.state, on: self)
-            .store(in: &cancellables)
+        // We handle state transitions explicitly in the async methods.
+        // Binding isAnalyzing causing race conditions/overwriting valid states.
     }
     
     // MARK: - Actions

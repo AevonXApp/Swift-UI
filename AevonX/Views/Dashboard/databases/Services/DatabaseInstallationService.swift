@@ -144,10 +144,72 @@ public final class DatabaseInstallationService: ObservableObject {
             throw DatabaseInstallationError.alreadyInProgress
         }
 
+        // Find the selected version recommendation to get specific commands
+        guard let selectedVersion = recommendation.recommendations.first(where: { $0.version == version }) else {
+             throw DatabaseInstallationError.stepFailed(step: "Initialization", reason: "Selected version not found in recommendations")
+        }
+        
+        // Get the install commands (Backend filters for the correct package manager, so taking first is safe)
+        guard let cmdSet = selectedVersion.installCommands.first else {
+            throw DatabaseInstallationError.stepFailed(step: "Initialization", reason: "No installation commands available for this version")
+        }
+
         isInstalling = true
         installationError = nil
 
         do {
+            // Generate steps dynamically from the commands
+            var dynamicSteps: [InstallationStep] = []
+            var orderId = 1
+            
+            // Pre-install steps
+            for cmd in cmdSet.preInstallCommands {
+                dynamicSteps.append(InstallationStep(
+                    order: orderId,
+                    title: "Pre-install: Prepare Environment",
+                    description: "Executing pre-installation task",
+                    command: cmd,
+                    isManual: false,
+                    estimatedDuration: 10,
+                    canRollback: false,
+                    rollbackCommand: nil,
+                    validationCommand: nil
+                ))
+                orderId += 1
+            }
+            
+            // Install commands
+            for cmd in cmdSet.commands {
+                dynamicSteps.append(InstallationStep(
+                    order: orderId,
+                    title: "Install \(databaseType.displayName) \(version)",
+                    description: "Installing database package",
+                    command: cmd,
+                    isManual: false,
+                    estimatedDuration: 120,
+                    canRollback: true,
+                    rollbackCommand: nil, // We don't have this info from simplified AI
+                    validationCommand: nil
+                ))
+                orderId += 1
+            }
+            
+            // Post-install steps
+            for cmd in cmdSet.postInstallCommands {
+                dynamicSteps.append(InstallationStep(
+                    order: orderId,
+                    title: "Post-install: Configuration",
+                    description: "Configuring database service",
+                    command: cmd,
+                    isManual: false,
+                    estimatedDuration: 10,
+                    canRollback: false,
+                    rollbackCommand: nil,
+                    validationCommand: nil
+                ))
+                orderId += 1
+            }
+            
             // Start tracking with backend
             let installationId: String
             do {
@@ -155,7 +217,7 @@ public final class DatabaseInstallationService: ObservableObject {
                     serverId: serverId,
                     databaseType: databaseType,
                     selectedVersion: version,
-                    totalSteps: recommendation.installationSteps.count
+                    totalSteps: dynamicSteps.count
                 )
             } catch {
                 CoreLogger.shared.error("Failed to start installation tracking: \(error.localizedDescription)",
@@ -169,7 +231,7 @@ public final class DatabaseInstallationService: ObservableObject {
                 installationId: UUID(uuidString: installationId) ?? UUID(),
                 databaseType: databaseType,
                 selectedVersion: version,
-                totalSteps: recommendation.installationSteps.count,
+                totalSteps: dynamicSteps.count,
                 status: .analyzing,
                 currentStepTitle: "Preparing installation",
                 currentStepDescription: "Analyzing server environment...",
@@ -180,7 +242,7 @@ public final class DatabaseInstallationService: ObservableObject {
 
             // Execute installation steps via Core layer
             try await executeInstallationSteps(
-                steps: recommendation.installationSteps,
+                steps: dynamicSteps,
                 recommendation: recommendation,
                 serverId: serverId,
                 installationId: installationId
@@ -217,21 +279,18 @@ public final class DatabaseInstallationService: ObservableObject {
             // Trigger Error Resolution Service
             if let stepError = error as? DatabaseInstallationError {
                 if case .stepFailed(let stepName, let reason) = stepError {
-                    // Find the step object
-                    let failedStep = recommendation.installationSteps.first { $0.title == stepName }
-                    
                     // Create a log entry for context
                     let errorLog = InstallationLog(
                         level: .error,
                         message: reason,
-                        step: failedStep?.order
+                        step: currentInstallation?.currentStep
                     )
                     
                     // Set context for UI to pick up
                     self.errorResolutionContext = ErrorResolutionContext(
                         databaseType: databaseType,
                         serverId: serverId,
-                        step: failedStep,
+                        step: nil, // We don't have the failed step object easily matching generic steps
                         log: errorLog
                     )
                 }

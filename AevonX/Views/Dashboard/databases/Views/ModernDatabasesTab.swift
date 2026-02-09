@@ -76,9 +76,15 @@ struct ModernDatabasesTab: View {
             }
         }
         .sheet(isPresented: $viewModel.showInstallation) {
-            if let type = viewModel.databaseTypeForInstallation {
+            if let type = viewModel.databaseTypeForInstallation, let serverId = viewModel.serverId {
                 AIInstallationView(
-                    databaseType: type
+                    databaseType: type,
+                    serverId: serverId,
+                    onSuccess: {
+                        Task {
+                            await viewModel.loadData()
+                        }
+                    }
                 )
             }
         }

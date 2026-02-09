@@ -11,12 +11,17 @@ import Combine
 
 public struct AIInstallationView: View {
     let databaseType: DatabaseType
+    let serverId: String
+    let onSuccess: (() -> Void)?
+    
     @StateObject private var viewModel: AIInstallationViewModel
     @Environment(\.dismiss) var dismiss
 
-    public init(databaseType: DatabaseType) {
+    public init(databaseType: DatabaseType, serverId: String, onSuccess: (() -> Void)? = nil) {
         self.databaseType = databaseType
-        _viewModel = StateObject(wrappedValue: AIInstallationViewModel(databaseType: databaseType))
+        self.serverId = serverId
+        self.onSuccess = onSuccess
+        _viewModel = StateObject(wrappedValue: AIInstallationViewModel(databaseType: databaseType, serverId: serverId))
     }
 
     public var body: some View {
@@ -55,7 +60,10 @@ public struct AIInstallationView: View {
                 databaseType: databaseType,
                 stepDescription: viewModel.currentStepDescription,
                 logs: viewModel.logs,
-                onDone: { dismiss() }
+                onDone: { 
+                    onSuccess?()
+                    dismiss() 
+                }
             )
         } else if viewModel.isInstalling {
             AIInstallProgressView(
@@ -64,7 +72,7 @@ public struct AIInstallationView: View {
                 stepTitle: viewModel.currentStep,
                 stepDescription: viewModel.currentStepDescription,
                 logs: viewModel.logs,
-                onCancel: { viewModel.cancelInstallation() }
+                onCancel: { Task { await viewModel.cancelInstallation() } } // Task wrapper added
             )
         } else if let recommendation = viewModel.recommendation {
             AIInstallRecommendationsView(
@@ -93,6 +101,9 @@ public struct AIInstallationView: View {
 
 private class AIInstallationViewModel: ObservableObject {
     let databaseType: DatabaseType
+    let serverId: String
+    private let service = DatabaseInstallationService.shared
+    private var cancellables = Set<AnyCancellable>()
     
     @Published var isLoading = true
     @Published var errorMessage: String?
@@ -106,10 +117,38 @@ private class AIInstallationViewModel: ObservableObject {
     @Published var logs: [InstallationLog] = []
     @Published var isSuccess = false
     
-    private var installTask: Task<Void, Never>?
-    
-    init(databaseType: DatabaseType) {
+    init(databaseType: DatabaseType, serverId: String) {
         self.databaseType = databaseType
+        self.serverId = serverId
+        
+        // Bind to service properties
+        service.$isInstalling
+            .receive(on: RunLoop.main)
+            .assign(to: \.isInstalling, on: self)
+            .store(in: &cancellables)
+            
+        service.$currentInstallation
+            .receive(on: RunLoop.main)
+            .sink { [weak self] installation in
+                guard let self = self, let installation = installation else { return }
+                self.installProgress = installation.progressPercentage / 100.0
+                self.currentStep = installation.currentStepTitle
+                self.currentStepDescription = installation.currentStepDescription
+                self.logs = installation.logs
+                self.isSuccess = installation.status == .completed
+            }
+            .store(in: &cancellables)
+            
+            service.$installationError
+            .receive(on: RunLoop.main)
+            .sink { [weak self] error in
+                if let error = error {
+                    self?.errorMessage = error.message
+                    self?.isLoading = false
+                    self?.isInstalling = false
+                }
+            }
+            .store(in: &cancellables)
     }
     
     @MainActor
@@ -117,128 +156,47 @@ private class AIInstallationViewModel: ObservableObject {
         isLoading = true
         errorMessage = nil
         
-        // Simulate AI Analysis
-        try? await Task.sleep(nanoseconds: 2_000_000_000)
-        
-        // Mock Response
-        // Mock Response
-        let response = AIInstallationResponse(
-            databaseType: databaseType,
-            recommendations: [
-                DatabaseVersionRecommendation(
-                    version: "16.1",
-                    isRecommended: true,
-                    isLTS: true,
-                    compatibilityScore: 98,
-                    reasoning: "Latest stable release with best performance for your hardware.",
-                    securityStatus: .secure
-                ),
-                DatabaseVersionRecommendation(
-                    version: "15.5",
-                    isRecommended: false,
-                    isLTS: true,
-                    compatibilityScore: 90,
-                    reasoning: "Proven stability, good for legacy compatibility.",
-                    securityStatus: .secure
-                ),
-                DatabaseVersionRecommendation(
-                    version: "14.10",
-                    isRecommended: false,
-                    isLTS: true,
-                    compatibilityScore: 75,
-                    reasoning: "Older stable version.",
-                    securityStatus: .updatesAvailable
-                )
-            ],
-            systemRequirements: SystemRequirements(
-                minimumMemoryMB: 512,
-                recommendedMemoryMB: 1024,
-                minimumDiskGB: 10,
-                recommendedDiskGB: 20,
-                minimumCpuCores: 1
-            ),
-            installationSteps: [
-                InstallationStep(order: 1, title: "Downloading Binaries", description: "Fetching packages from official repositories...", estimatedDuration: 10),
-                InstallationStep(order: 2, title: "Verifying Checksums", description: "Ensuring package integrity...", estimatedDuration: 5),
-                InstallationStep(order: 3, title: "Unpacking", description: "Extracting files to /usr/local/opt...", estimatedDuration: 15),
-                InstallationStep(order: 4, title: "Configuring Environment", description: "Setting up environment variables and paths...", estimatedDuration: 10),
-                InstallationStep(order: 5, title: "Optimizing Configuration", description: "Applying AI-recommended settings for 8GB RAM...", estimatedDuration: 5),
-                InstallationStep(order: 6, title: "Initializing Database", description: "Creating default database cluster...", estimatedDuration: 20),
-                InstallationStep(order: 7, title: "Starting Service", description: "Launching background service...", estimatedDuration: 5),
-                InstallationStep(order: 8, title: "Finalizing", description: "Running health checks...", estimatedDuration: 10)
-            ],
-            warnings: [
-                "Firewall port 5432 is currently closed. The installer will attempt to open it."
-            ]
-        )
-        
-        self.recommendation = response
-        self.selectedVersion = response.recommendations.first
-        self.isLoading = false
+        do {
+            let response = try await service.getInstallationRecommendations(
+                databaseType: databaseType,
+                serverId: serverId
+            )
+            self.recommendation = response
+            self.selectedVersion = response.recommendations.first { $0.isRecommended } ?? response.recommendations.first
+            self.isLoading = false
+        } catch {
+            self.errorMessage = error.localizedDescription
+            self.isLoading = false
+        }
     }
     
     @MainActor
     func startInstallation() async {
         guard let version = selectedVersion else { return }
+        guard let recommendation = recommendation else { return }
         
         isInstalling = true
         installProgress = 0
         logs = []
         isSuccess = false
+        errorMessage = nil
         
-        addLog("Starting installation of \(databaseType.displayName) \(version.version)...", level: .info)
-        
-        // Simulate Installation Steps
-        let steps = [
-            ("Downloading Binaries", "Fetching packages from official repositories...", 0.1),
-            ("Verifying Checksums", "Ensuring package integrity...", 0.2),
-            ("Unpacking", "Extracting files to /usr/local/opt...", 0.3),
-            ("Configuring Environment", "Setting up environment variables and paths...", 0.5),
-            ("Optimizing Configuration", "Applying AI-recommended settings for 8GB RAM...", 0.7),
-            ("Initializing Database", "Creating default database cluster...", 0.8),
-            ("Starting Service", "Launching background service...", 0.9),
-            ("Finalizing", "Running health checks...", 1.0)
-        ]
-        
-        installTask = Task {
-            for (title, desc, progress) in steps {
-                if Task.isCancelled { return }
-                
-                self.currentStep = title
-                self.currentStepDescription = desc
-                addLog("\(title)...", level: .info)
-                
-                // Simulate work
-                try? await Task.sleep(nanoseconds: 1_000_000_000)
-                
-                withAnimation {
-                    self.installProgress = progress
-                }
-                
-                if Double.random(in: 0...1) > 0.8 {
-                    addLog("Optimizing parameter for generic workload...", level: .debug)
-                }
-            }
-            
-            if !Task.isCancelled {
-                addLog("Installation completed successfully!", level: .success)
-                self.isSuccess = true
-                self.installProgress = 1.0
-                self.currentStep = "Complete"
-                self.currentStepDescription = "Installation finished successfully."
-            }
+        do {
+            try await service.startInstallation(
+                databaseType: databaseType,
+                version: version.version,
+                serverId: serverId,
+                recommendation: recommendation
+            )
+        } catch {
+            self.errorMessage = error.localizedDescription
+            print("Installation failed: \(error.localizedDescription)")
+            // Error handled by service listener
         }
     }
     
-    func cancelInstallation() {
-        installTask?.cancel()
-        installTask = nil
-        isInstalling = false
-        addLog("Installation cancelled by user.", level: .warning)
-    }
-    
-    private func addLog(_ message: String, level: InstallationLogLevel) {
-        let log = InstallationLog(timestamp: Date(), level: level, message: message)
-        logs.append(log)
+    @MainActor
+    func cancelInstallation() async {
+        await service.cancelInstallation()
     }
 }
