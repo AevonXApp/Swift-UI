@@ -200,19 +200,7 @@ public struct DatabaseHealthIssue: Identifiable, Codable, Hashable {
     }
 }
 
-public enum HealthSeverity: String, Codable, CaseIterable {
-    case critical = "Critical"
-    case warning = "Warning"
-    case info = "Info"
-    
-    public var priority: Int {
-        switch self {
-        case .critical: return 3
-        case .warning: return 2
-        case .info: return 1
-        }
-    }
-}
+
 
 // MARK: - Database User Info
 

@@ -486,64 +486,68 @@ public struct AXMiniStat: View {
     }
 }
 
-// MARK: - Previews
+// MARK: - Button & TextField Styles
 
-#Preview("Design System") {
-    ScrollView {
-        VStack(spacing: AXSpacing.xxl) {
-            // Glass Card
-            AXGlassCard {
-                VStack(alignment: .leading, spacing: AXSpacing.md) {
-                    Text("Glass Card Example")
-                        .font(AXTypography.title3)
-                        .foregroundColor(.axTextPrimary)
-                    
-                    Text("This is a premium glassmorphic card with hover effects")
-                        .font(AXTypography.body)
-                        .foregroundColor(.axTextSecondary)
-                }
-            }
-            .frame(width: 300)
-            
-            // Status Badges
-            HStack(spacing: AXSpacing.lg) {
-                AXStatusBadge(status: .online)
-                AXStatusBadge(status: .offline)
-                AXStatusBadge(status: .warning)
-                AXStatusBadge(status: .loading)
-            }
-            
-            // Circular Progress
-            HStack(spacing: AXSpacing.lg) {
-                AXCircularProgress(value: 0.25, color: .axSuccess)
-                AXCircularProgress(value: 0.67, color: .axWarning)
-                AXCircularProgress(value: 0.95, color: .axError)
-            }
-            
-            // Mini Stats
-            HStack(spacing: AXSpacing.lg) {
-                AXMiniStat(label: "CPU", value: "23%", icon: "cpu", color: .axAccentBlue, trend: -5)
-                AXMiniStat(label: "RAM", value: "67%", icon: "memorychip", color: .axWarning, trend: 12)
-                AXMiniStat(label: "Disk", value: "45%", icon: "internaldrive", color: .axSuccess)
-            }
-            
-            // Buttons
-            HStack(spacing: AXSpacing.md) {
-                AXPrimaryButton(title: "Connect", icon: "bolt.fill", action: {})
-                AXPrimaryButton(title: "Cancel", icon: nil, action: {}, style: .secondary)
-            }
-            
-            // Empty State
-            AXEmptyState(
-                icon: "server.rack",
-                title: "No Servers Yet",
-                description: "Add your first server to get started with secure management",
-                actionLabel: "Add Server",
-                action: {}
-            )
-        }
-        .padding(AXSpacing.xxl)
+public struct AXPrimaryButtonStyle: ButtonStyle {
+    public func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(AXTypography.subheadline)
+            .fontWeight(.semibold)
+            .foregroundColor(.axBackground)
+            .padding(.horizontal, AXSpacing.lg)
+            .padding(.vertical, AXSpacing.sm)
+            .background(Color.axAccentBlue)
+            .cornerRadius(AXCornerRadius.md)
+            .opacity(configuration.isPressed ? 0.9 : 1.0)
+            .scaleEffect(configuration.isPressed ? 0.98 : 1.0)
     }
-    .background(Color.axBackground)
-    .preferredColorScheme(.dark)
+}
+
+public struct AXSecondaryButtonStyle: ButtonStyle {
+    public func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(AXTypography.subheadline)
+            .fontWeight(.medium)
+            .foregroundColor(.axTextPrimary)
+            .padding(.horizontal, AXSpacing.lg)
+            .padding(.vertical, AXSpacing.sm)
+            .background(Color.axSurface)
+            .cornerRadius(AXCornerRadius.md)
+            .overlay(RoundedRectangle(cornerRadius: AXCornerRadius.md).stroke(Color.axBorder, lineWidth: 1))
+            .opacity(configuration.isPressed ? 0.9 : 1.0)
+    }
+}
+
+public struct AXHeaderButtonStyle: ButtonStyle {
+    public func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(AXTypography.caption)
+            .fontWeight(.semibold)
+            .foregroundColor(.axAccentBlue)
+            .padding(.horizontal, AXSpacing.md)
+            .padding(.vertical, AXSpacing.xs)
+            .background(Color.axAccentBlue.opacity(0.1))
+            .cornerRadius(AXCornerRadius.sm)
+    }
+}
+
+public struct AXOutlineButtonStyle: ButtonStyle {
+    public func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(AXTypography.caption)
+            .foregroundColor(.axTextSecondary)
+            .padding(.horizontal, AXSpacing.md)
+            .padding(.vertical, AXSpacing.sm)
+            .overlay(RoundedRectangle(cornerRadius: AXCornerRadius.sm).stroke(Color.axBorder, lineWidth: 1))
+    }
+}
+
+public struct AXTextFieldStyle: TextFieldStyle {
+    public func _body(configuration: TextField<Self._Label>) -> some View {
+        configuration
+            .padding(AXSpacing.sm)
+            .background(Color.axBackground)
+            .cornerRadius(AXCornerRadius.sm)
+            .overlay(RoundedRectangle(cornerRadius: AXCornerRadius.sm).stroke(Color.axBorder, lineWidth: 1))
+    }
 }

@@ -109,10 +109,10 @@ struct DBEDOverviewTab: View {
                 Divider()
 
                 HStack(spacing: AXSpacing.xl) {
-                    StatItem(label: "Total Queries", value: "\(stats.totalQueries)")
-                    StatItem(label: "Avg Query Time", value: String(format: "%.2f ms", stats.avgQueryTime))
-                    StatItem(label: "Max Query Time", value: String(format: "%.2f ms", stats.maxQueryTime))
-                    StatItem(label: "Cache Hit Ratio", value: String(format: "%.1f%%", stats.indexUsage * 100))
+                    DBStatItem(label: "Total Queries", value: "\(stats.totalQueries)")
+                    DBStatItem(label: "Avg Query Time", value: String(format: "%.2f ms", stats.avgQueryTime))
+                    DBStatItem(label: "Max Query Time", value: String(format: "%.2f ms", stats.maxQueryTime))
+                    DBStatItem(label: "Cache Hit Ratio", value: String(format: "%.1f%%", stats.indexUsage * 100))
                 }
             }
             .padding(AXSpacing.lg)
@@ -171,7 +171,7 @@ private struct MetricCard: View {
     }
 }
 
-private struct StatItem: View {
+private struct DBStatItem: View {
     let label: String
     let value: String
 

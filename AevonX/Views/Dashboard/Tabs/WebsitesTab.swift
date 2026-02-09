@@ -7,9 +7,10 @@
 
 import SwiftUI
 
-struct WebsitesTab: View {
+struct OldWebsitesTab: View {
     @State private var websites: [Website] = [
         Website(
+// ... (trimmed for brevity, I'll use the tool properly)
             name: "api.aevonx.io",
             domain: "api.aevonx.io",
             status: .online,
@@ -174,7 +175,7 @@ struct WebsitesTab: View {
                             .foregroundColor(.axTextMuted)
                             .frame(width: 60, alignment: .center)
                         
-                        Text("PHP")
+                        Text("MOCK PHP")
                             .font(AXTypography.caption)
                             .fontWeight(.semibold)
                             .foregroundColor(.axTextMuted)
@@ -209,7 +210,7 @@ struct WebsitesTab: View {
                     
                     // Table Rows
                     ForEach(filteredWebsites) { website in
-                        WebsiteRow(website: website)
+                        WebsitesTabRow(website: website)
                         
                         if website.id != filteredWebsites.last?.id {
                             Divider()
@@ -224,54 +225,13 @@ struct WebsitesTab: View {
             Spacer()
         }
         .sheet(isPresented: $showAddWebsite) {
-            AddWebsiteView()
+            AddWebsiteView(serverId: nil, onCreated: {})
         }
     }
 }
 
-// MARK: - Website Stat Card
-struct WebsiteStatCard: View {
-    let title: String
-    let value: String
-    let icon: String
-    let color: Color
-    
-    var body: some View {
-        HStack(spacing: AXSpacing.md) {
-            ZStack {
-                Circle()
-                    .fill(color.opacity(0.15))
-                    .frame(width: 40, height: 40)
-                
-                Image(systemName: icon)
-                    .font(.system(size: 16))
-                    .foregroundColor(color)
-            }
-            
-            VStack(alignment: .leading, spacing: AXSpacing.xxs) {
-                Text(value)
-                    .font(AXTypography.title2)
-                    .fontWeight(.bold)
-                    .foregroundColor(.axTextPrimary)
-                
-                Text(title)
-                    .font(AXTypography.caption)
-                    .foregroundColor(.axTextSecondary)
-            }
-        }
-        .padding(.horizontal, AXSpacing.md)
-        .padding(.vertical, AXSpacing.sm)
-        .background(Color.axSurface)
-        .overlay(
-            RoundedRectangle(cornerRadius: AXCornerRadius.md)
-                .stroke(Color.axBorder, lineWidth: 1)
-        )
-        .cornerRadius(AXCornerRadius.md)
-    }
-}
-
-// MARK: - Website Row
-struct WebsiteRow: View {
+// MARK: - Websites Tab Row
+private struct WebsitesTabRow: View {
     @State var website: Website
     
     var body: some View {
@@ -411,124 +371,11 @@ struct WebsiteRow: View {
     }
 }
 
-// MARK: - Add Website View
-struct AddWebsiteView: View {
-    @Environment(\.dismiss) private var dismiss
-    @State private var domain = ""
-    @State private var phpVersion = "8.2"
-    @State private var enableSSL = true
-    
-    var body: some View {
-        VStack(spacing: AXSpacing.xl) {
-            // Header
-            HStack {
-                Text("Add New Website")
-                    .font(AXTypography.title)
-                    .foregroundColor(.axTextPrimary)
-                
-                Spacer()
-                
-                Button(action: { dismiss() }) {
-                    Image(systemName: "xmark")
-                        .font(.system(size: 14))
-                        .foregroundColor(.axTextSecondary)
-                        .frame(width: 28, height: 28)
-                        .background(Color.axSurface)
-                        .cornerRadius(AXCornerRadius.sm)
-                }
-                .buttonStyle(PlainButtonStyle())
-            }
-            
-            Divider()
-                .background(Color.axBorder)
-            
-            // Form
-            VStack(alignment: .leading, spacing: AXSpacing.lg) {
-                VStack(alignment: .leading, spacing: AXSpacing.sm) {
-                    Text("Domain Name")
-                        .font(AXTypography.caption)
-                        .foregroundColor(.axTextSecondary)
-                    
-                    TextField("example.com", text: $domain)
-                        .font(AXTypography.body)
-                        .foregroundColor(.axTextPrimary)
-                        .padding(AXSpacing.md)
-                        .background(Color.axSurface)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: AXCornerRadius.md)
-                                .stroke(Color.axBorder, lineWidth: 1)
-                        )
-                        .cornerRadius(AXCornerRadius.md)
-                }
-                
-                VStack(alignment: .leading, spacing: AXSpacing.sm) {
-                    Text("PHP Version")
-                        .font(AXTypography.caption)
-                        .foregroundColor(.axTextSecondary)
-                    
-                    Picker("", selection: $phpVersion) {
-                        Text("8.3").tag("8.3")
-                        Text("8.2").tag("8.2")
-                        Text("8.1").tag("8.1")
-                        Text("8.0").tag("8.0")
-                        Text("7.4").tag("7.4")
-                    }
-                    .pickerStyle(SegmentedPickerStyle())
-                }
-                
-                HStack {
-                    VStack(alignment: .leading, spacing: AXSpacing.xxs) {
-                        Text("Enable SSL")
-                            .font(AXTypography.body)
-                            .foregroundColor(.axTextPrimary)
-                        
-                        Text("Auto-generate Let's Encrypt certificate")
-                            .font(AXTypography.caption)
-                            .foregroundColor(.axTextTertiary)
-                    }
-                    
-                    Spacer()
-                    
-                    Toggle("", isOn: $enableSSL)
-                        .toggleStyle(SwitchToggleStyle(tint: .axAccentGreen))
-                        .frame(width: 40)
-                }
-            }
-            
-            Spacer()
-            
-            // Actions
-            HStack(spacing: AXSpacing.md) {
-                Button(action: { dismiss() }) {
-                    Text("Cancel")
-                        .font(AXTypography.subheadline)
-                        .foregroundColor(.axTextSecondary)
-                        .padding(.horizontal, AXSpacing.lg)
-                        .padding(.vertical, AXSpacing.sm)
-                }
-                .buttonStyle(PlainButtonStyle())
-                
-                Button(action: { dismiss() }) {
-                    Text("Create Website")
-                        .font(AXTypography.subheadline)
-                        .fontWeight(.semibold)
-                        .foregroundColor(.axBackground)
-                        .padding(.horizontal, AXSpacing.lg)
-                        .padding(.vertical, AXSpacing.sm)
-                        .background(Color.axAccentBlue)
-                        .cornerRadius(AXCornerRadius.md)
-                }
-                .buttonStyle(PlainButtonStyle())
-            }
-        }
-        .padding(AXSpacing.xl)
-        .frame(width: 450, height: 400)
-        .background(Color.axBackground)
-    }
-}
+
+
 
 #Preview {
-    WebsitesTab()
+    OldWebsitesTab()
         .padding()
         .background(Color.axBackground)
 }

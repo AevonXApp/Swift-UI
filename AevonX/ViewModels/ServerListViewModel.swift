@@ -340,16 +340,12 @@ class ServerListViewModel: ObservableObject {
                 showRecoveryKeyInput = false
                 showDecryptionError = false
                 decryptionError = nil
-                
-                // Retry decryption
-                await decryptServersForDisplay()
-            } else {
                 CoreLogger.shared.error("Recovery key was not accepted", module: "ServerList")
-                decryptionError = .unknown("مفتاح الاسترداد غير صحيح")
+                decryptionError = .unknown("Invalid recovery key")
             }
         } catch {
             CoreLogger.shared.error("Failed to restore with recovery key: \(error.localizedDescription)", module: "ServerList")
-            decryptionError = .unknown("فشل استعادة المفاتيح: \(error.localizedDescription)")
+            decryptionError = .unknown("Failed to restore keys: \(error.localizedDescription)")
         }
     }
     

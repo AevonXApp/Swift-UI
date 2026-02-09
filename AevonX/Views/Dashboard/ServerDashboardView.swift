@@ -50,7 +50,7 @@ struct ServerDashboardView: View {
                     case .overview:
                         OverviewTab(server: server, serverId: serverId, viewModel: viewModel)
                     case .websites:
-                        WebsitesTab()
+                        ModernWebsitesTab(server: server, serverId: serverId, connectionViewModel: viewModel)
                     case .databases:
                         ModernDatabasesTab(server: server, serverId: serverId, connectionViewModel: viewModel)
                     case .applications:

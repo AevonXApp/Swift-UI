@@ -70,11 +70,11 @@ struct DatabasesTab: View {
             
             // MARK: - Tab Switcher
             HStack(spacing: 0) {
-                TabButton(title: "Databases", icon: "cylinder.split.1x2", isSelected: activeTab == 0) {
+                DatabaseTabButton(title: "Databases", icon: "cylinder.split.1x2", isSelected: activeTab == 0) {
                     activeTab = 0
                 }
                 
-                TabButton(title: "Users", icon: "person.2", isSelected: activeTab == 1) {
+                DatabaseTabButton(title: "Users", icon: "person.2", isSelected: activeTab == 1) {
                     activeTab = 1
                 }
                 
@@ -89,6 +89,7 @@ struct DatabasesTab: View {
             } else {
                 usersContent
             }
+
         }
         .sheet(isPresented: $showAddDatabase) {
             AddDatabaseView()
@@ -636,9 +637,9 @@ private struct LegacyDatabaseUserInfo: Identifiable {
     var lastActive: Date?
 }
 
-// MARK: - Tab Button
+// MARK: - Database Tab Button
 
-struct TabButton: View {
+struct DatabaseTabButton: View {
     let title: String
     let icon: String
     let isSelected: Bool
