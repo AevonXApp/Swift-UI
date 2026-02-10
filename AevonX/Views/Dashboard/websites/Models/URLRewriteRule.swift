@@ -20,18 +20,20 @@ public typealias RewriteTestResult = AevonXCore.RewriteTestResult
 extension URLRewriteRule {
     /// Whether this is a permanent redirect
     public var isPermanent: Bool {
-        statusCode == 301 || statusCode == 308
+        return statusCode == 301 || statusCode == 308
     }
 
     /// Whether this uses regex pattern
     public var isRegex: Bool {
-        sourcePattern.contains("^") || sourcePattern.contains("$") || sourcePattern.contains(".*")
+        return sourcePattern.contains("^") || sourcePattern.contains("$") || sourcePattern.contains(".*")
     }
 
     /// Formatted rule type
     public var ruleType: String {
-        if statusCode >= 300 && statusCode < 400 {
-            return isPermanent ? "Permanent Redirect" : "Temporary Redirect"
+        let code = statusCode
+        if code >= 300 && code < 400 {
+            let permanent = (code == 301 || code == 308)
+            return permanent ? "Permanent Redirect" : "Temporary Redirect"
         } else {
             return "Rewrite"
         }
