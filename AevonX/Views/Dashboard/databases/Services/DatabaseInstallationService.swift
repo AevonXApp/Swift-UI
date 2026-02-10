@@ -278,7 +278,7 @@ public final class DatabaseInstallationService: ObservableObject {
             
             // Trigger Error Resolution Service
             if let stepError = error as? DatabaseInstallationError {
-                if case .stepFailed(let stepName, let reason) = stepError {
+                if case .stepFailed(_, let reason) = stepError {
                     // Create a log entry for context
                     let errorLog = InstallationLog(
                         level: .error,

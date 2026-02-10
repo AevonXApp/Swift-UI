@@ -49,7 +49,7 @@ struct ConfigEditorSheet: View {
             }
         }
         // Respond to showConfigEditor change to dismiss if needed
-        .onChange(of: viewModel.showConfigEditor) { show in
+        .onChange(of: viewModel.showConfigEditor) { _, show in
             if !show {
                 presentationMode.wrappedValue.dismiss()
             }

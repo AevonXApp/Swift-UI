@@ -42,11 +42,11 @@ struct DBEDOverviewTab: View {
 
                 Divider()
 
-                InfoRow(label: "Type", value: viewModel.databaseType.displayName)
-                InfoRow(label: "Version", value: viewModel.formattedVersion)
-                InfoRow(label: "Install Path", value: viewModel.formattedInstallPath)
-                InfoRow(label: "Status", value: viewModel.engineInfo?.status.rawValue.capitalized ?? "Unknown")
-                InfoRow(label: "Service", value: viewModel.isRunning ? "Running" : "Stopped")
+                DBInfoRow(label: "Type", value: viewModel.databaseType.displayName)
+                DBInfoRow(label: "Version", value: viewModel.formattedVersion)
+                DBInfoRow(label: "Install Path", value: viewModel.formattedInstallPath)
+                DBInfoRow(label: "Status", value: viewModel.engineInfo?.status.rawValue.capitalized ?? "Unknown")
+                DBInfoRow(label: "Service", value: viewModel.isRunning ? "Running" : "Stopped")
             }
             .padding(AXSpacing.lg)
         }
@@ -60,21 +60,21 @@ struct DBEDOverviewTab: View {
             GridItem(.flexible()),
             GridItem(.flexible())
         ], spacing: AXSpacing.lg) {
-            MetricCard(
+            DBMetricCard(
                 title: "Uptime",
                 value: formatUptime(metrics.uptime),
                 icon: "clock",
                 color: viewModel.databaseType.brandColor
             )
 
-            MetricCard(
+            DBMetricCard(
                 title: "Connections",
                 value: "\(metrics.connections)/\(metrics.maxConnections)",
                 icon: "link",
                 color: .axAccentGreen
             )
 
-            MetricCard(
+            DBMetricCard(
                 title: "Memory",
                 value: String(format: "%.1f MB", metrics.memoryUsage),
                 icon: "memorychip",
@@ -122,7 +122,7 @@ struct DBEDOverviewTab: View {
 
 // MARK: - Supporting Views
 
-private struct InfoRow: View {
+private struct DBInfoRow: View {
     let label: String
     let value: String
 
@@ -139,7 +139,7 @@ private struct InfoRow: View {
     }
 }
 
-private struct MetricCard: View {
+private struct DBMetricCard: View {
     let title: String
     let value: String
     let icon: String

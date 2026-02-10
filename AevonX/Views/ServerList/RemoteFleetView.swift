@@ -1178,7 +1178,7 @@ struct RemoteServerCard: View {
     
     private var customColor: Color {
         if let hex = server.customColor {
-            return Color(hex: hex) ?? .axAccentBlue
+            return Color(hex: hex)
         }
         return .axAccentBlue
     }
@@ -1312,7 +1312,7 @@ struct RemoteServerRow: View {
     
     private var customColor: Color {
         if let hex = server.customColor {
-            return Color(hex: hex) ?? .axAccentBlue
+            return Color(hex: hex)
         }
         return .axAccentBlue
     }
