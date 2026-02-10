@@ -6,7 +6,7 @@
 //  Coordinates between UI and Core layer for website lifecycle management
 //
 //  ARCHITECTURE: UI Layer Service
-//  - Uses CoreWebsiteService from Core layer for all server operations
+//  - Uses specialized core services from Core layer for all server operations
 //  - NEVER executes SSH commands directly
 //
 
@@ -20,8 +20,7 @@ import Combine
 /// Service for managing website operations in the UI layer
 /// Coordinates between UI and Core layer for website lifecycle
 ///
-/// IMPORTANT: This service does NOT execute SSH commands directly.
-/// All server operations go through CoreWebsiteService in the Core layer.
+/// All server operations go through specialized core services in the Core layer.
 @MainActor
 public final class WebsiteOperationService: ObservableObject {
 
@@ -105,7 +104,7 @@ public final class WebsiteOperationService: ObservableObject {
         CoreLogger.shared.info("Checking website health for \(websiteId)",
                               module: "WebsiteOperationService")
 
-        let coreHealth = try await CoreWebsiteService.shared.checkWebsiteHealth(
+        let coreHealth = try await WebsiteAnalyticsService.shared.checkWebsiteHealth(
             websiteId: websiteId,
             serverId: serverId
         )
@@ -146,7 +145,7 @@ public final class WebsiteOperationService: ObservableObject {
         )
 
         do {
-            try await CoreWebsiteService.shared.renewSSL(
+            try await WebsiteSSLService.shared.renewSSL(
                 websiteId: websiteId,
                 serverId: serverId
             )

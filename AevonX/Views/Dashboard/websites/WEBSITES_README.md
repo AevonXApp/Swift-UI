@@ -35,7 +35,7 @@ websites/
 **Key Features:**
 - `@MainActor` for thread safety
 - `@Published` properties for reactive UI
-- Interfaces with `CoreWebsiteService` from AevonXCore
+- Interfaces with specialized core services from AevonXCore (WebsiteManagementService, etc.)
 - NEVER executes SSH commands directly
 - Comprehensive error handling
 - Loading states and connection management
@@ -71,7 +71,7 @@ SwiftUI View
     ↓
 ViewModel (@Published)
     ↓
-CoreWebsiteService (AevonXCore)
+Website specialized services (AevonXCore)
     ↓
 SSH/API Execution
     ↓
@@ -96,39 +96,30 @@ SwiftUI View Updates
 
 ## 🔌 Backend Integration
 
-### CoreWebsiteService (AevonXCore)
+### Specialized Website Services (AevonXCore)
 
-The UI layer depends on `CoreWebsiteService` from AevonXCore package:
+The UI layer depends on specialized website services from AevonXCore package:
 
 ```swift
-public final class CoreWebsiteService {
-    public static let shared: CoreWebsiteService
+// Website lifecycle management
+public final class WebsiteLifecycleService { ... }
 
-    // Website CRUD
-    func listWebsites(serverId: String) async throws -> [CoreWebsiteInfo]
-    func createWebsite(...) async throws
-    func deleteWebsite(...) async throws
+// Website configuration and management
+public final class WebsiteManagementService { ... }
 
-    // Lifecycle
-    func startWebsite(...) async throws
-    func stopWebsite(...) async throws
-    func restartWebsite(...) async throws
+// URL rewrites and redirection
+public final class WebsiteRewriteService { ... }
 
-    // Deployment
-    func deployWebsite(...) async throws
+// Security and SSL management
+public final class WebsiteSecurityService { ... }
 
-    // SSL
-    func enableSSL(...) async throws
-    func renewSSL(...) async throws
-
-    // Health
-    func checkWebsiteHealth(...) async throws -> CoreWebsiteHealth
-}
+// Analytics and visitor tracking
+public final class WebsiteAnalyticsService { ... }
 ```
 
 ### Current Status
 
-⚠️ **CoreWebsiteService is currently stubbed** in `CoreWebsiteService+Stub.swift`
+⚠️ **Specialized services are implemented in AevonXCore**
 
 This temporary stub:
 - Logs warnings when methods are called
@@ -149,7 +140,7 @@ This temporary stub:
 |--------|-----------------|-----------------|
 | **Architecture** | 3-tier (Models/ViewModels/Services) | ✅ Same |
 | **ViewModel Pattern** | `DatabaseManagementViewModel` | ✅ `WebsiteManagementViewModel` |
-| **Core Service** | `CoreDatabaseService.shared` | ✅ `CoreWebsiteService.shared` |
+| **Core Service** | Specialized services (DatabaseEngineService, etc.) | ✅ Specialized services (WebsiteLifecycleService, etc.) |
 | **Loading States** | Full loading/error/empty | ✅ Same |
 | **Connection Check** | Required `ServerConnectionViewModel` | ✅ Same |
 | **Domain Models** | `DatabaseInfo`, `DatabaseStatus` | ✅ `WebsiteInfo`, `WebsiteStatus` |
@@ -198,9 +189,9 @@ try await viewModel.toggleWebsite(website)
 
 // WebsiteManagementViewModel calls:
 if website.status == .online {
-    try await CoreWebsiteService.shared.stopWebsite(...)
+    try await WebsiteLifecycleService.shared.stopWebsite(...)
 } else {
-    try await CoreWebsiteService.shared.startWebsite(...)
+    try await WebsiteLifecycleService.shared.startWebsite(...)
 }
 
 // Reloads data to reflect new state

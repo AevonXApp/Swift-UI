@@ -63,7 +63,11 @@ public final class WebsiteDetailViewModel: ObservableObject {
 
     // MARK: - Services
 
-    private let coreService = CoreWebsiteService.shared
+    private let websiteManager = WebsiteConfigService.shared
+    private let lifecycleService = WebsiteLifecycleService.shared
+    private let logService = WebsiteLogService.shared
+    private let deploymentService = WebsiteDeploymentService.shared
+    private let sslService = WebsiteSSLService.shared
 
     // MARK: - Initialization
 
@@ -96,7 +100,7 @@ public final class WebsiteDetailViewModel: ObservableObject {
         errorMessage = nil
         
         do {
-            logs = try await coreService.getWebsiteLogs(websiteId: website.domain, serverId: serverId)
+            logs = try await logService.getWebsiteLogs(websiteId: website.domain, serverId: serverId)
         } catch {
             errorMessage = "Failed to fetch logs: \(error.localizedDescription)"
             toastManager.showError(errorMessage!)
@@ -112,7 +116,7 @@ public final class WebsiteDetailViewModel: ObservableObject {
         isLoadingAll = true
 
         do {
-            let updatedCore = try await coreService.getWebsiteConfiguration(websiteId: website.domain, serverId: serverId)
+            let updatedCore = try await websiteManager.getWebsiteConfiguration(websiteId: website.domain, serverId: serverId)
 
             // Sync UI model
             self.website.aliases = updatedCore.aliases
@@ -158,7 +162,7 @@ public final class WebsiteDetailViewModel: ObservableObject {
         deploymentLogs = "Starting deployment...\n"
         
         do {
-            try await coreService.deployWebsite(websiteId: website.domain, serverId: serverId)
+            try await deploymentService.deployWebsite(websiteId: website.domain, serverId: serverId)
             deploymentLogs += "Deployment successful!\n"
             // Update last deployed time locally for feedback
             website.lastDeployed = Date()
@@ -191,7 +195,7 @@ public final class WebsiteDetailViewModel: ObservableObject {
                 configPath: website.configPath
             )
             
-            try await coreService.updateWebsiteConfiguration(
+            try await websiteManager.updateWebsiteConfiguration(
                 websiteId: website.domain,
                 configuration: updatedCoreInfo,
                 serverId: serverId
@@ -219,10 +223,10 @@ public final class WebsiteDetailViewModel: ObservableObject {
         
         do {
             if shouldEnable {
-                try await coreService.startWebsite(websiteId: website.domain, serverId: serverId)
+                try await lifecycleService.startWebsite(websiteId: website.domain, serverId: serverId)
                 website.status = .online
             } else {
-                try await coreService.stopWebsite(websiteId: website.domain, serverId: serverId)
+                try await lifecycleService.stopWebsite(websiteId: website.domain, serverId: serverId)
                 website.status = .offline
             }
         } catch {
@@ -252,8 +256,8 @@ public final class WebsiteDetailViewModel: ObservableObject {
         isLoadingStats = true
         
         do {
-            let count = try await coreService.getConnectionCount(websiteId: website.domain, serverId: serverId)
-            let details = try await coreService.getDetailedConnections(websiteId: website.domain, serverId: serverId)
+            let count = try await websiteManager.getConnectionCount(websiteId: website.domain, serverId: serverId)
+            let details = try await websiteManager.getDetailedConnections(websiteId: website.domain, serverId: serverId)
             
             self.activeConnections = count
             self.connectionList = details.map { 
@@ -277,7 +281,7 @@ public final class WebsiteDetailViewModel: ObservableObject {
         isUpdatingPort = true
         
         do {
-            try await coreService.updatePort(websiteId: website.domain, newPort: customPort, serverId: serverId)
+            try await websiteManager.updatePort(websiteId: website.domain, newPort: customPort, serverId: serverId)
             website.port = customPort
             toastManager.showSuccess("Port updated to \(customPort)")
         } catch {
@@ -292,7 +296,7 @@ public final class WebsiteDetailViewModel: ObservableObject {
         guard let serverId = serverId else { return }
         
         do {
-            try await coreService.renewSSL(websiteId: website.domain, serverId: serverId)
+            try await sslService.renewSSL(websiteId: website.domain, serverId: serverId)
             toastManager.showSuccess("SSL Renewal Started")
         } catch {
             toastManager.showError("SSL Renewal Failed: \(error.localizedDescription)")
@@ -304,7 +308,7 @@ public final class WebsiteDetailViewModel: ObservableObject {
         guard let serverId = serverId else { return }
         
         do {
-            try await coreService.restartWebsite(websiteId: website.domain, serverId: serverId)
+            try await lifecycleService.restartWebsite(websiteId: website.domain, serverId: serverId)
             toastManager.showSuccess("Service Restarted")
         } catch {
             toastManager.showError("Restart Failed: \(error.localizedDescription)")
@@ -319,7 +323,7 @@ public final class WebsiteDetailViewModel: ObservableObject {
         isLoadingPHPVersions = true
         
         do {
-            installedPHPVersions = try await coreService.getInstalledPHPVersions(serverId: serverId)
+            installedPHPVersions = try await websiteManager.getInstalledPHPVersions(serverId: serverId)
         } catch {
             print("Failed to fetch PHP versions: \(error)")
         }
@@ -343,7 +347,7 @@ public final class WebsiteDetailViewModel: ObservableObject {
         isLoadingBrowsingItems = true
         
         do {
-            browsingItems = try await coreService.listDirectories(path: path, serverId: serverId)
+            browsingItems = try await websiteManager.listDirectories(path: path, serverId: serverId)
         } catch {
             errorMessage = "Failed to browse: \(error.localizedDescription)"
         }

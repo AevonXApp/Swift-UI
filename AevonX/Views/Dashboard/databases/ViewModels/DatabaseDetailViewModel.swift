@@ -199,7 +199,7 @@ public final class DatabaseDetailViewModel: ObservableObject {
 
         isLoading = true
         do {
-            tables = try await CoreDatabaseService.shared.listTables(
+            tables = try await DatabaseTableService.shared.listTables(
                 database: database.name,
                 type: database.type,
                 serverId: serverId
@@ -237,13 +237,13 @@ public final class DatabaseDetailViewModel: ObservableObject {
 
         isLoading = true
         do {
-            async let structure = CoreDatabaseService.shared.describeTable(
+            async let structure = DatabaseTableService.shared.describeTable(
                 database: database.name,
                 table: table.name,
                 type: database.type,
                 serverId: serverId
             )
-            async let indexes = CoreDatabaseService.shared.getTableIndexes(
+            async let indexes = DatabaseTableService.shared.getTableIndexes(
                 database: database.name,
                 table: table.name,
                 type: database.type,
@@ -263,7 +263,7 @@ public final class DatabaseDetailViewModel: ObservableObject {
 
         isLoading = true
         do {
-            browseResult = try await CoreDatabaseService.shared.browseRows(
+            browseResult = try await DatabaseRowService.shared.browseRows(
                 database: database.name,
                 table: table.name,
                 page: currentPage,
@@ -313,7 +313,7 @@ public final class DatabaseDetailViewModel: ObservableObject {
         let startTime = Date()
 
         do {
-            queryResult = try await CoreDatabaseService.shared.executeQuery(
+            queryResult = try await DatabaseRowService.shared.executeQuery(
                 database: database.name,
                 query: query,
                 type: database.type,
@@ -354,7 +354,7 @@ public final class DatabaseDetailViewModel: ObservableObject {
         operationResult = .inProgress(message: "Creating backup of '\(database.name)'...", progress: nil)
 
         do {
-            let backup = try await CoreDatabaseService.shared.createBackup(
+            let backup = try await DatabaseBackupService.shared.createBackup(
                 database: database.name,
                 type: database.type,
                 serverId: serverId
@@ -374,7 +374,7 @@ public final class DatabaseDetailViewModel: ObservableObject {
         guard let serverId = serverId else { return }
 
         do {
-            backups = try await CoreDatabaseService.shared.listBackups(
+            backups = try await DatabaseBackupService.shared.listBackups(
                 type: database.type,
                 serverId: serverId
             )
@@ -398,7 +398,7 @@ public final class DatabaseDetailViewModel: ObservableObject {
 
         operationResult = .inProgress(message: "Dropping table '\(tableName)'...", progress: nil)
         do {
-            try await CoreDatabaseService.shared.dropTable(
+            try await DatabaseTableService.shared.dropTable(
                 database: database.name,
                 table: tableName,
                 type: database.type,
@@ -421,7 +421,7 @@ public final class DatabaseDetailViewModel: ObservableObject {
 
         operationResult = .inProgress(message: "Truncating table '\(tableName)'...", progress: nil)
         do {
-            try await CoreDatabaseService.shared.truncateTable(
+            try await DatabaseTableService.shared.truncateTable(
                 database: database.name,
                 table: tableName,
                 type: database.type,
@@ -444,7 +444,7 @@ public final class DatabaseDetailViewModel: ObservableObject {
 
         operationResult = .inProgress(message: "Optimizing table '\(tableName)'...", progress: nil)
         do {
-            _ = try await CoreDatabaseService.shared.optimizeTable(
+            _ = try await DatabaseTableService.shared.optimizeTable(
                 database: database.name,
                 table: tableName,
                 type: database.type,
@@ -463,7 +463,7 @@ public final class DatabaseDetailViewModel: ObservableObject {
 
         operationResult = .inProgress(message: "Analyzing table '\(tableName)'...", progress: nil)
         do {
-            _ = try await CoreDatabaseService.shared.analyzeTable(
+            _ = try await DatabaseTableService.shared.analyzeTable(
                 database: database.name,
                 table: tableName,
                 type: database.type,
@@ -484,7 +484,7 @@ public final class DatabaseDetailViewModel: ObservableObject {
 
         operationResult = .inProgress(message: "Creating table '\(name)'...", progress: nil)
         do {
-            try await CoreDatabaseService.shared.createTable(
+            try await DatabaseTableService.shared.createTable(
                 database: database.name,
                 table: name,
                 columns: columns,
@@ -510,7 +510,7 @@ public final class DatabaseDetailViewModel: ObservableObject {
 
         operationResult = .inProgress(message: "Adding column '\(column.name)'...", progress: nil)
         do {
-            try await CoreDatabaseService.shared.addColumn(
+            try await DatabaseTableService.shared.addColumn(
                 database: database.name,
                 table: table.name,
                 column: column,
@@ -533,7 +533,7 @@ public final class DatabaseDetailViewModel: ObservableObject {
 
         operationResult = .inProgress(message: "Dropping column '\(columnName)'...", progress: nil)
         do {
-            try await CoreDatabaseService.shared.dropColumn(
+            try await DatabaseTableService.shared.dropColumn(
                 database: database.name,
                 table: table.name,
                 columnName: columnName,
@@ -555,7 +555,7 @@ public final class DatabaseDetailViewModel: ObservableObject {
         guard let serverId = serverId, let table = selectedTable else { return }
 
         do {
-            try await CoreDatabaseService.shared.insertRow(
+            try await DatabaseRowService.shared.insertRow(
                 database: database.name,
                 table: table.name,
                 values: values,
@@ -577,7 +577,7 @@ public final class DatabaseDetailViewModel: ObservableObject {
         guard let serverId = serverId, let table = selectedTable else { return }
 
         do {
-            try await CoreDatabaseService.shared.updateRow(
+            try await DatabaseRowService.shared.updateRow(
                 database: database.name,
                 table: table.name,
                 primaryKey: primaryKey,
@@ -604,7 +604,7 @@ public final class DatabaseDetailViewModel: ObservableObject {
         guard let serverId = serverId else { return }
 
         do {
-            try await CoreDatabaseService.shared.deleteRow(
+            try await DatabaseRowService.shared.deleteRow(
                 database: database.name,
                 table: table.name,
                 primaryKey: pk,
@@ -638,7 +638,7 @@ public final class DatabaseDetailViewModel: ObservableObject {
         }
 
         do {
-            try await CoreDatabaseService.shared.deleteRows(
+            try await DatabaseRowService.shared.deleteRows(
                 database: database.name,
                 table: table.name,
                 primaryKeys: pks,
@@ -689,7 +689,7 @@ public final class DatabaseDetailViewModel: ObservableObject {
         }
 
         do {
-            browseResult = try await CoreDatabaseService.shared.searchRows(
+            browseResult = try await DatabaseRowService.shared.searchRows(
                 database: database.name,
                 table: table.name,
                 searchText: search,
@@ -762,7 +762,7 @@ public final class DatabaseDetailViewModel: ObservableObject {
         guard let serverId = serverId else { return }
 
         do {
-            try await CoreDatabaseService.shared.deleteBackup(
+            try await DatabaseBackupService.shared.deleteBackup(
                 backupId: backupId,
                 type: database.type,
                 serverId: serverId
@@ -783,7 +783,7 @@ public final class DatabaseDetailViewModel: ObservableObject {
         let progressId = GlobalToastManager.shared.showProgress("Downloading backup...")
 
         do {
-            let data = try await CoreDatabaseService.shared.downloadBackup(
+            let data = try await DatabaseBackupService.shared.downloadBackup(
                 backupId: backupId,
                 type: database.type,
                 serverId: serverId
@@ -822,7 +822,7 @@ public final class DatabaseDetailViewModel: ObservableObject {
         let progressId = GlobalToastManager.shared.showProgress("Importing SQL...")
 
         do {
-            _ = try await CoreDatabaseService.shared.importSQL(
+            _ = try await DatabaseBackupService.shared.importSQL(
                 database: database.name,
                 sqlContent: content,
                 type: database.type,

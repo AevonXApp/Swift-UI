@@ -238,7 +238,7 @@ public final class AddDatabaseViewModel: ObservableObject {
 
         do {
             // Step 1: Create the database
-            try await CoreDatabaseService.shared.createDatabase(
+            try await DatabaseManagementService.shared.createDatabase(
                 name: databaseName,
                 type: type,
                 characterSet: selectedCharset == "default" ? nil : selectedCharset,
@@ -250,7 +250,7 @@ public final class AddDatabaseViewModel: ObservableObject {
             if shouldCreateUser {
                 operationResult = .inProgress(message: "Creating user '\(username)'...", progress: nil)
 
-                try await CoreDatabaseService.shared.createUser(
+                try await DatabaseUserService.shared.createUser(
                     username: username,
                     password: password,
                     host: host,
@@ -262,7 +262,7 @@ public final class AddDatabaseViewModel: ObservableObject {
                 if grantAllPrivileges {
                     operationResult = .inProgress(message: "Granting privileges...", progress: nil)
 
-                    try await CoreDatabaseService.shared.grantPrivileges(
+                    try await DatabaseUserService.shared.grantPrivileges(
                         username: username,
                         host: host,
                         database: databaseName,

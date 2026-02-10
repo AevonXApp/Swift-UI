@@ -37,7 +37,7 @@ public final class LogManagementViewModel: ObservableObject {
 
     private let website: WebsiteInfo
     private let serverId: String?
-    private let coreService = CoreWebsiteService.shared
+    private let logService = WebsiteLogService.shared
     private let toastManager = GlobalToastManager.shared
 
     private var autoRefreshTimer: Timer?
@@ -72,7 +72,7 @@ public final class LogManagementViewModel: ObservableObject {
         do {
             switch selectedLogType {
             case .access:
-                accessLogs = try await coreService.getAccessLogs(
+                accessLogs = try await logService.getAccessLogs(
                     domain: website.domain,
                     serverId: serverId,
                     limit: currentLimit,
@@ -81,7 +81,7 @@ public final class LogManagementViewModel: ObservableObject {
                 hasMore = accessLogs.count >= currentLimit
 
             case .error:
-                errorLogs = try await coreService.getErrorLogs(
+                errorLogs = try await logService.getErrorLogs(
                     domain: website.domain,
                     serverId: serverId,
                     limit: currentLimit,

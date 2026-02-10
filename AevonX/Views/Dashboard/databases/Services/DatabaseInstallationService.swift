@@ -76,7 +76,7 @@ public final class DatabaseInstallationService: ObservableObject {
         // Gather server information via Core layer
         let osInfo: ServerOSInfo
         do {
-            osInfo = try await CoreDatabaseService.shared.getServerOSInfo(serverId: serverId)
+            osInfo = try await DatabaseResourceService.shared.getServerOSInfo(serverId: serverId)
             CoreLogger.shared.debug("OS Info: \(osInfo.prettyName) (\(osInfo.id))",
                                    module: "DatabaseInstallationService")
         } catch {
@@ -87,7 +87,7 @@ public final class DatabaseInstallationService: ObservableObject {
 
         let resources: ServerResources
         do {
-            resources = try await CoreDatabaseService.shared.getServerResources(serverId: serverId)
+            resources = try await DatabaseResourceService.shared.getServerResources(serverId: serverId)
             CoreLogger.shared.debug("Resources: \(resources.totalMemoryMB)MB RAM, \(resources.availableDiskGB)GB disk",
                                    module: "DatabaseInstallationService")
         } catch {
@@ -97,7 +97,7 @@ public final class DatabaseInstallationService: ObservableObject {
         }
 
         // Detect existing installations via Core layer
-        let existingInstallations = await CoreDatabaseService.shared.detectInstalledDatabases(serverId: serverId)
+        let existingInstallations = await DatabaseEngineService.shared.detectInstalledDatabases(serverId: serverId)
         let existingTypes = existingInstallations.filter { $0.isInstalled }.map { $0.type }
         CoreLogger.shared.debug("Found \(existingTypes.count) installed database types",
                                module: "DatabaseInstallationService")
@@ -368,7 +368,7 @@ public final class DatabaseInstallationService: ObservableObject {
                     step: index + 1
                 ))
 
-                let result = try await CoreDatabaseService.shared.executeInstallationCommand(
+                let result = try await SSHService.shared.execute(
                     command,
                     serverId: serverId
                 )
@@ -415,7 +415,7 @@ public final class DatabaseInstallationService: ObservableObject {
                 CoreLogger.shared.debug("Validating step \(index + 1)",
                                        module: "DatabaseInstallationService")
 
-                let validationResult = try await CoreDatabaseService.shared.executeInstallationCommand(
+                let validationResult = try await SSHService.shared.execute(
                     validationCommand,
                     serverId: serverId
                 )

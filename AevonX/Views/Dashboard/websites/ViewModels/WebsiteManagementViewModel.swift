@@ -6,7 +6,7 @@
 //  Handles all website operations and state management
 //
 //  ARCHITECTURE: UI Layer ViewModel
-//  - Uses CoreWebsiteService from Core layer for all website operations
+//  - Uses specialized core services from Core layer for all website operations
 //  - NEVER executes SSH commands directly
 //  - Responsible only for UI state management and data presentation
 //
@@ -21,8 +21,7 @@ import AevonXCore
 /// Main ViewModel for the website management system
 /// Coordinates between UI and Core layer
 ///
-/// IMPORTANT: This ViewModel does NOT execute SSH commands directly.
-/// All server operations go through CoreWebsiteService in the Core layer.
+/// All server operations go through specialized core services in the Core layer.
 @MainActor
 public final class WebsiteManagementViewModel: ObservableObject {
 
@@ -73,7 +72,7 @@ public final class WebsiteManagementViewModel: ObservableObject {
 
     // MARK: - Services
 
-    // NOTE: We use CoreWebsiteService for all website operations
+    // NOTE: We use specialized core services for all website operations
     // This ensures proper architecture separation (UI -> Core -> SSH)
     private var cancellables = Set<AnyCancellable>()
 
@@ -133,7 +132,7 @@ public final class WebsiteManagementViewModel: ObservableObject {
     private func loadAllWebsites(serverId: String) async {
         do {
             // Call Core layer to get websites
-            let coreWebsites = try await CoreWebsiteService.shared.listWebsites(serverId: serverId)
+            let coreWebsites = try await WebsiteListService.shared.listWebsites(serverId: serverId)
 
             // Convert Core models to UI models
             let uiWebsites = coreWebsites.map { coreWebsite in
@@ -243,7 +242,7 @@ public final class WebsiteManagementViewModel: ObservableObject {
             throw WebsiteOperationError.serverNotConfigured
         }
 
-        try await CoreWebsiteService.shared.createWebsite(
+        try await WebsiteLifecycleService.shared.createWebsite(
             name: name,
             domain: domain,
             phpVersion: phpVersion,
@@ -263,7 +262,7 @@ public final class WebsiteManagementViewModel: ObservableObject {
             throw WebsiteOperationError.serverNotConfigured
         }
 
-        try await CoreWebsiteService.shared.deleteWebsite(
+        try await WebsiteLifecycleService.shared.deleteWebsite(
             websiteId: website.id.uuidString,
             serverId: serverId
         )
@@ -278,7 +277,7 @@ public final class WebsiteManagementViewModel: ObservableObject {
             throw WebsiteOperationError.serverNotConfigured
         }
 
-        try await CoreWebsiteService.shared.startWebsite(
+        try await WebsiteLifecycleService.shared.startWebsite(
             websiteId: website.id.uuidString,
             serverId: serverId
         )
@@ -292,7 +291,7 @@ public final class WebsiteManagementViewModel: ObservableObject {
             throw WebsiteOperationError.serverNotConfigured
         }
 
-        try await CoreWebsiteService.shared.stopWebsite(
+        try await WebsiteLifecycleService.shared.stopWebsite(
             websiteId: website.id.uuidString,
             serverId: serverId
         )
@@ -315,7 +314,7 @@ public final class WebsiteManagementViewModel: ObservableObject {
             throw WebsiteOperationError.serverNotConfigured
         }
 
-        try await CoreWebsiteService.shared.restartWebsite(
+        try await WebsiteLifecycleService.shared.restartWebsite(
             websiteId: website.id.uuidString,
             serverId: serverId
         )
@@ -329,7 +328,7 @@ public final class WebsiteManagementViewModel: ObservableObject {
             throw WebsiteOperationError.serverNotConfigured
         }
 
-        try await CoreWebsiteService.shared.deployWebsite(
+        try await WebsiteDeploymentService.shared.deployWebsite(
             websiteId: website.id.uuidString,
             serverId: serverId
         )
@@ -343,7 +342,7 @@ public final class WebsiteManagementViewModel: ObservableObject {
             throw WebsiteOperationError.serverNotConfigured
         }
 
-        try await CoreWebsiteService.shared.enableSSL(
+        try await WebsiteSSLService.shared.enableSSL(
             websiteId: website.id.uuidString,
             provider: CoreSSLProvider(rawValue: provider.rawValue) ?? .letsEncrypt,
             serverId: serverId

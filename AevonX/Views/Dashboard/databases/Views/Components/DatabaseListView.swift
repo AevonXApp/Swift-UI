@@ -39,7 +39,7 @@ struct DatabaseListView: View {
         Task {
             guard let serverId = viewModel.serverId else { return }
             do {
-                let _ = try await CoreDatabaseService.shared.createBackup(
+                let _ = try await DatabaseBackupService.shared.createBackup(
                     database: database.name,
                     type: database.type,
                     serverId: serverId

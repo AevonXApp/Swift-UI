@@ -85,7 +85,7 @@ public final class AddWebsiteViewModel: ObservableObject {
         errorMessage = nil
 
         do {
-            try await CoreWebsiteService.shared.createWebsite(
+            try await WebsiteLifecycleService.shared.createWebsite(
                 name: name,
                 domain: domain,
                 phpVersion: runtime == .php ? phpVersion : nil,

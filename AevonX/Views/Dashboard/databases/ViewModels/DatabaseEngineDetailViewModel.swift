@@ -308,7 +308,7 @@ public final class DatabaseEngineDetailViewModel: ObservableObject {
     
     /// Load engine information
     private func loadEngineInfo(serverId: String) async {
-        let info = await CoreDatabaseService.shared.checkDatabaseInstallation(type: databaseType, serverId: serverId)
+        let info = await DatabaseEngineService.shared.checkDatabaseInstallation(type: databaseType, serverId: serverId)
         engineInfo = DatabaseEngineInfo(
             type: databaseType,
             displayName: databaseType.displayName,
@@ -322,8 +322,8 @@ public final class DatabaseEngineDetailViewModel: ObservableObject {
     /// Load server information
     private func loadServerInfo(serverId: String) async {
         do {
-            serverOSInfo = try await CoreDatabaseService.shared.getServerOSInfo(serverId: serverId)
-            serverResources = try await CoreDatabaseService.shared.getServerResources(serverId: serverId)
+            serverOSInfo = try await DatabaseResourceService.shared.getServerOSInfo(serverId: serverId)
+            serverResources = try await DatabaseResourceService.shared.getServerResources(serverId: serverId)
         } catch {
             CoreLogger.shared.debug("Could not load server info: \(error.localizedDescription)", module: "DatabaseEngineDetailViewModel")
         }
@@ -332,7 +332,7 @@ public final class DatabaseEngineDetailViewModel: ObservableObject {
     /// Load metrics
     private func loadMetrics(serverId: String) async {
         do {
-            metrics = try await CoreDatabaseService.shared.getMetrics(type: databaseType, serverId: serverId)
+            metrics = try await DatabaseMetricsService.shared.getMetrics(type: databaseType, serverId: serverId)
         } catch {
             CoreLogger.shared.debug("Could not load metrics: \(error.localizedDescription)", module: "DatabaseEngineDetailViewModel")
         }
@@ -341,7 +341,7 @@ public final class DatabaseEngineDetailViewModel: ObservableObject {
     /// Load performance statistics
     private func loadPerformanceStats(serverId: String) async {
         do {
-            performanceStats = try await CoreDatabaseService.shared.getPerformanceStats(type: databaseType, serverId: serverId)
+            performanceStats = try await DatabaseMetricsService.shared.getPerformanceStats(type: databaseType, serverId: serverId)
         } catch {
             CoreLogger.shared.debug("Could not load performance stats: \(error.localizedDescription)", module: "DatabaseEngineDetailViewModel")
         }
@@ -352,7 +352,7 @@ public final class DatabaseEngineDetailViewModel: ObservableObject {
         guard let serverId = serverId else { return }
         
         do {
-            errorLog = try await CoreDatabaseService.shared.readErrorLog(
+            errorLog = try await DatabaseLogService.shared.readErrorLog(
                 type: databaseType,
                 lines: lines,
                 offset: offset,
@@ -368,7 +368,7 @@ public final class DatabaseEngineDetailViewModel: ObservableObject {
         guard let serverId = serverId else { return }
         
         do {
-            slowQueryLog = try await CoreDatabaseService.shared.readSlowQueryLog(
+            slowQueryLog = try await DatabaseLogService.shared.readSlowQueryLog(
                 type: databaseType,
                 lines: lines,
                 offset: offset,
@@ -384,7 +384,7 @@ public final class DatabaseEngineDetailViewModel: ObservableObject {
         guard let serverId = serverId else { return }
         
         do {
-            configuration = try await CoreDatabaseService.shared.getConfiguration(type: databaseType, serverId: serverId)
+            configuration = try await DatabaseEngineService.shared.getConfiguration(type: databaseType, serverId: serverId)
             
             if databaseType == .redis {
                 loadRedisPassword()
@@ -422,7 +422,7 @@ public final class DatabaseEngineDetailViewModel: ObservableObject {
         
         do {
             // Reload config to ensure we have latest
-            let currentConfig = try await CoreDatabaseService.shared.getConfiguration(type: databaseType, serverId: serverId)
+            let currentConfig = try await DatabaseEngineService.shared.getConfiguration(type: databaseType, serverId: serverId)
             var newContent = currentConfig.rawContent ?? ""
             
             // Check if requirepass exists
@@ -452,7 +452,7 @@ public final class DatabaseEngineDetailViewModel: ObservableObject {
             )
             
             // Save
-            try await CoreDatabaseService.shared.updateConfiguration(updatedConfig, type: databaseType, serverId: serverId)
+            try await DatabaseEngineService.shared.updateConfiguration(updatedConfig, type: databaseType, serverId: serverId)
             
             // Update local state
             redisPassword = newPassword
@@ -483,7 +483,7 @@ public final class DatabaseEngineDetailViewModel: ObservableObject {
                 rawContent: configEditContent
             )
             
-            try await CoreDatabaseService.shared.updateConfiguration(newConfig, type: databaseType, serverId: serverId)
+            try await DatabaseEngineService.shared.updateConfiguration(newConfig, type: databaseType, serverId: serverId)
             
             // Reload to confirm changes
             await loadConfiguration()
@@ -509,7 +509,7 @@ public final class DatabaseEngineDetailViewModel: ObservableObject {
         isFetchingVersions = true
         
         do {
-            let coreVersions = try await CoreDatabaseService.shared.getAvailableVersions(type: databaseType, serverId: serverId)
+            let coreVersions = try await DatabaseEngineService.shared.getAvailableVersions(type: databaseType, serverId: serverId)
             
             // Convert Core versions to UI versions
             availableVersions = coreVersions.map { coreVersion in
@@ -544,7 +544,7 @@ public final class DatabaseEngineDetailViewModel: ObservableObject {
         
         do {
             // Start installation with progress tracking
-            try await CoreDatabaseService.shared.installDatabase(
+            try await DatabaseEngineService.shared.installDatabase(
                 type: databaseType,
                 version: version.version,
                 serverId: serverId,
@@ -581,8 +581,9 @@ public final class DatabaseEngineDetailViewModel: ObservableObject {
         operationResult = .inProgress(message: "Updating \(databaseType.displayName)...", progress: nil)
         
         do {
-            try await CoreDatabaseService.shared.updateDatabase(
+            try await DatabaseEngineService.shared.installDatabase(
                 type: databaseType,
+                version: "latest",
                 serverId: serverId,
                 progressHandler: { [weak self] progress in
                     Task { @MainActor [weak self] in
@@ -617,7 +618,7 @@ public final class DatabaseEngineDetailViewModel: ObservableObject {
         operationResult = .inProgress(message: "Starting \(databaseType.displayName)...", progress: nil)
         
         do {
-            try await CoreDatabaseService.shared.startService(type: databaseType, serverId: serverId)
+            try await DatabaseEngineService.shared.startService(type: databaseType, serverId: serverId)
             
             // Wait a moment for service to fully start
             try await Task.sleep(nanoseconds: 2_000_000_000) // 2 seconds
@@ -643,7 +644,7 @@ public final class DatabaseEngineDetailViewModel: ObservableObject {
         operationResult = .inProgress(message: "Stopping \(databaseType.displayName)...", progress: nil)
         
         do {
-            try await CoreDatabaseService.shared.stopService(type: databaseType, serverId: serverId)
+            try await DatabaseEngineService.shared.stopService(type: databaseType, serverId: serverId)
             
             // Wait a moment for service to fully stop
             try await Task.sleep(nanoseconds: 2_000_000_000) // 2 seconds
@@ -669,7 +670,7 @@ public final class DatabaseEngineDetailViewModel: ObservableObject {
         operationResult = .inProgress(message: "Restarting \(databaseType.displayName)...", progress: nil)
         
         do {
-            try await CoreDatabaseService.shared.restartService(type: databaseType, serverId: serverId)
+            try await DatabaseEngineService.shared.restartService(type: databaseType, serverId: serverId)
             
             // Wait a moment for service to fully restart
             try await Task.sleep(nanoseconds: 3_000_000_000) // 3 seconds
@@ -695,7 +696,7 @@ public final class DatabaseEngineDetailViewModel: ObservableObject {
         operationResult = .inProgress(message: "Enabling \(databaseType.displayName) on boot...", progress: nil)
         
         do {
-            try await CoreDatabaseService.shared.enableService(type: databaseType, serverId: serverId)
+            try await DatabaseEngineService.shared.enableService(type: databaseType, serverId: serverId)
             
             operationResult = .success(message: "\(databaseType.displayName) will start on boot!")
             activeAlert = .operationSuccess(message: "\(databaseType.displayName) has been enabled to start on system boot.")
@@ -718,7 +719,7 @@ public final class DatabaseEngineDetailViewModel: ObservableObject {
         operationResult = .inProgress(message: "Disabling \(databaseType.displayName) on boot...", progress: nil)
         
         do {
-            try await CoreDatabaseService.shared.disableService(type: databaseType, serverId: serverId)
+            try await DatabaseEngineService.shared.disableService(type: databaseType, serverId: serverId)
             
             operationResult = .success(message: "\(databaseType.displayName) will not start on boot!")
             activeAlert = .operationSuccess(message: "\(databaseType.displayName) has been disabled from starting on system boot.")
@@ -840,7 +841,7 @@ public final class DatabaseEngineDetailViewModel: ObservableObject {
     private func checkBootStatus(serverId: String) async {
         do {
             let serviceName = databaseType.rawValue
-            let result = try await CoreDatabaseService.shared.executeInstallationCommand(
+            let result = try await SSHService.shared.execute(
                 "systemctl is-enabled \(serviceName) 2>/dev/null || echo 'disabled'",
                 serverId: serverId
             )
@@ -861,7 +862,7 @@ public final class DatabaseEngineDetailViewModel: ObservableObject {
 
         do {
             let config = AevonXCore.DatabaseConfiguration(engineType: databaseType, settings: [:], rawContent: content)
-            try await CoreDatabaseService.shared.updateConfiguration(config, type: databaseType, serverId: serverId)
+            try await DatabaseEngineService.shared.updateConfiguration(config, type: databaseType, serverId: serverId)
 
             operationResult = .success(message: "Configuration saved successfully!")
             activeAlert = .operationSuccess(message: "Configuration has been saved. A restart may be required for changes to take effect.")
@@ -884,8 +885,8 @@ public final class DatabaseEngineDetailViewModel: ObservableObject {
         operationResult = .inProgress(message: "Analyzing performance...", progress: nil)
 
         do {
-            metrics = try await CoreDatabaseService.shared.getMetrics(type: databaseType, serverId: serverId)
-            performanceStats = try await CoreDatabaseService.shared.getPerformanceStats(type: databaseType, serverId: serverId)
+            metrics = try await DatabaseMetricsService.shared.getMetrics(type: databaseType, serverId: serverId)
+            performanceStats = try await DatabaseMetricsService.shared.getPerformanceStats(type: databaseType, serverId: serverId)
 
             updateHealthStatus()
             operationResult = .success(message: "Performance analysis complete!")
@@ -906,7 +907,7 @@ public final class DatabaseEngineDetailViewModel: ObservableObject {
         operationResult = .inProgress(message: "Applying '\(preset)' preset...", progress: nil)
 
         do {
-            let currentConfig = try await CoreDatabaseService.shared.getConfiguration(type: databaseType, serverId: serverId)
+            let currentConfig = try await DatabaseEngineService.shared.getConfiguration(type: databaseType, serverId: serverId)
             let presetSettings = optimizationPresetSettings(for: preset)
 
             // Merge preset settings into current config
@@ -914,7 +915,7 @@ public final class DatabaseEngineDetailViewModel: ObservableObject {
             for (key, value) in presetSettings { merged[key] = value }
 
             let updated = AevonXCore.DatabaseConfiguration(engineType: databaseType, settings: merged, rawContent: currentConfig.rawContent)
-            try await CoreDatabaseService.shared.updateConfiguration(updated, type: databaseType, serverId: serverId)
+            try await DatabaseEngineService.shared.updateConfiguration(updated, type: databaseType, serverId: serverId)
 
             operationResult = .success(message: "'\(preset)' preset applied!")
             activeAlert = .operationSuccess(message: "The '\(preset)' optimization preset has been applied. Restart the service for changes to take effect.")
@@ -967,7 +968,7 @@ public final class DatabaseEngineDetailViewModel: ObservableObject {
         do {
             // Service stopping is now handled by the adapter/manager if necessary,
             // but we can still be safe here if we want to show it in the UI
-            try await CoreDatabaseService.shared.uninstallDatabaseEngine(type: databaseType, serverId: serverId)
+            try await DatabaseEngineService.shared.uninstallDatabaseEngine(type: databaseType, serverId: serverId)
 
             operationResult = .success(message: "\(databaseType.displayName) uninstalled successfully!")
             activeAlert = .operationSuccess(message: "\(databaseType.displayName) has been uninstalled from the server.")
@@ -995,7 +996,7 @@ public final class DatabaseEngineDetailViewModel: ObservableObject {
         userLoadError = nil
 
         do {
-            databaseUsers = try await CoreDatabaseService.shared.listUsers(type: databaseType, serverId: serverId)
+            databaseUsers = try await DatabaseUserService.shared.listUsers(type: databaseType, serverId: serverId)
         } catch {
             userLoadError = "Could not load users: \(error.localizedDescription)"
             databaseUsers = []

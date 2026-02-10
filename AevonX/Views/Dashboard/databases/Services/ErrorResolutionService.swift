@@ -55,9 +55,9 @@ public final class ErrorResolutionService: ObservableObject {
         
         do {
             // Gather server info
-            let osInfo = try await CoreDatabaseService.shared.getServerOSInfo(serverId: serverId)
-            let resources = try await CoreDatabaseService.shared.getServerResources(serverId: serverId)
-            let installed = await CoreDatabaseService.shared.detectInstalledDatabases(serverId: serverId)
+            let osInfo = try await DatabaseResourceService.shared.getServerOSInfo(serverId: serverId)
+            let resources = try await DatabaseResourceService.shared.getServerResources(serverId: serverId)
+            let installed = await DatabaseEngineService.shared.detectInstalledDatabases(serverId: serverId)
             let installedTypes = installed.filter { $0.isInstalled }.map { $0.type }
             
             // Get server name (mock for now or fetch from repository)
@@ -115,7 +115,7 @@ public final class ErrorResolutionService: ObservableObject {
             
             // 2. Execute command if available
             if let command = solution.command, !command.isEmpty {
-                let result = try await CoreDatabaseService.shared.executeInstallationCommand(
+                let result = try await SSHService.shared.execute(
                     command,
                     serverId: serverId
                 )

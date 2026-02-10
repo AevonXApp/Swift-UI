@@ -29,7 +29,7 @@ public final class URLRewriteViewModel: ObservableObject {
 
     private let website: WebsiteInfo
     private let serverId: String?
-    private let coreService = CoreWebsiteService.shared
+    private let rewriteService = WebsiteRewriteService.shared
     private let toastManager = GlobalToastManager.shared
 
     // MARK: - Initialization
@@ -51,7 +51,7 @@ public final class URLRewriteViewModel: ObservableObject {
         error = nil
 
         do {
-            rules = try await coreService.getRewriteRules(domain: website.domain, serverId: serverId)
+            rules = try await rewriteService.getRewriteRules(domain: website.domain, serverId: serverId)
         } catch {
             self.error = "Failed to load rewrite rules: \(error.localizedDescription)"
             toastManager.showError(self.error!)
@@ -68,7 +68,7 @@ public final class URLRewriteViewModel: ObservableObject {
         isLoading = true
 
         do {
-            try await coreService.addRewriteRule(domain: website.domain, rule: rule, serverId: serverId)
+            try await rewriteService.addRewriteRule(domain: website.domain, rule: rule, serverId: serverId)
             await load() // Reload rules
             toastManager.showSuccess("Rewrite rule added successfully")
         } catch {
@@ -85,7 +85,7 @@ public final class URLRewriteViewModel: ObservableObject {
         isLoading = true
 
         do {
-            try await coreService.updateRewriteRule(domain: website.domain, ruleId: ruleId, rule: newRule, serverId: serverId)
+            try await rewriteService.updateRewriteRule(domain: website.domain, ruleId: ruleId, rule: newRule, serverId: serverId)
             await load() // Reload rules
             toastManager.showSuccess("Rewrite rule updated successfully")
         } catch {
@@ -102,7 +102,7 @@ public final class URLRewriteViewModel: ObservableObject {
         isLoading = true
 
         do {
-            try await coreService.deleteRewriteRule(domain: website.domain, ruleId: ruleId, serverId: serverId)
+            try await rewriteService.deleteRewriteRule(domain: website.domain, ruleId: ruleId, serverId: serverId)
             rules.removeAll { $0.id == ruleId }
             toastManager.showSuccess("Rewrite rule deleted successfully")
         } catch {
@@ -142,7 +142,7 @@ public final class URLRewriteViewModel: ObservableObject {
         testResult = nil
 
         do {
-            testResult = try await coreService.testRewriteRule(domain: website.domain, testURL: testURL, serverId: serverId)
+            testResult = try await rewriteService.testRewriteRule(domain: website.domain, testURL: testURL, serverId: serverId)
 
             if testResult?.wasRewritten == true {
                 toastManager.showSuccess("URL was rewritten")

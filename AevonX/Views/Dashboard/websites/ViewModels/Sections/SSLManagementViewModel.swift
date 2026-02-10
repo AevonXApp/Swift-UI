@@ -44,7 +44,7 @@ public final class SSLManagementViewModel: ObservableObject {
 
     private let website: WebsiteInfo
     private let serverId: String?
-    private let coreService = CoreWebsiteService.shared
+    private let sslService = WebsiteSSLService.shared
     private let toastManager = GlobalToastManager.shared
 
     // MARK: - Initialization
@@ -71,7 +71,7 @@ public final class SSLManagementViewModel: ObservableObject {
         error = nil
 
         do {
-            certificateDetails = try await coreService.getSSLCertificateDetails(domain: website.domain, serverId: serverId)
+            certificateDetails = try await sslService.getSSLCertificateDetails(domain: website.domain, serverId: serverId)
         } catch {
             self.error = "Failed to load SSL details: \(error.localizedDescription)"
             toastManager.showError(self.error!)
@@ -94,7 +94,7 @@ public final class SSLManagementViewModel: ObservableObject {
         isIssuingCertificate = true
 
         do {
-            try await coreService.issueNewLetsEncryptCert(
+            try await sslService.issueNewLetsEncryptCert(
                 domain: website.domain,
                 email: letsEncryptEmail,
                 challengeType: selectedChallengeType.rawValue,
@@ -136,7 +136,7 @@ public final class SSLManagementViewModel: ObservableObject {
         isUploadingCertificate = true
 
         do {
-            try await coreService.uploadCustomCertificate(
+            try await sslService.uploadCustomCertificate(
                 domain: website.domain,
                 cert: customCertificate,
                 key: customPrivateKey,
@@ -171,7 +171,7 @@ public final class SSLManagementViewModel: ObservableObject {
 
         do {
             if !isForceSSLEnabled {
-                try await coreService.enableForceSSL(domain: website.domain, serverId: serverId)
+                try await sslService.enableForceSSL(domain: website.domain, serverId: serverId)
                 isForceSSLEnabled = true
                 toastManager.showSuccess("Force SSL enabled")
             } else {
@@ -194,7 +194,7 @@ public final class SSLManagementViewModel: ObservableObject {
         isConfiguringHSTS = true
 
         do {
-            try await coreService.configureHSTS(
+            try await WebsiteSSLService.shared.configureHSTS(
                 domain: website.domain,
                 maxAge: hstsConfig.maxAge,
                 includeSubdomains: hstsConfig.includeSubDomains,
@@ -219,7 +219,7 @@ public final class SSLManagementViewModel: ObservableObject {
         isRenewing = true
 
         do {
-            try await coreService.renewSSL(websiteId: website.domain, serverId: serverId)
+            try await sslService.renewSSL(websiteId: website.domain, serverId: serverId)
             toastManager.showSuccess("Certificate renewal started")
 
             // Reload certificate details

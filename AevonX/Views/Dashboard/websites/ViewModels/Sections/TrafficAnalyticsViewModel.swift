@@ -24,7 +24,7 @@ public final class TrafficAnalyticsViewModel: ObservableObject {
 
     private let website: WebsiteInfo
     private let serverId: String?
-    private let coreService = CoreWebsiteService.shared
+    private let analyticsService = WebsiteAnalyticsService.shared
     private let toastManager = GlobalToastManager.shared
 
     private var autoRefreshTimer: Timer?
@@ -55,7 +55,7 @@ public final class TrafficAnalyticsViewModel: ObservableObject {
             // Load statistics
             group.addTask { @MainActor in
                 do {
-                    self.statistics = try await self.coreService.getRequestStatistics(
+                    self.statistics = try await self.analyticsService.getRequestStatistics(
                         domain: self.website.domain,
                         serverId: serverId,
                         timeRange: self.selectedTimeRange
@@ -68,7 +68,7 @@ public final class TrafficAnalyticsViewModel: ObservableObject {
             // Load bandwidth data
             group.addTask { @MainActor in
                 do {
-                    self.bandwidthData = try await self.coreService.getBandwidthUsage(
+                    self.bandwidthData = try await self.analyticsService.getBandwidthUsage(
                         domain: self.website.domain,
                         serverId: serverId,
                         timeRange: self.selectedTimeRange
@@ -81,7 +81,7 @@ public final class TrafficAnalyticsViewModel: ObservableObject {
             // Load top endpoints
             group.addTask { @MainActor in
                 do {
-                    self.topEndpoints = try await self.coreService.getTopEndpoints(
+                    self.topEndpoints = try await self.analyticsService.getTopEndpoints(
                         domain: self.website.domain,
                         serverId: serverId,
                         limit: 10

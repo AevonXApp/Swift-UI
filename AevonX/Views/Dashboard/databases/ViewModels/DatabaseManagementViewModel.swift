@@ -6,7 +6,7 @@
 //  Handles all database operations and state management
 //
 //  ARCHITECTURE: UI Layer ViewModel
-//  - Uses CoreDatabaseService from Core layer for all database operations
+//  - Uses specialized core services from Core layer for all database operations
 //  - NEVER executes SSH commands directly
 //  - Responsible only for UI state management and data presentation
 //
@@ -21,8 +21,7 @@ import AevonXCore
 /// Main ViewModel for the database management system
 /// Coordinates between UI and Core layer
 ///
-/// IMPORTANT: This ViewModel does NOT execute SSH commands directly.
-/// All server operations go through CoreDatabaseService in the Core layer.
+/// All server operations go through specialized core services in the Core layer.
 @MainActor
 public final class DatabaseManagementViewModel: ObservableObject {
 
@@ -37,7 +36,7 @@ public final class DatabaseManagementViewModel: ObservableObject {
     /// Database users
     @Published public var databaseUsers: [DatabaseUserInfo] = []
 
-    /// Installation states for all database types (from Core layer)
+    /// Installation states for all database types (from Core layer engines)
     @Published public var installationStates: [DatabaseInstallationState] = []
 
     /// Currently selected database type filter (nil = show all)
@@ -104,7 +103,7 @@ public final class DatabaseManagementViewModel: ObservableObject {
 
     // MARK: - Services
 
-    // NOTE: We use CoreDatabaseService for all database operations
+    // NOTE: We use specialized core services for all database operations
     // This ensures proper architecture separation (UI -> Core -> SSH)
     private let installationService = DatabaseInstallationService.shared
     private var cancellables = Set<AnyCancellable>()
@@ -191,15 +190,15 @@ public final class DatabaseManagementViewModel: ObservableObject {
         }
 
         // Step 1: Load installation states (which database engines are installed)
-        // Uses CoreDatabaseService from Core layer
+        // Uses DatabaseEngineService from Core layer
         await loadInstallationStates(serverId: serverId)
 
         // Step 2: Load all databases from all installed engines
-        // Uses CoreDatabaseService from Core layer
+        // Uses DatabaseManagementService from Core layer
         await loadAllDatabases(serverId: serverId)
 
         // Step 3: Load database users
-        // Uses CoreDatabaseService from Core layer
+        // Uses DatabaseUserService from Core layer
         await loadDatabaseUsers(serverId: serverId)
 
         isLoading = false
@@ -208,7 +207,7 @@ public final class DatabaseManagementViewModel: ObservableObject {
     /// Loads installation states for all database types via Core layer
     private func loadInstallationStates(serverId: String) async {
         // Call Core layer to detect installed databases
-        let coreStates = await CoreDatabaseService.shared.detectInstalledDatabases(serverId: serverId)
+        let coreStates = await DatabaseEngineService.shared.detectInstalledDatabases(serverId: serverId)
 
         // Convert Core models to UI models
         let uiStates = coreStates.map { coreState in
@@ -234,7 +233,7 @@ public final class DatabaseManagementViewModel: ObservableObject {
         // Get databases for each installed engine type
         for state in installationStates where state.isInstalled {
             do {
-                let coreDatabases = try await CoreDatabaseService.shared.listDatabases(
+                let coreDatabases = try await DatabaseManagementService.shared.listDatabases(
                     type: state.type,
                     serverId: serverId
                 )
@@ -275,7 +274,7 @@ public final class DatabaseManagementViewModel: ObservableObject {
         }
 
         do {
-            let coreUsers = try await CoreDatabaseService.shared.listMySQLUsers(serverId: serverId)
+            let coreUsers = try await DatabaseUserService.shared.listUsers(type: .mysql, serverId: serverId)
 
             // Convert Core models to UI models
             let uiUsers = coreUsers.map { coreUser in
@@ -340,7 +339,7 @@ public final class DatabaseManagementViewModel: ObservableObject {
             throw DatabaseOperationError.serverNotConfigured
         }
 
-        try await CoreDatabaseService.shared.createDatabase(
+        try await DatabaseManagementService.shared.createDatabase(
             name: name,
             type: type,
             characterSet: characterSet,
@@ -358,7 +357,7 @@ public final class DatabaseManagementViewModel: ObservableObject {
             throw DatabaseOperationError.serverNotConfigured
         }
 
-        try await CoreDatabaseService.shared.deleteDatabase(name: name, type: type, serverId: serverId)
+        try await DatabaseManagementService.shared.deleteDatabase(name: name, type: type, serverId: serverId)
 
         // Reload data
         await loadData()
@@ -370,7 +369,7 @@ public final class DatabaseManagementViewModel: ObservableObject {
             throw DatabaseOperationError.serverNotConfigured
         }
 
-        try await CoreDatabaseService.shared.startService(type: type, serverId: serverId)
+        try await DatabaseEngineService.shared.startService(type: type, serverId: serverId)
         await loadData()
     }
 
@@ -380,7 +379,7 @@ public final class DatabaseManagementViewModel: ObservableObject {
             throw DatabaseOperationError.serverNotConfigured
         }
 
-        try await CoreDatabaseService.shared.stopService(type: type, serverId: serverId)
+        try await DatabaseEngineService.shared.stopService(type: type, serverId: serverId)
         await loadData()
     }
 
@@ -390,7 +389,7 @@ public final class DatabaseManagementViewModel: ObservableObject {
             throw DatabaseOperationError.serverNotConfigured
         }
 
-        try await CoreDatabaseService.shared.restartService(type: type, serverId: serverId)
+        try await DatabaseEngineService.shared.restartService(type: type, serverId: serverId)
         await loadData()
     }
 
@@ -407,7 +406,7 @@ public final class DatabaseManagementViewModel: ObservableObject {
             throw DatabaseOperationError.serverNotConfigured
         }
 
-        try await CoreDatabaseService.shared.createUser(
+        try await DatabaseUserService.shared.createUser(
             username: username,
             password: password,
             host: host,
@@ -431,7 +430,7 @@ public final class DatabaseManagementViewModel: ObservableObject {
             throw DatabaseOperationError.serverNotConfigured
         }
 
-        try await CoreDatabaseService.shared.grantPrivileges(
+        try await DatabaseUserService.shared.grantPrivileges(
             username: username,
             host: host,
             database: database,
