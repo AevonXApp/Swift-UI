@@ -19,6 +19,8 @@ struct ApplicationDetailView: View {
             switch application.type {
             case .nginx:
                 NginxDetailView(application: application, serverId: serverId)
+            case .phpFpm:
+                PHPDetailView(application: application, serverId: serverId)
             default:
                 GenericApplicationDetailView(application: application, serverId: serverId)
             }

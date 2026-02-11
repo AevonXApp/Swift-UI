@@ -15,11 +15,13 @@ import AevonXCore
 public enum AXLogSource: Equatable {
     case website(domain: String)
     case nginxService
+    case phpService
     
     var displayName: String {
         switch self {
         case .website(let domain): return "Site: \(domain)"
         case .nginxService: return "Nginx Service"
+        case .phpService: return "PHP-FPM Service"
         }
     }
 }
@@ -981,6 +983,14 @@ public final class AXLogsViewModel: ObservableObject {
                 // Since Nginx global logs use the same format, we can adapt the parsers
                 self.accessLogs = parseAccessLevelLogs(rawLogs)
                 self.errorLogs = parseErrorLevelLogs(rawLogs)
+                
+            case .phpService:
+                // Fetch PHP-FPM Logs
+                let rawLogs = try await appManager.readLogs(type: .phpFpm, lines: 200, serverId: serverId)
+                
+                // Parse PHP logs (mostly error logs for PHP-FPM)
+                self.accessLogs = []
+                self.errorLogs = parsePHPErrorLogs(rawLogs)
             }
         } catch {
             print("Failed to load logs: \(error)")
@@ -1080,6 +1090,67 @@ public final class AXLogsViewModel: ObservableObject {
                     referer: nil,
                     responseTime: nil,
                     level: level,
+                    file: nil,
+                    line: nil
+                ))
+            }
+        }
+        return entries
+    }
+    
+    private func parsePHPErrorLogs(_ raw: String) -> [AXLogEntryDisplay] {
+        let lines = raw.components(separatedBy: .newlines)
+        var entries: [AXLogEntryDisplay] = []
+        
+        // PHP-FPM error log format: [DD-MMM-YYYY HH:MM:SS] LEVEL: message
+        let pattern = #"^\[(\d{2}-[A-Za-z]{3}-\d{4} \d{2}:\d{2}:\d{2})\] ([A-Z]+): (.+)$"#
+        let regex = try? NSRegularExpression(pattern: pattern)
+        
+        for line in lines {
+            guard !line.isEmpty else { continue }
+            
+            // Try PHP-FPM format first
+            if let match = regex?.firstMatch(in: line, range: NSRange(line.startIndex..., in: line)) {
+                func extract(_ index: Int) -> String? {
+                    guard let range = Range(match.range(at: index), in: line) else { return nil }
+                    return String(line[range])
+                }
+                
+                if let tsStr = extract(1), let level = extract(2), let msg = extract(3) {
+                    let formatter = DateFormatter()
+                    formatter.dateFormat = "dd-MMM-yyyy HH:mm:ss"
+                    let timestamp = formatter.date(from: tsStr) ?? Date()
+                    
+                    entries.append(AXLogEntryDisplay(
+                        id: UUID(),
+                        type: .error,
+                        timestamp: timestamp,
+                        ip: nil,
+                        method: nil,
+                        statusCode: nil,
+                        urlOrMessage: msg,
+                        userAgent: nil,
+                        referer: nil,
+                        responseTime: nil,
+                        level: level,
+                        file: nil,
+                        line: nil
+                    ))
+                }
+            } else {
+                // Fallback: treat as generic error line
+                entries.append(AXLogEntryDisplay(
+                    id: UUID(),
+                    type: .error,
+                    timestamp: Date(),
+                    ip: nil,
+                    method: nil,
+                    statusCode: nil,
+                    urlOrMessage: line,
+                    userAgent: nil,
+                    referer: nil,
+                    responseTime: nil,
+                    level: "ERROR",
                     file: nil,
                     line: nil
                 ))
