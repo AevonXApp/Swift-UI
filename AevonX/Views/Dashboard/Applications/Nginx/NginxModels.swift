@@ -8,9 +8,9 @@ public struct NginxConfigData {
     public var logPath: String = ""
     public var dataPath: String = ""
     public var listeningPorts: [Int] = []
-    public var blockedIPs: [String] = []
+    public var blockedIPs: [AXBlockedIP] = []
     
-    public init(rawConfig: String = "", configPath: String = "", logPath: String = "", dataPath: String = "", listeningPorts: [Int] = [], blockedIPs: [String] = []) {
+    public init(rawConfig: String = "", configPath: String = "", logPath: String = "", dataPath: String = "", listeningPorts: [Int] = [], blockedIPs: [AXBlockedIP] = []) {
         self.rawConfig = rawConfig
         self.configPath = configPath
         self.logPath = logPath

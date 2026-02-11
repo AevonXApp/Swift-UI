@@ -158,11 +158,11 @@ struct NginxDetailView: View {
         }
     }
 
-    private func blockIP(_ ip: String) async {
+    private func blockIP(_ ip: String, reason: String? = nil, duration: String? = nil) async {
         successMessage = nil
         errorMessage = nil
         do {
-            try await ApplicationManager.shared.blockIP(ip, type: .nginx, serverId: serverId)
+            try await ApplicationManager.shared.blockIP(ip, reason: reason, duration: duration, type: .nginx, serverId: serverId)
             self.successMessage = "IP \(ip) blocked successfully"
             await loadNginxData()
         } catch {
