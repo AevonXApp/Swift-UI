@@ -58,6 +58,7 @@ struct ModernWebsitePanel: View {
 
     @State private var selectedItem: ModernSidebarItem = .overview
     @State private var isHoveringBack = false
+    @State private var showingDirectoryBrowser = false
 
     var body: some View {
         HStack(spacing: 0) {
@@ -488,7 +489,9 @@ struct ModernWebsitePanel: View {
                     .cornerRadius(AXCornerRadius.sm)
             }
 
-            Button(action: { /* Future: Open file browser */ }) {
+            Button(action: {
+                showingDirectoryBrowser = true
+            }) {
                 HStack(spacing: AXSpacing.sm) {
                     Image(systemName: "folder.badge.plus")
                     Text("Browse Files")
@@ -505,6 +508,9 @@ struct ModernWebsitePanel: View {
             Spacer()
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .sheet(isPresented: $showingDirectoryBrowser) {
+            DirectoryBrowserView(viewModel: viewModel)
+        }
     }
 
     private var urlRewritesView: some View {
@@ -564,6 +570,9 @@ struct ModernWebsitePanel: View {
                                 }
                                 .pickerStyle(.menu)
                                 .labelsHidden()
+                                .onChange(of: viewModel.phpVersion) { oldValue, newValue in
+                                    print("🔄 PHP Version changed from \(oldValue) to \(newValue)")
+                                }
                                 .padding(.horizontal, AXSpacing.sm)
                                 .padding(.vertical, 6)
                                 .background(Color.axBackground)

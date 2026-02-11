@@ -118,11 +118,23 @@ public final class WebsiteDetailViewModel: ObservableObject {
         do {
             let updatedCore = try await websiteManager.getWebsiteConfiguration(websiteId: website.domain, serverId: serverId)
 
+            print("📥 Loading website details...")
+            print("   Received PHP Version: \(updatedCore.phpVersion ?? "nil")")
+            print("   Received Document Root: \(updatedCore.documentRoot ?? "nil")")
+
             // Sync UI model
             self.website.aliases = updatedCore.aliases
             self.website.port = updatedCore.port
             self.website.activeConnections = updatedCore.activeConnections
+            self.website.phpVersion = updatedCore.phpVersion
+            self.website.documentRoot = updatedCore.documentRoot
             self.customPort = updatedCore.port ?? 80
+            self.phpVersion = updatedCore.phpVersion ?? "8.2"
+            self.documentRoot = updatedCore.documentRoot ?? ""
+
+            print("✅ Website details loaded")
+            print("   Local phpVersion: \(self.phpVersion)")
+            print("   Local documentRoot: \(self.documentRoot)")
 
             // Start polling
             startMonitoring()
@@ -180,7 +192,11 @@ public final class WebsiteDetailViewModel: ObservableObject {
         guard let serverId = serverId else { return }
         isSavingConfig = true
         errorMessage = nil
-        
+
+        print("💾 Saving configuration...")
+        print("   PHP Version: \(phpVersion)")
+        print("   Document Root: \(documentRoot)")
+
         do {
             // Update the core model
             let updatedCoreInfo = CoreWebsiteInfo(
@@ -194,23 +210,27 @@ public final class WebsiteDetailViewModel: ObservableObject {
                 documentRoot: documentRoot,
                 configPath: website.configPath
             )
-            
+
             try await websiteManager.updateWebsiteConfiguration(
                 websiteId: website.domain,
                 configuration: updatedCoreInfo,
                 serverId: serverId
             )
-            
+
             // Update local state
             website.documentRoot = documentRoot
             website.phpVersion = phpVersion
-            
+
+            print("✅ Configuration saved successfully")
+            print("   Local website.phpVersion: \(website.phpVersion ?? "nil")")
+
             toastManager.showSuccess("Configuration Updated")
         } catch {
             errorMessage = "Failed to save configuration: \(error.localizedDescription)"
+            print("❌ Failed to save: \(error.localizedDescription)")
             toastManager.showError(errorMessage!)
         }
-        
+
         isSavingConfig = false
     }
     
@@ -343,15 +363,22 @@ public final class WebsiteDetailViewModel: ObservableObject {
     
     /// Fetches subdirectories for the current browsing path
     public func fetchBrowsingItems(path: String) async {
-        guard let serverId = serverId else { return }
+        guard let serverId = serverId else {
+            print("⚠️ No serverId available")
+            return
+        }
         isLoadingBrowsingItems = true
-        
+
+        print("📁 Fetching directories for path: \(path)")
+
         do {
             browsingItems = try await websiteManager.listDirectories(path: path, serverId: serverId)
+            print("✅ Found \(browsingItems.count) directories")
         } catch {
             errorMessage = "Failed to browse: \(error.localizedDescription)"
+            print("❌ Error fetching directories: \(error.localizedDescription)")
         }
-        
+
         isLoadingBrowsingItems = false
     }
     
@@ -364,12 +391,27 @@ public final class WebsiteDetailViewModel: ObservableObject {
     
     /// Goes back to the parent directory
     public func backToParent() {
+        print("⬆️ backToParent called. Current path: \(currentBrowsingPath)")
+
+        // Don't go up if already at root
+        guard currentBrowsingPath != "/" else {
+            print("⚠️ Already at root, cannot go up")
+            return
+        }
+
         let components = currentBrowsingPath.split(separator: "/")
+        print("📊 Path components: \(components)")
+
         if components.count > 1 {
             currentBrowsingPath = "/" + components.dropLast().joined(separator: "/")
         } else if components.count == 1 {
             currentBrowsingPath = "/"
+        } else {
+            // Fallback to root if path is malformed
+            currentBrowsingPath = "/"
         }
+
+        print("✅ New path: \(currentBrowsingPath)")
         Task { await fetchBrowsingItems(path: currentBrowsingPath) }
     }
     

@@ -39,11 +39,13 @@ struct DirectoryBrowserView: View {
             HStack {
                 Button(action: { viewModel.backToParent() }) {
                     Image(systemName: "arrow.up.folder")
+                        .foregroundColor(viewModel.currentBrowsingPath == "/" ? .axTextMuted : .axTextPrimary)
                         .padding(AXSpacing.sm)
                         .background(Color.axBackground)
                         .cornerRadius(AXCornerRadius.sm)
                 }
                 .buttonStyle(PlainButtonStyle())
+                .disabled(viewModel.currentBrowsingPath == "/")
                 .help("Go up one level")
                 
                 Spacer()
@@ -102,5 +104,8 @@ struct DirectoryBrowserView: View {
         }
         .frame(width: 500, height: 600)
         .background(Color.axBackground)
+        .onAppear {
+            viewModel.startBrowsing(initialPath: viewModel.website.documentRoot)
+        }
     }
 }
