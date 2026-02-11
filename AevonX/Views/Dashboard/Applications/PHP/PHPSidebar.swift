@@ -28,11 +28,12 @@ struct PHPSidebar: View {
                         RoundedRectangle(cornerRadius: AXCornerRadius.sm)
                             .fill(Color.blue.opacity(0.15))
                         
-                        // PHP Elephant icon
-                        Text("🐘")
-                            .font(.system(size: 24))
+                        Image("php-logo")
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(width: 40, height: 40)
                     }
-                    .frame(width: 44, height: 44)
+                    .frame(width: 52, height: 52)
 
                     VStack(alignment: .leading, spacing: 2) {
                         Text(application.name)

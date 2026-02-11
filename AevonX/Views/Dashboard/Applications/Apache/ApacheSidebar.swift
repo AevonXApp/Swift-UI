@@ -34,12 +34,12 @@ struct ApacheSidebar: View {
                         RoundedRectangle(cornerRadius: AXCornerRadius.sm)
                             .fill(Color.red.opacity(0.15))
                         
-                        // Apache feather icon proxy
-                        Image(systemName: "feather.fill")
-                            .font(.system(size: 24))
-                            .foregroundColor(.red)
+                        Image("apache-logo")
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(width: 40, height: 40)
                     }
-                    .frame(width: 44, height: 44)
+                    .frame(width: 52, height: 52)
 
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Apache")

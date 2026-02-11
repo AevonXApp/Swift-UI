@@ -336,11 +336,18 @@ struct ServiceRow: View {
                     ZStack {
                         Circle()
                             .fill(application.isRunning ? Color.axSuccess.opacity(0.15) : Color.axTextMuted.opacity(0.15))
-                            .frame(width: 40, height: 40)
+                            .frame(width: 48, height: 48)
 
-                        Image(systemName: serviceIcon)
-                            .font(.system(size: 16))
-                            .foregroundColor(application.isRunning ? .axSuccess : .axTextMuted)
+                        if let customIcon = customIcon {
+                            Image(customIcon)
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                                .frame(width: 32, height: 32)
+                        } else {
+                            Image(systemName: serviceIcon)
+                                .font(.system(size: 16))
+                                .foregroundColor(application.isRunning ? .axSuccess : .axTextMuted)
+                        }
                     }
 
                     VStack(alignment: .leading, spacing: AXSpacing.xxs) {
@@ -483,6 +490,15 @@ struct ServiceRow: View {
             .padding(.horizontal, AXSpacing.lg)
             .padding(.vertical, AXSpacing.md)
             .background(Color.axSurface)
+    }
+
+    private var customIcon: String? {
+        switch application.type {
+        case .nginx: return "nginx-logo"
+        case .apache: return "apache-logo"
+        case .phpFpm: return "php-logo"
+        default: return nil
+        }
     }
 
     private var serviceIcon: String {

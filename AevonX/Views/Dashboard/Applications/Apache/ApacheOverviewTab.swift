@@ -10,6 +10,31 @@ struct ApacheOverviewTab: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: AXSpacing.xl) {
+            // Header Section
+            HStack(spacing: AXSpacing.xl) {
+                Image("apache-logo")
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 60, height: 60)
+                    .padding(AXSpacing.md)
+                    .background(Color.red.opacity(0.1))
+                    .cornerRadius(AXCornerRadius.lg)
+                
+                VStack(alignment: .leading, spacing: AXSpacing.xs) {
+                    Text("Apache HTTP Server")
+                        .font(AXTypography.title2)
+                        .fontWeight(.bold)
+                        .foregroundColor(.axTextPrimary)
+                    
+                    Text("Robust and feature-rich open-source web server")
+                        .font(AXTypography.caption)
+                        .foregroundColor(.axTextSecondary)
+                }
+                
+                Spacer()
+            }
+            .padding(.bottom, AXSpacing.md)
+
             // Service Status Card
             AXCard {
                 VStack(alignment: .leading, spacing: AXSpacing.lg) {

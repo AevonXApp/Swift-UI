@@ -28,11 +28,12 @@ struct NginxSidebar: View {
                         RoundedRectangle(cornerRadius: AXCornerRadius.sm)
                             .fill(Color.axAccentBlue.opacity(0.15))
                         
-                        Image(systemName: "server.rack")
-                            .font(.system(size: 20, weight: .medium))
-                            .foregroundColor(.axAccentBlue)
+                        Image("nginx-logo")
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(width: 40, height: 40)
                     }
-                    .frame(width: 44, height: 44)
+                    .frame(width: 52, height: 52)
 
                     VStack(alignment: .leading, spacing: 2) {
                         Text(application.name)

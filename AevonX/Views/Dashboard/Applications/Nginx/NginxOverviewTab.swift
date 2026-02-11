@@ -23,6 +23,31 @@ public struct NginxOverviewTab: View {
 
     public var body: some View {
         VStack(spacing: AXSpacing.lg) {
+            // Header Section
+            HStack(spacing: AXSpacing.xl) {
+                Image("nginx-logo")
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 60, height: 60)
+                    .padding(AXSpacing.md)
+                    .background(Color.axAccentBlue.opacity(0.1))
+                    .cornerRadius(AXCornerRadius.lg)
+                
+                VStack(alignment: .leading, spacing: AXSpacing.xs) {
+                    Text("Nginx Web Server")
+                        .font(AXTypography.title2)
+                        .fontWeight(.bold)
+                        .foregroundColor(.axTextPrimary)
+                    
+                    Text("High-performance HTTP server and reverse proxy")
+                        .font(AXTypography.caption)
+                        .foregroundColor(.axTextSecondary)
+                }
+                
+                Spacer()
+            }
+            .padding(.bottom, AXSpacing.md)
+
             // Status Card
             AXCard {
                 VStack(alignment: .leading, spacing: AXSpacing.md) {

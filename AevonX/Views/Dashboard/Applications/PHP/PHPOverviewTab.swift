@@ -10,6 +10,31 @@ struct PHPOverviewTab: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: AXSpacing.xl) {
+            // Header Section
+            HStack(spacing: AXSpacing.xl) {
+                Image("php-logo")
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 60, height: 60)
+                    .padding(AXSpacing.md)
+                    .background(Color.blue.opacity(0.1))
+                    .cornerRadius(AXCornerRadius.lg)
+                
+                VStack(alignment: .leading, spacing: AXSpacing.xs) {
+                    Text("PHP Process Manager")
+                        .font(AXTypography.title2)
+                        .fontWeight(.bold)
+                        .foregroundColor(.axTextPrimary)
+                    
+                    Text("FastCGI implementation with advanced process management")
+                        .font(AXTypography.caption)
+                        .foregroundColor(.axTextSecondary)
+                }
+                
+                Spacer()
+            }
+            .padding(.bottom, AXSpacing.md)
+
             // Service Status Card
             AXCard {
                 VStack(alignment: .leading, spacing: AXSpacing.lg) {
