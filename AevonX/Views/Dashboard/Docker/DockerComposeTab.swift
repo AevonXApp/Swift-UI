@@ -1,0 +1,333 @@
+
+import SwiftUI
+import AevonXCore
+
+struct DockerComposeTab: View {
+    let serverId: String
+    
+    @State private var projects: [DockerComposeProject] = []
+    @State private var isLoading: Bool = false
+    @State private var errorMessage: String?
+    @State private var actionInProgress: String?
+    
+    // For logs
+    @State private var showingLogsForProject: DockerComposeProject?
+    
+    var body: some View {
+        VStack(spacing: AXSpacing.md) {
+            // Header
+            HStack {
+                Text("Docker Compose Projects")
+                    .font(AXTypography.title3)
+                    .foregroundColor(.axTextPrimary)
+                
+                Spacer()
+                
+                Button(action: {
+                    refreshData()
+                }) {
+                    Image(systemName: "arrow.clockwise")
+                        .foregroundColor(.axTextSecondary)
+                }
+                .buttonStyle(PlainButtonStyle())
+                .help("Refresh Projects")
+            }
+            .padding(.horizontal, AXSpacing.md)
+            .padding(.top, AXSpacing.md)
+            
+            // Error Message
+            if let errorMessage = errorMessage {
+                HStack {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .foregroundColor(.axError)
+                    Text(errorMessage)
+                        .font(AXTypography.caption)
+                        .foregroundColor(.axError)
+                    Spacer()
+                    Button(action: { self.errorMessage = nil }) {
+                        Image(systemName: "xmark.circle.fill")
+                            .foregroundColor(.axTextMuted)
+                    }
+                    .buttonStyle(.plain)
+                }
+                .padding(AXSpacing.sm)
+                .background(Color.axError.opacity(0.1))
+                .cornerRadius(AXCornerRadius.sm)
+                .padding(.horizontal, AXSpacing.md)
+            }
+            
+            // Content
+            if isLoading && projects.isEmpty {
+                ProgressView("Loading projects...")
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else if projects.isEmpty {
+                VStack(spacing: AXSpacing.md) {
+                    Image(systemName: "square.stack.3d.up")
+                        .font(.system(size: 48))
+                        .foregroundColor(.axTextMuted)
+                    Text("No Compose projects found")
+                        .font(AXTypography.headline)
+                        .foregroundColor(.axTextSecondary)
+                    Text("Projects are detected via 'docker compose ls'")
+                        .font(AXTypography.caption)
+                        .foregroundColor(.axTextMuted)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(Color.axSurface.opacity(0.3))
+                .cornerRadius(AXCornerRadius.md)
+            } else {
+                ScrollView {
+                    LazyVStack(spacing: AXSpacing.sm) {
+                        ForEach(projects) { project in
+                            ComposeProjectRow(
+                                project: project,
+                                isActionInProgress: actionInProgress == project.name,
+                                onAction: { action in
+                                    handleProjectAction(project: project, action: action)
+                                }
+                            )
+                        }
+                    }
+                    .padding(.horizontal, AXSpacing.md)
+                }
+            }
+        }
+        .onAppear {
+            refreshData()
+        }
+        .sheet(item: $showingLogsForProject) { project in
+            DockerComposeLogsView(
+                project: project,
+                serverId: serverId,
+                isPresented: Binding(
+                    get: { showingLogsForProject != nil },
+                    set: { if !$0 { showingLogsForProject = nil } }
+                )
+            )
+        }
+    }
+    
+    // MARK: - Actions
+    
+    private func refreshData() {
+        isLoading = true
+        errorMessage = nil
+        
+        Task {
+            do {
+                projects = try await DockerManager.shared.listComposeProjects(serverId: serverId)
+            } catch {
+                errorMessage = "Failed to fetch projects: \(error.localizedDescription)"
+            }
+            isLoading = false
+        }
+    }
+    
+    private func handleProjectAction(project: DockerComposeProject, action: String) {
+        guard actionInProgress == nil else { return }
+        
+        if action == "logs" {
+            showingLogsForProject = project
+            return
+        }
+        
+        actionInProgress = project.name
+        
+        Task {
+            do {
+                switch action {
+                case "up":
+                    try await DockerManager.shared.composeUp(workingDir: project.workingDir, serverId: serverId)
+                case "down":
+                    try await DockerManager.shared.composeDown(workingDir: project.workingDir, serverId: serverId)
+                case "restart":
+                    try await DockerManager.shared.composeRestart(workingDir: project.workingDir, serverId: serverId)
+                default:
+                    break
+                }
+                
+                // Refresh after short delay
+                try await Task.sleep(nanoseconds: 1_000_000_000)
+                refreshData()
+                
+            } catch {
+                errorMessage = "Action failed: \(error.localizedDescription)"
+            }
+            
+            actionInProgress = nil
+        }
+    }
+}
+
+// MARK: - Subviews
+
+private struct ComposeProjectRow: View {
+    let project: DockerComposeProject
+    let isActionInProgress: Bool
+    let onAction: (String) -> Void
+    
+    var body: some View {
+        AXCard {
+            HStack(spacing: AXSpacing.md) {
+                // Status Icon
+                Circle()
+                    .fill(statusColor)
+                    .frame(width: 10, height: 10)
+                
+                // Info
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(project.name)
+                        .font(AXTypography.headline)
+                        .foregroundColor(.axTextPrimary)
+                    
+                    Text(project.configFiles)
+                        .font(AXTypography.caption)
+                        .foregroundColor(.axTextSecondary)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                }
+                
+                Spacer()
+                
+                // Status Text
+                Text(project.status)
+                    .font(AXTypography.caption)
+                    .foregroundColor(statusColor)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 2)
+                    .background(statusColor.opacity(0.1))
+                    .cornerRadius(4)
+                
+                // Actions
+                HStack(spacing: AXSpacing.xs) {
+                    if isActionInProgress {
+                        ProgressView()
+                            .scaleEffect(0.6)
+                            .frame(width: 32)
+                    } else {
+                        ComposeActionButton(icon: "play.fill", color: .axTextSecondary, hoverColor: .axSuccess) {
+                            onAction("up")
+                        }
+                        .help("Up")
+                        
+                        ComposeActionButton(icon: "stop.fill", color: .axTextSecondary, hoverColor: .axError) {
+                            onAction("down")
+                        }
+                        .help("Down")
+                        
+                        ComposeActionButton(icon: "arrow.clockwise", color: .axTextSecondary, hoverColor: .axWarning) {
+                            onAction("restart")
+                        }
+                        .help("Restart")
+                        
+                        ComposeActionButton(icon: "text.alignleft", color: .axTextSecondary, hoverColor: .axAccentBlue) {
+                            onAction("logs")
+                        }
+                        .help("Logs")
+                    }
+                }
+            }
+        }
+    }
+    
+    private var statusColor: Color {
+        if project.status.lowercased().contains("running") { return .axSuccess }
+        if project.status.lowercased().contains("exited") { return .axTextMuted }
+        return .axWarning
+    }
+}
+
+// MARK: - Compose Action Button
+
+private struct ComposeActionButton: View {
+    let icon: String
+    let color: Color
+    let hoverColor: Color
+    let action: () -> Void
+    
+    @State private var isHovered = false
+    
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: icon)
+                .font(.system(size: 14))
+                .foregroundColor(isHovered ? hoverColor : color)
+                .frame(width: 32, height: 32)
+                .background(Color.axSurface.opacity(0.5))
+                .cornerRadius(AXCornerRadius.sm)
+                .overlay(
+                    RoundedRectangle(cornerRadius: AXCornerRadius.sm)
+                        .stroke(Color.axBorder.opacity(0.5), lineWidth: 1)
+                )
+        }
+        .buttonStyle(.plain)
+        .onHover { hovering in
+            withAnimation(.easeInOut(duration: 0.15)) {
+                isHovered = hovering
+            }
+        }
+    }
+}
+
+// MARK: - Helper Views
+
+struct DockerComposeLogsView: View {
+    let project: DockerComposeProject
+    let serverId: String
+    @Binding var isPresented: Bool
+    
+    @State private var logs: String = ""
+    @State private var isConnected: Bool = false
+    
+    var body: some View {
+        VStack(spacing: 0) {
+            // Header
+            HStack {
+                Text("Logs: \(project.name)")
+                    .font(.headline)
+                Spacer()
+                if isConnected {
+                    Circle().fill(Color.green).frame(width: 8, height: 8)
+                }
+                Button("Close") { isPresented = false }
+            }
+            .padding()
+            .background(Color.axBackground)
+            
+            // Logs
+            ScrollView {
+                Text(logs)
+                    .font(.system(.caption, design: .monospaced))
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding()
+            }
+            .background(Color.black)
+        }
+        .frame(width: 800, height: 600)
+        .onAppear {
+            startLogStream()
+        }
+    }
+    
+    private func startLogStream() {
+        isConnected = true
+        Task {
+            do {
+                try await DockerManager.shared.composeLogs(
+                    workingDir: project.workingDir,
+                    serverId: serverId,
+                    onOutput: { chunk in
+                        DispatchQueue.main.async {
+                            self.logs += chunk
+                        }
+                    }
+                )
+            } catch {
+                await MainActor.run {
+                    self.logs += "\n[Error: \(error.localizedDescription)]"
+                    self.isConnected = false
+                }
+            }
+        }
+    }
+}

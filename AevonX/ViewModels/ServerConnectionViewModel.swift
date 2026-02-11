@@ -36,6 +36,7 @@ enum DashboardTab: String, CaseIterable, Identifiable {
     case websites = "Websites"
     case databases = "Databases"
     case applications = "Applications"
+    case docker = "Docker"
     case files = "Files"
     case settings = "Settings"
     
@@ -47,6 +48,7 @@ enum DashboardTab: String, CaseIterable, Identifiable {
         case .websites: return "globe"
         case .databases: return "cylinder.split.1x2"
         case .applications: return "square.stack.3d.up"
+        case .docker: return "shippingbox"
         case .files: return "folder"
         case .settings: return "gearshape"
         }

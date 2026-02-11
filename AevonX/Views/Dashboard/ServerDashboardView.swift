@@ -56,6 +56,8 @@ struct ServerDashboardView: View {
                             ModernDatabasesTab(server: server, serverId: serverId, connectionViewModel: viewModel)
                         case .applications:
                             ApplicationsTab(server: server, serverId: serverId, connectionViewModel: viewModel)
+                        case .docker:
+                            DockerDetailView(server: server, serverId: serverId, connectionViewModel: viewModel)
                         case .files:
                             FilesTab()
                         case .settings:
