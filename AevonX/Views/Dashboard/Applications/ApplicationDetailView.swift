@@ -21,6 +21,8 @@ struct ApplicationDetailView: View {
                 NginxDetailView(application: application, serverId: serverId)
             case .phpFpm:
                 PHPDetailView(application: application, serverId: serverId)
+            case .apache:
+                ApacheDetailView(application: application, serverId: serverId)
             default:
                 GenericApplicationDetailView(application: application, serverId: serverId)
             }

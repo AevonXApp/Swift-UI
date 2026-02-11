@@ -15,12 +15,14 @@ import AevonXCore
 public enum AXLogSource: Equatable {
     case website(domain: String)
     case nginxService
+    case apacheService
     case phpService
     
     var displayName: String {
         switch self {
         case .website(let domain): return "Site: \(domain)"
         case .nginxService: return "Nginx Service"
+        case .apacheService: return "Apache Service"
         case .phpService: return "PHP-FPM Service"
         }
     }
@@ -991,6 +993,15 @@ public final class AXLogsViewModel: ObservableObject {
                 // Parse PHP logs (mostly error logs for PHP-FPM)
                 self.accessLogs = []
                 self.errorLogs = parsePHPErrorLogs(rawLogs)
+                
+            case .apacheService:
+                // Fetch Apache Logs
+                let rawLogs = try await appManager.readLogs(type: .apache, lines: 200, serverId: serverId)
+                
+                // Apache logs interact similarly to Nginx, but might need specific tweaking if formats differ significantly.
+                // For now, assuming standard Apache combined log format which matches Nginx default.
+                self.accessLogs = parseAccessLevelLogs(rawLogs)
+                self.errorLogs = parseErrorLevelLogs(rawLogs)
             }
         } catch {
             print("Failed to load logs: \(error)")
