@@ -706,8 +706,8 @@ struct ModernWebsitePanel: View {
     }
 
     private var logsView: some View {
-        AdvancedLogsView(
-            websiteDomain: viewModel.website.domain,
+        AXAdvancedLogsView(
+            source: .website(domain: viewModel.website.domain),
             serverId: viewModel.serverId
         )
     }

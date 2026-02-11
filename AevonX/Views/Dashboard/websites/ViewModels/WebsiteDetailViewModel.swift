@@ -21,7 +21,6 @@ public final class WebsiteDetailViewModel: ObservableObject {
     public let urlRewriteVM: URLRewriteViewModel
     public let sslManagementVM: SSLManagementViewModel
     public let trafficAnalyticsVM: TrafficAnalyticsViewModel
-    public let logManagementVM: LogManagementViewModel
 
     // Shared State
     @Published public var isLoadingAll = false
@@ -84,7 +83,6 @@ public final class WebsiteDetailViewModel: ObservableObject {
         self.urlRewriteVM = URLRewriteViewModel(website: website, serverId: serverId)
         self.sslManagementVM = SSLManagementViewModel(website: website, serverId: serverId)
         self.trafficAnalyticsVM = TrafficAnalyticsViewModel(website: website, serverId: serverId)
-        self.logManagementVM = LogManagementViewModel(website: website, serverId: serverId)
     }
     
     deinit {
@@ -157,7 +155,6 @@ public final class WebsiteDetailViewModel: ObservableObject {
             group.addTask { await self.urlRewriteVM.load() }
             group.addTask { await self.sslManagementVM.load() }
             group.addTask { await self.trafficAnalyticsVM.load() }
-            group.addTask { await self.logManagementVM.load() }
         }
     }
 

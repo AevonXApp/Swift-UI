@@ -1,17 +1,32 @@
 //
-//  AdvancedLogsView.swift
+//  AXAdvancedLogsView.swift
 //  AevonX
 //
-//  Premium logs viewer with table, filters, tabs, and IP blocking
+//  Premium generic logs viewer with table, filters, and real-time data fetching.
+//  Supports multiple sources like individual websites or global Nginx service.
 //
 
 import SwiftUI
 import Combine
 import AevonXCore
 
+// MARK: - Log Source
+
+public enum AXLogSource: Equatable {
+    case website(domain: String)
+    case nginxService
+    
+    var displayName: String {
+        switch self {
+        case .website(let domain): return "Site: \(domain)"
+        case .nginxService: return "Nginx Service"
+        }
+    }
+}
+
 // MARK: - Log Type Tabs
 
-enum LogTab: String, CaseIterable, Identifiable {
+enum AXLogTab: String, CaseIterable, Identifiable {
     case access = "Access Logs"
     case error = "Error Logs"
     case all = "All Logs"
@@ -37,7 +52,7 @@ enum LogTab: String, CaseIterable, Identifiable {
 
 // MARK: - Sort Options
 
-enum LogSortOption: String, CaseIterable {
+enum AXLogSortOption: String, CaseIterable {
     case newestFirst = "Newest First"
     case oldestFirst = "Oldest First"
     case ipAddress = "IP Address"
@@ -53,16 +68,26 @@ enum LogSortOption: String, CaseIterable {
     }
 }
 
-// MARK: - Advanced Logs View
+// MARK: - AX Advanced Logs View
 
-struct AdvancedLogsView: View {
-    @StateObject private var viewModel: LogsViewModel
+public struct AXAdvancedLogsView: View {
+    @StateObject private var viewModel: AXLogsViewModel
 
-    init(websiteDomain: String, serverId: String?) {
-        _viewModel = StateObject(wrappedValue: LogsViewModel(websiteDomain: websiteDomain, serverId: serverId))
+    public init(
+        source: AXLogSource,
+        serverId: String?,
+        onSuccess: ((String) -> Void)? = nil,
+        onError: ((String) -> Void)? = nil
+    ) {
+        _viewModel = StateObject(wrappedValue: AXLogsViewModel(
+            source: source,
+            serverId: serverId,
+            onSuccess: onSuccess,
+            onError: onError
+        ))
     }
 
-    var body: some View {
+    public var body: some View {
         VStack(spacing: 0) {
             // Tabs & Controls Header
             controlsHeader
@@ -82,12 +107,12 @@ struct AdvancedLogsView: View {
         .background(Color.axBackground)
         .sheet(isPresented: $viewModel.showLogDetail) {
             if let log = viewModel.selectedLog {
-                LogDetailSheet(log: log, viewModel: viewModel)
+                AXLogDetailSheet(log: log, viewModel: viewModel)
             }
         }
         .sheet(isPresented: $viewModel.showIPBlockSheet) {
             if let ip = viewModel.selectedIP {
-                IPBlockSheet(ip: ip, onBlock: { reason in
+                AXIPBlockSheet(ip: ip, onBlock: { reason in
                     Task { await viewModel.blockIP(ip, reason: reason) }
                 })
             }
@@ -103,8 +128,8 @@ struct AdvancedLogsView: View {
         VStack(spacing: AXSpacing.md) {
             // Tabs
             HStack(spacing: AXSpacing.sm) {
-                ForEach(LogTab.allCases) { tab in
-                    LogTabButton(
+                ForEach(AXLogTab.allCases) { tab in
+                    AXLogTabButton(
                         tab: tab,
                         isSelected: viewModel.selectedTab == tab,
                         count: viewModel.getCount(for: tab)
@@ -183,7 +208,7 @@ struct AdvancedLogsView: View {
 
                 // Sort Menu
                 Menu {
-                    ForEach(LogSortOption.allCases, id: \.self) { option in
+                    ForEach(AXLogSortOption.allCases, id: \.self) { option in
                         Button {
                             viewModel.sortOption = option
                         } label: {
@@ -238,7 +263,7 @@ struct AdvancedLogsView: View {
 
                 // Table Rows
                 ForEach(Array(viewModel.filteredLogs.enumerated()), id: \.element.id) { index, log in
-                    LogTableRow(log: log, isEven: index % 2 == 0) {
+                    AXLogTableRow(log: log, isEven: index % 2 == 0) {
                         viewModel.selectedLog = log
                         viewModel.showLogDetail = true
                     }
@@ -305,7 +330,7 @@ struct AdvancedLogsView: View {
                     .font(.system(size: 18, weight: .semibold))
                     .foregroundColor(.axTextPrimary)
 
-                Text(viewModel.searchText.isEmpty ? "No logs available for this website" : "No logs match your search criteria")
+                Text(viewModel.searchText.isEmpty ? "No logs available for this source" : "No logs match your search criteria")
                     .font(.system(size: 13))
                     .foregroundColor(.axTextSecondary)
             }
@@ -315,10 +340,10 @@ struct AdvancedLogsView: View {
     }
 }
 
-// MARK: - Log Tab Button
+// MARK: - AX Log Tab Button
 
-struct LogTabButton: View {
-    let tab: LogTab
+struct AXLogTabButton: View {
+    let tab: AXLogTab
     let isSelected: Bool
     let count: Int
     let action: () -> Void
@@ -363,10 +388,10 @@ struct LogTabButton: View {
     }
 }
 
-// MARK: - Log Table Row
+// MARK: - AX Log Table Row
 
-struct LogTableRow: View {
-    let log: LogEntryDisplay
+struct AXLogTableRow: View {
+    let log: AXLogEntryDisplay
     let isEven: Bool
     let action: () -> Void
 
@@ -476,11 +501,11 @@ struct LogTableRow: View {
     }
 }
 
-// MARK: - Log Detail Sheet
+// MARK: - AX Log Detail Sheet
 
-struct LogDetailSheet: View {
-    let log: LogEntryDisplay
-    let viewModel: LogsViewModel
+struct AXLogDetailSheet: View {
+    let log: AXLogEntryDisplay
+    let viewModel: AXLogsViewModel
     @Environment(\.dismiss) var dismiss
 
     var body: some View {
@@ -530,23 +555,23 @@ struct LogDetailSheet: View {
     private var accessLogDetails: some View {
         VStack(alignment: .leading, spacing: AXSpacing.lg) {
             // Request Info
-            DetailSection(title: "Request Information", icon: "arrow.right.circle.fill") {
-                LogDetailRow(label: "Method", value: log.method ?? "N/A")
-                LogDetailRow(label: "URL", value: log.urlOrMessage)
-                LogDetailRow(label: "Status Code", value: log.statusCode != nil ? "\(log.statusCode!)" : "N/A")
-                LogDetailRow(label: "Response Time", value: log.responseTime ?? "N/A")
+            AXDetailSection(title: "Request Information", icon: "arrow.right.circle.fill") {
+                AXLogDetailRow(label: "Method", value: log.method ?? "N/A")
+                AXLogDetailRow(label: "URL", value: log.urlOrMessage)
+                AXLogDetailRow(label: "Status Code", value: log.statusCode != nil ? "\(log.statusCode!)" : "N/A")
+                AXLogDetailRow(label: "Response Time", value: log.responseTime ?? "N/A")
             }
 
             // Client Info
-            DetailSection(title: "Client Information", icon: "network") {
-                LogDetailRow(label: "IP Address", value: log.ip ?? "N/A")
-                LogDetailRow(label: "User Agent", value: log.userAgent ?? "N/A")
-                LogDetailRow(label: "Referer", value: log.referer ?? "N/A")
+            AXDetailSection(title: "Client Information", icon: "network") {
+                AXLogDetailRow(label: "IP Address", value: log.ip ?? "N/A")
+                AXLogDetailRow(label: "User Agent", value: log.userAgent ?? "N/A")
+                AXLogDetailRow(label: "Referer", value: log.referer ?? "N/A")
             }
 
             // Actions
             if let ip = log.ip {
-                DetailSection(title: "Actions", icon: "shield.fill") {
+                AXDetailSection(title: "Actions", icon: "shield.fill") {
                     Button(action: {
                         viewModel.selectedIP = ip
                         viewModel.showIPBlockSheet = true
@@ -572,21 +597,21 @@ struct LogDetailSheet: View {
     private var errorLogDetails: some View {
         VStack(alignment: .leading, spacing: AXSpacing.lg) {
             // Error Info
-            DetailSection(title: "Error Information", icon: "exclamationmark.triangle.fill") {
-                LogDetailRow(label: "Level", value: log.level?.uppercased() ?? "N/A")
-                LogDetailRow(label: "Message", value: log.urlOrMessage)
+            AXDetailSection(title: "Error Information", icon: "exclamationmark.triangle.fill") {
+                AXLogDetailRow(label: "Level", value: log.level?.uppercased() ?? "N/A")
+                AXLogDetailRow(label: "Message", value: log.urlOrMessage)
                 if let file = log.file {
-                    LogDetailRow(label: "File", value: file)
+                    AXLogDetailRow(label: "File", value: file)
                 }
                 if let line = log.line {
-                    LogDetailRow(label: "Line", value: "\(line)")
+                    AXLogDetailRow(label: "Line", value: "\(line)")
                 }
             }
         }
     }
 }
 
-struct DetailSection<Content: View>: View {
+struct AXDetailSection<Content: View>: View {
     let title: String
     let icon: String
     let content: () -> Content
@@ -618,7 +643,7 @@ struct DetailSection<Content: View>: View {
     }
 }
 
-struct LogDetailRow: View {
+struct AXLogDetailRow: View {
     let label: String
     let value: String
 
@@ -640,17 +665,17 @@ struct LogDetailRow: View {
     }
 }
 
-// MARK: - IP Block Sheet
+// MARK: - AX IP Block Sheet
 
-struct IPBlockSheet: View {
+struct AXIPBlockSheet: View {
     let ip: String
     let onBlock: (String) -> Void
     @Environment(\.dismiss) var dismiss
 
     @State private var reason: String = ""
-    @State private var selectedDuration: BlockDuration = .permanent
+    @State private var selectedDuration: AXBlockDuration = .permanent
 
-    enum BlockDuration: String, CaseIterable {
+    enum AXBlockDuration: String, CaseIterable {
         case oneHour = "1 Hour"
         case oneDay = "1 Day"
         case oneWeek = "1 Week"
@@ -693,7 +718,7 @@ struct IPBlockSheet: View {
                         .foregroundColor(.axTextPrimary)
 
                     Picker("Duration", selection: $selectedDuration) {
-                        ForEach(BlockDuration.allCases, id: \.self) { duration in
+                        ForEach(AXBlockDuration.allCases, id: \.self) { duration in
                             Text(duration.rawValue).tag(duration)
                         }
                     }
@@ -750,24 +775,24 @@ struct IPBlockSheet: View {
     }
 }
 
-// MARK: - Log Entry Display Model
+// MARK: - AX Log Entry Display Model
 
-struct LogEntryDisplay: Identifiable {
-    let id: UUID
-    let type: LogTab
-    let timestamp: Date
-    let ip: String?
-    let method: String?
-    let statusCode: Int?
-    let urlOrMessage: String
-    let userAgent: String?
-    let referer: String?
-    let responseTime: String?
-    let level: String?
-    let file: String?
-    let line: Int?
+public struct AXLogEntryDisplay: Identifiable {
+    public let id: UUID
+    let type: AXLogTab
+    public let timestamp: Date
+    public let ip: String?
+    public let method: String?
+    public let statusCode: Int?
+    public let urlOrMessage: String
+    public let userAgent: String?
+    public let referer: String?
+    public let responseTime: String?
+    public let level: String?
+    public let file: String?
+    public let line: Int?
 
-    var timeFormatted: String {
+    public var timeFormatted: String {
         let formatter = DateFormatter()
         formatter.dateFormat = "MMM dd, HH:mm:ss"
         return formatter.string(from: timestamp)
@@ -775,56 +800,71 @@ struct LogEntryDisplay: Identifiable {
 
     var levelIcon: String {
         switch level?.lowercased() {
-        case "error", "crit": return "xmark.circle.fill"
+        case "error", "crit", "emerg", "alert": return "xmark.circle.fill"
         case "warn", "warning": return "exclamationmark.triangle.fill"
-        case "info", "notice": return "info.circle.fill"
+        case "info", "notice", "debug": return "info.circle.fill"
         default: return "circle.fill"
         }
     }
 
     var levelColor: Color {
         switch level?.lowercased() {
-        case "error", "crit": return .axError
+        case "error", "crit", "emerg", "alert": return .axError
         case "warn", "warning": return .axWarning
-        case "info", "notice": return .axAccentBlue
+        case "info", "notice", "debug": return .axAccentBlue
         default: return .axTextSecondary
         }
     }
 }
 
-// MARK: - Logs ViewModel
+// MARK: - AX Logs ViewModel
 
 @MainActor
-class LogsViewModel: ObservableObject {
-    @Published var selectedTab: LogTab = .all
+public final class AXLogsViewModel: ObservableObject {
+    @Published var selectedTab: AXLogTab = .all
     @Published var searchText: String = ""
-    @Published var sortOption: LogSortOption = .newestFirst
+    @Published var sortOption: AXLogSortOption = .newestFirst
     @Published var statusFilter: Int? = nil
     @Published var isLoading: Bool = false
 
-    @Published var accessLogs: [LogEntryDisplay] = []
-    @Published var errorLogs: [LogEntryDisplay] = []
+    @Published var accessLogs: [AXLogEntryDisplay] = []
+    @Published var errorLogs: [AXLogEntryDisplay] = []
 
     @Published var showLogDetail: Bool = false
-    @Published var selectedLog: LogEntryDisplay? = nil
+    @Published var selectedLog: AXLogEntryDisplay? = nil
 
     @Published var showIPBlockSheet: Bool = false
     @Published var selectedIP: String? = nil
 
-    private let websiteDomain: String
+    private let source: AXLogSource
     private let serverId: String?
+    
+    // Callbacks for UI feedback
+    var onSuccess: ((String) -> Void)?
+    var onError: ((String) -> Void)?
 
-    init(websiteDomain: String, serverId: String?) {
-        self.websiteDomain = websiteDomain
+    // Services
+    private let websiteLogService = WebsiteLogService.shared
+    private let appManager = ApplicationManager.shared
+
+    public init(
+        source: AXLogSource,
+        serverId: String?,
+        onSuccess: ((String) -> Void)? = nil,
+        onError: ((String) -> Void)? = nil
+    ) {
+        self.source = source
         self.serverId = serverId
+        self.onSuccess = onSuccess
+        self.onError = onError
     }
 
-    var allLogs: [LogEntryDisplay] {
+    var allLogs: [AXLogEntryDisplay] {
         accessLogs + errorLogs
     }
 
-    var filteredLogs: [LogEntryDisplay] {
-        var logs: [LogEntryDisplay]
+    var filteredLogs: [AXLogEntryDisplay] {
+        var logs: [AXLogEntryDisplay]
 
         // Filter by tab
         switch selectedTab {
@@ -878,7 +918,7 @@ class LogsViewModel: ObservableObject {
         }
     }
 
-    func getCount(for tab: LogTab) -> Int {
+    func getCount(for tab: AXLogTab) -> Int {
         switch tab {
         case .access: return accessLogs.count
         case .error: return errorLogs.count
@@ -887,73 +927,164 @@ class LogsViewModel: ObservableObject {
     }
 
     func loadLogs() async {
+        guard let serverId = serverId else { return }
         isLoading = true
 
-        // Simulate loading - Replace with actual API calls
-        try? await Task.sleep(nanoseconds: 1_000_000_000)
-
-        // Mock data
-        accessLogs = generateMockAccessLogs()
-        errorLogs = generateMockErrorLogs()
+        do {
+            switch source {
+            case .website(let domain):
+                // Fetch Website Logs (Parsed from Service)
+                let coreAccess = try await websiteLogService.getAccessLogs(domain: domain, serverId: serverId, limit: 200, filters: nil)
+                let coreError = try await websiteLogService.getErrorLogs(domain: domain, serverId: serverId, limit: 200, filters: nil)
+                
+                self.accessLogs = coreAccess.map { entry in
+                    AXLogEntryDisplay(
+                        id: entry.id,
+                        type: .access,
+                        timestamp: entry.timestamp,
+                        ip: entry.ip,
+                        method: entry.method,
+                        statusCode: entry.statusCode,
+                        urlOrMessage: entry.url,
+                        userAgent: entry.userAgent,
+                        referer: entry.referrer,
+                        responseTime: entry.responseTime != nil ? "\(Int(entry.responseTime!))ms" : nil,
+                        level: nil,
+                        file: nil,
+                        line: nil
+                    )
+                }
+                
+                self.errorLogs = coreError.map { entry in
+                    AXLogEntryDisplay(
+                        id: entry.id,
+                        type: .error,
+                        timestamp: entry.timestamp,
+                        ip: nil,
+                        method: nil,
+                        statusCode: nil,
+                        urlOrMessage: entry.message,
+                        userAgent: nil,
+                        referer: nil,
+                        responseTime: nil,
+                        level: entry.level.rawValue,
+                        file: entry.file,
+                        line: entry.line
+                    )
+                }
+                
+            case .nginxService:
+                // Fetch Global Nginx Logs (Raw then custom parse)
+                let rawLogs = try await appManager.readLogs(type: .nginx, lines: 200, serverId: serverId)
+                
+                // Re-use parsing logic or manual parse for service logs
+                // Since Nginx global logs use the same format, we can adapt the parsers
+                self.accessLogs = parseAccessLevelLogs(rawLogs)
+                self.errorLogs = parseErrorLevelLogs(rawLogs)
+            }
+        } catch {
+            print("Failed to load logs: \(error)")
+        }
 
         isLoading = false
     }
 
     func blockIP(_ ip: String, reason: String) async {
-        // Implement IP blocking logic via SSH
-        print("Blocking IP: \(ip), Reason: \(reason)")
-    }
-
-    // Mock data generation
-    private func generateMockAccessLogs() -> [LogEntryDisplay] {
-        let methods = ["GET", "POST", "PUT", "DELETE"]
-        let statuses = [200, 201, 301, 302, 400, 401, 404, 500, 502]
-        let urls = ["/", "/api/users", "/login", "/dashboard", "/products/123"]
-
-        return (0..<50).map { i in
-            LogEntryDisplay(
-                id: UUID(),
-                type: .access,
-                timestamp: Date().addingTimeInterval(-Double(i * 300)),
-                ip: "192.168.1.\(Int.random(in: 1...255))",
-                method: methods.randomElement(),
-                statusCode: statuses.randomElement(),
-                urlOrMessage: urls.randomElement()!,
-                userAgent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)",
-                referer: "https://example.com",
-                responseTime: "\(Int.random(in: 10...500))ms",
-                level: nil,
-                file: nil,
-                line: nil
-            )
+        guard let serverId = serverId else { return }
+        do {
+            try await appManager.blockIP(ip, type: .nginx, serverId: serverId)
+            onSuccess?("IP \(ip) blocked successfully")
+        } catch {
+            onError?("Failed to block IP: \(error.localizedDescription)")
         }
     }
-
-    private func generateMockErrorLogs() -> [LogEntryDisplay] {
-        let levels = ["error", "warn", "crit", "notice"]
-        let messages = [
-            "Database connection failed",
-            "File not found: config.php",
-            "Memory limit exceeded",
-            "Undefined variable: user"
-        ]
-
-        return (0..<20).map { i in
-            LogEntryDisplay(
-                id: UUID(),
-                type: .error,
-                timestamp: Date().addingTimeInterval(-Double(i * 600)),
-                ip: nil,
-                method: nil,
-                statusCode: nil,
-                urlOrMessage: messages.randomElement()!,
-                userAgent: nil,
-                referer: nil,
-                responseTime: nil,
-                level: levels.randomElement(),
-                file: "/var/www/html/index.php",
-                line: Int.random(in: 1...1000)
-            )
+    
+    // MARK: - Generic Parsers (Adapted from WebsiteLogService)
+    
+    private func parseAccessLevelLogs(_ raw: String) -> [AXLogEntryDisplay] {
+        let lines = raw.components(separatedBy: .newlines)
+        var entries: [AXLogEntryDisplay] = []
+        
+        // Pattern: #^(\S+) \S+ \S+ \[([\w:/]+\s[+\-]\d{4})\] "(\S+) (\S+) \S+" (\d{3}) (\d+) "([^"]*)" "([^"]*)""#
+        let pattern = #"^(\S+) \S+ \S+ \[([\w:/]+\s[+\-]\d{4})\] "(\S+) (\S+) \S+" (\d{3}) (\d+) "([^"]*)" "([^"]*)""#
+        let regex = try? NSRegularExpression(pattern: pattern)
+        
+        for line in lines {
+            guard !line.isEmpty, let match = regex?.firstMatch(in: line, range: NSRange(line.startIndex..., in: line)) else { continue }
+            
+            func extract(_ index: Int) -> String? {
+                guard let range = Range(match.range(at: index), in: line) else { return nil }
+                return String(line[range])
+            }
+            
+            if let ip = extract(1),
+               let tsStr = extract(2),
+               let method = extract(3),
+               let url = extract(4),
+               let statusStr = extract(5),
+               let status = Int(statusStr) {
+                
+                let formatter = DateFormatter()
+                formatter.dateFormat = "dd/MMM/yyyy:HH:mm:ss Z"
+                let timestamp = formatter.date(from: tsStr) ?? Date()
+                
+                entries.append(AXLogEntryDisplay(
+                    id: UUID(),
+                    type: .access,
+                    timestamp: timestamp,
+                    ip: ip,
+                    method: method,
+                    statusCode: status,
+                    urlOrMessage: url,
+                    userAgent: extract(8),
+                    referer: extract(7),
+                    responseTime: nil,
+                    level: nil,
+                    file: nil,
+                    line: nil
+                ))
+            }
         }
+        return entries
+    }
+    
+    private func parseErrorLevelLogs(_ raw: String) -> [AXLogEntryDisplay] {
+        let lines = raw.components(separatedBy: .newlines)
+        var entries: [AXLogEntryDisplay] = []
+        
+        let pattern = #"^(\d{4}/\d{2}/\d{2} \d{2}:\d{2}:\d{2}) \[(\w+)\] (.+)$"#
+        let regex = try? NSRegularExpression(pattern: pattern)
+        
+        for line in lines {
+            guard !line.isEmpty, let match = regex?.firstMatch(in: line, range: NSRange(line.startIndex..., in: line)) else { continue }
+            
+            func extract(_ index: Int) -> String? {
+                guard let range = Range(match.range(at: index), in: line) else { return nil }
+                return String(line[range])
+            }
+            
+            if let tsStr = extract(1), let level = extract(2), let msg = extract(3) {
+                let formatter = DateFormatter()
+                formatter.dateFormat = "yyyy/MM/dd HH:mm:ss"
+                let timestamp = formatter.date(from: tsStr) ?? Date()
+                
+                entries.append(AXLogEntryDisplay(
+                    id: UUID(),
+                    type: .error,
+                    timestamp: timestamp,
+                    ip: nil,
+                    method: nil,
+                    statusCode: nil,
+                    urlOrMessage: msg,
+                    userAgent: nil,
+                    referer: nil,
+                    responseTime: nil,
+                    level: level,
+                    file: nil,
+                    line: nil
+                ))
+            }
+        }
+        return entries
     }
 }

@@ -54,7 +54,7 @@ struct ServerDashboardView: View {
                     case .databases:
                         ModernDatabasesTab(server: server, serverId: serverId, connectionViewModel: viewModel)
                     case .applications:
-                        ApplicationsTab()
+                        ApplicationsTab(server: server, serverId: serverId, connectionViewModel: viewModel)
                     case .files:
                         FilesTab()
                     case .settings:
@@ -64,6 +64,9 @@ struct ServerDashboardView: View {
                 .padding(AXSpacing.xl)
             }
             .background(Color.axBackground)
+            #if os(iOS)
+            .navigationBarHidden(true)
+            #endif
         }
         .background(Color.axBackground)
         .frame(minWidth: 800, minHeight: 600)
