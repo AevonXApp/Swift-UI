@@ -17,7 +17,6 @@ public struct NginxSecurityTab: View {
     @State private var selectedFilter: DateFilter = .all
 
     enum DateFilter: String, CaseIterable {
-        
         case all = "All"
         case today = "Today"
         case week = "This Week"
@@ -49,11 +48,11 @@ public struct NginxSecurityTab: View {
     }
 
     public var body: some View {
-        VStack(spacing: 0) {
-            // Block New IP
+        VStack(spacing: AXSpacing.lg) {
+            // Block New IP Card
             AXCard {
                 VStack(alignment: .leading, spacing: AXSpacing.md) {
-                    VStack(alignment: .leading, spacing: AXSpacing.xs) {
+                    VStack(alignment: .leading, spacing: 4) {
                         Text("Firewall Control")
                             .font(AXTypography.headline)
                             .foregroundColor(.axTextPrimary)
@@ -62,128 +61,135 @@ public struct NginxSecurityTab: View {
                             .foregroundColor(.axTextTertiary)
                     }
 
-                    VStack(spacing: AXSpacing.md) {
-                        HStack(spacing: AXSpacing.md) {
-                            HStack {
-                                Image(systemName: "shield.lefthalf.filled")
-                                    .foregroundColor(.axTextTertiary)
-                                TextField("IP Address (e.g. 1.2.3.4)", text: $newIPToBlock)
-                                    .textFieldStyle(.plain)
-                            }
+                    HStack(spacing: AXSpacing.md) {
+                        HStack(spacing: AXSpacing.sm) {
+                            Image(systemName: "shield.lefthalf.filled")
+                                .font(.system(size: 12))
+                                .foregroundColor(.axTextTertiary)
+                            TextField("IP Address (e.g. 1.2.3.4)", text: $newIPToBlock)
+                                .textFieldStyle(.plain)
+                        }
+                        .padding(AXSpacing.md)
+                        .background(Color.axBackground)
+                        .cornerRadius(AXCornerRadius.md)
+                        .overlay(RoundedRectangle(cornerRadius: AXCornerRadius.md).stroke(Color.axBorder, lineWidth: 1))
+
+                        TextField("Reason (Optional)", text: $blockReason)
                             .padding(AXSpacing.md)
                             .background(Color.axBackground)
                             .cornerRadius(AXCornerRadius.md)
-                            .overlay(RoundedRectangle(cornerRadius: AXCornerRadius.md).stroke(Color.axBorder.opacity(0.3), lineWidth: 1))
+                            .overlay(RoundedRectangle(cornerRadius: AXCornerRadius.md).stroke(Color.axBorder, lineWidth: 1))
+                    }
 
-                            TextField("Reason (Optional)", text: $blockReason)
-                                .padding(AXSpacing.md)
-                                .background(Color.axBackground)
-                                .cornerRadius(AXCornerRadius.md)
-                                .overlay(RoundedRectangle(cornerRadius: AXCornerRadius.md).stroke(Color.axBorder.opacity(0.3), lineWidth: 1))
-                        }
-
-                        HStack(spacing: AXSpacing.md) {
-                            HStack {
-                                Text("Duration:")
-                                    .font(AXTypography.caption)
-                                    .foregroundColor(.axTextTertiary)
-                                Picker("Duration", selection: $blockDuration) {
-                                    Text("Permanent").tag("Permanent")
-                                    Text("24 Hours").tag("24h")
-                                    Text("7 Days").tag("7d")
-                                    Text("30 Days").tag("30d")
-                                }
-                                .pickerStyle(.menu)
-                                .labelsHidden()
+                    HStack(spacing: AXSpacing.md) {
+                        HStack(spacing: AXSpacing.sm) {
+                            Text("Duration:")
+                                .font(AXTypography.caption)
+                                .foregroundColor(.axTextTertiary)
+                            Picker("Duration", selection: $blockDuration) {
+                                Text("Permanent").tag("Permanent")
+                                Text("24 Hours").tag("24h")
+                                Text("7 Days").tag("7d")
+                                Text("30 Days").tag("30d")
                             }
-                            .padding(.horizontal, AXSpacing.md)
-                            .padding(.vertical, 4)
-                            .background(Color.axBackground)
+                            .pickerStyle(.menu)
+                            .labelsHidden()
+                        }
+                        .padding(.horizontal, AXSpacing.md)
+                        .padding(.vertical, 6)
+                        .background(Color.axBackground)
+                        .cornerRadius(AXCornerRadius.md)
+                        .overlay(RoundedRectangle(cornerRadius: AXCornerRadius.md).stroke(Color.axBorder, lineWidth: 1))
+
+                        Spacer()
+
+                        Button(action: {
+                            Task {
+                                isBlocking = true
+                                await onBlock(newIPToBlock, blockReason, blockDuration)
+                                newIPToBlock = ""
+                                blockReason = ""
+                                isBlocking = false
+                            }
+                        }) {
+                            HStack(spacing: AXSpacing.sm) {
+                                if isBlocking {
+                                    ProgressView()
+                                        .controlSize(.small)
+                                        .tint(.white)
+                                }
+                                Text("Block IP")
+                            }
+                            .font(AXTypography.subheadline)
+                            .fontWeight(.semibold)
+                            .foregroundColor(.white)
+                            .padding(.horizontal, AXSpacing.lg)
+                            .padding(.vertical, AXSpacing.sm)
+                            .background(Color.axError)
                             .cornerRadius(AXCornerRadius.md)
-                            .overlay(RoundedRectangle(cornerRadius: AXCornerRadius.md).stroke(Color.axBorder.opacity(0.3), lineWidth: 1))
-
-                            Spacer()
-
-                            Button(action: {
-                                Task {
-                                    isBlocking = true
-                                    await onBlock(newIPToBlock, blockReason, blockDuration)
-                                    newIPToBlock = ""
-                                    blockReason = ""
-                                    isBlocking = false
-                                }
-                            }) {
-                                HStack {
-                                    if isBlocking {
-                                        ProgressView().controlSize(.small)
-                                    }
-                                    Text("Block IP")
-                                }
-                                .padding(.horizontal, AXSpacing.md)
-                            }
-                            .buttonStyle(.borderedProminent)
-                            .tint(.red)
-                            .disabled(isBlocking || newIPToBlock.isEmpty)
                         }
+                        .buttonStyle(.plain)
+                        .disabled(isBlocking || newIPToBlock.isEmpty)
+                        .opacity((isBlocking || newIPToBlock.isEmpty) ? 0.5 : 1)
                     }
                 }
             }
-            .padding(.bottom, AXSpacing.md)
 
-            // Blocked IPs List Section
-            VStack(alignment: .leading, spacing: AXSpacing.sm) {
-                // Header (Single Row)
-                Text("RESTRICTED ACCESS (\(filteredIPs.count))")
-                    .font(AXTypography.caption)
-                    .fontWeight(.bold)
-                    .foregroundColor(.axTextTertiary)
-                    .padding(.horizontal, AXSpacing.sm)
-                
+            // Blocked IPs Section
+            VStack(spacing: 0) {
+                // Toolbar
                 HStack(spacing: AXSpacing.md) {
-                    Picker("Date Filter", selection: $selectedFilter) {
+                    Text("RESTRICTED ACCESS (\(filteredIPs.count))")
+                        .font(AXTypography.caption)
+                        .fontWeight(.bold)
+                        .foregroundColor(.axTextTertiary)
+                    
+                    Spacer()
+                    
+                    Picker("", selection: $selectedFilter) {
                         ForEach(DateFilter.allCases, id: \.self) { filter in
                             Text(filter.rawValue).tag(filter)
                         }
                     }
                     .pickerStyle(.segmented)
-                    .frame(width: 220)
+                    .frame(width: 280)
                     .controlSize(.small)
                     
-                    Spacer()
-                    
                     // Compact Search Bar
-                    HStack {
+                    HStack(spacing: AXSpacing.xs) {
                         Image(systemName: "magnifyingglass")
-                            .font(.system(size: 10))
+                            .font(.system(size: 11))
                             .foregroundColor(.axTextTertiary)
                         TextField("Search...", text: $searchText)
                             .textFieldStyle(.plain)
-                            .font(AXTypography.subheadline)
+                            .font(AXTypography.caption)
                     }
-                    .padding(.horizontal, AXSpacing.md)
+                    .padding(.horizontal, AXSpacing.sm)
                     .padding(.vertical, 6)
-                    .frame(width: 180)
-                    .background(Color.axBackground.opacity(0.5))
+                    .frame(width: 160)
+                    .background(Color.axSurface)
                     .cornerRadius(AXCornerRadius.md)
-                    .overlay(RoundedRectangle(cornerRadius: AXCornerRadius.md).stroke(Color.axBorder.opacity(0.2), lineWidth: 1))
+                    .overlay(RoundedRectangle(cornerRadius: AXCornerRadius.md).stroke(Color.axBorder, lineWidth: 1))
                 }
-                .padding(.horizontal, AXSpacing.sm)
+                .padding(.bottom, AXSpacing.md)
 
-                // The List directly follows
-                VStack(spacing: 4) {
-                    if nginxConfig.blockedIPs.isEmpty && !isBlocking {
-                        NoBlocksView()
-                    } else {
+                // IP List
+                if nginxConfig.blockedIPs.isEmpty && !isBlocking {
+                    NoBlocksView()
+                } else {
+                    VStack(spacing: AXSpacing.sm) {
                         ForEach(filteredIPs) { item in
                             BlockedIPRow(item: item, onUnblock: onUnblock)
                         }
                         
                         if !searchText.isEmpty && filteredIPs.isEmpty {
-                            Text("No results matching '\(searchText)'")
-                                .font(AXTypography.caption)
-                                .foregroundColor(.axTextTertiary)
-                                .padding(AXSpacing.xl)
-                                .frame(maxWidth: .infinity)
+                            AXCard {
+                                Text("No results matching '\(searchText)'")
+                                    .font(AXTypography.caption)
+                                    .foregroundColor(.axTextTertiary)
+                                    .padding(AXSpacing.lg)
+                                    .frame(maxWidth: .infinity)
+                            }
                         }
                     }
                 }
@@ -195,18 +201,19 @@ public struct NginxSecurityTab: View {
 private struct NoBlocksView: View {
     var body: some View {
         AXCard {
-            HStack {
-                Spacer()
-                VStack(spacing: AXSpacing.sm) {
-                    Image(systemName: "checkmark.shield")
-                        .font(.system(size: 32))
-                        .foregroundColor(.axSuccess.opacity(0.5))
-                    Text("No IPs are currently blocked")
-                        .font(AXTypography.subheadline)
-                        .foregroundColor(.axTextSecondary)
-                }
-                Spacer()
+            VStack(spacing: AXSpacing.md) {
+                Image(systemName: "checkmark.shield")
+                    .font(.system(size: 36))
+                    .foregroundColor(.axSuccess.opacity(0.5))
+                Text("No blocked IPs")
+                    .font(AXTypography.subheadline)
+                    .foregroundColor(.axTextSecondary)
+                Text("Block IP addresses to prevent them from accessing your server")
+                    .font(AXTypography.caption)
+                    .foregroundColor(.axTextTertiary)
+                    .multilineTextAlignment(.center)
             }
+            .frame(maxWidth: .infinity)
             .padding(AXSpacing.xl)
         }
     }
@@ -217,13 +224,13 @@ private struct BlockedIPRow: View {
     let onUnblock: (String) async -> Void
     
     var body: some View {
-        AXCard(padding: 12) { // Tighter padding
+        AXCard(padding: AXSpacing.md) {
             HStack(spacing: AXSpacing.md) {
                 VStack(alignment: .leading, spacing: 4) {
                     HStack(spacing: AXSpacing.sm) {
                         Text(item.ip)
                             .font(.system(.body, design: .monospaced))
-                            .fontWeight(.bold)
+                            .fontWeight(.semibold)
                             .foregroundColor(.axTextPrimary)
                         
                         Text(item.duration ?? "Permanent")
@@ -232,13 +239,25 @@ private struct BlockedIPRow: View {
                             .padding(.vertical, 2)
                             .background(Color.axError.opacity(0.1))
                             .foregroundColor(.axError)
-                            .cornerRadius(4)
+                            .cornerRadius(AXCornerRadius.sm)
                     }
                     
                     HStack(spacing: AXSpacing.md) {
-                        Label(item.date.formatted(date: .abbreviated, time: .shortened), systemImage: "calendar")
+                        Label {
+                            Text(item.date.formatted(date: .abbreviated, time: .shortened))
+                        } icon: {
+                            Image(systemName: "calendar")
+                                .font(.system(size: 10))
+                        }
+                        
                         if let reason = item.reason, !reason.isEmpty {
-                            Label(reason, systemImage: "info.circle")
+                            Label {
+                                Text(reason)
+                                    .lineLimit(1)
+                            } icon: {
+                                Image(systemName: "info.circle")
+                                    .font(.system(size: 10))
+                            }
                         }
                     }
                     .font(AXTypography.caption)
@@ -247,11 +266,20 @@ private struct BlockedIPRow: View {
                 
                 Spacer()
                 
-                Button("Revoke") {
+                Button(action: {
                     Task { await onUnblock(item.ip) }
+                }) {
+                    Text("Revoke")
+                        .font(AXTypography.caption)
+                        .fontWeight(.medium)
+                        .foregroundColor(.axTextSecondary)
+                        .padding(.horizontal, AXSpacing.md)
+                        .padding(.vertical, 6)
+                        .background(Color.axSurface)
+                        .cornerRadius(AXCornerRadius.md)
+                        .overlay(RoundedRectangle(cornerRadius: AXCornerRadius.md).stroke(Color.axBorder, lineWidth: 1))
                 }
-                .buttonStyle(.bordered)
-                .controlSize(.small)
+                .buttonStyle(.plain)
             }
         }
     }

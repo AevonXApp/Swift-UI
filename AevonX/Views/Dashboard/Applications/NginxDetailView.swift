@@ -4,100 +4,108 @@ import AevonXCore
 
 @MainActor
 struct NginxDetailView: View {
+    @Environment(\.dismiss) private var dismiss
     let application: ApplicationInstance
     let serverId: String
 
-    @State private var selectedTab = 0
+    @State private var selectedSection: NginxSection = .overview
     @State private var nginxConfig = NginxConfigData()
     @State private var isLoading = true
     @State private var errorMessage: String?
     @State private var successMessage: String?
 
     var body: some View {
-        VStack(spacing: 0) {
-            // Header Content
-            VStack(alignment: .leading, spacing: AXSpacing.md) {
-                HStack(alignment: .center) {
-                    VStack(alignment: .leading, spacing: AXSpacing.xs) {
-                        Text(application.name)
-                            .font(AXTypography.title)
-                            .fontWeight(.bold)
-                            .foregroundColor(.axTextPrimary)
-                        
-                        HStack(spacing: AXSpacing.md) {
-                            StatusBadge(isRunning: application.isRunning)
-                            
-                            Text(application.version ?? "Unknown Version")
-                                .font(AXTypography.caption)
-                                .foregroundColor(.axTextTertiary)
-                        }
-                    }
-                    
-                    Spacer()
-                    
-                    ControlButtons(application: application, serverId: serverId) { action in
-                        Task { await controlService(action: action) }
-                    }
+        HStack(spacing: 0) {
+            // Left Sidebar
+            NginxSidebar(
+                application: application,
+                selectedSection: $selectedSection,
+                onBack: { dismiss() },
+                onControl: { action in
+                    Task { await controlService(action: action) }
                 }
-                
-                if let error = errorMessage {
-                    NginxMessageBanner(message: error, type: .error) {
-                        errorMessage = nil
-                    }
-                    .transition(.move(edge: .top).combined(with: .opacity))
-                }
-                
-                if let success = successMessage {
-                    NginxMessageBanner(message: success, type: .success) {
-                        successMessage = nil
-                    }
-                    .transition(.move(edge: .top).combined(with: .opacity))
-                }
-            }
-            .padding(AXSpacing.xl)
+            )
+            .frame(width: 260)
             .background(Color.axSurface.opacity(0.4))
-            
-            // Tabs
-            AXTabs(tabs: ["Overview", "Configuration", "Ports", "Security", "Logs", "Versions"], selectedTab: $selectedTab)
-                .padding(.horizontal, AXSpacing.xl)
             
             Divider()
             
-            // Content
-            ScrollView {
-                VStack(spacing: AXSpacing.xl) {
-                    if isLoading {
-                        ProgressView("Loading Nginx data...")
-                            .padding(AXSpacing.xxl)
-                    } else {
-                        switch selectedTab {
-                        case 0: NginxOverviewTab(
-                            application: application,
-                            nginxConfig: $nginxConfig,
-                            onReload: { Task { await reloadService() } },
-                            onTest: { Task { await testConfiguration() } }
-                        )
-                        case 1: NginxConfigurationTab(application: application, nginxConfig: $nginxConfig, onSave: saveConfiguration)
-                        case 2: NginxPortsTab(application: application, nginxConfig: $nginxConfig, onSave: savePort)
-                        case 3: NginxSecurityTab(application: application, nginxConfig: $nginxConfig, onBlock: blockIP, onUnblock: unblockIP)
-                        case 4: AXAdvancedLogsView(
-                            source: AXLogSource.nginxService,
-                            serverId: serverId,
-                            onSuccess: { msg in successMessage = msg },
-                            onError: { msg in errorMessage = msg }
-                        )
-                        case 5: NginxVersionsTab(application: application, serverId: serverId, onInstall: installVersion, onSwitch: switchVersion)
-                        default: EmptyView()
+            // Right Content Area
+            VStack(spacing: 0) {
+                // Top Message Banners (Global to detail view)
+                VStack(spacing: 0) {
+                    if let error = errorMessage {
+                        NginxMessageBanner(message: error, type: .error) {
+                            errorMessage = nil
                         }
+                        .transition(.move(edge: .top).combined(with: .opacity))
+                    }
+                    
+                    if let success = successMessage {
+                        NginxMessageBanner(message: success, type: .success) {
+                            successMessage = nil
+                        }
+                        .transition(.move(edge: .top).combined(with: .opacity))
                     }
                 }
-                .padding(AXSpacing.xl)
-                .animation(.spring(), value: selectedTab)
+                .animation(.spring(), value: errorMessage)
+                .animation(.spring(), value: successMessage)
+
+                // Scrollable Content
+                ScrollView {
+                    VStack(spacing: AXSpacing.xl) {
+                        if isLoading {
+                            VStack(spacing: AXSpacing.md) {
+                                ProgressView()
+                                Text("Syncing Nginx Data...")
+                                    .font(AXTypography.caption)
+                                    .foregroundColor(.axTextTertiary)
+                            }
+                            .frame(maxWidth: .infinity, minHeight: 400)
+                        } else {
+                            contentForSection
+                                .transition(.asymmetric(
+                                    insertion: .opacity.combined(with: .move(edge: .bottom)),
+                                    removal: .opacity
+                                ))
+                        }
+                    }
+                    .padding(AXSpacing.xl)
+                }
             }
+            .background(Color.axBackground)
         }
         .background(Color.axBackground)
         .onAppear {
             Task { await loadNginxData() }
+        }
+    }
+
+    @ViewBuilder
+    private var contentForSection: some View {
+        switch selectedSection {
+        case .overview:
+            NginxOverviewTab(
+                application: application,
+                nginxConfig: $nginxConfig,
+                onReload: { Task { await reloadService() } },
+                onTest: { Task { await testConfiguration() } }
+            )
+        case .configuration:
+            NginxConfigurationTab(application: application, nginxConfig: $nginxConfig, onSave: saveConfiguration)
+        case .ports:
+            NginxPortsTab(application: application, nginxConfig: $nginxConfig, onSave: savePort)
+        case .security:
+            NginxSecurityTab(application: application, nginxConfig: $nginxConfig, onBlock: blockIP, onUnblock: unblockIP)
+        case .logs:
+            AXAdvancedLogsView(
+                source: AXLogSource.nginxService,
+                serverId: serverId,
+                onSuccess: { msg in successMessage = msg },
+                onError: { msg in errorMessage = msg }
+            )
+        case .versions:
+            NginxVersionsTab(application: application, serverId: serverId)
         }
     }
 
@@ -209,28 +217,6 @@ struct NginxDetailView: View {
         }
     }
 
-    private func installVersion(_ version: String) async {
-        successMessage = nil
-        errorMessage = nil
-        do {
-            try await ApplicationManager.shared.installVersion(version, type: .nginx, serverId: serverId)
-            self.successMessage = "Nginx version \(version) installation started"
-        } catch {
-            self.errorMessage = "Failed to start installation: \(error.localizedDescription)"
-        }
-    }
-
-    private func switchVersion(_ version: String) async {
-        successMessage = nil
-        errorMessage = nil
-        do {
-            try await ApplicationManager.shared.switchVersion(version, type: .nginx, serverId: serverId)
-            self.successMessage = "Switched to Nginx version \(version)"
-        } catch {
-            self.errorMessage = "Failed to switch version: \(error.localizedDescription)"
-        }
-    }
-
     private func controlService(action: String) async {
         successMessage = nil
         errorMessage = nil
@@ -253,59 +239,6 @@ struct NginxDetailView: View {
             await MainActor.run {
                 self.errorMessage = "Failed to \(action) Nginx: \(error.localizedDescription)"
             }
-        }
-    }
-}
-
-// MARK: - Helper Views
-
-private struct StatusBadge: View {
-    let isRunning: Bool
-    
-    var body: some View {
-        HStack(spacing: 4) {
-            Circle()
-                .fill(isRunning ? Color.axSuccess : Color.axError)
-                .frame(width: 8, height: 8)
-            
-            Text(isRunning ? "RUNNING" : "STOPPED")
-                .font(.system(size: 10, weight: .bold))
-                .foregroundColor(isRunning ? .axSuccess : .axError)
-        }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 4)
-        .background(isRunning ? Color.axSuccess.opacity(0.1) : Color.axError.opacity(0.1))
-        .cornerRadius(4)
-    }
-}
-
-private struct ControlButtons: View {
-    let application: ApplicationInstance
-    let serverId: String
-    let onAction: (String) -> Void
-    
-    var body: some View {
-        HStack(spacing: AXSpacing.md) {
-            Button(action: { onAction("start") }) {
-                Image(systemName: "play.fill")
-                    .foregroundColor(.white)
-            }
-            .buttonStyle(.borderedProminent)
-            .tint(.axSuccess)
-            .disabled(application.isRunning)
-            
-            Button(action: { onAction("stop") }) {
-                Image(systemName: "stop.fill")
-                    .foregroundColor(.white)
-            }
-            .buttonStyle(.borderedProminent)
-            .tint(.axError)
-            .disabled(!application.isRunning)
-            
-            Button(action: { onAction("restart") }) {
-                Image(systemName: "arrow.clockwise")
-            }
-            .buttonStyle(.bordered)
         }
     }
 }

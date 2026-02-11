@@ -40,6 +40,17 @@ enum DashboardTab: String, CaseIterable, Identifiable {
     case settings = "Settings"
     
     var id: String { rawValue }
+    
+    var icon: String {
+        switch self {
+        case .overview: return "chart.line.uptrend.xyaxis"
+        case .websites: return "globe"
+        case .databases: return "cylinder.split.1x2"
+        case .applications: return "square.stack.3d.up"
+        case .files: return "folder"
+        case .settings: return "gearshape"
+        }
+    }
 }
 
 
