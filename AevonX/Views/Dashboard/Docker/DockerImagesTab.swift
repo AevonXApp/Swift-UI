@@ -14,6 +14,10 @@ struct DockerImagesTab: View {
     @State private var actionInProgress: String? // ID of image being acted upon
     @State private var showPullSheet: Bool = false
     
+    // Conflict handling
+    @State private var showConflictAlert: Bool = false
+    @State private var conflictingImageId: String?
+    
     // Filtered images
     var filteredImages: [DockerImage] {
         if searchText.isEmpty {
@@ -134,6 +138,18 @@ struct DockerImagesTab: View {
                 handlePullImage(imageName)
             }
         }
+        .alert("Image Conflict", isPresented: $showConflictAlert, actions: {
+            Button("Force Remove", role: .destructive) {
+                if let id = conflictingImageId {
+                    handleRemoveImage(id: id, force: true)
+                }
+            }
+            Button("Cancel", role: .cancel) {
+                conflictingImageId = nil
+            }
+        }, message: {
+            Text("This image is being used by one or more containers (perhaps stopped). Would you like to force remove it?")
+        })
     }
     
     // MARK: - Actions
@@ -152,20 +168,26 @@ struct DockerImagesTab: View {
         }
     }
     
-    private func handleRemoveImage(id: String) {
+    private func handleRemoveImage(id: String, force: Bool = false) {
         guard actionInProgress == nil else { return }
         actionInProgress = id
         
         Task {
             do {
-                try await DockerManager.shared.removeImage(id: id, force: false, serverId: serverId)
+                try await DockerManager.shared.removeImage(id: id, force: force, serverId: serverId)
                 
                 // Refresh
                 try await Task.sleep(nanoseconds: 500_000_000)
-                refreshData() // Removed await
+                refreshData()
                 
             } catch {
-                errorMessage = "Failed to remove image: \(error.localizedDescription)"
+                let errorDesc = error.localizedDescription
+                if errorDesc.lowercased().contains("conflict") || errorDesc.lowercased().contains("must be forced") {
+                    conflictingImageId = id
+                    showConflictAlert = true
+                } else {
+                    errorMessage = "Failed to remove image: \(errorDesc)"
+                }
             }
             actionInProgress = nil
         }
