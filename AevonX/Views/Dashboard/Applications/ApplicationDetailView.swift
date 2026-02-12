@@ -23,6 +23,12 @@ struct ApplicationDetailView: View {
                 PHPDetailView(application: application, serverId: serverId)
             case .apache:
                 ApacheDetailView(application: application, serverId: serverId)
+            case .mysql, .postgresql, .redis, .mongodb, .mariadb, .sqlite, .cockroachdb, .cassandra, .elasticsearch:
+                if let dbType = DatabaseType(rawValue: application.type.rawValue) {
+                    DatabaseEngineDetailView(databaseType: dbType, serverId: serverId)
+                } else {
+                    GenericApplicationDetailView(application: application, serverId: serverId)
+                }
             default:
                 GenericApplicationDetailView(application: application, serverId: serverId)
             }
