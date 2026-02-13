@@ -8,12 +8,12 @@
 import SwiftUI
 import AevonXCore
 
-// MARK: - Edit Server View (Simple Version using Standard SwiftUI)
+// MARK: - Edit Server View (Enhanced Version)
 struct EditServerView: View {
     @Environment(\.dismiss) private var dismiss
     let server: ServerViewModel
     let onSave: (AddServerRequest) -> Void
-    
+
     @State private var name: String = ""
     @State private var host: String = ""
     @State private var port: String = ""
@@ -25,26 +25,52 @@ struct EditServerView: View {
     @State private var tagsText: String = ""
     @State private var selectedIcon: ServerIcon = .serverRack
     @State private var selectedColor: ServerColor = .blue
+    @State private var hasChanges: Bool = false
     
     var body: some View {
         ScrollView {
             VStack(spacing: AXSpacing.lg) {
-                // Header
-                HStack {
+                // Header with enhanced styling
+                HStack(spacing: AXSpacing.md) {
+                    // Server Icon Preview
+                    ZStack {
+                        RoundedRectangle(cornerRadius: AXCornerRadius.lg)
+                            .fill(
+                                LinearGradient(
+                                    colors: [Color(hex: selectedColor.rawValue).opacity(0.25), Color(hex: selectedColor.rawValue).opacity(0.15)],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
+                            .frame(width: 48, height: 48)
+
+                        Image(systemName: selectedIcon.rawValue)
+                            .font(.system(size: 22, weight: .medium))
+                            .foregroundColor(Color(hex: selectedColor.rawValue))
+                    }
+
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Edit Server")
+                            .font(AXTypography.title2)
+                            .fontWeight(.bold)
+                            .foregroundColor(.axTextPrimary)
+
+                        Text(server.name)
+                            .font(AXTypography.caption)
+                            .foregroundColor(.axTextSecondary)
+                    }
+
+                    Spacer()
+
                     Button {
                         dismiss()
                     } label: {
                         Image(systemName: "xmark.circle.fill")
                             .font(.system(size: 24))
                             .foregroundColor(.axTextMuted)
+                            .symbolRenderingMode(.hierarchical)
                     }
-                    
-                    Text("Edit Server")
-                        .font(AXTypography.title2)
-                        .fontWeight(.bold)
-                        .foregroundColor(.axTextPrimary)
-                    
-                    Spacer()
+                    .buttonStyle(.plain)
                 }
                 .padding(.horizontal, AXSpacing.xl)
                 .padding(.top, AXSpacing.xl)
@@ -134,12 +160,20 @@ struct EditServerView: View {
                             }
                         }
                         
-                        // Tags
+                        // Tags with helper text
                         VStack(alignment: .leading, spacing: AXSpacing.xs) {
-                            Text("Tags (optional)")
-                                .font(AXTypography.caption)
-                                .foregroundColor(.axTextMuted)
-                            TextField("production, web, database", text: $tagsText)
+                            HStack(spacing: AXSpacing.xs) {
+                                Text("Tags (optional)")
+                                    .font(AXTypography.caption)
+                                    .foregroundColor(.axTextMuted)
+
+                                Image(systemName: "info.circle")
+                                    .font(.system(size: 10))
+                                    .foregroundColor(.axAccentBlue)
+                                    .help("Add tags like 'production', 'staging', or 'development' to enable environment filters")
+                            }
+
+                            TextField("production, staging, web, database", text: $tagsText)
                                 .font(AXTypography.body)
                                 .foregroundColor(.axTextPrimary)
                                 .padding(AXSpacing.md)
@@ -149,6 +183,33 @@ struct EditServerView: View {
                                     RoundedRectangle(cornerRadius: AXCornerRadius.md)
                                         .stroke(Color.axBorder, lineWidth: 1)
                                 )
+
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("💡 Environment Filter Tags:")
+                                    .font(AXTypography.caption2)
+                                    .fontWeight(.semibold)
+                                    .foregroundColor(.axAccentBlue)
+
+                                Group {
+                                    Text("• Production: ") +
+                                    Text("production, prod, live, prd, main").foregroundColor(.axTextTertiary)
+
+                                    Text("• Staging: ") +
+                                    Text("staging, stage, stg, uat, pre-prod").foregroundColor(.axTextTertiary)
+
+                                    Text("• Development: ") +
+                                    Text("development, dev, test, local, sandbox").foregroundColor(.axTextTertiary)
+                                }
+                                .font(AXTypography.caption2)
+                                .foregroundColor(.axTextSecondary)
+                            }
+                            .padding(AXSpacing.sm)
+                            .background(Color.axAccentBlue.opacity(0.05))
+                            .cornerRadius(AXCornerRadius.sm)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: AXCornerRadius.sm)
+                                    .stroke(Color.axAccentBlue.opacity(0.2), lineWidth: 1)
+                            )
                         }
                     }
                     .padding(AXSpacing.lg)
@@ -334,56 +395,85 @@ struct EditServerView: View {
                     .padding(.horizontal, AXSpacing.lg)
                 }
                 
-                // Action Buttons
-                HStack(spacing: AXSpacing.md) {
-                    Button {
-                        dismiss()
-                    } label: {
-                        Text("Cancel")
+                // Action Buttons with enhanced styling
+                VStack(spacing: 0) {
+                    Divider()
+                        .background(Color.axBorder)
+
+                    HStack(spacing: AXSpacing.md) {
+                        Button {
+                            dismiss()
+                        } label: {
+                            HStack(spacing: AXSpacing.xs) {
+                                Image(systemName: "xmark")
+                                    .font(.system(size: 12))
+                                Text("Cancel")
+                            }
                             .font(AXTypography.subheadline)
                             .fontWeight(.medium)
                             .foregroundColor(.axTextPrimary)
-                            .padding(.horizontal, AXSpacing.xl)
+                            .frame(maxWidth: .infinity)
                             .padding(.vertical, AXSpacing.md)
                             .background(Color.axSurface)
                             .cornerRadius(AXCornerRadius.md)
-                    }
-                    .buttonStyle(.plain)
-                    
-                    Spacer()
-                    
-                    Button {
-                        let request = AddServerRequest(
-                            name: name,
-                            host: host,
-                            port: Int(port) ?? 22,
-                            username: username,
-                            authType: authType,
-                            password: password.isEmpty ? nil : password,
-                            privateKey: privateKey.isEmpty ? nil : privateKey,
-                            keyPassphrase: keyPassphrase.isEmpty ? nil : keyPassphrase,
-                            tags: tagsText.isEmpty ? [] : tagsText.components(separatedBy: ",").map { $0.trimmingCharacters(in: .whitespaces) },
-                            notes: nil,
-                            iconName: selectedIcon.rawValue,
-                            customColor: selectedColor.rawValue
-                        )
-                        onSave(request)
-                        dismiss()
-                    } label: {
-                        Text("Save Changes")
+                            .overlay(
+                                RoundedRectangle(cornerRadius: AXCornerRadius.md)
+                                    .stroke(Color.axBorder, lineWidth: 1)
+                            )
+                        }
+                        .buttonStyle(.plain)
+                        .keyboardShortcut(.cancelAction)
+
+                        Button {
+                            let request = AddServerRequest(
+                                name: name,
+                                host: host,
+                                port: Int(port) ?? 22,
+                                username: username,
+                                authType: authType,
+                                password: password.isEmpty ? nil : password,
+                                privateKey: privateKey.isEmpty ? nil : privateKey,
+                                keyPassphrase: keyPassphrase.isEmpty ? nil : keyPassphrase,
+                                tags: tagsText.isEmpty ? [] : tagsText.components(separatedBy: ",").map { $0.trimmingCharacters(in: .whitespaces) },
+                                notes: nil,
+                                iconName: selectedIcon.rawValue,
+                                customColor: selectedColor.rawValue
+                            )
+                            onSave(request)
+                            dismiss()
+                        } label: {
+                            HStack(spacing: AXSpacing.xs) {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .font(.system(size: 14))
+                                Text("Save Changes")
+                            }
                             .font(AXTypography.subheadline)
                             .fontWeight(.semibold)
-                            .foregroundColor(.axBackground)
-                            .padding(.horizontal, AXSpacing.xl)
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
                             .padding(.vertical, AXSpacing.md)
-                            .background(Color.axAccentBlue)
+                            .background(
+                                LinearGradient(
+                                    colors: (name.isEmpty || host.isEmpty || username.isEmpty)
+                                        ? [Color.axTextMuted, Color.axTextMuted.opacity(0.8)]
+                                        : [Color.axAccentBlue, Color.axAccentBlue.opacity(0.85)],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
                             .cornerRadius(AXCornerRadius.md)
+                            .shadow(
+                                color: (name.isEmpty || host.isEmpty || username.isEmpty) ? .clear : Color.axAccentBlue.opacity(0.3),
+                                radius: 8,
+                                y: 4
+                            )
+                        }
+                        .buttonStyle(.plain)
+                        .disabled(name.isEmpty || host.isEmpty || username.isEmpty)
+                        .keyboardShortcut(.defaultAction)
                     }
-                    .buttonStyle(.plain)
-                    .disabled(name.isEmpty || host.isEmpty || username.isEmpty)
+                    .padding(AXSpacing.xl)
                 }
-                .padding(.horizontal, AXSpacing.xl)
-                .padding(.vertical, AXSpacing.lg)
                 
                 Spacer(minLength: AXSpacing.xl)
             }
@@ -433,175 +523,292 @@ struct RemoteFleetView: View {
     var body: some View {
         VStack(spacing: 0) {
             // Header
-            VStack(spacing: AXSpacing.xl) {
-                HStack {
-                    VStack(alignment: .leading, spacing: AXSpacing.sm) {
-                        Text("Remote Fleet")
-                            .font(AXTypography.largeTitle)
-                            .foregroundColor(.axTextPrimary)
-                        
+            VStack(spacing: AXSpacing.lg) {
+                HStack(alignment: .center) {
+                    VStack(alignment: .leading, spacing: AXSpacing.xs) {
+                        HStack(spacing: AXSpacing.md) {
+                            Text("Remote Fleet")
+                                .font(AXTypography.largeTitle)
+                                .fontWeight(.bold)
+                                .foregroundColor(.axTextPrimary)
+
+                            // Server count badge
+                            if !viewModel.isLoading {
+                                Text("\(viewModel.decryptedServers.count)")
+                                    .font(AXTypography.subheadline)
+                                    .fontWeight(.semibold)
+                                    .foregroundColor(.axAccentBlue)
+                                    .padding(.horizontal, AXSpacing.sm)
+                                    .padding(.vertical, AXSpacing.xxs)
+                                    .background(Color.axAccentBlue.opacity(0.15))
+                                    .cornerRadius(AXCornerRadius.full)
+                            }
+                        }
+
                         if !viewModel.isLoading {
-                            Text("\(viewModel.decryptedServers.filter { isServerOnline($0) }.count) of \(viewModel.decryptedServers.count) servers online")
-                                .font(AXTypography.callout)
-                                .foregroundColor(.axTextSecondary)
+                            HStack(spacing: AXSpacing.sm) {
+                                HStack(spacing: AXSpacing.xs) {
+                                    Circle()
+                                        .fill(Color.axSuccess)
+                                        .frame(width: 6, height: 6)
+                                    Text("\(viewModel.decryptedServers.filter { isServerOnline($0) }.count) Online")
+                                        .font(AXTypography.caption)
+                                        .foregroundColor(.axTextSecondary)
+                                }
+
+                                Text("•")
+                                    .foregroundColor(.axTextMuted)
+
+                                HStack(spacing: AXSpacing.xs) {
+                                    Circle()
+                                        .fill(Color.axTextMuted)
+                                        .frame(width: 6, height: 6)
+                                    Text("\(viewModel.decryptedServers.count - viewModel.decryptedServers.filter { isServerOnline($0) }.count) Offline")
+                                        .font(AXTypography.caption)
+                                        .foregroundColor(.axTextSecondary)
+                                }
+                            }
                         }
                     }
-                    
+
                     Spacer()
-                    
-                    // Add Server Button - Fully Functional
+
+                    // Add Server Button
                     Button(action: {
                         showAddServer = true
                     }) {
                         HStack(spacing: AXSpacing.sm) {
-                            Image(systemName: "plus")
+                            Image(systemName: "plus.circle.fill")
+                                .font(.system(size: 14))
                             Text("Add Server")
                         }
                         .font(AXTypography.subheadline)
-                        .fontWeight(.medium)
-                        .foregroundColor(.axBackground)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.white)
                         .padding(.horizontal, AXSpacing.lg)
                         .padding(.vertical, AXSpacing.md)
-                        .background(viewModel.canAddServer ? Color.axAccentBlue : Color.axTextMuted)
+                        .background(
+                            LinearGradient(
+                                colors: viewModel.canAddServer
+                                    ? [Color.axAccentBlue, Color.axAccentBlue.opacity(0.8)]
+                                    : [Color.axTextMuted, Color.axTextMuted.opacity(0.8)],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
                         .cornerRadius(AXCornerRadius.md)
+                        .shadow(color: viewModel.canAddServer ? Color.axAccentBlue.opacity(0.3) : .clear, radius: 8, y: 4)
                     }
                     .buttonStyle(PlainButtonStyle())
                     .disabled(!viewModel.canAddServer)
                 }
                 
                 // Search, Filter, Sort, and View Mode Bar
-                HStack(spacing: AXSpacing.md) {
-                    // Search
-                    HStack(spacing: AXSpacing.sm) {
-                        Image(systemName: "magnifyingglass")
-                            .foregroundColor(.axTextMuted)
-                        
-                        TextField("Search servers...", text: $searchText)
-                            .font(AXTypography.body)
-                            .foregroundColor(.axTextPrimary)
-                            .textFieldStyle(PlainTextFieldStyle())
-                    }
-                    .padding(.horizontal, AXSpacing.md)
-                    .padding(.vertical, AXSpacing.md)
-                    .background(Color.axSurface)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: AXCornerRadius.md)
-                            .stroke(Color.axBorder, lineWidth: 1)
-                    )
-                    .cornerRadius(AXCornerRadius.md)
-                    .frame(width: 240)
-                    
-                    // Type Filters
-                    HStack(spacing: AXSpacing.sm) {
-                        FilterPill(
-                            title: "All",
-                            isSelected: selectedFilter == nil,
-                            action: { selectedFilter = nil }
-                        )
-                        
-                        FilterPill(
-                            title: "Production",
-                            isSelected: selectedFilter == .production,
-                            action: { selectedFilter = .production }
-                        )
-                        
-                        FilterPill(
-                            title: "Staging",
-                            isSelected: selectedFilter == .staging,
-                            action: { selectedFilter = .staging }
-                        )
-                        
-                        FilterPill(
-                            title: "Development",
-                            isSelected: selectedFilter == .development,
-                            action: { selectedFilter = .development }
-                        )
-                    }
-                    
-                    Spacer()
-                    
-                    // Sort Menu
-                    Menu {
-                        ForEach([ServerSortOption.nameAsc, .nameDesc, .dateAdded, .status], id: \.self) { option in
-                            Button(action: { sortOption = option }) {
-                                HStack {
-                                    Image(systemName: option.icon)
-                                    Text(option.label)
-                                    if sortOption == option {
-                                        Image(systemName: "checkmark")
-                                    }
+                VStack(spacing: AXSpacing.md) {
+                    HStack(spacing: AXSpacing.md) {
+                        // Search with enhanced styling
+                        HStack(spacing: AXSpacing.sm) {
+                            Image(systemName: "magnifyingglass")
+                                .font(.system(size: 14))
+                                .foregroundColor(.axTextMuted)
+
+                            TextField("Search by name, host, or tags...", text: $searchText)
+                                .font(AXTypography.body)
+                                .foregroundColor(.axTextPrimary)
+                                .textFieldStyle(PlainTextFieldStyle())
+
+                            if !searchText.isEmpty {
+                                Button(action: { searchText = "" }) {
+                                    Image(systemName: "xmark.circle.fill")
+                                        .font(.system(size: 14))
+                                        .foregroundColor(.axTextMuted)
                                 }
+                                .buttonStyle(.plain)
                             }
                         }
-                    } label: {
-                        HStack(spacing: AXSpacing.sm) {
-                            Image(systemName: "arrow.up.arrow.down")
-                            Text("Sort")
-                        }
-                        .font(AXTypography.subheadline)
-                        .foregroundColor(.axTextSecondary)
                         .padding(.horizontal, AXSpacing.md)
                         .padding(.vertical, AXSpacing.sm)
                         .background(Color.axSurface)
                         .overlay(
                             RoundedRectangle(cornerRadius: AXCornerRadius.md)
-                                .stroke(Color.axBorder, lineWidth: 1)
+                                .stroke(searchText.isEmpty ? Color.axBorder : Color.axAccentBlue.opacity(0.5), lineWidth: searchText.isEmpty ? 1 : 1.5)
                         )
                         .cornerRadius(AXCornerRadius.md)
-                    }
-                    
-                    // View Mode Toggle
-                    HStack(spacing: AXSpacing.xs) {
-                        Button(action: { viewMode = .grid }) {
-                            Image(systemName: "square.grid.2x2")
-                                .font(.system(size: 14))
-                                .foregroundColor(viewMode == .grid ? .axBackground : .axTextSecondary)
-                                .frame(width: 32, height: 32)
-                                .background(viewMode == .grid ? Color.axAccentBlue : Color.axSurface)
-                                .cornerRadius(AXCornerRadius.sm)
-                        }
-                        .buttonStyle(PlainButtonStyle())
-                        
-                        Button(action: { viewMode = .list }) {
-                            Image(systemName: "list.bullet")
-                                .font(.system(size: 14))
-                                .foregroundColor(viewMode == .list ? .axBackground : .axTextSecondary)
-                                .frame(width: 32, height: 32)
-                                .background(viewMode == .list ? Color.axAccentBlue : Color.axSurface)
-                                .cornerRadius(AXCornerRadius.sm)
-                        }
-                        .buttonStyle(PlainButtonStyle())
-                    }
-                    .background(Color.axSurface)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: AXCornerRadius.md)
-                            .stroke(Color.axBorder, lineWidth: 1)
-                    )
-                    .cornerRadius(AXCornerRadius.md)
-                    
-                    // Refresh Button
-                    Button(action: {
-                        Task {
-                            await viewModel.refresh()
-                        }
-                    }) {
-                        Image(systemName: "arrow.clockwise")
-                            .font(.system(size: 16))
+                        .frame(minWidth: 280)
+
+                        Spacer()
+
+                        // Sort Menu with better styling
+                        Menu {
+                            ForEach([ServerSortOption.nameAsc, .nameDesc, .dateAdded, .status], id: \.self) { option in
+                                Button(action: { sortOption = option }) {
+                                    HStack {
+                                        Image(systemName: option.icon)
+                                        Text(option.label)
+                                        Spacer()
+                                        if sortOption == option {
+                                            Image(systemName: "checkmark")
+                                                .foregroundColor(.axAccentBlue)
+                                        }
+                                    }
+                                }
+                            }
+                        } label: {
+                            HStack(spacing: AXSpacing.xs) {
+                                Image(systemName: sortOption.icon)
+                                    .font(.system(size: 12))
+                                Text(sortOption.label)
+                                    .font(AXTypography.caption)
+                                Image(systemName: "chevron.down")
+                                    .font(.system(size: 10))
+                            }
                             .foregroundColor(.axTextSecondary)
-                            .frame(width: 36, height: 36)
+                            .padding(.horizontal, AXSpacing.md)
+                            .padding(.vertical, AXSpacing.sm)
                             .background(Color.axSurface)
                             .overlay(
                                 RoundedRectangle(cornerRadius: AXCornerRadius.md)
                                     .stroke(Color.axBorder, lineWidth: 1)
                             )
                             .cornerRadius(AXCornerRadius.md)
+                        }
+
+                        // View Mode Toggle with improved design
+                        HStack(spacing: 2) {
+                            Button(action: { viewMode = .grid }) {
+                                Image(systemName: "square.grid.2x2")
+                                    .font(.system(size: 13))
+                                    .foregroundColor(viewMode == .grid ? .white : .axTextSecondary)
+                                    .frame(width: 34, height: 34)
+                                    .background(viewMode == .grid ? Color.axAccentBlue : Color.clear)
+                                    .cornerRadius(AXCornerRadius.sm)
+                            }
+                            .buttonStyle(PlainButtonStyle())
+
+                            Button(action: { viewMode = .list }) {
+                                Image(systemName: "list.bullet")
+                                    .font(.system(size: 13))
+                                    .foregroundColor(viewMode == .list ? .white : .axTextSecondary)
+                                    .frame(width: 34, height: 34)
+                                    .background(viewMode == .list ? Color.axAccentBlue : Color.clear)
+                                    .cornerRadius(AXCornerRadius.sm)
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                        }
+                        .padding(2)
+                        .background(Color.axSurface)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: AXCornerRadius.md)
+                                .stroke(Color.axBorder, lineWidth: 1)
+                        )
+                        .cornerRadius(AXCornerRadius.md)
+
+                        // Refresh Button with animation
+                        Button(action: {
+                            Task {
+                                await viewModel.refresh()
+                            }
+                        }) {
+                            Image(systemName: "arrow.clockwise")
+                                .font(.system(size: 14))
+                                .foregroundColor(viewModel.isLoading ? .axAccentBlue : .axTextSecondary)
+                                .frame(width: 38, height: 38)
+                                .background(Color.axSurface)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: AXCornerRadius.md)
+                                        .stroke(Color.axBorder, lineWidth: 1)
+                                )
+                                .cornerRadius(AXCornerRadius.md)
+                                .rotationEffect(.degrees(viewModel.isLoading ? 360 : 0))
+                                .animation(viewModel.isLoading ? Animation.linear(duration: 1).repeatForever(autoreverses: false) : .default, value: viewModel.isLoading)
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                        .disabled(viewModel.isLoading)
                     }
-                    .buttonStyle(PlainButtonStyle())
-                    .disabled(viewModel.isLoading)
+
+                    // Environment Filter Pills
+                    HStack(spacing: AXSpacing.sm) {
+                        HStack(spacing: AXSpacing.xs) {
+                            Image(systemName: "line.3.horizontal.decrease.circle")
+                                .font(.system(size: 12))
+                                .foregroundColor(.axTextMuted)
+                            Text("Environment:")
+                                .font(AXTypography.caption)
+                                .fontWeight(.medium)
+                                .foregroundColor(.axTextMuted)
+                        }
+
+                        FilterPill(
+                            title: "All",
+                            isSelected: selectedFilter == nil,
+                            action: {
+                                withAnimation(.easeInOut(duration: 0.2)) {
+                                    selectedFilter = nil
+                                }
+                            }
+                        )
+
+                        FilterPill(
+                            title: "Production",
+                            isSelected: selectedFilter == .production,
+                            action: {
+                                withAnimation(.easeInOut(duration: 0.2)) {
+                                    selectedFilter = .production
+                                }
+                            }
+                        )
+
+                        FilterPill(
+                            title: "Staging",
+                            isSelected: selectedFilter == .staging,
+                            action: {
+                                withAnimation(.easeInOut(duration: 0.2)) {
+                                    selectedFilter = .staging
+                                }
+                            }
+                        )
+
+                        FilterPill(
+                            title: "Development",
+                            isSelected: selectedFilter == .development,
+                            action: {
+                                withAnimation(.easeInOut(duration: 0.2)) {
+                                    selectedFilter = .development
+                                }
+                            }
+                        )
+
+                        if selectedFilter != nil || !searchText.isEmpty {
+                            Divider()
+                                .frame(height: 16)
+                                .background(Color.axBorder)
+
+                            HStack(spacing: AXSpacing.xs) {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .font(.system(size: 10))
+                                    .foregroundColor(.axAccentBlue)
+                                Text("\(filteredServers.count) of \(viewModel.decryptedServers.count)")
+                                    .font(AXTypography.caption)
+                                    .fontWeight(.medium)
+                                    .foregroundColor(.axTextPrimary)
+                            }
+                            .padding(.horizontal, AXSpacing.sm)
+                            .padding(.vertical, AXSpacing.xxs)
+                            .background(Color.axAccentBlue.opacity(0.1))
+                            .cornerRadius(AXCornerRadius.full)
+                        }
+
+                        Spacer()
+                    }
                 }
             }
-            .padding(AXSpacing.xxl)
-            .background(Color.axBackground)
+            .padding(.horizontal, AXSpacing.xxl)
+            .padding(.vertical, AXSpacing.lg)
+            .background(
+                RoundedRectangle(cornerRadius: 0)
+                    .fill(Color.axBackground)
+                    .shadow(color: Color.black.opacity(0.05), radius: 2, y: 1)
+            )
             
             Divider()
                 .background(Color.axBorder)
@@ -611,6 +818,79 @@ struct RemoteFleetView: View {
                 LoadingServersView()
             } else if viewModel.decryptedServers.isEmpty {
                 RemoteFleetEmptyStateView(showAddServer: $showAddServer)
+            } else if filteredServers.isEmpty {
+                // No results after filtering
+                VStack(spacing: AXSpacing.xl) {
+                    Image(systemName: "magnifyingglass")
+                        .font(.system(size: 48))
+                        .foregroundColor(.axTextMuted)
+
+                    VStack(spacing: AXSpacing.sm) {
+                        Text("No Servers Found")
+                            .font(AXTypography.title2)
+                            .fontWeight(.semibold)
+                            .foregroundColor(.axTextPrimary)
+
+                        if selectedFilter != nil {
+                            Text("No servers match the '\(selectedFilter!.rawValue)' environment filter")
+                                .font(AXTypography.body)
+                                .foregroundColor(.axTextSecondary)
+                                .multilineTextAlignment(.center)
+                        } else if !searchText.isEmpty {
+                            Text("No servers match '\(searchText)'")
+                                .font(AXTypography.body)
+                                .foregroundColor(.axTextSecondary)
+                        }
+
+                        Text("Try adjusting your filters or search criteria")
+                            .font(AXTypography.caption)
+                            .foregroundColor(.axTextTertiary)
+                    }
+
+                    HStack(spacing: AXSpacing.md) {
+                        if !searchText.isEmpty {
+                            Button(action: { searchText = "" }) {
+                                HStack(spacing: AXSpacing.xs) {
+                                    Image(systemName: "xmark.circle")
+                                    Text("Clear Search")
+                                }
+                                .font(AXTypography.subheadline)
+                                .foregroundColor(.axTextPrimary)
+                                .padding(.horizontal, AXSpacing.md)
+                                .padding(.vertical, AXSpacing.sm)
+                                .background(Color.axSurface)
+                                .cornerRadius(AXCornerRadius.md)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: AXCornerRadius.md)
+                                        .stroke(Color.axBorder, lineWidth: 1)
+                                )
+                            }
+                            .buttonStyle(.plain)
+                        }
+
+                        if selectedFilter != nil {
+                            Button(action: { selectedFilter = nil }) {
+                                HStack(spacing: AXSpacing.xs) {
+                                    Image(systemName: "line.3.horizontal.decrease.circle")
+                                    Text("Clear Filter")
+                                }
+                                .font(AXTypography.subheadline)
+                                .foregroundColor(.axTextPrimary)
+                                .padding(.horizontal, AXSpacing.md)
+                                .padding(.vertical, AXSpacing.sm)
+                                .background(Color.axSurface)
+                                .cornerRadius(AXCornerRadius.md)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: AXCornerRadius.md)
+                                        .stroke(Color.axBorder, lineWidth: 1)
+                                )
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(Color.axBackground)
             } else {
                 ScrollView {
                     if viewMode == .grid {
@@ -667,7 +947,7 @@ struct RemoteFleetView: View {
                             viewModel: viewModel,
                             onConnect: { server in
                                 print("[RemoteFleet] Connect requested for server (List): \(server.name)")
-                                
+
                                 // Create full Server model with the SAME ID used for connection
                                 let serverUUID = UUID(uuidString: server.id) ?? UUID()
                                 let fullServer = Server(
@@ -687,13 +967,22 @@ struct RemoteFleetView: View {
                                     diskUsage: nil,
                                     uptime: nil
                                 )
-                                
+
                                 // Store the server and open dashboard immediately
                                 // Connection will happen in ServerDashboardView
                                 selectedServer = fullServer
                                 showServerDashboard = true
-                                
+
                                 print("[RemoteFleet] Opening dashboard for: \(server.name) (List)")
+                            },
+                            onEdit: { server in
+                                serverToEdit = server
+                                showEditServer = true
+                            },
+                            onDelete: { server in
+                                Task {
+                                    await viewModel.deleteServer(id: server.id)
+                                }
                             }
                         )
                     }
@@ -711,16 +1000,16 @@ struct RemoteFleetView: View {
             // Initialize in background with proper actor isolation
             await viewModel.initialize()
         }
-        .sheet(isPresented: $showEditServer) {
-            if let server = serverToEdit {
-                EditServerView(server: server) { updatedRequest in
-                    Task {
-                        // For now, just show a placeholder - full implementation would update the server
-                        await viewModel.deleteServer(id: server.id)
-                        await viewModel.addServer(updatedRequest)
-                    }
+        .sheet(item: $serverToEdit) { server in
+            EditServerView(server: server) { updatedRequest in
+                Task {
+                    // Delete old server and add updated one
+                    await viewModel.deleteServer(id: server.id)
+                    await viewModel.addServer(updatedRequest)
+                    serverToEdit = nil
                 }
             }
+            .frame(minWidth: 600, minHeight: 700)
         }
         // Decryption error dialog
         .sheet(isPresented: $viewModel.showDecryptionError) {
@@ -735,15 +1024,43 @@ struct RemoteFleetView: View {
             let matchesSearch = searchText.isEmpty ||
                 server.name.localizedCaseInsensitiveContains(searchText) ||
                 server.host.localizedCaseInsensitiveContains(searchText) ||
-                server.username.localizedCaseInsensitiveContains(searchText)
-            
-            // Environment filter matches if server tags contain the filter value
-            let matchesFilter = selectedFilter == nil || 
-                server.tags.contains(where: { $0.localizedCaseInsensitiveContains(selectedFilter?.rawValue ?? "") })
-            
+                server.username.localizedCaseInsensitiveContains(searchText) ||
+                server.tags.contains(where: { $0.localizedCaseInsensitiveContains(searchText) })
+
+            // Environment filter: flexible matching
+            let matchesFilter: Bool
+            if let filter = selectedFilter {
+                // Check if any tag contains the filter keyword (case insensitive)
+                // Also check common variations and keywords
+                let filterKeyword = filter.rawValue.lowercased()
+                matchesFilter = server.tags.contains(where: { tag in
+                    let tagLower = tag.lowercased().trimmingCharacters(in: .whitespaces)
+
+                    // Direct match
+                    if tagLower.contains(filterKeyword) {
+                        return true
+                    }
+
+                    // Check for common variations and synonyms
+                    switch filter {
+                    case .production:
+                        return tagLower.contains("prod") || tagLower.contains("live") ||
+                               tagLower == "prd" || tagLower == "main"
+                    case .staging:
+                        return tagLower.contains("stage") || tagLower.contains("stg") ||
+                               tagLower == "uat" || tagLower == "pre-prod" || tagLower == "preprod"
+                    case .development:
+                        return tagLower.contains("dev") || tagLower.contains("test") ||
+                               tagLower == "local" || tagLower == "sandbox"
+                    }
+                })
+            } else {
+                matchesFilter = true
+            }
+
             return matchesSearch && matchesFilter
         }
-        
+
         return filtered.sorted { s1, s2 in
             switch sortOption {
             case .nameAsc:
@@ -753,7 +1070,11 @@ struct RemoteFleetView: View {
             case .dateAdded:
                 return s1.createdAt > s2.createdAt
             case .status:
-                return s1.isAccessible != s2.isAccessible
+                // Online servers first
+                if s1.isAccessible != s2.isAccessible {
+                    return s1.isAccessible && !s2.isAccessible
+                }
+                return s1.name < s2.name
             }
         }
     }
@@ -828,13 +1149,13 @@ struct RemoteFleetGridView: View {
     let onConnect: (ServerViewModel) -> Void
     let onEdit: (ServerViewModel) -> Void
     let onDelete: (ServerViewModel) -> Void
-    
+
     var body: some View {
         LazyVGrid(columns: [
-            GridItem(.flexible(), spacing: AXSpacing.md),
-            GridItem(.flexible(), spacing: AXSpacing.md),
-            GridItem(.flexible(), spacing: AXSpacing.md)
-        ], spacing: AXSpacing.md) {
+            GridItem(.flexible(), spacing: AXSpacing.lg),
+            GridItem(.flexible(), spacing: AXSpacing.lg),
+            GridItem(.flexible(), spacing: AXSpacing.lg)
+        ], spacing: AXSpacing.lg) {
             ForEach(servers) { server in
                 RemoteServerCard(
                     server: server,
@@ -852,7 +1173,7 @@ struct RemoteFleetGridView: View {
                 )
             }
         }
-        .padding(AXSpacing.lg)
+        .padding(AXSpacing.xxl)
     }
     
     private func navigateToServer(_ server: ServerViewModel) async {
@@ -894,7 +1215,9 @@ struct RemoteFleetListView: View {
     @Binding var showServerDashboard: Bool
     @ObservedObject var viewModel: ServerListViewModel
     let onConnect: (ServerViewModel) -> Void
-    
+    let onEdit: (ServerViewModel) -> Void
+    let onDelete: (ServerViewModel) -> Void
+
     var body: some View {
         LazyVStack(spacing: 0) {
             ForEach(Array(servers.enumerated()), id: \.element.id) { index, server in
@@ -908,9 +1231,15 @@ struct RemoteFleetListView: View {
                     onConnect: {
                         print("[RemoteFleetListView] Connect tapped for: \(server.name)")
                         onConnect(server)
+                    },
+                    onEdit: {
+                        onEdit(server)
+                    },
+                    onDelete: {
+                        onDelete(server)
                     }
                 )
-                
+
                 if index < servers.count - 1 {
                     Divider()
                         .background(Color.axBorder.opacity(0.5))
@@ -961,121 +1290,136 @@ struct RemoteServerCard: View {
     var body: some View {
         VStack(spacing: 0) {
             // Main Card Content
-            VStack(alignment: .leading, spacing: AXSpacing.lg) {
+            VStack(alignment: .leading, spacing: AXSpacing.md) {
                 // Header Row
                 HStack(spacing: AXSpacing.md) {
-                    // Server Icon with Status Glow
+                    // Server Icon with enhanced glow
                     ZStack {
-                        // Status glow ring
+                        // Animated glow for online servers
                         if server.isAccessible {
                             Circle()
-                                .stroke(Color.axSuccess.opacity(0.4), lineWidth: 2)
-                                .frame(width: 52, height: 52)
-                                .blur(radius: 2)
+                                .fill(
+                                    RadialGradient(
+                                        colors: [Color.axSuccess.opacity(0.3), Color.clear],
+                                        center: .center,
+                                        startRadius: 0,
+                                        endRadius: 30
+                                    )
+                                )
+                                .frame(width: 60, height: 60)
                         }
-                        
+
+                        // Icon background with gradient
                         RoundedRectangle(cornerRadius: AXCornerRadius.lg)
                             .fill(
                                 LinearGradient(
-                                    colors: [customColor.opacity(0.2), customColor.opacity(0.1)],
+                                    colors: [customColor.opacity(0.25), customColor.opacity(0.15)],
                                     startPoint: .topLeading,
                                     endPoint: .bottomTrailing
                                 )
                             )
-                            .frame(width: 48, height: 48)
-                        
+                            .frame(width: 52, height: 52)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: AXCornerRadius.lg)
+                                    .stroke(customColor.opacity(0.3), lineWidth: 1)
+                            )
+
                         Image(systemName: server.iconName)
-                            .font(.system(size: 22, weight: .medium))
+                            .font(.system(size: 24, weight: .medium))
                             .foregroundColor(customColor)
                     }
-                    
-                    VStack(alignment: .leading, spacing: AXSpacing.xxs) {
+
+                    VStack(alignment: .leading, spacing: 4) {
                         Text(server.name)
-                            .font(AXTypography.title3)
-                            .fontWeight(.semibold)
+                            .font(AXTypography.headline)
+                            .fontWeight(.bold)
                             .foregroundColor(.axTextPrimary)
                             .lineLimit(1)
-                        
-                        Text(server.host)
-                            .font(AXTypography.caption)
-                            .foregroundColor(.axTextTertiary)
-                            .lineLimit(1)
-                    }
-                    
-                    Spacer()
-                    
-                    // Status Badge
-                    AXStatusBadge(
-                        status: server.isAccessible ? .online : .offline,
-                        showLabel: true,
-                        size: 6
-                    )
-                }
-                
-                // Divider with gradient
-                Rectangle()
-                    .fill(
-                        LinearGradient(
-                            colors: [Color.axBorder.opacity(0.3), Color.axBorder, Color.axBorder.opacity(0.3)],
-                            startPoint: .leading,
-                            endPoint: .trailing
-                        )
-                    )
-                    .frame(height: 1)
-                
-                // Server Details Row
-                HStack(spacing: AXSpacing.lg) {
-                    // OS Info
-                    HStack(spacing: AXSpacing.xs) {
-                        Image(systemName: osIcon)
-                            .font(.system(size: 11))
-                            .foregroundColor(.axTextMuted)
-                        Text(server.osType ?? "Linux")
-                            .font(AXTypography.caption)
-                            .foregroundColor(.axTextSecondary)
-                    }
-                    
-                    // User
-                    HStack(spacing: AXSpacing.xs) {
-                        Image(systemName: "person.fill")
-                            .font(.system(size: 10))
-                            .foregroundColor(.axTextMuted)
-                        Text(server.username)
-                            .font(AXTypography.caption)
-                            .foregroundColor(.axTextSecondary)
-                    }
-                    
-                    // Location (if available)
-                    if let location = server.location {
+
                         HStack(spacing: AXSpacing.xs) {
-                            Image(systemName: "mappin")
+                            Image(systemName: "network")
                                 .font(.system(size: 10))
-                                .foregroundColor(.axTextMuted)
-                            Text(location)
+                                .foregroundColor(.axTextTertiary)
+                            Text(server.host)
                                 .font(AXTypography.caption)
-                                .foregroundColor(.axTextSecondary)
+                                .foregroundColor(.axTextTertiary)
+                                .lineLimit(1)
                         }
                     }
+
+                    Spacer()
+
+                    // Status Badge with enhanced design
+                    VStack(spacing: 4) {
+                        Circle()
+                            .fill(server.isAccessible ? Color.axSuccess : Color.axTextMuted)
+                            .frame(width: 8, height: 8)
+                            .shadow(color: server.isAccessible ? Color.axSuccess.opacity(0.5) : .clear, radius: 4)
+
+                        Text(server.isAccessible ? "Online" : "Offline")
+                            .font(AXTypography.caption2)
+                            .fontWeight(.medium)
+                            .foregroundColor(server.isAccessible ? .axSuccess : .axTextMuted)
+                    }
                 }
-                
+
+                // Divider
+                Divider()
+                    .background(Color.axBorder.opacity(0.5))
+
+                // Server Details Grid
+                VStack(spacing: AXSpacing.sm) {
+                    HStack(spacing: AXSpacing.md) {
+                        // OS Info
+                        DetailChip(
+                            icon: osIcon,
+                            text: server.osType ?? "Linux",
+                            color: .axTextSecondary
+                        )
+
+                        // User
+                        DetailChip(
+                            icon: "person.fill",
+                            text: server.username,
+                            color: .axTextSecondary
+                        )
+
+                        Spacer()
+                    }
+
+                    // Location and Port
+                    HStack(spacing: AXSpacing.md) {
+                        if let location = server.location {
+                            DetailChip(
+                                icon: "mappin.circle.fill",
+                                text: location,
+                                color: .axAccentBlue
+                            )
+                        }
+
+                        DetailChip(
+                            icon: "point.3.connected.trianglepath.dotted",
+                            text: ":\(server.port)",
+                            color: .axTextMuted
+                        )
+
+                        Spacer()
+                    }
+                }
+
                 // Tags Row
                 if !server.tags.isEmpty {
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: AXSpacing.xs) {
                             ForEach(server.tags.prefix(3), id: \.self) { tag in
-                                Text(tag)
-                                    .font(AXTypography.caption2)
-                                    .foregroundColor(.axAccentBlue)
-                                    .padding(.horizontal, AXSpacing.sm)
-                                    .padding(.vertical, AXSpacing.xxs)
-                                    .background(Color.axAccentBlue.opacity(0.1))
-                                    .cornerRadius(AXCornerRadius.full)
+                                TagChip(text: tag, color: customColor)
                             }
-                            
+
                             if server.tags.count > 3 {
                                 Text("+\(server.tags.count - 3)")
                                     .font(AXTypography.caption2)
                                     .foregroundColor(.axTextMuted)
+                                    .padding(.horizontal, AXSpacing.sm)
                             }
                         }
                     }
@@ -1083,96 +1427,124 @@ struct RemoteServerCard: View {
             }
             .padding(AXSpacing.lg)
             
-            // Action Footer
-            HStack(spacing: AXSpacing.sm) {
-                // Connect Button (Primary)
-                Button(action: {
-                    print("[RemoteServerCard] Connect button tapped for: \(server.name)")
-                    onConnect()
-                }) {
-                    HStack(spacing: AXSpacing.xs) {
-                        Image(systemName: "bolt.fill")
-                            .font(.system(size: 12))
-                        Text("Connect")
-                            .font(AXTypography.caption)
-                            .fontWeight(.semibold)
-                    }
-                    .foregroundColor(.axBackground)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, AXSpacing.sm)
-                    .background(
-                        LinearGradient(
-                            colors: [Color.axAccentBlue, Color.axAccentBlue.opacity(0.8)],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        )
-                    )
-                    .cornerRadius(AXCornerRadius.md)
-                }
-                .buttonStyle(.plain)
-                
-                // Context Menu Button
-                Menu {
-                    Button(action: onEdit) {
-                        Label("Edit Server", systemImage: "pencil")
-                    }
-                    
+            // Action Footer with enhanced styling
+            VStack(spacing: 0) {
+                Divider()
+                    .background(Color.axBorder.opacity(0.5))
+
+                HStack(spacing: AXSpacing.sm) {
+                    // Connect Button (Primary) - Full width with hover effect
                     Button(action: {
-                        // Duplicate action
+                        print("[RemoteServerCard] Connect button tapped for: \(server.name)")
+                        onConnect()
                     }) {
-                        Label("Duplicate", systemImage: "doc.on.doc")
-                    }
-                    
-                    Divider()
-                    
-                    Button(role: .destructive, action: onDelete) {
-                        Label("Delete", systemImage: "trash")
-                    }
-                } label: {
-                    Image(systemName: "ellipsis")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(.axTextSecondary)
-                        .frame(width: 36, height: 32)
-                        .background(Color.axSurface)
-                        .cornerRadius(AXCornerRadius.md)
-                        .overlay(
+                        HStack(spacing: AXSpacing.sm) {
+                            Image(systemName: "bolt.fill")
+                                .font(.system(size: 12))
+                            Text("Connect Now")
+                                .font(AXTypography.subheadline)
+                                .fontWeight(.semibold)
+                        }
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, AXSpacing.md)
+                        .background(
                             RoundedRectangle(cornerRadius: AXCornerRadius.md)
-                                .stroke(Color.axBorder, lineWidth: 1)
+                                .fill(
+                                    LinearGradient(
+                                        colors: [Color.axAccentBlue, Color.axAccentBlue.opacity(0.85)],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    )
+                                )
+                                .shadow(color: isHovered ? Color.axAccentBlue.opacity(0.4) : .clear, radius: 8, y: 4)
                         )
+                    }
+                    .buttonStyle(.plain)
+
+                    // Context Menu Button - Compact
+                    Menu {
+                        Button(action: onEdit) {
+                            Label("Edit Server", systemImage: "pencil")
+                        }
+
+                        Button(action: {
+                            // Duplicate action placeholder
+                        }) {
+                            Label("Duplicate", systemImage: "doc.on.doc")
+                        }
+
+                        Divider()
+
+                        Button(role: .destructive, action: onDelete) {
+                            Label("Delete Server", systemImage: "trash")
+                        }
+                    } label: {
+                        Image(systemName: "ellipsis.circle")
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(.axTextSecondary)
+                            .frame(width: 42, height: 42)
+                            .background(
+                                RoundedRectangle(cornerRadius: AXCornerRadius.md)
+                                    .fill(Color.axSurface)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: AXCornerRadius.md)
+                                            .stroke(Color.axBorder, lineWidth: 1)
+                                    )
+                            )
+                    }
+                    .buttonStyle(.plain)
                 }
+                .padding(AXSpacing.md)
             }
-            .padding(.horizontal, AXSpacing.lg)
-            .padding(.bottom, AXSpacing.lg)
         }
         .background(
             RoundedRectangle(cornerRadius: AXCornerRadius.xl)
-                .fill(Color.axGlassBackground)
-                .background(
-                    RoundedRectangle(cornerRadius: AXCornerRadius.xl)
-                        .fill(.ultraThinMaterial)
-                )
+                .fill(Color.axSurface)
+                .shadow(color: Color.black.opacity(0.05), radius: 4, y: 2)
         )
         .overlay(
             RoundedRectangle(cornerRadius: AXCornerRadius.xl)
-                .stroke(
+                .strokeBorder(
                     LinearGradient(
-                        colors: isHovered 
-                            ? [customColor.opacity(0.5), Color.axAccentGreen.opacity(0.3)]
-                            : [Color.axGlassBorder, Color.axBorder],
+                        colors: isHovered
+                            ? [customColor.opacity(0.6), customColor.opacity(0.3)]
+                            : [Color.axBorder.opacity(0.5), Color.axBorder.opacity(0.2)],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     ),
-                    lineWidth: isHovered ? 1.5 : 1
+                    lineWidth: isHovered ? 2 : 1
                 )
         )
-        .shadow(color: isHovered ? customColor.opacity(0.15) : .clear, radius: 20, y: 8)
-        .scaleEffect(isHovered ? 1.02 : 1.0)
-        .animation(.spring(response: 0.35, dampingFraction: 0.7), value: isHovered)
+        .shadow(
+            color: isHovered ? customColor.opacity(0.25) : Color.black.opacity(0.03),
+            radius: isHovered ? 16 : 4,
+            y: isHovered ? 8 : 2
+        )
+        .scaleEffect(isHovered ? 1.03 : 1.0)
+        .animation(.spring(response: 0.3, dampingFraction: 0.75), value: isHovered)
         .onHover { hovering in
             isHovered = hovering
         }
         .onTapGesture {
             onTap()
+        }
+        .contextMenu {
+            Button(action: onEdit) {
+                Label("Edit Server", systemImage: "pencil")
+            }
+
+            Button(action: {
+                // Duplicate placeholder
+            }) {
+                Label("Duplicate", systemImage: "doc.on.doc")
+            }
+
+            Divider()
+
+            Button(role: .destructive, action: onDelete) {
+                Label("Delete", systemImage: "trash")
+            }
         }
     }
     
@@ -1210,7 +1582,9 @@ struct RemoteServerRow: View {
     let connectionProgress: ConnectionProgress?
     let onTap: () -> Void
     let onConnect: () -> Void
-    
+    let onEdit: () -> Void
+    let onDelete: () -> Void
+
     var body: some View {
         HStack(spacing: AXSpacing.lg) {
             // Server Icon
@@ -1218,24 +1592,24 @@ struct RemoteServerRow: View {
                 RoundedRectangle(cornerRadius: AXCornerRadius.md)
                     .fill(customColor.opacity(0.15))
                     .frame(width: 44, height: 44)
-                
+
                 Image(systemName: server.iconName)
                     .font(.system(size: 18))
                     .foregroundColor(customColor)
             }
-            
+
             // Server Info
             VStack(alignment: .leading, spacing: AXSpacing.xs) {
                 Text(server.name)
                     .font(AXTypography.body)
                     .fontWeight(.medium)
                     .foregroundColor(.axTextPrimary)
-                
+
                 HStack(spacing: AXSpacing.sm) {
                     Text("\(server.username)@\(server.host)")
                         .font(AXTypography.caption)
                         .foregroundColor(.axTextTertiary)
-                    
+
                     // Status
                     HStack(spacing: AXSpacing.xs) {
                         Circle()
@@ -1245,7 +1619,7 @@ struct RemoteServerRow: View {
                             .font(AXTypography.caption)
                             .foregroundColor(.axTextSecondary)
                     }
-                    
+
                     // Access Level
                     HStack(spacing: AXSpacing.xs) {
                         Image(systemName: accessLevelIcon)
@@ -1256,14 +1630,35 @@ struct RemoteServerRow: View {
                     }
                 }
             }
-            
+
             Spacer()
-            
+
+            // Tags
+            if !server.tags.isEmpty {
+                HStack(spacing: AXSpacing.xs) {
+                    ForEach(server.tags.prefix(2), id: \.self) { tag in
+                        Text(tag)
+                            .font(AXTypography.caption2)
+                            .foregroundColor(.axAccentBlue)
+                            .padding(.horizontal, AXSpacing.sm)
+                            .padding(.vertical, AXSpacing.xxs)
+                            .background(Color.axAccentBlue.opacity(0.1))
+                            .cornerRadius(AXCornerRadius.full)
+                    }
+                    if server.tags.count > 2 {
+                        Text("+\(server.tags.count - 2)")
+                            .font(AXTypography.caption2)
+                            .foregroundColor(.axTextMuted)
+                    }
+                }
+            }
+
             // Created Date
             Text(formattedDate(server.createdAt))
                 .font(AXTypography.caption)
                 .foregroundColor(.axTextMuted)
-            
+                .frame(width: 80)
+
             // Connect Button
             Button(action: {
                 print("[RemoteServerRow] Connect button tapped for: \(server.name)")
@@ -1276,13 +1671,13 @@ struct RemoteServerRow: View {
                         .font(AXTypography.caption2)
                 }
                 .foregroundColor(.axBackground)
-                .padding(.horizontal, AXSpacing.sm)
-                .padding(.vertical, AXSpacing.xs)
+                .padding(.horizontal, AXSpacing.md)
+                .padding(.vertical, AXSpacing.sm)
                 .background(Color.axAccentBlue)
                 .cornerRadius(AXCornerRadius.sm)
             }
             .buttonStyle(.plain)
-            
+
             // Actions Menu
             Menu {
                 Button(action: {
@@ -1291,13 +1686,21 @@ struct RemoteServerRow: View {
                 }) {
                     Label("Connect", systemImage: "bolt.fill")
                 }
-                
-                if server.accessLevel == .full {
-                    Divider()
-                    
-                    Button(role: .destructive, action: {}) {
-                        Label("Delete Server", systemImage: "trash")
-                    }
+
+                Button(action: onEdit) {
+                    Label("Edit Server", systemImage: "pencil")
+                }
+
+                Button(action: {
+                    // Duplicate action placeholder
+                }) {
+                    Label("Duplicate", systemImage: "doc.on.doc")
+                }
+
+                Divider()
+
+                Button(role: .destructive, action: onDelete) {
+                    Label("Delete Server", systemImage: "trash")
                 }
             } label: {
                 Image(systemName: "ellipsis.circle")
@@ -1345,5 +1748,52 @@ struct RemoteServerRow: View {
         let formatter = DateFormatter()
         formatter.dateStyle = .short
         return formatter.string(from: date)
+    }
+}
+
+// MARK: - Helper Components
+
+/// Detail chip for displaying server metadata
+struct DetailChip: View {
+    let icon: String
+    let text: String
+    let color: Color
+
+    var body: some View {
+        HStack(spacing: AXSpacing.xs) {
+            Image(systemName: icon)
+                .font(.system(size: 10))
+                .foregroundColor(color.opacity(0.7))
+            Text(text)
+                .font(AXTypography.caption2)
+                .foregroundColor(color)
+        }
+        .padding(.horizontal, AXSpacing.sm)
+        .padding(.vertical, AXSpacing.xxs)
+        .background(color.opacity(0.08))
+        .cornerRadius(AXCornerRadius.sm)
+    }
+}
+
+/// Tag chip for displaying server tags
+struct TagChip: View {
+    let text: String
+    let color: Color
+
+    var body: some View {
+        Text(text)
+            .font(AXTypography.caption2)
+            .fontWeight(.medium)
+            .foregroundColor(color)
+            .padding(.horizontal, AXSpacing.sm)
+            .padding(.vertical, AXSpacing.xxs)
+            .background(
+                RoundedRectangle(cornerRadius: AXCornerRadius.full)
+                    .fill(color.opacity(0.12))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: AXCornerRadius.full)
+                            .stroke(color.opacity(0.25), lineWidth: 0.5)
+                    )
+            )
     }
 }
