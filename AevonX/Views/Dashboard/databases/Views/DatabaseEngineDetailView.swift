@@ -4,12 +4,19 @@
 //
 //  Created by Automation on 2026-02-08.
 //
+//  ⚠️ DEPRECATED: This view has been superseded by UnifiedDatabaseDetailView
+//  Database engine management has moved to the Applications section.
+//  Use UnifiedDatabaseDetailView in Applications/Databases/Shared/ instead.
+//
+//  This file is kept temporarily for backward compatibility and will be removed in a future release.
+//
 
 import SwiftUI
 import AevonXCore
 
-// MARK: - Database Engine Detail View
+// MARK: - Database Engine Detail View (DEPRECATED)
 
+@available(*, deprecated, message: "Use UnifiedDatabaseDetailView in Applications section instead. Database engine management has moved to Applications.")
 public struct DatabaseEngineDetailView: View {
     @StateObject private var viewModel: DatabaseEngineDetailViewModel
     @Environment(\.dismiss) private var dismiss

@@ -4,12 +4,19 @@
 //
 //  Created by Automation on 2026-02-08.
 //
+//  ⚠️ DEPRECATED: This view has been superseded by UnifiedDatabaseDetailView
+//  Database engine management has moved to the Applications section.
+//  Use UnifiedDatabaseDetailView in Applications/Databases/Shared/ instead.
+//
+//  This file is kept temporarily for backward compatibility and will be removed in a future release.
+//
 
 import SwiftUI
 import AevonXCore
 
-// MARK: - Database Engine Management View
+// MARK: - Database Engine Management View (DEPRECATED)
 
+@available(*, deprecated, message: "Use UnifiedDatabaseDetailView in Applications section instead. Database engine management has moved to Applications.")
 public struct DatabaseEngineManagementView: View {
     @StateObject private var viewModel: DatabaseEngineDetailViewModel
     let onBack: () -> Void
@@ -239,10 +246,16 @@ public struct DatabaseEngineManagementView: View {
 // MARK: - Preview
 
 #Preview {
-    DatabaseEngineManagementView(
+    UnifiedDatabaseDetailView(
+        application: ApplicationInstance(
+            name: "MySQL",
+            type: .mysql,
+            version: "8.0.35",
+            status: .active,
+            isRunning: true
+        ),
         databaseType: .mysql,
-        serverId: "test-server",
-        onBack: {}
+        serverId: "test-server"
     )
     .frame(width: 1200, height: 800)
 }

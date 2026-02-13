@@ -47,58 +47,11 @@ struct InstalledDatabaseView: View {
                 
                 Spacer()
                 
-                // Service controls
+                // Actions
                 HStack(spacing: AXSpacing.sm) {
-                    // Manage Engine Button
-                    Button {
-                        onManageEngine(type)
-                    } label: {
-                        HStack(spacing: AXSpacing.sm) {
-                            Image(systemName: "gearshape.fill")
-                                .font(.system(size: 12))
-                            Text("Manage Engine")
-                                .font(AXTypography.caption)
-                                .fontWeight(.semibold)
-                        }
-                        .foregroundColor(.axTextPrimary)
-                        .padding(.horizontal, AXSpacing.md)
-                        .padding(.vertical, AXSpacing.sm)
-                        .background(Color.axSurface)
-                        .cornerRadius(AXCornerRadius.md)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: AXCornerRadius.md)
-                                .stroke(Color.axBorder, lineWidth: 1)
-                        )
-                    }
-                    .buttonStyle(.plain)
-                    
-                    Divider()
-                        .frame(height: 24)
-                    
-                    AXServiceControlButton(
-                        icon: "play.fill",
-                        color: .axSuccess,
-                        action: {
-                            Task { try? await viewModel.startService(type: type) }
-                        }
-                    )
-                    
-                    AXServiceControlButton(
-                        icon: "stop.fill",
-                        color: .axError,
-                        action: {
-                            Task { try? await viewModel.stopService(type: type) }
-                        }
-                    )
-                    
-                    AXServiceControlButton(
-                        icon: "arrow.clockwise",
-                        color: .axWarning,
-                        action: {
-                            Task { try? await viewModel.restartService(type: type) }
-                        }
-                    )
-                    
+                    // ℹ️ NOTE: Engine management (Start/Stop/Configuration) has moved to Applications section
+                    // This section now focuses only on database-level operations (Create/Delete/Manage)
+
                     Divider()
                         .frame(height: 24)
                     

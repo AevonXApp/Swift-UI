@@ -17,13 +17,32 @@ public enum AXLogSource: Equatable {
     case nginxService
     case apacheService
     case phpService
-    
+    // Database services
+    case mysqlService
+    case postgresqlService
+    case redisService
+    case mongodbService
+    case mariadbService
+    case cassandraService
+    case elasticsearchService
+    case cockroachdbService
+    case genericService(name: String, path: String)
+
     var displayName: String {
         switch self {
         case .website(let domain): return "Site: \(domain)"
         case .nginxService: return "Nginx Service"
         case .apacheService: return "Apache Service"
         case .phpService: return "PHP-FPM Service"
+        case .mysqlService: return "MySQL Service"
+        case .postgresqlService: return "PostgreSQL Service"
+        case .redisService: return "Redis Service"
+        case .mongodbService: return "MongoDB Service"
+        case .mariadbService: return "MariaDB Service"
+        case .cassandraService: return "Cassandra Service"
+        case .elasticsearchService: return "Elasticsearch Service"
+        case .cockroachdbService: return "CockroachDB Service"
+        case .genericService(let name, _): return "\(name) Service"
         }
     }
 }
@@ -997,11 +1016,36 @@ public final class AXLogsViewModel: ObservableObject {
             case .apacheService:
                 // Fetch Apache Logs
                 let rawLogs = try await appManager.readLogs(type: .apache, lines: 200, serverId: serverId)
-                
-                // Apache logs interact similarly to Nginx, but might need specific tweaking if formats differ significantly.
-                // For now, assuming standard Apache combined log format which matches Nginx default.
                 self.accessLogs = parseAccessLevelLogs(rawLogs)
                 self.errorLogs = parseErrorLevelLogs(rawLogs)
+
+            case .mysqlService, .postgresqlService, .redisService, .mongodbService, .mariadbService, 
+                 .cassandraService, .elasticsearchService, .cockroachdbService:
+                // Map log source to application type
+                let appType: ApplicationType
+                switch source {
+                case .mysqlService: appType = .mysql
+                case .postgresqlService: appType = .postgresql
+                case .redisService: appType = .redis
+                case .mongodbService: appType = .mongodb
+                case .mariadbService: appType = .mariadb
+                case .cassandraService: appType = .cassandra
+                case .elasticsearchService: appType = .elasticsearch
+                case .cockroachdbService: appType = .cockroachdb
+                default: appType = .unknown
+                }
+                
+                if appType != .unknown {
+                    let rawLogs = try await appManager.readLogs(type: appType, lines: 200, serverId: serverId)
+                    // Database logs are typically error/output logs
+                    self.accessLogs = []
+                    self.errorLogs = parseErrorLevelLogs(rawLogs)
+                }
+
+            case .genericService(let name, _):
+                // Generic service logs - showing empty until custom path logic refined
+                self.accessLogs = []
+                self.errorLogs = []
             }
         } catch {
             print("Failed to load logs: \(error)")

@@ -81,34 +81,4 @@ struct DBEDServiceControls: View {
     }
 }
 
-// Helper button component
-struct ServiceControlButton: View {
-    let title: String
-    let icon: String
-    let color: Color
-    let isEnabled: Bool
-    let action: () -> Void
 
-    var body: some View {
-        Button(action: action) {
-            HStack(spacing: AXSpacing.xs) {
-                Image(systemName: icon)
-                    .font(.system(size: 12))
-                Text(title)
-                    .font(AXTypography.subheadline)
-                    .fontWeight(.medium)
-            }
-            .foregroundColor(isEnabled ? color : .axTextMuted)
-            .padding(.horizontal, AXSpacing.md)
-            .padding(.vertical, AXSpacing.sm)
-            .background(isEnabled ? color.opacity(0.1) : Color.axSurface)
-            .cornerRadius(AXCornerRadius.md)
-            .overlay(
-                RoundedRectangle(cornerRadius: AXCornerRadius.md)
-                    .stroke(isEnabled ? color.opacity(0.3) : Color.axBorder, lineWidth: 1)
-            )
-        }
-        .buttonStyle(.plain)
-        .disabled(!isEnabled)
-    }
-}

@@ -372,14 +372,14 @@ struct ServiceRow: View {
                 // Status
                 HStack(spacing: AXSpacing.xs) {
                     Circle()
-                        .fill(application.isRunning ? Color.axSuccess : Color.axTextMuted)
+                        .fill(statusColor)
                         .frame(width: 6, height: 6)
 
-                    Text(application.isRunning ? "Running" : "Stopped")
+                    Text(statusText)
                         .font(AXTypography.caption)
-                        .foregroundColor(application.isRunning ? .axSuccess : .axTextMuted)
+                        .foregroundColor(statusColor)
                 }
-                .frame(width: 80, alignment: .leading)
+                .frame(width: 100, alignment: .leading)
 
                 // Port
                 if let port = application.port {
@@ -423,68 +423,96 @@ struct ServiceRow: View {
 
                 Spacer()
 
-                // Auto-start Toggle
-                HStack(spacing: AXSpacing.sm) {
-                    Text("Auto")
-                        .font(AXTypography.caption)
-                        .foregroundColor(.axTextMuted)
+                // Auto-start Toggle (only if installed)
+                if !isNotInstalled {
+                    HStack(spacing: AXSpacing.sm) {
+                        Text("Auto")
+                            .font(AXTypography.caption)
+                            .foregroundColor(.axTextMuted)
 
-                    Toggle("", isOn: $localAutoStart)
-                        .toggleStyle(SwitchToggleStyle(tint: .axAccentBlue))
-                        .frame(width: 36)
-                        .onChange(of: localAutoStart) { _ in
-                            Task {
-                                await onToggleAutoStart()
+                        Toggle("", isOn: $localAutoStart)
+                            .toggleStyle(SwitchToggleStyle(tint: .axAccentBlue))
+                            .frame(width: 36)
+                            .onChange(of: localAutoStart) { _ in
+                                Task {
+                                    await onToggleAutoStart()
+                                }
                             }
-                        }
-                        .disabled(isProcessing)
+                            .disabled(isProcessing)
+                    }
+                    .frame(width: 80)
+                } else {
+                    Spacer()
+                        .frame(width: 80)
                 }
-                .frame(width: 80)
 
                 // Actions
                 HStack(spacing: AXSpacing.sm) {
-                    Button(action: {
-                        Task {
-                            isProcessing = true
-                            if application.isRunning {
-                                await onStop()
-                            } else {
-                                await onStart()
+                    if isNotInstalled {
+                        // Install Button
+                        Button(action: {
+                            // TODO: Open installation sheet
+                        }) {
+                            HStack(spacing: AXSpacing.xs) {
+                                Image(systemName: "arrow.down.circle.fill")
+                                    .font(.system(size: 12))
+                                Text("Install")
+                                    .font(AXTypography.caption)
+                                    .fontWeight(.semibold)
                             }
-                            isProcessing = false
+                            .foregroundColor(.axBackground)
+                            .padding(.horizontal, AXSpacing.md)
+                            .padding(.vertical, AXSpacing.sm)
+                            .background(Color.axAccentBlue)
+                            .cornerRadius(AXCornerRadius.sm)
                         }
-                    }) {
-                        if isProcessing {
-                            ProgressView()
-                                .frame(width: 32, height: 32)
-                        } else {
-                            Image(systemName: application.isRunning ? "stop.fill" : "play.fill")
+                        .buttonStyle(PlainButtonStyle())
+                    } else {
+                        // Start/Stop Button
+                        Button(action: {
+                            Task {
+                                isProcessing = true
+                                if application.isRunning {
+                                    await onStop()
+                                } else {
+                                    await onStart()
+                                }
+                                isProcessing = false
+                            }
+                        }) {
+                            if isProcessing {
+                                ProgressView()
+                                    .frame(width: 32, height: 32)
+                            } else {
+                                Image(systemName: application.isRunning ? "stop.fill" : "play.fill")
+                                    .font(.system(size: 10))
+                                    .foregroundColor(application.isRunning ? .axError : .axSuccess)
+                                    .frame(width: 32, height: 32)
+                                    .background((application.isRunning ? Color.axError : Color.axSuccess).opacity(0.1))
+                                    .cornerRadius(AXCornerRadius.sm)
+                            }
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                        .disabled(isProcessing)
+
+                        // Restart Button
+                        Button(action: {
+                            Task {
+                                isProcessing = true
+                                await onRestart()
+                                isProcessing = false
+                            }
+                        }) {
+                            Image(systemName: "arrow.clockwise")
                                 .font(.system(size: 10))
-                                .foregroundColor(application.isRunning ? .axError : .axSuccess)
+                                .foregroundColor(.axAccentBlue)
                                 .frame(width: 32, height: 32)
-                                .background((application.isRunning ? Color.axError : Color.axSuccess).opacity(0.1))
+                                .background(Color.axAccentBlue.opacity(0.1))
                                 .cornerRadius(AXCornerRadius.sm)
                         }
+                        .buttonStyle(PlainButtonStyle())
+                        .disabled(isProcessing)
                     }
-                    .buttonStyle(PlainButtonStyle())
-                    .disabled(isProcessing)
-
-                    Button(action: {
-                        Task {
-                            isProcessing = true
-                            await onRestart()
-                            isProcessing = false
-                        }
-                    }) {
-                        Image(systemName: "arrow.clockwise")
-                            .font(.system(size: 10))
-                            .foregroundColor(.axAccentBlue)
-                            .frame(width: 32, height: 32)
-                            .background(Color.axAccentBlue.opacity(0.1))
-                            .cornerRadius(AXCornerRadius.sm)
-                    }
-                    .buttonStyle(PlainButtonStyle())
-                    .disabled(isProcessing)
                 }
             }
             .padding(.horizontal, AXSpacing.lg)
@@ -519,6 +547,24 @@ struct ServiceRow: View {
         case .memcached: return "memorychip.fill"
         default: return "gearshape.fill"
         }
+    }
+
+    private var isNotInstalled: Bool {
+        return application.status == .notInstalled
+    }
+
+    private var statusText: String {
+        if isNotInstalled {
+            return "Not Installed"
+        }
+        return application.isRunning ? "Running" : "Stopped"
+    }
+
+    private var statusColor: Color {
+        if isNotInstalled {
+            return .axWarning
+        }
+        return application.isRunning ? .axSuccess : .axTextMuted
     }
 }
 

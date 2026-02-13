@@ -15,44 +15,56 @@ struct DatabaseEngineOverview: View {
     var body: some View {
         VStack(spacing: AXSpacing.xxxl) {
             // Hero Empty State
-            AXEmptyState(
-                icon: "cylinder.split.1x2",
-                title: "No Databases Found",
-                description: "You haven't created any databases on this server yet. Get started by installing an engine or creating a database.",
-                actionLabel: viewModel.installedDatabaseTypesCount > 0 ? "Create First Database" : nil,
-                action: { viewModel.showAddDatabase = true }
-            )
-            .padding(.top, AXSpacing.xl)
+            if viewModel.installedDatabaseTypesCount == 0 {
+                // No engines installed - guide user to Applications section
+                VStack(spacing: AXSpacing.xl) {
+                    AXEmptyState(
+                        icon: "cylinder.split.1x2",
+                        title: "No Database Engines Installed",
+                        description: "To create databases, you first need to install a database engine like MySQL, PostgreSQL, or Redis.",
+                        actionLabel: nil,
+                        action: nil
+                    )
 
-            // Available Engines Section
-            VStack(alignment: .leading, spacing: AXSpacing.lg) {
-                HStack {
-                    Text("Available Database Engines")
-                        .font(AXTypography.title3)
-                        .fontWeight(.bold)
-                        .foregroundColor(.axTextPrimary)
-                    
-                    Spacer()
-                    
-                    Text("\(viewModel.installedDatabaseTypesCount) Installed")
-                        .font(AXTypography.caption)
-                        .foregroundColor(.axAccentGreen)
-                        .padding(.horizontal, AXSpacing.sm)
-                        .padding(.vertical, AXSpacing.xxs)
-                        .background(Color.axAccentGreen.opacity(0.1))
-                        .cornerRadius(AXCornerRadius.full)
-                }
-                .padding(.horizontal, AXSpacing.xl)
-                
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: AXSpacing.lg) {
-                        ForEach(DatabaseType.allCases) { type in
-                            DatabaseEngineInstallCard(type: type, viewModel: viewModel, onManage: onManage)
+                    // Guide to Applications section
+                    VStack(alignment: .leading, spacing: AXSpacing.md) {
+                        HStack(spacing: AXSpacing.md) {
+                            Image(systemName: "info.circle.fill")
+                                .font(.system(size: 20))
+                                .foregroundColor(.axAccentBlue)
+
+                            VStack(alignment: .leading, spacing: AXSpacing.xs) {
+                                Text("Database engines are managed in Applications")
+                                    .font(AXTypography.body)
+                                    .fontWeight(.semibold)
+                                    .foregroundColor(.axTextPrimary)
+
+                                Text("Navigate to the Applications tab to install and manage database engines (MySQL, PostgreSQL, Redis, etc.)")
+                                    .font(AXTypography.caption)
+                                    .foregroundColor(.axTextSecondary)
+                            }
                         }
+                        .padding(AXSpacing.lg)
+                        .background(Color.axAccentBlue.opacity(0.1))
+                        .cornerRadius(AXCornerRadius.md)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: AXCornerRadius.md)
+                                .stroke(Color.axAccentBlue.opacity(0.3), lineWidth: 1)
+                        )
                     }
                     .padding(.horizontal, AXSpacing.xl)
-                    .padding(.bottom, AXSpacing.xl)
                 }
+                .padding(.top, AXSpacing.xl)
+            } else {
+                // Has engines but no databases
+                AXEmptyState(
+                    icon: "cylinder.split.1x2",
+                    title: "No Databases Found",
+                    description: "You have database engines installed but haven't created any databases yet. Create your first database to get started.",
+                    actionLabel: "Create First Database",
+                    action: { viewModel.showAddDatabase = true }
+                )
+                .padding(.top, AXSpacing.xl)
             }
         }
     }
