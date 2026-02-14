@@ -28,141 +28,144 @@ struct ApplicationsTab: View {
     var stoppedApps: [ApplicationInstance] { applications.filter { !$0.isRunning } }
 
     var body: some View {
-        VStack(spacing: AXSpacing.xl) {
-            // Summary Cards
-            HStack(spacing: AXSpacing.lg) {
-                ServiceSummaryCard(
-                    title: "Running",
-                    count: runningApps.count,
-                    total: applications.count,
-                    color: .axSuccess,
-                    icon: "checkmark.circle.fill"
-                )
+        ScrollView {
+            VStack(spacing: AXSpacing.xl) {
+                // Summary Cards
+                HStack(spacing: AXSpacing.lg) {
+                    ServiceSummaryCard(
+                        title: "Running",
+                        count: runningApps.count,
+                        total: applications.count,
+                        color: .axSuccess,
+                        icon: "checkmark.circle.fill"
+                    )
 
-                ServiceSummaryCard(
-                    title: "Stopped",
-                    count: stoppedApps.count,
-                    total: applications.count,
-                    color: .axTextMuted,
-                    icon: "xmark.circle.fill"
-                )
+                    ServiceSummaryCard(
+                        title: "Stopped",
+                        count: stoppedApps.count,
+                        total: applications.count,
+                        color: .axTextMuted,
+                        icon: "xmark.circle.fill"
+                    )
 
-                ServiceSummaryCard(
-                    title: "Auto-start",
-                    count: applications.filter { $0.autoStart }.count,
-                    total: applications.count,
-                    color: .axAccentBlue,
-                    icon: "power"
-                )
+                    ServiceSummaryCard(
+                        title: "Auto-start",
+                        count: applications.filter { $0.autoStart }.count,
+                        total: applications.count,
+                        color: .axAccentBlue,
+                        icon: "power"
+                    )
 
-                ServiceSummaryCard(
-                    title: "Memory Used",
-                    count: Int(applications.compactMap { $0.memoryUsage }.reduce(0, +)),
-                    total: 2048,
-                    color: .axWarning,
-                    icon: "memorychip",
-                    isMemory: true
-                )
-            }
+                    ServiceSummaryCard(
+                        title: "Memory Used",
+                        count: Int(applications.compactMap { $0.memoryUsage }.reduce(0, +)),
+                        total: 2048,
+                        color: .axWarning,
+                        icon: "memorychip",
+                        isMemory: true
+                    )
+                }
 
-            // Services List
-            AXCard(padding: 0) {
-                VStack(spacing: 0) {
-                    // Header
-                    HStack {
-                        Text("Services")
-                            .font(AXTypography.headline)
-                            .foregroundColor(.axTextPrimary)
-
-                        Spacer()
-
-                        Button(action: { Task { await loadApplications() } }) {
-                            HStack(spacing: AXSpacing.xs) {
-                                Image(systemName: "arrow.clockwise")
-                                    .font(.system(size: 10))
-                                Text("Refresh")
-                                    .font(AXTypography.caption)
-                            }
-                            .foregroundColor(.axTextSecondary)
-                            .padding(.horizontal, AXSpacing.sm)
-                            .padding(.vertical, AXSpacing.xs)
-                            .background(Color.axSurface)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: AXCornerRadius.sm)
-                                    .stroke(Color.axBorder, lineWidth: 1)
-                            )
-                            .cornerRadius(AXCornerRadius.sm)
-                        }
-                        .buttonStyle(PlainButtonStyle())
-                    }
-                    .padding(AXSpacing.lg)
-                    .background(Color.axBackgroundTertiary)
-
-                    Divider()
-                        .background(Color.axBorder)
-
-                    // Loading or Content
-                    if isLoading {
+                // Services List
+                AXCard(padding: 0) {
+                    VStack(spacing: 0) {
+                        // Header
                         HStack {
+                            Text("Services")
+                                .font(AXTypography.headline)
+                                .foregroundColor(.axTextPrimary)
+
                             Spacer()
-                            ProgressView()
-                                .padding(AXSpacing.xl)
-                            Spacer()
-                        }
-                    } else if let error = errorMessage {
-                        HStack {
-                            Spacer()
-                            VStack(spacing: AXSpacing.md) {
-                                Image(systemName: "exclamationmark.triangle")
-                                    .font(.system(size: 24))
-                                    .foregroundColor(.axError)
-                                Text(error)
-                                    .font(AXTypography.caption)
-                                    .foregroundColor(.axTextSecondary)
-                                    .multilineTextAlignment(.center)
-                            }
-                            .padding(AXSpacing.xl)
-                            Spacer()
-                        }
-                    } else if applications.isEmpty {
-                        HStack {
-                            Spacer()
-                            VStack(spacing: AXSpacing.md) {
-                                Image(systemName: "app.badge")
-                                    .font(.system(size: 24))
-                                    .foregroundColor(.axTextMuted)
-                                Text("No applications detected")
-                                    .font(AXTypography.caption)
-                                    .foregroundColor(.axTextSecondary)
-                            }
-                            .padding(AXSpacing.xl)
-                            Spacer()
-                        }
-                    } else {
-                        // Service Rows
-                        ForEach(applications) { app in
-                            if let serverId = serverId {
-                                NavigationLink(destination: ApplicationDetailView(application: app, serverId: serverId)) {
-                                    ServiceRow(
-                                        application: app,
-                                        onStart: { await startApplication(app) },
-                                        onStop: { await stopApplication(app) },
-                                        onRestart: { await restartApplication(app) },
-                                        onToggleAutoStart: { await toggleAutoStart(app) }
-                                    )
+
+                            Button(action: { Task { await loadApplications() } }) {
+                                HStack(spacing: AXSpacing.xs) {
+                                    Image(systemName: "arrow.clockwise")
+                                        .font(.system(size: 10))
+                                    Text("Refresh")
+                                        .font(AXTypography.caption)
                                 }
-                                .buttonStyle(PlainButtonStyle())
+                                .foregroundColor(.axTextSecondary)
+                                .padding(.horizontal, AXSpacing.sm)
+                                .padding(.vertical, AXSpacing.xs)
+                                .background(Color.axSurface)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: AXCornerRadius.sm)
+                                        .stroke(Color.axBorder, lineWidth: 1)
+                                )
+                                .cornerRadius(AXCornerRadius.sm)
                             }
+                            .buttonStyle(PlainButtonStyle())
+                        }
+                        .padding(AXSpacing.lg)
+                        .background(Color.axBackgroundTertiary)
 
-                            if app.id != applications.last?.id {
-                                Divider()
-                                    .background(Color.axBorder)
-                                    .padding(.leading, AXSpacing.lg)
+                        Divider()
+                            .background(Color.axBorder)
+
+                        // Loading or Content
+                        if isLoading {
+                            HStack {
+                                Spacer()
+                                ProgressView()
+                                    .padding(AXSpacing.xl)
+                                Spacer()
+                            }
+                        } else if let error = errorMessage {
+                            HStack {
+                                Spacer()
+                                VStack(spacing: AXSpacing.md) {
+                                    Image(systemName: "exclamationmark.triangle")
+                                        .font(.system(size: 24))
+                                        .foregroundColor(.axError)
+                                    Text(error)
+                                        .font(AXTypography.caption)
+                                        .foregroundColor(.axTextSecondary)
+                                        .multilineTextAlignment(.center)
+                                }
+                                .padding(AXSpacing.xl)
+                                Spacer()
+                            }
+                        } else if applications.isEmpty {
+                            HStack {
+                                Spacer()
+                                VStack(spacing: AXSpacing.md) {
+                                    Image(systemName: "app.badge")
+                                        .font(.system(size: 24))
+                                        .foregroundColor(.axTextMuted)
+                                    Text("No applications detected")
+                                        .font(AXTypography.caption)
+                                        .foregroundColor(.axTextSecondary)
+                                }
+                                .padding(AXSpacing.xl)
+                                Spacer()
+                            }
+                        } else {
+                            // Service Rows
+                            ForEach(applications) { app in
+                                if let serverId = serverId {
+                                    NavigationLink(destination: ApplicationDetailView(application: app, serverId: serverId)) {
+                                        ServiceRow(
+                                            application: app,
+                                            onStart: { await startApplication(app) },
+                                            onStop: { await stopApplication(app) },
+                                            onRestart: { await restartApplication(app) },
+                                            onToggleAutoStart: { await toggleAutoStart(app) }
+                                        )
+                                    }
+                                    .buttonStyle(PlainButtonStyle())
+                                }
+
+                                if app.id != applications.last?.id {
+                                    Divider()
+                                        .background(Color.axBorder)
+                                        .padding(.leading, AXSpacing.lg)
+                                }
                             }
                         }
                     }
                 }
             }
+            .padding(AXSpacing.xl)
         }
         .task {
             await loadApplications()

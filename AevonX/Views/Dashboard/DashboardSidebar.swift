@@ -109,15 +109,15 @@ struct DashboardSidebar: View {
                 // Quick Action Grid
                 HStack(spacing: AXSpacing.sm) {
                     SidebarActionBtn(icon: "terminal", color: .axTextSecondary, isEnabled: viewModel.isConnected) {
-                        // Open Terminal
+                        viewModel.selectedTab = .terminal
                     }
-                    
+
                     SidebarActionBtn(icon: "arrow.clockwise", color: .axTextSecondary, isEnabled: viewModel.isConnected) {
                         Task { await viewModel.refreshStats() }
                     }
-                    
+
                     SidebarActionBtn(icon: "power", color: .axError, isEnabled: viewModel.isConnected) {
-                        // Reboot
+                        Task { await viewModel.restartServices() }
                     }
                 }
             }

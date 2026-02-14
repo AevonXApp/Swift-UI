@@ -45,26 +45,25 @@ struct ServerDashboardView: View {
             // Right Content Area
             VStack(spacing: 0) {
                 // Main Content
-                ScrollView {
-                    VStack(spacing: AXSpacing.xl) {
-                        switch viewModel.selectedTab {
-                        case .overview:
-                            OverviewTab(server: server, serverId: serverId, viewModel: viewModel)
-                        case .websites:
-                            ModernWebsitesTab(server: server, serverId: serverId, connectionViewModel: viewModel)
-                        case .databases:
-                            ModernDatabasesTab(server: server, serverId: serverId, connectionViewModel: viewModel)
-                        case .applications:
-                            ApplicationsTab(server: server, serverId: serverId, connectionViewModel: viewModel)
-                        case .docker:
-                            DockerDetailView(server: server, serverId: serverId, connectionViewModel: viewModel)
-                        case .files:
-                            FilesTab()
-                        case .settings:
-                            ServerSettingsTab(server: server)
-                        }
+                Group {
+                    switch viewModel.selectedTab {
+                    case .overview:
+                        OverviewTab(server: server, serverId: serverId, viewModel: viewModel)
+                    case .websites:
+                        ModernWebsitesTab(server: server, serverId: serverId, connectionViewModel: viewModel)
+                    case .databases:
+                        ModernDatabasesTab(server: server, serverId: serverId, connectionViewModel: viewModel)
+                    case .applications:
+                        ApplicationsTab(server: server, serverId: serverId, connectionViewModel: viewModel)
+                    case .docker:
+                        DockerDetailView(server: server, serverId: serverId, connectionViewModel: viewModel)
+                    case .terminal:
+                        TerminalTab(server: server, serverId: serverId, viewModel: viewModel)
+                    case .files:
+                        FilesTab()
+                    case .settings:
+                        ServerSettingsTab(server: server)
                     }
-                    .padding(AXSpacing.xl)
                 }
                 .background(Color.axBackground)
             }

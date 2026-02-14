@@ -37,11 +37,12 @@ enum DashboardTab: String, CaseIterable, Identifiable {
     case databases = "Databases"
     case applications = "Applications"
     case docker = "Docker"
+    case terminal = "Terminal"
     case files = "Files"
     case settings = "Settings"
-    
+
     var id: String { rawValue }
-    
+
     var icon: String {
         switch self {
         case .overview: return "chart.line.uptrend.xyaxis"
@@ -49,6 +50,7 @@ enum DashboardTab: String, CaseIterable, Identifiable {
         case .databases: return "cylinder.split.1x2"
         case .applications: return "square.stack.3d.up"
         case .docker: return "shippingbox"
+        case .terminal: return "terminal"
         case .files: return "folder"
         case .settings: return "gearshape"
         }
@@ -146,13 +148,27 @@ public class ServerConnectionViewModel: ObservableObject {
     /// Error from database loading, if any
     @Published private(set) var databaseError: String?
     
+    // MARK: - Published Properties - Terminal Sessions
+    
+    /// Managed terminal sessions for this server
+    @Published var terminalSessions: [TerminalViewModel] = []
+    
+    /// Currently active terminal index
+    @Published var activeTerminalIndex: Int = 0
+    
     // MARK: - Published Properties - Inventory
     
     /// Number of websites (from SSH data)
     @Published private(set) var websiteCount: Int = 0
-    
-    /// Number of services (from SSH data)
-    @Published private(set) var serviceCount: Int = 0
+
+    /// Number of applications/services (from SSH data)
+    @Published private(set) var applicationCount: Int = 0
+
+    /// Array of websites on the server
+    @Published private(set) var websites: [CoreWebsiteInfo] = []
+
+    /// Whether websites are being loaded
+    @Published private(set) var isLoadingWebsites: Bool = false
     
     // MARK: - Private Properties
     
@@ -266,7 +282,13 @@ public class ServerConnectionViewModel: ObservableObject {
             
             // Load initial data
             await loadDatabases()
+            await loadWebsites()
             await refreshStats()
+            
+            // Create initial terminal session if none exist
+            if terminalSessions.isEmpty {
+                createTerminalSession()
+            }
             
         } catch let error as SSHConnectionError {
             isConnecting = false
@@ -305,7 +327,50 @@ public class ServerConnectionViewModel: ObservableObject {
         // Clear stats
         resetStats()
         
+        // Disconnect all terminal sessions
+        for session in terminalSessions {
+            session.disconnect()
+        }
+        terminalSessions = []
+        activeTerminalIndex = 0
+        
         CoreLogger.shared.info("Disconnected from server: \(server.name)", module: "ServerConnection")
+    }
+    
+    // MARK: - Terminal Sessions Management
+    
+    /// Creates a new terminal session
+    func createTerminalSession() {
+        let newSession = TerminalViewModel(serverId: serverId)
+        terminalSessions.append(newSession)
+        
+        // Switch to the new session
+        activeTerminalIndex = terminalSessions.count - 1
+        
+        // Auto-connect if server is already connected
+        if isConnected {
+            Task {
+                await newSession.connect(server: server)
+            }
+        }
+    }
+    
+    /// Closes a specific terminal session
+    func closeTerminalSession(at index: Int) {
+        guard terminalSessions.indices.contains(index) else { return }
+        
+        let session = terminalSessions.remove(at: index)
+        session.disconnect()
+        
+        // Adjust active index
+        if activeTerminalIndex >= terminalSessions.count {
+            activeTerminalIndex = max(0, terminalSessions.count - 1)
+        }
+        
+        // Create a new one if all closed
+        if terminalSessions.isEmpty {
+            createTerminalSession()
+        }
     }
     
     /// Called when app enters foreground
@@ -397,8 +462,60 @@ public class ServerConnectionViewModel: ObservableObject {
         }
     }
     
+    // MARK: - Quick Actions
+
+    /// Restart server services (nginx, mysql, etc)
+    func restartServices() async {
+        guard isConnected else { return }
+
+        CoreLogger.shared.info("Restarting services...", module: "ServerConnection")
+
+        do {
+            // Restart nginx
+            _ = try await executeCommand(.services(.restartNginx))
+
+            // Restart MySQL if available
+            _ = try? await executeCommand(.services(.restartMySQL))
+
+            // Restart PHP-FPM if available
+            _ = try? await executeCommand(.services(.restartPHPFPM))
+
+            CoreLogger.shared.info("Services restarted successfully", module: "ServerConnection")
+
+            // Refresh stats after restart
+            await refreshStats()
+        } catch {
+            CoreLogger.shared.error("Failed to restart services: \(error.localizedDescription)", module: "ServerConnection")
+        }
+    }
+
+    // MARK: - Website Management
+
+    /// Loads website information from server via SSH
+    func loadWebsites() async {
+        guard isConnected else { return }
+
+        isLoadingWebsites = true
+
+        do {
+            // Fetch websites using WebsiteListService
+            let loadedWebsites = try await WebsiteListService.shared.listWebsites(serverId: serverId)
+            websites = loadedWebsites
+            websiteCount = loadedWebsites.count
+
+            CoreLogger.shared.info("Loaded \(websiteCount) websites", module: "ServerConnection")
+        } catch {
+            CoreLogger.shared.error("Failed to load websites: \(error.localizedDescription)", module: "ServerConnection")
+            // Don't fail silently - show 0 websites if error
+            websites = []
+            websiteCount = 0
+        }
+
+        isLoadingWebsites = false
+    }
+
     // MARK: - Database Management
-    
+
     /// Loads database information from server via SSH
     func loadDatabases() async {
         guard isConnected else { return }
@@ -595,20 +712,20 @@ public class ServerConnectionViewModel: ObservableObject {
         uptime = "N/A"
         loadAverage = "N/A"
         databases = []
+        websites = []
         websiteCount = 0
-        serviceCount = 0
+        applicationCount = 0
     }
     
     /// Updates inventory counts from SSH data
     private func updateInventoryCounts() async {
-        // Count websites (nginx/apache vhosts)
-        if let webResult = try? await executeCommand(.overview(.websiteCount)) {
-            websiteCount = parseCount(webResult.stdout) ?? 0
-        }
-        
-        // Count services
+        // Website count is already updated by loadWebsites()
+        // Just ensure it's in sync
+        websiteCount = websites.count
+
+        // Count applications/services
         if let serviceResult = try? await executeCommand(.overview(.serviceCount)) {
-            serviceCount = parseCount(serviceResult.stdout) ?? 0
+            applicationCount = parseCount(serviceResult.stdout) ?? 0
         }
     }
     

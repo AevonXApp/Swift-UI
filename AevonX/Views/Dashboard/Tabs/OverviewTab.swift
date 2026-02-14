@@ -14,7 +14,7 @@ struct OverviewTab: View {
     let serverId: String
     @ObservedObject var viewModel: ServerConnectionViewModel
     @Environment(\.scenePhase) private var scenePhase
-    
+
     init(server: Server, serverId: String, viewModel: ServerConnectionViewModel) {
         self.server = server
         self.serverId = serverId
@@ -22,160 +22,210 @@ struct OverviewTab: View {
     }
     
     var body: some View {
-        VStack(spacing: AXSpacing.xl) {
-            
-            // MARK: - Connection Status Bar
-            ConnectionStatusBar(viewModel: viewModel)
-            
-            // MARK: - Quick Vitals Grid
-            AXCard {
-                VStack(alignment: .leading, spacing: AXSpacing.lg) {
-                    HStack {
-                        Image(systemName: "bolt.heart.fill")
-                            .font(.system(size: 16))
-                            .foregroundColor(.axAccentBlue)
-                        
-                        Text("Quick Vitals")
-                            .font(AXTypography.headline)
-                            .foregroundColor(.axTextPrimary)
-                        
-                        Spacer()
-                        
-                        // Live indicator - only show when connected
-                        if viewModel.isConnected {
-                            HStack(spacing: AXSpacing.xs) {
-                                Circle()
-                                    .fill(Color.axSuccess)
-                                    .frame(width: 6, height: 6)
-                                
-                                Text("Live")
-                                    .font(AXTypography.caption)
-                                    .foregroundColor(.axTextSecondary)
+        ScrollView {
+            VStack(spacing: AXSpacing.xl) {
+                
+                // MARK: - Connection Status Bar
+                ConnectionStatusBar(viewModel: viewModel)
+                
+                // MARK: - Quick Vitals Grid
+                AXCard {
+                    VStack(alignment: .leading, spacing: AXSpacing.lg) {
+                        HStack {
+                            Image(systemName: "bolt.heart.fill")
+                                .font(.system(size: 16))
+                                .foregroundColor(.axAccentBlue)
+                            
+                            Text("Quick Vitals")
+                                .font(AXTypography.headline)
+                                .foregroundColor(.axTextPrimary)
+                            
+                            Spacer()
+                            
+                            // Live indicator - only show when connected
+                            if viewModel.isConnected {
+                                HStack(spacing: AXSpacing.xs) {
+                                    Circle()
+                                        .fill(Color.axSuccess)
+                                        .frame(width: 6, height: 6)
+                                    
+                                    Text("Live")
+                                        .font(AXTypography.caption)
+                                        .foregroundColor(.axTextSecondary)
+                                }
+                                .padding(.horizontal, AXSpacing.sm)
+                                .padding(.vertical, AXSpacing.xxs)
+                                .background(Color.axSuccess.opacity(0.1))
+                                .cornerRadius(AXCornerRadius.sm)
                             }
-                            .padding(.horizontal, AXSpacing.sm)
-                            .padding(.vertical, AXSpacing.xxs)
-                            .background(Color.axSuccess.opacity(0.1))
-                            .cornerRadius(AXCornerRadius.sm)
-                        }
-                    }
-                    
-                    Divider()
-                        .background(Color.axBorder)
-                    
-                    // Vitals Grid - 4 columns for CPU, RAM, Disk, Temp
-                    LazyVGrid(columns: [
-                        GridItem(.flexible(), spacing: AXSpacing.lg),
-                        GridItem(.flexible(), spacing: AXSpacing.lg),
-                        GridItem(.flexible(), spacing: AXSpacing.lg),
-                        GridItem(.flexible(), spacing: AXSpacing.lg)
-                    ], spacing: AXSpacing.lg) {
-                        
-                        // CPU Card
-                        QuickVitalCard(
-                            title: "CPU",
-                            value: viewModel.cpuUsage,
-                            unit: "%",
-                            icon: "cpu",
-                            color: .axAccentBlue,
-                            history: viewModel.cpuUsageHistory,
-                            detail: viewModel.isConnected ? "Real-time" : "Not connected"
-                        )
-                        
-                        // Memory Card
-                        QuickVitalCard(
-                            title: "RAM",
-                            value: viewModel.memoryUsage,
-                            unit: "%",
-                            icon: "memorychip",
-                            color: .axAccentGreen,
-                            history: viewModel.memoryUsageHistory,
-                            detail: viewModel.isConnected ? "Real-time" : "Not connected"
-                        )
-                        
-                        // Disk Card
-                        QuickVitalCard(
-                            title: "Disk",
-                            value: viewModel.diskUsage,
-                            unit: "%",
-                            icon: "internaldrive",
-                            color: .axWarning,
-                            history: viewModel.diskUsageHistory,
-                            detail: viewModel.isConnected ? "Real-time" : "Not connected"
-                        )
-                        
-                        // Temperature Card
-                        QuickVitalCard(
-                            title: "Temp",
-                            value: viewModel.cpuTemperature ?? 0,
-                            unit: "°C",
-                            icon: "thermometer",
-                            color: tempColor(viewModel.cpuTemperature ?? 0),
-                            history: viewModel.temperatureHistory,
-                            detail: viewModel.isConnected ? "CPU Package" : "Not connected"
-                        )
-                    }
-                }
-            }
-            
-            // MARK: - Inventory Summary & System Info Row
-            HStack(spacing: AXSpacing.lg) {
-                
-                // Inventory Summary
-                AXCard {
-                    VStack(alignment: .leading, spacing: AXSpacing.lg) {
-                        HStack {
-                            Image(systemName: "cube.box")
-                                .font(.system(size: 16))
-                                .foregroundColor(.axAccentGreen)
-                            
-                            Text("Inventory")
-                                .font(AXTypography.headline)
-                                .foregroundColor(.axTextPrimary)
-                            
-                            Spacer()
                         }
                         
                         Divider()
                             .background(Color.axBorder)
                         
-                        VStack(spacing: AXSpacing.md) {
-                            InventoryRow(
-                                icon: "globe",
+                        // Vitals Grid - 4 columns for CPU, RAM, Disk, Temp
+                        LazyVGrid(columns: [
+                            GridItem(.flexible(), spacing: AXSpacing.lg),
+                            GridItem(.flexible(), spacing: AXSpacing.lg),
+                            GridItem(.flexible(), spacing: AXSpacing.lg),
+                            GridItem(.flexible(), spacing: AXSpacing.lg)
+                        ], spacing: AXSpacing.lg) {
+                            
+                            // CPU Card
+                            QuickVitalCard(
+                                title: "CPU",
+                                value: viewModel.cpuUsage,
+                                unit: "%",
+                                icon: "cpu",
                                 color: .axAccentBlue,
-                                title: "Websites",
-                                count: viewModel.websiteCount,
-                                subtitle: viewModel.isConnected ? "Nginx vhosts" : "Connect to view"
+                                history: viewModel.cpuUsageHistory,
+                                detail: viewModel.isConnected ? "Real-time" : "Not connected"
                             )
                             
-                            InventoryRow(
-                                icon: "cylinder.split.1x2",
+                            // Memory Card
+                            QuickVitalCard(
+                                title: "RAM",
+                                value: viewModel.memoryUsage,
+                                unit: "%",
+                                icon: "memorychip",
                                 color: .axAccentGreen,
-                                title: "Databases",
-                                count: viewModel.databases.count,
-                                subtitle: viewModel.isConnected ? "MySQL & PostgreSQL" : "Connect to view"
+                                history: viewModel.memoryUsageHistory,
+                                detail: viewModel.isConnected ? "Real-time" : "Not connected"
                             )
                             
-                            InventoryRow(
-                                icon: "gearshape.2",
+                            // Disk Card
+                            QuickVitalCard(
+                                title: "Disk",
+                                value: viewModel.diskUsage,
+                                unit: "%",
+                                icon: "internaldrive",
                                 color: .axWarning,
-                                title: "Services",
-                                count: viewModel.serviceCount,
-                                subtitle: viewModel.isConnected ? "Active processes" : "Connect to view"
+                                history: viewModel.diskUsageHistory,
+                                detail: viewModel.isConnected ? "Real-time" : "Not connected"
+                            )
+                            
+                            // Temperature Card
+                            QuickVitalCard(
+                                title: "Temp",
+                                value: viewModel.cpuTemperature ?? 0,
+                                unit: "°C",
+                                icon: "thermometer",
+                                color: tempColor(viewModel.cpuTemperature ?? 0),
+                                history: viewModel.temperatureHistory,
+                                detail: viewModel.isConnected ? "CPU Package" : "Not connected"
                             )
                         }
                     }
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
                 
-                // System Info
+                // MARK: - Inventory Summary & System Info Row
+                HStack(spacing: AXSpacing.lg) {
+                    
+                    // Inventory Summary
+                    AXCard {
+                        VStack(alignment: .leading, spacing: AXSpacing.lg) {
+                            HStack {
+                                Image(systemName: "cube.box")
+                                    .font(.system(size: 16))
+                                    .foregroundColor(.axAccentGreen)
+                                
+                                Text("Inventory")
+                                    .font(AXTypography.headline)
+                                    .foregroundColor(.axTextPrimary)
+                                
+                                Spacer()
+                            }
+                            
+                            Divider()
+                                .background(Color.axBorder)
+                            
+                            VStack(spacing: AXSpacing.md) {
+                                Button(action: {
+                                    viewModel.selectedTab = .websites
+                                }) {
+                                    InventoryRow(
+                                        icon: "globe",
+                                        color: .axAccentBlue,
+                                        title: "Websites",
+                                        count: viewModel.websiteCount,
+                                        subtitle: viewModel.isConnected ? "Nginx vhosts" : "Connect to view"
+                                    )
+                                }
+                                .buttonStyle(PlainButtonStyle())
+                                .disabled(!viewModel.isConnected)
+    
+                                Button(action: {
+                                    viewModel.selectedTab = .databases
+                                }) {
+                                    InventoryRow(
+                                        icon: "cylinder.split.1x2",
+                                        color: .axAccentGreen,
+                                        title: "Databases",
+                                        count: viewModel.databases.count,
+                                        subtitle: viewModel.isConnected ? "MySQL & PostgreSQL" : "Connect to view"
+                                    )
+                                }
+                                .buttonStyle(PlainButtonStyle())
+                                .disabled(!viewModel.isConnected)
+    
+                                Button(action: {
+                                    viewModel.selectedTab = .applications
+                                }) {
+                                    InventoryRow(
+                                        icon: "square.stack.3d.up",
+                                        color: .axWarning,
+                                        title: "Applications",
+                                        count: viewModel.applicationCount,
+                                        subtitle: viewModel.isConnected ? "Active services" : "Connect to view"
+                                    )
+                                }
+                                .buttonStyle(PlainButtonStyle())
+                                .disabled(!viewModel.isConnected)
+                            }
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    
+                    // System Info
+                    AXCard {
+                        VStack(alignment: .leading, spacing: AXSpacing.lg) {
+                            HStack {
+                                Image(systemName: "info.circle")
+                                    .font(.system(size: 16))
+                                    .foregroundColor(.axInfo)
+                                
+                                Text("System Info")
+                                    .font(AXTypography.headline)
+                                    .foregroundColor(.axTextPrimary)
+                                
+                                Spacer()
+                            }
+                            
+                            Divider()
+                                .background(Color.axBorder)
+                            
+                            VStack(spacing: AXSpacing.md) {
+                                SystemInfoRow(label: "Operating System", value: server.os ?? "Unknown")
+                                SystemInfoRow(label: "IP Address", value: server.host)
+                                SystemInfoRow(label: "Hostname", value: server.host)
+                                SystemInfoRow(label: "Uptime", value: viewModel.uptime)
+                                SystemInfoRow(label: "Load Average", value: viewModel.loadAverage)
+                                SystemInfoRow(label: "Connection", value: viewModel.connectionStage.rawValue)
+                            }
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                
+                // MARK: - Quick Actions
                 AXCard {
                     VStack(alignment: .leading, spacing: AXSpacing.lg) {
                         HStack {
-                            Image(systemName: "info.circle")
+                            Image(systemName: "bolt.circle")
                                 .font(.system(size: 16))
-                                .foregroundColor(.axInfo)
+                                .foregroundColor(.axWarning)
                             
-                            Text("System Info")
+                            Text("Quick Actions")
                                 .font(AXTypography.headline)
                                 .foregroundColor(.axTextPrimary)
                             
@@ -185,72 +235,65 @@ struct OverviewTab: View {
                         Divider()
                             .background(Color.axBorder)
                         
-                        VStack(spacing: AXSpacing.md) {
-                            SystemInfoRow(label: "Operating System", value: server.os ?? "Unknown")
-                            SystemInfoRow(label: "IP Address", value: server.host)
-                            SystemInfoRow(label: "Hostname", value: server.host)
-                            SystemInfoRow(label: "Uptime", value: viewModel.uptime)
-                            SystemInfoRow(label: "Load Average", value: viewModel.loadAverage)
-                            SystemInfoRow(label: "Connection", value: viewModel.connectionStage.rawValue)
+                        HStack(spacing: AXSpacing.lg) {
+                            QuickActionButton(
+                                icon: "terminal",
+                                title: "Terminal",
+                                color: .axAccentBlue,
+                                isEnabled: viewModel.isConnected,
+                                action: {
+                                    viewModel.selectedTab = .terminal
+                                }
+                            )
+                            QuickActionButton(
+                                icon: "arrow.up.doc",
+                                title: "Deploy",
+                                color: .axAccentGreen,
+                                isEnabled: viewModel.isConnected,
+                                action: {
+                                    // TODO: Open Deploy modal
+                                    CoreLogger.shared.info("Deploy action triggered", module: "OverviewTab")
+                                }
+                            )
+                            QuickActionButton(
+                                icon: "arrow.counterclockwise",
+                                title: "Restart",
+                                color: .axWarning,
+                                isEnabled: viewModel.isConnected,
+                                action: {
+                                    Task {
+                                        await viewModel.restartServices()
+                                    }
+                                }
+                            )
+                            QuickActionButton(
+                                icon: "exclamationmark.shield",
+                                title: "Logs",
+                                color: .axInfo,
+                                isEnabled: viewModel.isConnected,
+                                action: {
+                                    viewModel.selectedTab = .terminal
+                                    // Pre-fill with log viewing command
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                                        // The terminal will be opened, user can type log commands
+                                    }
+                                }
+                            )
+                            QuickActionButton(
+                                icon: "gearshape",
+                                title: "Config",
+                                color: .axTextSecondary,
+                                isEnabled: viewModel.isConnected,
+                                action: {
+                                    viewModel.selectedTab = .settings
+                                }
+                            )
+                            Spacer()
                         }
                     }
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
             }
-            
-            // MARK: - Quick Actions
-            AXCard {
-                VStack(alignment: .leading, spacing: AXSpacing.lg) {
-                    HStack {
-                        Image(systemName: "bolt.circle")
-                            .font(.system(size: 16))
-                            .foregroundColor(.axWarning)
-                        
-                        Text("Quick Actions")
-                            .font(AXTypography.headline)
-                            .foregroundColor(.axTextPrimary)
-                        
-                        Spacer()
-                    }
-                    
-                    Divider()
-                        .background(Color.axBorder)
-                    
-                    HStack(spacing: AXSpacing.lg) {
-                        QuickActionButton(
-                            icon: "terminal",
-                            title: "Terminal",
-                            color: .axAccentBlue,
-                            isEnabled: viewModel.isConnected
-                        )
-                        QuickActionButton(
-                            icon: "arrow.up.doc",
-                            title: "Deploy",
-                            color: .axAccentGreen,
-                            isEnabled: viewModel.isConnected
-                        )
-                        QuickActionButton(
-                            icon: "arrow.counterclockwise",
-                            title: "Restart",
-                            color: .axWarning,
-                            isEnabled: viewModel.isConnected
-                        )
-                        QuickActionButton(
-                            icon: "exclamationmark.shield",
-                            title: "Logs",
-                            color: .axInfo,
-                            isEnabled: viewModel.isConnected
-                        )
-                        QuickActionButton(
-                            icon: "gearshape",
-                            title: "Config",
-                            color: .axTextSecondary,
-                            isEnabled: viewModel.isConnected
-                        )
-                        Spacer()
-                    }
-                }
-            }
+            .padding(AXSpacing.xl)
         }
         .onAppear {
             // Note: Connection is managed by parent ServerDashboardView

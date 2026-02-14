@@ -24,11 +24,15 @@ public enum CommandTemplate {
     case overview(OverviewCommand)
     
     // MARK: - Database Commands
-    
+
     case databases(DatabaseCommand)
-    
+
+    // MARK: - Service Commands
+
+    case services(ServiceCommand)
+
     // MARK: - File Commands
-    
+
     case files(FileCommand)
     
     // MARK: - Build Command
@@ -41,11 +45,13 @@ public enum CommandTemplate {
             return cmd.command
         case .databases(let cmd):
             return cmd.command
+        case .services(let cmd):
+            return cmd.command
         case .files(let cmd):
             return cmd.command
         }
     }
-    
+
     /// Returns the command category for logging/auditing
     public var category: String {
         switch self {
@@ -53,17 +59,21 @@ public enum CommandTemplate {
             return "overview"
         case .databases:
             return "databases"
+        case .services:
+            return "services"
         case .files:
             return "files"
         }
     }
-    
+
     /// Returns a human-readable description
     public var description: String {
         switch self {
         case .overview(let cmd):
             return cmd.description
         case .databases(let cmd):
+            return cmd.description
+        case .services(let cmd):
             return cmd.description
         case .files(let cmd):
             return cmd.description
@@ -287,6 +297,96 @@ public enum DatabaseCommand {
     }
 }
 
+// MARK: - Service Commands
+
+/// Service management commands
+/// These commands manage system services like nginx, mysql, php-fpm
+public enum ServiceCommand {
+
+    /// Restart nginx service
+    case restartNginx
+
+    /// Restart MySQL service
+    case restartMySQL
+
+    /// Restart PHP-FPM service
+    case restartPHPFPM
+
+    /// Restart Apache service
+    case restartApache
+
+    /// Restart Redis service
+    case restartRedis
+
+    /// Restart PostgreSQL service
+    case restartPostgreSQL
+
+    /// Check nginx status
+    case statusNginx
+
+    /// Check MySQL status
+    case statusMySQL
+
+    /// Check PHP-FPM status
+    case statusPHPFPM
+
+    /// The actual command string
+    public var command: String {
+        switch self {
+        case .restartNginx:
+            return "sudo systemctl restart nginx 2>/dev/null || sudo service nginx restart 2>/dev/null || echo 'Failed to restart nginx'"
+
+        case .restartMySQL:
+            return "sudo systemctl restart mysql 2>/dev/null || sudo systemctl restart mysqld 2>/dev/null || sudo service mysql restart 2>/dev/null || echo 'Failed to restart MySQL'"
+
+        case .restartPHPFPM:
+            return "sudo systemctl restart php-fpm 2>/dev/null || sudo systemctl restart php8.2-fpm 2>/dev/null || sudo systemctl restart php8.1-fpm 2>/dev/null || sudo service php-fpm restart 2>/dev/null || echo 'Failed to restart PHP-FPM'"
+
+        case .restartApache:
+            return "sudo systemctl restart apache2 2>/dev/null || sudo systemctl restart httpd 2>/dev/null || sudo service apache2 restart 2>/dev/null || echo 'Failed to restart Apache'"
+
+        case .restartRedis:
+            return "sudo systemctl restart redis 2>/dev/null || sudo systemctl restart redis-server 2>/dev/null || sudo service redis restart 2>/dev/null || echo 'Failed to restart Redis'"
+
+        case .restartPostgreSQL:
+            return "sudo systemctl restart postgresql 2>/dev/null || sudo service postgresql restart 2>/dev/null || echo 'Failed to restart PostgreSQL'"
+
+        case .statusNginx:
+            return "systemctl is-active nginx 2>/dev/null || service nginx status 2>/dev/null | grep -q 'running' && echo 'active' || echo 'inactive'"
+
+        case .statusMySQL:
+            return "systemctl is-active mysql 2>/dev/null || systemctl is-active mysqld 2>/dev/null || service mysql status 2>/dev/null | grep -q 'running' && echo 'active' || echo 'inactive'"
+
+        case .statusPHPFPM:
+            return "systemctl is-active php-fpm 2>/dev/null || systemctl is-active php8.2-fpm 2>/dev/null || systemctl is-active php8.1-fpm 2>/dev/null || echo 'inactive'"
+        }
+    }
+
+    /// Human-readable description
+    public var description: String {
+        switch self {
+        case .restartNginx:
+            return "Restart nginx web server"
+        case .restartMySQL:
+            return "Restart MySQL database"
+        case .restartPHPFPM:
+            return "Restart PHP-FPM service"
+        case .restartApache:
+            return "Restart Apache web server"
+        case .restartRedis:
+            return "Restart Redis server"
+        case .restartPostgreSQL:
+            return "Restart PostgreSQL database"
+        case .statusNginx:
+            return "Check nginx status"
+        case .statusMySQL:
+            return "Check MySQL status"
+        case .statusPHPFPM:
+            return "Check PHP-FPM status"
+        }
+    }
+}
+
 // MARK: - File Commands
 
 /// File system commands with path sanitization
@@ -494,5 +594,19 @@ extension DatabaseCommand: CaseIterable {
         .checkMySQLStatus,
         .checkPostgresStatus,
         .checkRedisStatus
+    ]
+}
+
+extension ServiceCommand: CaseIterable {
+    public static var allCases: [ServiceCommand] = [
+        .restartNginx,
+        .restartMySQL,
+        .restartPHPFPM,
+        .restartApache,
+        .restartRedis,
+        .restartPostgreSQL,
+        .statusNginx,
+        .statusMySQL,
+        .statusPHPFPM
     ]
 }

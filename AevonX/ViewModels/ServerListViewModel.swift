@@ -81,30 +81,105 @@ class ServerListViewModel: ObservableObject {
     private var hasPerformedBiometricAuthThisSession = false
     private var isInForeground = true
     
+    // MARK: - Helper Functions
+    
+    /// Helper function to add timeout to async operations
+    private func withTimeout<T>(seconds: TimeInterval, operation: @escaping () async throws -> T) async throws -> T {
+        return try await withThrowingTaskGroup(of: T.self) { group in
+            // Add the operation task
+            group.addTask {
+                return try await operation()
+            }
+            
+            // Add a timeout task
+            group.addTask {
+                try await Task.sleep(nanoseconds: UInt64(seconds * 1_000_000_000))
+                throw TimeoutError()
+            }
+            
+            // Wait for the first task to complete
+            let result = try await group.next()!
+            group.cancelAll()
+            return result
+        }
+    }
+    
+    private struct TimeoutError: Error {
+        var localizedDescription: String = "Operation timed out"
+    }
+    
     // MARK: - Initialization
     
     func initialize() async {
-        guard !isInitialized else { return }
-        
-        CoreLogger.shared.info("Initializing ServerListViewModel...", module: "ServerList")
-        
-        // Setup device key if needed
-        do {
-            _ = try await SplitKeyEncryptionService.shared.setupDeviceKey()
-            CoreLogger.shared.info("Device key setup completed successfully", module: "ServerList")
-            
-            // Preload the key for the session (single biometric auth)
-            _ = try await SplitKeyEncryptionService.shared.preloadKeys()
-            CoreLogger.shared.info("Encryption keys preloaded for session", module: "ServerList")
-        } catch {
-            CoreLogger.shared.error("Device key setup/preload failed: \(error.localizedDescription)", module: "ServerList")
+        CoreLogger.shared.info("🔵 initialize() called - isInitialized: \(isInitialized)", module: "ServerList")
+
+        guard !isInitialized else {
+            CoreLogger.shared.warning("⚠️ initialize() called but already initialized - SKIPPING", module: "ServerList")
+            return
         }
-        
-        await refresh()
+
+        CoreLogger.shared.info("🟢 Starting initialization...", module: "ServerList")
+
+        // Mark as initialized early to prevent race conditions
         isInitialized = true
-        
-        // Start polling for real-time status updates
-        startStatusPolling()
+
+        do {
+            CoreLogger.shared.info("Step 1: Setting up encryption...", module: "ServerList")
+            
+            // Setup encryption synchronously to ensure it completes before continuing
+            await setupEncryption()
+
+            CoreLogger.shared.info("Step 2: Encryption setup complete, refreshing data...", module: "ServerList")
+            await refresh()
+
+            CoreLogger.shared.info("Step 3: Starting status polling...", module: "ServerList")
+            // Start polling for real-time status updates
+            startStatusPolling()
+
+            CoreLogger.shared.info("✅ Initialization complete", module: "ServerList")
+        }
+    }
+
+    private func setupEncryption() async {
+        do {
+            CoreLogger.shared.info("🔐 Starting encryption setup...", module: "ServerList")
+
+            // Check if keys are already preloaded
+            CoreLogger.shared.info("🔐 Step 1: Checking if keys are already preloaded...", module: "ServerList")
+            let alreadyReady = await SplitKeyEncryptionService.shared.isReady
+
+            if alreadyReady {
+                CoreLogger.shared.info("✓ Encryption keys already preloaded", module: "ServerList")
+                return
+            }
+
+            CoreLogger.shared.info("🔐 Step 2: Setting up device key...", module: "ServerList")
+            // Add timeout for device key setup to prevent hanging
+            let keyCreated = try await withTimeout(seconds: 30) {
+                try await SplitKeyEncryptionService.shared.setupDeviceKey()
+            }
+
+            if keyCreated {
+                CoreLogger.shared.info("✓ New device key created", module: "ServerList")
+            } else {
+                CoreLogger.shared.info("✓ Device key already exists", module: "ServerList")
+            }
+
+            CoreLogger.shared.info("🔐 Step 3: Preloading keys...", module: "ServerList")
+            let preloaded = try await SplitKeyEncryptionService.shared.preloadKeys()
+
+            if preloaded {
+                CoreLogger.shared.info("✓ Keys preloaded successfully", module: "ServerList")
+            } else {
+                CoreLogger.shared.warning("⚠️ Keys not preloaded", module: "ServerList")
+            }
+            
+            CoreLogger.shared.info("✅ Encryption setup completed successfully", module: "ServerList")
+        } catch {
+            CoreLogger.shared.error("❌ Encryption setup failed: \(error.localizedDescription)", module: "ServerList")
+            // Don't show error to user - just log and continue without encryption
+            // The app can still function with limited features
+        }
     }
     
     deinit {
@@ -116,7 +191,7 @@ class ServerListViewModel: ObservableObject {
     func refresh() async {
         isLoading = true
         defer { isLoading = false }
-        
+
         // Check authentication first
         let token = await AuthService.shared.getToken()
         if token == nil {
@@ -126,20 +201,28 @@ class ServerListViewModel: ObservableObject {
             return
         }
         isAuthenticated = true
-        
+
         do {
             // Fetch subscription status
             let status = try await SubscriptionManager.shared.getSubscriptionStatus(forceRefresh: true)
             self.subscriptionStatus = status
             self.canAddServer = await SubscriptionManager.shared.canAddServer()
             self.remainingSlots = await SubscriptionManager.shared.remainingServerSlots()
-            
+
             // Fetch servers from Core - real data from backend
             let serverResponses = try await ServerAPIService.shared.fetchServers()
             self.servers = await SubscriptionManager.shared.getAccessibleServers(from: serverResponses)
-            
-            // Decrypt servers for display
-            await decryptServersForDisplay()
+
+            // Only decrypt if we have encryption keys ready
+            // This prevents additional biometric prompts during refresh
+            let keysReady = await SplitKeyEncryptionService.shared.isReady
+            if keysReady {
+                // Decrypt servers for display
+                await decryptServersForDisplay()
+            } else {
+                CoreLogger.shared.warning("Encryption keys not ready, skipping server decryption", module: "ServerList")
+                self.decryptedServers = []
+            }
             
         } catch let error as ServerAPIError {
             if case .serverNotAccessible = error {
@@ -159,11 +242,15 @@ class ServerListViewModel: ObservableObject {
     
     private func startStatusPolling() {
         statusPollingTask = Task { [weak self] in
-            guard let self = self else { return }
-            
             while !Task.isCancelled {
                 do {
-                    try await Task.sleep(nanoseconds: UInt64(self.statusPollInterval * 1_000_000_000))
+                    try await Task.sleep(nanoseconds: UInt64(60 * 1_000_000_000)) // 60 seconds
+                    
+                    // Use weak self to avoid strong reference cycle
+                    guard let self = self else {
+                        // ViewModel was deallocated, stop polling
+                        break
+                    }
                     
                     // Only refresh if we have servers AND app is in foreground
                     guard self.isInForeground, !self.servers.isEmpty else {

@@ -16,8 +16,66 @@
             endingColumnNumber = "9223372036854775807"
             startingLineNumber = "111"
             endingLineNumber = "111"
-            landmarkName = "refresh()"
+            landmarkName = "initialize()"
             landmarkType = "7">
+            <Locations>
+               <Location
+                  uuid = "FC763D7C-C334-4F47-AE1C-6ADD3D671E5B - d01bbc90f1449119"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "(5) suspend resume partial function for AevonX.ServerListViewModel.initialize() async -&gt; ()"
+                  moduleName = "AevonX.debug.dylib"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/0x/Documents/xcode/AevonX/AevonX/AevonX/ViewModels/ServerListViewModel.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "112"
+                  endingLineNumber = "112">
+               </Location>
+               <Location
+                  uuid = "FC763D7C-C334-4F47-AE1C-6ADD3D671E5B - 9c0f07a26a5fa24"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "(6) await resume partial function for AevonX.ServerListViewModel.initialize() async -&gt; ()"
+                  moduleName = "AevonX.debug.dylib"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/0x/Documents/xcode/AevonX/AevonX/AevonX/ViewModels/ServerListViewModel.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "112"
+                  endingLineNumber = "112">
+               </Location>
+               <Location
+                  uuid = "FC763D7C-C334-4F47-AE1C-6ADD3D671E5B - 62578a625bedcf55"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "(7) suspend resume partial function for AevonX.ServerListViewModel.initialize() async -&gt; ()"
+                  moduleName = "AevonX.debug.dylib"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/0x/Documents/xcode/AevonX/AevonX/AevonX/ViewModels/ServerListViewModel.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "114"
+                  endingLineNumber = "114">
+               </Location>
+               <Location
+                  uuid = "FC763D7C-C334-4F47-AE1C-6ADD3D671E5B - 3b6de17ae8be6656"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "(8) suspend resume partial function for AevonX.ServerListViewModel.initialize() async -&gt; ()"
+                  moduleName = "AevonX.debug.dylib"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/0x/Documents/xcode/AevonX/AevonX/AevonX/ViewModels/ServerListViewModel.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "114"
+                  endingLineNumber = "114">
+               </Location>
+            </Locations>
          </BreakpointContent>
       </BreakpointProxy>
       <BreakpointProxy
