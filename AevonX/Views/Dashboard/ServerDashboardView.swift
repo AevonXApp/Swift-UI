@@ -61,6 +61,8 @@ struct ServerDashboardView: View {
                         TerminalTab(server: server, serverId: serverId, viewModel: viewModel)
                     case .files:
                         FilesTab()
+                    case .plugins:
+                        PluginsTab(server: server, serverId: serverId, connectionViewModel: viewModel)
                     case .settings:
                         ServerSettingsTab(server: server)
                     }

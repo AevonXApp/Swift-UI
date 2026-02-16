@@ -1,0 +1,145 @@
+//
+//  InstalledPluginsView.swift
+//  AevonX
+//
+
+import SwiftUI
+import AevonXCore
+
+struct InstalledPluginsView: View {
+    let serverId: String?
+    @StateObject private var viewModel = PluginsViewModel()
+    @State private var selectedPlugin: Plugin?
+    @State private var showConfig = false
+    
+    var body: some View {
+        VStack(spacing: AXSpacing.xl) {
+            if viewModel.isLoading {
+                ProgressView()
+                    .padding(AXSpacing.xl)
+            } else if viewModel.installedPlugins.isEmpty {
+                VStack(spacing: AXSpacing.lg) {
+                    Image(systemName: "puzzlepiece")
+                        .font(.system(size: 64))
+                        .foregroundColor(.axTextMuted)
+                    
+                    Text("No plugins installed yet")
+                        .font(AXTypography.headline)
+                        .foregroundColor(.axTextSecondary)
+                    
+                    Text("Browse the marketplace to find and install powerful extensions for your server.")
+                        .font(AXTypography.caption)
+                        .foregroundColor(.axTextTertiary)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, AXSpacing.xxl)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else {
+                List {
+                    ForEach(viewModel.installedPlugins) { plugin in
+                        InstalledPluginRow(
+                            plugin: plugin,
+                            onConfigure: {
+                                selectedPlugin = plugin
+                                showConfig = true
+                            },
+                            onUninstall: {
+                                if let sid = serverId {
+                                    Task {
+                                        await viewModel.uninstallPlugin(plugin, on: sid)
+                                    }
+                                }
+                            }
+                        )
+                    }
+                }
+                .listStyle(PlainListStyle())
+            }
+        }
+        .sheet(isPresented: $showConfig) {
+            if let plugin = selectedPlugin, let sid = serverId {
+                PluginConfigurationView(viewModel: PluginConfigurationViewModel(plugin: plugin, serverId: sid))
+            }
+        }
+        .onAppear {
+            if let sid = serverId {
+                Task { await viewModel.loadInstalledPlugins(on: sid) }
+            }
+        }
+    }
+}
+
+struct InstalledPluginRow: View {
+    let plugin: Plugin
+    let onConfigure: () -> Void
+    let onUninstall: () -> Void
+    
+    var body: some View {
+        HStack(spacing: AXSpacing.md) {
+            ZStack {
+                RoundedRectangle(cornerRadius: AXCornerRadius.sm)
+                    .fill(Color.axBackgroundTertiary)
+                    .frame(width: 44, height: 44)
+                
+                Image(systemName: "puzzlepiece.fill")
+                    .foregroundColor(.axAccentBlue)
+            }
+            
+            VStack(alignment: .leading, spacing: AXSpacing.xxs) {
+                Text(plugin.name)
+                    .font(AXTypography.body)
+                    .fontWeight(.semibold)
+                
+                Text(plugin.activeVersion?.versionNumber ?? "v1.0.0")
+                    .font(AXTypography.caption)
+                    .foregroundColor(.axTextMuted)
+            }
+            
+            Spacer()
+            
+            UninstallButton(onUninstall: onUninstall)
+            
+            Button(action: onConfigure) {
+                HStack(spacing: AXSpacing.xs) {
+                    Image(systemName: "slider.horizontal.3")
+                    Text("Configure")
+                }
+                .font(AXTypography.caption)
+                .foregroundColor(.axAccentBlue)
+                .padding(.horizontal, AXSpacing.md)
+                .padding(.vertical, AXSpacing.sm)
+                .background(Color.axAccentBlue.opacity(0.1))
+                .cornerRadius(AXCornerRadius.sm)
+            }
+            .buttonStyle(PlainButtonStyle())
+        }
+        .padding(.vertical, AXSpacing.sm)
+        .padding(.horizontal, AXSpacing.md)
+    }
+}
+
+private struct UninstallButton: View {
+    let onUninstall: () -> Void
+    @State private var showConfirmation = false
+    
+    var body: some View {
+        Button(action: { showConfirmation = true }) {
+            Image(systemName: "trash")
+                .font(.system(size: 14))
+                .foregroundColor(.axError)
+                .padding(AXSpacing.sm)
+                .background(Color.axError.opacity(0.1))
+                .cornerRadius(AXCornerRadius.sm)
+        }
+        .buttonStyle(PlainButtonStyle())
+        .help("Uninstall Plugin")
+        .alert(isPresented: $showConfirmation) {
+            Alert(
+                title: Text("Uninstall Plugin"),
+                message: Text("Are you sure you want to uninstall this plugin? This action cannot be undone."),
+                primaryButton: .destructive(Text("Uninstall"), action: onUninstall),
+                secondaryButton: .cancel()
+            )
+        }
+    }
+}
