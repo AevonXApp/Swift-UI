@@ -34,6 +34,10 @@ public enum CommandTemplate {
     // MARK: - File Commands
 
     case files(FileCommand)
+
+    // MARK: - System Commands
+
+    case system(SystemCommand)
     
     // MARK: - Build Command
     
@@ -49,6 +53,8 @@ public enum CommandTemplate {
             return cmd.command
         case .files(let cmd):
             return cmd.command
+        case .system(let cmd):
+            return cmd.command
         }
     }
 
@@ -63,6 +69,8 @@ public enum CommandTemplate {
             return "services"
         case .files:
             return "files"
+        case .system:
+            return "system"
         }
     }
 
@@ -76,6 +84,8 @@ public enum CommandTemplate {
         case .services(let cmd):
             return cmd.description
         case .files(let cmd):
+            return cmd.description
+        case .system(let cmd):
             return cmd.description
         }
     }
@@ -457,6 +467,38 @@ public enum FileCommand {
     }
 }
 
+// MARK: - System Commands
+
+/// Host system level commands
+public enum SystemCommand {
+    
+    /// Reboot the host system
+    case reboot
+    
+    /// Shutdown the host system
+    case shutdown
+    
+    /// The actual command string
+    public var command: String {
+        switch self {
+        case .reboot:
+            return "sudo reboot"
+        case .shutdown:
+            return "sudo shutdown -h now"
+        }
+    }
+    
+    /// Human-readable description
+    public var description: String {
+        switch self {
+        case .reboot:
+            return "Reboot host system"
+        case .shutdown:
+            return "Shutdown host system"
+        }
+    }
+}
+
 // MARK: - Path Sanitization
 
 /// Sanitizes a file path to prevent command injection
@@ -608,5 +650,12 @@ extension ServiceCommand: CaseIterable {
         .statusNginx,
         .statusMySQL,
         .statusPHPFPM
+    ]
+}
+
+extension SystemCommand: CaseIterable {
+    public static var allCases: [SystemCommand] = [
+        .reboot,
+        .shutdown
     ]
 }

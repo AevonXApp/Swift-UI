@@ -106,6 +106,41 @@ struct ServerDashboardView: View {
         } message: {
             Text(viewModel.connectionError ?? "Unknown error")
         }
+        .overlay {
+            if viewModel.isRestartConfirming {
+                AXConfirmationDialog(
+                    title: "Restart Server?",
+                    message: "This will reboot the host machine. All active sessions and services will be disconnected.",
+                    icon: "arrow.clockwise",
+                    iconColor: .axWarning,
+                    actionTitle: "Restart",
+                    actionColor: .axWarning,
+                    note: "The server will be unavailable for 2-3 minutes during reboot.",
+                    onConfirm: {
+                        viewModel.isRestartConfirming = false
+                        Task { await viewModel.rebootServer() }
+                    },
+                    onCancel: { viewModel.isRestartConfirming = false }
+                )
+            }
+            
+            if viewModel.isShutdownConfirming {
+                AXConfirmationDialog(
+                    title: "Shutdown Server?",
+                    message: "This will power off the host machine. You will need manual access to power it back on.",
+                    icon: "power",
+                    iconColor: .axError,
+                    actionTitle: "Shutdown",
+                    actionColor: .axError,
+                    note: "Ensure you have out-of-band management access to restart the server.",
+                    onConfirm: {
+                        viewModel.isShutdownConfirming = false
+                        Task { await viewModel.shutdownServer() }
+                    },
+                    onCancel: { viewModel.isShutdownConfirming = false }
+                )
+            }
+        }
     }
 }
 

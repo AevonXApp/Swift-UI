@@ -112,12 +112,12 @@ struct DashboardSidebar: View {
                         viewModel.selectedTab = .terminal
                     }
 
-                    SidebarActionBtn(icon: "arrow.clockwise", color: .axTextSecondary, isEnabled: viewModel.isConnected) {
-                        Task { await viewModel.refreshStats() }
+                    SidebarActionBtn(icon: "arrow.clockwise", color: .axWarning, isEnabled: viewModel.isConnected) {
+                        viewModel.isRestartConfirming = true
                     }
 
                     SidebarActionBtn(icon: "power", color: .axError, isEnabled: viewModel.isConnected) {
-                        Task { await viewModel.restartServices() }
+                        viewModel.isShutdownConfirming = true
                     }
                 }
             }

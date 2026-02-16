@@ -261,9 +261,7 @@ struct OverviewTab: View {
                                 color: .axWarning,
                                 isEnabled: viewModel.isConnected,
                                 action: {
-                                    Task {
-                                        await viewModel.restartServices()
-                                    }
+                                    viewModel.isRestartConfirming = true
                                 }
                             )
                             QuickActionButton(

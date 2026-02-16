@@ -148,6 +148,12 @@ public class ServerConnectionViewModel: ObservableObject {
     /// Error from database loading, if any
     @Published private(set) var databaseError: String?
     
+    /// Whether a server reboot confirmation is showing
+    @Published var isRestartConfirming: Bool = false
+    
+    /// Whether a server shutdown confirmation is showing
+    @Published var isShutdownConfirming: Bool = false
+    
     // MARK: - Published Properties - Terminal Sessions
     
     /// Managed terminal sessions for this server
@@ -486,6 +492,45 @@ public class ServerConnectionViewModel: ObservableObject {
             await refreshStats()
         } catch {
             CoreLogger.shared.error("Failed to restart services: \(error.localizedDescription)", module: "ServerConnection")
+        }
+    }
+    
+    /// Reboots the entire server host
+    func rebootServer() async {
+        guard isConnected else { return }
+        
+        CoreLogger.shared.warning("Initiating server reboot...", module: "ServerConnection")
+        
+        do {
+            // Call Core SystemControlService
+            try await SystemControlService.shared.reboot(serverId: serverId)
+            
+            // Note: Connection will be lost as server reboots
+            // Handled by disconnect logic or health check
+            await disconnect()
+        } catch {
+            CoreLogger.shared.error("Failed to reboot server: \(error.localizedDescription)", module: "ServerConnection")
+            connectionError = "Reboot failed: \(error.localizedDescription)"
+            showConnectionError = true
+        }
+    }
+    
+    /// Shuts down the entire server host
+    func shutdownServer() async {
+        guard isConnected else { return }
+        
+        CoreLogger.shared.warning("Initiating server shutdown...", module: "ServerConnection")
+        
+        do {
+            // Call Core SystemControlService
+            try await SystemControlService.shared.shutdown(serverId: serverId)
+            
+            // Note: Connection will be lost as server shuts down
+            await disconnect()
+        } catch {
+            CoreLogger.shared.error("Failed to shutdown server: \(error.localizedDescription)", module: "ServerConnection")
+            connectionError = "Shutdown failed: \(error.localizedDescription)"
+            showConnectionError = true
         }
     }
 
