@@ -9,6 +9,8 @@ import AevonXCore
 struct PluginsMarketplaceView: View {
     let serverId: String?
     var showInstalledOnly: Bool = false
+    let onSettings: (Plugin) -> Void
+    
     @StateObject private var viewModel = PluginsViewModel()
     
     let columns = [
@@ -16,7 +18,6 @@ struct PluginsMarketplaceView: View {
     ]
     
     @State private var pluginToInstall: Plugin?
-    @State private var pluginToConfigure: Plugin?
     
     var body: some View {
         ScrollView {
@@ -105,12 +106,11 @@ struct PluginsMarketplaceView: View {
                                         if let versions = plugin.versions, !versions.isEmpty {
                                             pluginToInstall = plugin
                                         } else if let sid = serverId {
-                                            // Fallback if versions not loaded but active version exists
                                             Task { await viewModel.installPlugin(plugin, on: sid) }
                                         }
                                     },
                                     onSettings: {
-                                        pluginToConfigure = plugin
+                                        onSettings(plugin)
                                     },
                                     onUninstall: {
                                         if let sid = serverId {
@@ -147,11 +147,6 @@ struct PluginsMarketplaceView: View {
                 .padding(AXSpacing.xxl)
                 .frame(width: 400, height: 300)
                 .background(Color.axBackground)
-            }
-        }
-        .sheet(item: $pluginToConfigure) { plugin in
-            if let sid = serverId {
-                PluginConfigurationView(viewModel: PluginConfigurationViewModel(plugin: plugin, serverId: sid))
             }
         }
         .task {

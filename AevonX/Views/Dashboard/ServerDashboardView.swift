@@ -18,6 +18,8 @@ struct ServerDashboardView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.scenePhase) private var scenePhase
     
+    @State private var columnVisibility = NavigationSplitViewVisibility.all
+    
     init(server: Server, serverId: String, serverListViewModel: ServerListViewModel? = nil) {
         self.server = server
         self.serverId = serverId
@@ -29,49 +31,60 @@ struct ServerDashboardView: View {
     }
     
     var body: some View {
-        HStack(spacing: 0) {
+        NavigationSplitView(columnVisibility: $columnVisibility) {
             // Left Global Sidebar
             DashboardSidebar(
                 server: server,
                 viewModel: viewModel,
                 onBack: { dismiss() }
             )
-            .frame(width: 260)
+            .frame(minWidth: 260)
             .background(Color.axSurface.opacity(0.4))
-            
-            Divider()
-                .background(Color.axBorder)
-            
+        } detail: {
             // Right Content Area
-            VStack(spacing: 0) {
-                // Main Content
-                Group {
-                    switch viewModel.selectedTab {
-                    case .overview:
-                        OverviewTab(server: server, serverId: serverId, viewModel: viewModel)
-                    case .websites:
-                        ModernWebsitesTab(server: server, serverId: serverId, connectionViewModel: viewModel)
-                    case .databases:
-                        ModernDatabasesTab(server: server, serverId: serverId, connectionViewModel: viewModel)
-                    case .applications:
-                        ApplicationsTab(server: server, serverId: serverId, connectionViewModel: viewModel)
-                    case .docker:
-                        DockerDetailView(server: server, serverId: serverId, connectionViewModel: viewModel)
-                    case .terminal:
-                        TerminalTab(server: server, serverId: serverId, viewModel: viewModel)
-                    case .files:
-                        FilesTab()
-                    case .plugins:
-                        PluginsTab(server: server, serverId: serverId, connectionViewModel: viewModel)
-                    case .settings:
-                        ServerSettingsTab(server: server)
+            NavigationStack(path: $viewModel.navigationPath) {
+                VStack(spacing: 0) {
+                    // Main Content
+                    Group {
+                        switch viewModel.selectedTab {
+                        case .overview:
+                            OverviewTab(server: server, serverId: serverId, viewModel: viewModel)
+                        case .websites:
+                            ModernWebsitesTab(server: server, serverId: serverId, connectionViewModel: viewModel)
+                        case .databases:
+                            ModernDatabasesTab(server: server, serverId: serverId, connectionViewModel: viewModel)
+                        case .applications:
+                            ApplicationsTab(server: server, serverId: serverId, connectionViewModel: viewModel)
+                        case .docker:
+                            DockerDetailView(server: server, serverId: serverId, connectionViewModel: viewModel)
+                        case .terminal:
+                            TerminalTab(server: server, serverId: serverId, viewModel: viewModel)
+                        case .files:
+                            FilesTab()
+                        case .plugins:
+                            PluginsTab(server: server, serverId: serverId, connectionViewModel: viewModel)
+                        case .settings:
+                            ServerSettingsTab(server: server)
+                        }
+                    }
+                    .background(Color.axBackground)
+                }
+                .navigationDestination(for: DashboardDestination.self) { destination in
+                    switch destination {
+                    case .pluginConfig(let plugin):
+                        PluginConfigurationView(
+                            viewModel: PluginConfigurationViewModel(plugin: plugin, serverId: serverId),
+                            onBack: { viewModel.navigationPath = NavigationPath() }
+                        )
                     }
                 }
-                .background(Color.axBackground)
             }
         }
         .background(Color.axBackground)
         .frame(minWidth: 800, minHeight: 600)
+        .onChange(of: viewModel.selectedTab) { _ in
+            viewModel.navigationPath = NavigationPath()
+        }
         .onAppear {
             // Auto-connect when dashboard appears if not already connected
             print("[ServerDashboardView] onAppear - isConnected: \(viewModel.isConnected), isConnecting: \(viewModel.isConnecting)")

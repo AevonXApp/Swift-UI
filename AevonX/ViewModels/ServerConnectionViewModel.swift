@@ -59,6 +59,10 @@ enum DashboardTab: String, CaseIterable, Identifiable {
     }
 }
 
+/// Navigation destinations for the dashboard detail area
+enum DashboardDestination: Hashable {
+    case pluginConfig(Plugin)
+}
 
 // MARK: - Server Connection ViewModel
 
@@ -140,6 +144,9 @@ public class ServerConnectionViewModel: ObservableObject {
     
     /// Currently selected dashboard tab
     @Published var selectedTab: DashboardTab = .overview
+    
+    /// Navigation path for the detail area
+    @Published var navigationPath = NavigationPath()
     
     /// Whether to show connection error alert
     @Published var showConnectionError: Bool = false

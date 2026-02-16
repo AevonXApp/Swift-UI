@@ -58,7 +58,10 @@ struct InstalledPluginsView: View {
         }
         .sheet(isPresented: $showConfig) {
             if let plugin = selectedPlugin, let sid = serverId {
-                PluginConfigurationView(viewModel: PluginConfigurationViewModel(plugin: plugin, serverId: sid))
+                PluginConfigurationView(
+                    viewModel: PluginConfigurationViewModel(plugin: plugin, serverId: sid),
+                    onBack: { showConfig = false }
+                )
             }
         }
         .onAppear {
