@@ -17,6 +17,11 @@ struct ApplicationsTab: View {
     @State private var applications: [ApplicationInstance] = []
     @State private var isLoading = false
     @State private var errorMessage: String?
+    @State private var selectedApplication: ApplicationInstance?
+    @State private var installingApplicationId: UUID?
+    @State private var installProgressByAppId: [UUID: Double] = [:]
+    @State private var installMessageByAppId: [UUID: String] = [:]
+    @State private var appPendingUninstall: ApplicationInstance?
 
     init(server: Server? = nil, serverId: String? = nil, connectionViewModel: ServerConnectionViewModel? = nil) {
         self.server = server
@@ -28,8 +33,20 @@ struct ApplicationsTab: View {
     var stoppedApps: [ApplicationInstance] { applications.filter { !$0.isRunning } }
 
     var body: some View {
-        ScrollView {
-            VStack(spacing: AXSpacing.xl) {
+        Group {
+            if let selectedApplication {
+                ApplicationDetailView(
+                    application: selectedApplication,
+                    serverId: serverId ?? "",
+                    onBack: {
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            self.selectedApplication = nil
+                        }
+                    }
+                )
+            } else {
+                ScrollView {
+                    VStack(spacing: AXSpacing.xl) {
                 // Summary Cards
                 HStack(spacing: AXSpacing.lg) {
                     ServiceSummaryCard(
@@ -142,18 +159,25 @@ struct ApplicationsTab: View {
                         } else {
                             // Service Rows
                             ForEach(applications) { app in
-                                if let serverId = serverId {
-                                    NavigationLink(destination: ApplicationDetailView(application: app, serverId: serverId)) {
-                                        ServiceRow(
-                                            application: app,
-                                            onStart: { await startApplication(app) },
-                                            onStop: { await stopApplication(app) },
-                                            onRestart: { await restartApplication(app) },
-                                            onToggleAutoStart: { await toggleAutoStart(app) }
-                                        )
+                                ServiceRow(
+                                    application: app,
+                                    onStart: { await startApplication(app) },
+                                    onStop: { await stopApplication(app) },
+                                    onRestart: { await restartApplication(app) },
+                                    onToggleAutoStart: { await toggleAutoStart(app) },
+                                    onInstall: { await installApplication(app) },
+                                    onRequestUninstall: {
+                                        appPendingUninstall = app
+                                    },
+                                    isInstalling: installingApplicationId == app.id,
+                                    installProgress: installProgressByAppId[app.id],
+                                    installMessage: installMessageByAppId[app.id],
+                                    onOpenDetails: {
+                                        withAnimation(.easeInOut(duration: 0.2)) {
+                                            self.selectedApplication = app
+                                        }
                                     }
-                                    .buttonStyle(PlainButtonStyle())
-                                }
+                                )
 
                                 if app.id != applications.last?.id {
                                     Divider()
@@ -165,10 +189,22 @@ struct ApplicationsTab: View {
                     }
                 }
             }
-            .padding(AXSpacing.xl)
+                    .padding(AXSpacing.xl)
+                }
+            }
         }
         .task {
             await loadApplications()
+        }
+        .alert(item: $appPendingUninstall) { app in
+            Alert(
+                title: Text("Uninstall \(app.name)?"),
+                message: Text("This will remove \(app.name) from the server. This action cannot be undone."),
+                primaryButton: .destructive(Text("Uninstall")) {
+                    Task { await uninstallApplication(app) }
+                },
+                secondaryButton: .cancel()
+            )
         }
     }
 
@@ -254,6 +290,62 @@ struct ApplicationsTab: View {
             }
         }
     }
+
+    private func installApplication(_ app: ApplicationInstance) async {
+        guard let serverId = serverId else { return }
+        await MainActor.run {
+            errorMessage = nil
+            installingApplicationId = app.id
+            installProgressByAppId[app.id] = 0
+            installMessageByAppId[app.id] = "Preparing installation..."
+        }
+
+        do {
+            let targetVersion: String
+            do {
+                let availableVersions = try await ApplicationManager.shared.getAvailableVersions(type: app.type, serverId: serverId)
+                targetVersion = availableVersions.first(where: { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }) ?? "latest"
+            } catch {
+                targetVersion = "latest"
+            }
+
+            try await ApplicationManager.shared.installVersion(targetVersion, type: app.type, serverId: serverId) { message, progress in
+                Task { @MainActor in
+                    installMessageByAppId[app.id] = message
+                    installProgressByAppId[app.id] = max(0, min(1, progress))
+                }
+            }
+
+            await loadApplications()
+        } catch {
+            await MainActor.run {
+                errorMessage = "Failed to install \(app.name): \(error.localizedDescription)"
+            }
+        }
+
+        await MainActor.run {
+            installingApplicationId = nil
+            installProgressByAppId[app.id] = nil
+            installMessageByAppId[app.id] = nil
+        }
+    }
+
+    private func uninstallApplication(_ app: ApplicationInstance) async {
+        guard let serverId = serverId else { return }
+
+        await MainActor.run {
+            errorMessage = nil
+        }
+
+        do {
+            try await ApplicationManager.shared.uninstallApplication(type: app.type, serverId: serverId, currentVersion: app.version)
+            await loadApplications()
+        } catch {
+            await MainActor.run {
+                errorMessage = "Failed to uninstall \(app.name): \(error.localizedDescription)"
+            }
+        }
+    }
 }
 
 struct ServiceSummaryCard: View {
@@ -313,6 +405,12 @@ struct ServiceRow: View {
     let onStop: () async -> Void
     let onRestart: () async -> Void
     let onToggleAutoStart: () async -> Void
+    let onInstall: () async -> Void
+    let onRequestUninstall: () -> Void
+    let isInstalling: Bool
+    let installProgress: Double?
+    let installMessage: String?
+    let onOpenDetails: () -> Void
 
     @State private var isProcessing = false
     @State private var localAutoStart: Bool
@@ -322,13 +420,25 @@ struct ServiceRow: View {
         onStart: @escaping () async -> Void,
         onStop: @escaping () async -> Void,
         onRestart: @escaping () async -> Void,
-        onToggleAutoStart: @escaping () async -> Void
+        onToggleAutoStart: @escaping () async -> Void,
+        onInstall: @escaping () async -> Void,
+        onRequestUninstall: @escaping () -> Void,
+        isInstalling: Bool = false,
+        installProgress: Double? = nil,
+        installMessage: String? = nil,
+        onOpenDetails: @escaping () -> Void
     ) {
         self.application = application
         self.onStart = onStart
         self.onStop = onStop
         self.onRestart = onRestart
         self.onToggleAutoStart = onToggleAutoStart
+        self.onInstall = onInstall
+        self.onRequestUninstall = onRequestUninstall
+        self.isInstalling = isInstalling
+        self.installProgress = installProgress
+        self.installMessage = installMessage
+        self.onOpenDetails = onOpenDetails
         self._localAutoStart = State(initialValue: application.autoStart)
     }
 
@@ -454,14 +564,31 @@ struct ServiceRow: View {
                     if isNotInstalled {
                         // Install Button
                         Button(action: {
-                            // TODO: Open installation sheet
+                            Task {
+                                isProcessing = true
+                                await onInstall()
+                                isProcessing = false
+                            }
                         }) {
-                            HStack(spacing: AXSpacing.xs) {
-                                Image(systemName: "arrow.down.circle.fill")
-                                    .font(.system(size: 12))
-                                Text("Install")
-                                    .font(AXTypography.caption)
-                                    .fontWeight(.semibold)
+                            VStack(spacing: AXSpacing.xs) {
+                                HStack(spacing: AXSpacing.xs) {
+                                    Image(systemName: isInstalling ? "arrow.down.circle" : "arrow.down.circle.fill")
+                                        .font(.system(size: 12))
+                                    Text(isInstalling ? "Installing..." : "Install")
+                                        .font(AXTypography.caption)
+                                        .fontWeight(.semibold)
+                                }
+                                if isInstalling {
+                                    ProgressView(value: installProgress ?? 0)
+                                        .progressViewStyle(.linear)
+                                        .frame(width: 120)
+                                    if let installMessage, !installMessage.isEmpty {
+                                        Text(installMessage)
+                                            .font(AXTypography.caption2)
+                                            .foregroundColor(.axBackground.opacity(0.85))
+                                            .lineLimit(1)
+                                    }
+                                }
                             }
                             .foregroundColor(.axBackground)
                             .padding(.horizontal, AXSpacing.md)
@@ -470,6 +597,7 @@ struct ServiceRow: View {
                             .cornerRadius(AXCornerRadius.sm)
                         }
                         .buttonStyle(PlainButtonStyle())
+                        .disabled(isProcessing || isInstalling)
                     } else {
                         // Start/Stop Button
                         Button(action: {
@@ -515,7 +643,33 @@ struct ServiceRow: View {
                         }
                         .buttonStyle(PlainButtonStyle())
                         .disabled(isProcessing)
+
+                        Button(action: onRequestUninstall) {
+                            Image(systemName: "trash.fill")
+                                .font(.system(size: 10))
+                                .foregroundColor(.axError)
+                                .frame(width: 32, height: 32)
+                                .background(Color.axError.opacity(0.1))
+                                .cornerRadius(AXCornerRadius.sm)
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                        .disabled(isProcessing)
                     }
+
+                    Button(action: onOpenDetails) {
+                        Image(systemName: "gearshape.fill")
+                            .font(.system(size: 11))
+                            .foregroundColor(.axTextSecondary)
+                            .frame(width: 32, height: 32)
+                            .background(Color.axSurface)
+                            .cornerRadius(AXCornerRadius.sm)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: AXCornerRadius.sm)
+                                    .stroke(Color.axBorder, lineWidth: 1)
+                            )
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    .disabled(isProcessing)
                 }
             }
             .padding(.horizontal, AXSpacing.lg)

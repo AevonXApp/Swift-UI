@@ -16,8 +16,6 @@ struct ApacheModulesTab: View {
     @State private var searchText = ""
     @State private var filter: ModuleFilter = .all
     @State private var processingModule: String?
-    @State private var errorMessage: String?
-    @State private var successMessage: String?
     
     enum ModuleFilter: String, CaseIterable, Identifiable {
         case all = "All"
@@ -70,14 +68,6 @@ struct ApacheModulesTab: View {
                     .frame(width: 200)
             }
             
-            if let error = errorMessage {
-                ApacheMessageBanner(message: error, type: .error) { errorMessage = nil }
-            }
-            
-            if let success = successMessage {
-                ApacheMessageBanner(message: success, type: .success) { successMessage = nil }
-            }
-            
             // Modules Grid
             ScrollView {
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 300), spacing: AXSpacing.md)], spacing: AXSpacing.md) {
@@ -98,16 +88,14 @@ struct ApacheModulesTab: View {
     
     private func toggleModule(_ module: ApacheModule) async {
         processingModule = module.name
-        errorMessage = nil
-        successMessage = nil
         
         do {
             if module.isEnabled {
                 try await ApplicationManager.shared.disableApacheModule(module.name, serverId: serverId)
-                successMessage = "Module \(module.name) disabled successfully"
+                GlobalToastManager.shared.showSuccess("Module \(module.name) disabled successfully")
             } else {
                 try await ApplicationManager.shared.enableApacheModule(module.name, serverId: serverId)
-                successMessage = "Module \(module.name) enabled successfully"
+                GlobalToastManager.shared.showSuccess("Module \(module.name) enabled successfully")
             }
             
             // Refresh module list
@@ -118,7 +106,7 @@ struct ApacheModulesTab: View {
             apacheConfig.modules = modules + available
             
         } catch {
-            errorMessage = "Failed to toggle module: \(error.localizedDescription)"
+            GlobalToastManager.shared.showError("Failed to toggle module: \(error.localizedDescription)")
         }
         
         processingModule = nil

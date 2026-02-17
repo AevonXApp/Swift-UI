@@ -8,13 +8,11 @@ public struct NginxVersionsTab: View {
     let serverId: String
     
     @State private var availableVersions: [String] = []
+    @State private var currentVersion: String?
     @State private var isLoadingVersions = false
     @State private var currentOperation: VersionOperation?
     @State private var operationProgress: Double = 0.0
     @State private var operationMessage: String = ""
-    @State private var showAlert = false
-    @State private var alertMessage = ""
-    @State private var alertTitle = ""
 
     enum VersionOperation: Equatable {
         case installing(String)
@@ -44,7 +42,7 @@ public struct NginxVersionsTab: View {
                                 .fontWeight(.medium)
                                 .foregroundColor(.axTextTertiary)
                             
-                            Text(application.version ?? "Unknown")
+                            Text(currentVersion ?? application.version ?? "Unknown")
                                 .font(.system(size: 32, weight: .bold, design: .monospaced))
                                 .foregroundColor(.axTextPrimary)
                         }
@@ -130,7 +128,7 @@ public struct NginxVersionsTab: View {
                         ForEach(availableVersions, id: \.self) { version in
                             VersionRow(
                                 version: version,
-                                isCurrent: version == application.version,
+                                isCurrent: version == (currentVersion ?? application.version),
                                 operation: currentOperation?.version == version ? currentOperation : nil,
                                 progress: operationProgress,
                                 progressMessage: operationMessage,
@@ -145,18 +143,15 @@ public struct NginxVersionsTab: View {
         .task {
             await loadVersions()
         }
-        .alert(alertTitle, isPresented: $showAlert) {
-            Button("OK", role: .cancel) { }
-        } message: {
-            Text(alertMessage)
-        }
     }
 
     private func loadVersions() async {
         isLoadingVersions = true
         do {
+            let appInfo = try await ApplicationManager.shared.getApplicationInfo(type: .nginx, serverId: serverId)
             let versions = try await ApplicationManager.shared.getAvailableVersions(type: .nginx, serverId: serverId)
             await MainActor.run {
+                self.currentVersion = appInfo.version
                 self.availableVersions = versions
                 self.isLoadingVersions = false
             }
@@ -164,9 +159,7 @@ public struct NginxVersionsTab: View {
             await MainActor.run {
                 self.availableVersions = []
                 self.isLoadingVersions = false
-                self.alertTitle = "Error"
-                self.alertMessage = "Failed to load versions: \(error.localizedDescription)"
-                self.showAlert = true
+                GlobalToastManager.shared.showError("Failed to load versions: \(error.localizedDescription)")
             }
         }
     }
@@ -186,16 +179,13 @@ public struct NginxVersionsTab: View {
             
             await MainActor.run {
                 self.currentOperation = nil
-                self.alertTitle = "Success"
-                self.alertMessage = "Nginx version \(version) installed successfully!"
-                self.showAlert = true
+                GlobalToastManager.shared.showSuccess("Nginx version \(version) installed successfully!")
             }
+            await loadVersions()
         } catch {
             await MainActor.run {
                 self.currentOperation = nil
-                self.alertTitle = "Installation Failed"
-                self.alertMessage = error.localizedDescription
-                self.showAlert = true
+                GlobalToastManager.shared.showError(error.localizedDescription)
             }
         }
     }
@@ -215,16 +205,13 @@ public struct NginxVersionsTab: View {
             
             await MainActor.run {
                 self.currentOperation = nil
-                self.alertTitle = "Success"
-                self.alertMessage = "Switched to Nginx version \(version) successfully!"
-                self.showAlert = true
+                GlobalToastManager.shared.showSuccess("Switched to Nginx version \(version) successfully!")
             }
+            await loadVersions()
         } catch {
             await MainActor.run {
                 self.currentOperation = nil
-                self.alertTitle = "Switch Failed"
-                self.alertMessage = error.localizedDescription
-                self.showAlert = true
+                GlobalToastManager.shared.showError(error.localizedDescription)
             }
         }
     }

@@ -15,6 +15,7 @@ struct UnifiedDatabaseDetailView: View {
     let application: ApplicationInstance
     let databaseType: DatabaseType
     let serverId: String
+    let onBack: (() -> Void)?
 
     // ViewModel integration
     @StateObject private var viewModel: DatabaseEngineDetailViewModel
@@ -22,11 +23,21 @@ struct UnifiedDatabaseDetailView: View {
     @State private var selectedSection: DatabaseSection = .overview
     @State private var showConfigEditor = false
     @State private var editedConfig: String = ""
+    
+    private var availableSections: [DatabaseSection] {
+        DatabaseSection.allCases.filter { section in
+            if section == .access {
+                return viewModel.supportsUserManagement
+            }
+            return true
+        }
+    }
 
-    init(application: ApplicationInstance, databaseType: DatabaseType, serverId: String) {
+    init(application: ApplicationInstance, databaseType: DatabaseType, serverId: String, onBack: (() -> Void)? = nil) {
         self.application = application
         self.databaseType = databaseType
         self.serverId = serverId
+        self.onBack = onBack
         _viewModel = StateObject(wrappedValue: DatabaseEngineDetailViewModel(databaseType: databaseType, serverId: serverId))
     }
 
@@ -47,18 +58,24 @@ struct UnifiedDatabaseDetailView: View {
             if viewModel.operationResult.isInProgress {
                 operationOverlay
             }
+
+            if showConfigEditor {
+                modalOverlay {
+                    configEditorSheet
+                }
+            }
+
+            if viewModel.showInstallVersion {
+                modalOverlay {
+                    versionPickerSheet
+                }
+            }
         }
         .task {
             await viewModel.loadData()
         }
         .alert(item: $viewModel.activeAlert) { alertType in
             alertContent(for: alertType)
-        }
-        .sheet(isPresented: $showConfigEditor) {
-            configEditorSheet
-        }
-        .sheet(isPresented: $viewModel.showInstallVersion) {
-            versionPickerSheet
         }
         .overlay(alignment: .top) {
             resultToast
@@ -71,7 +88,7 @@ struct UnifiedDatabaseDetailView: View {
         VStack(spacing: 0) {
             // Header
             VStack(alignment: .leading, spacing: AXSpacing.lg) {
-                Button(action: { dismiss() }) {
+                Button(action: { handleBack() }) {
                     HStack(spacing: 4) {
                         Image(systemName: "chevron.left")
                             .font(.system(size: 12))
@@ -117,7 +134,7 @@ struct UnifiedDatabaseDetailView: View {
             // Navigation
             ScrollView {
                 VStack(spacing: AXSpacing.xs) {
-                    ForEach(DatabaseSection.allCases, id: \.rawValue) { section in
+                    ForEach(availableSections, id: \.rawValue) { section in
                         sidebarButton(for: section)
                     }
                 }
@@ -490,8 +507,8 @@ struct UnifiedDatabaseDetailView: View {
 
                     Button("Install New Version") {
                         Task {
+                            selectedSection = .versions
                             await viewModel.fetchAvailableVersions()
-                            viewModel.showInstallVersion = true
                         }
                     }
                     .font(AXTypography.subheadline)
@@ -631,6 +648,29 @@ struct UnifiedDatabaseDetailView: View {
                     .disabled(viewModel.isFetchingVersions)
                 }
             }
+
+            cardView(title: "Available Versions") {
+                Group {
+                    if viewModel.isFetchingVersions {
+                        HStack {
+                            ProgressView()
+                            Text("Checking available versions...")
+                                .font(AXTypography.caption)
+                                .foregroundColor(.axTextMuted)
+                        }
+                    } else if viewModel.availableVersions.isEmpty {
+                        Text("No versions found. Click 'Check for Updates' to fetch from server repositories.")
+                            .font(AXTypography.caption)
+                            .foregroundColor(.axTextMuted)
+                    } else {
+                        VStack(spacing: AXSpacing.sm) {
+                            ForEach(viewModel.availableVersions) { version in
+                                versionRow(version: version)
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -704,7 +744,11 @@ struct UnifiedDatabaseDetailView: View {
 
             cardView(title: "Database Users") {
                 VStack(alignment: .leading, spacing: AXSpacing.md) {
-                    if viewModel.isLoadingUsers {
+                    if !viewModel.supportsUserManagement {
+                        Text("\(databaseType.displayName) does not support user management in this panel.")
+                            .font(AXTypography.caption)
+                            .foregroundColor(.axTextMuted)
+                    } else if viewModel.isLoadingUsers {
                         ProgressView()
                             .frame(maxWidth: .infinity)
                     } else if let error = viewModel.userLoadError {
@@ -742,13 +786,15 @@ struct UnifiedDatabaseDetailView: View {
                     .frame(maxWidth: .infinity)
                     .background(databaseType.brandColor)
                     .cornerRadius(AXCornerRadius.md)
-                    .disabled(viewModel.isLoadingUsers)
+                    .disabled(viewModel.isLoadingUsers || !viewModel.supportsUserManagement)
                 }
             }
         }
         .task {
             // Auto-load users when tab is opened
-            await viewModel.loadUsers()
+            if viewModel.supportsUserManagement {
+                await viewModel.loadUsers()
+            }
         }
     }
 
@@ -1046,6 +1092,26 @@ struct UnifiedDatabaseDetailView: View {
         .frame(width: 500, height: 600)
     }
 
+    private func modalOverlay<Content: View>(@ViewBuilder content: () -> Content) -> some View {
+        ZStack {
+            Color.black.opacity(0.35)
+                .ignoresSafeArea()
+                .onTapGesture {
+                    showConfigEditor = false
+                    viewModel.showInstallVersion = false
+                }
+
+            content()
+                .background(Color.axBackground)
+                .cornerRadius(AXCornerRadius.lg)
+                .overlay(
+                    RoundedRectangle(cornerRadius: AXCornerRadius.lg)
+                        .stroke(Color.axBorder, lineWidth: 1)
+                )
+                .shadow(color: .black.opacity(0.35), radius: 18, x: 0, y: 8)
+        }
+    }
+
     private func versionRow(version: AevonX.DatabaseVersion) -> some View {
         HStack {
             VStack(alignment: .leading, spacing: AXSpacing.xs) {
@@ -1095,6 +1161,14 @@ struct UnifiedDatabaseDetailView: View {
         .padding()
         .background(Color.axSurface.opacity(0.3))
         .cornerRadius(AXCornerRadius.md)
+    }
+
+    private func handleBack() {
+        if let onBack {
+            onBack()
+        } else {
+            dismiss()
+        }
     }
 }
 

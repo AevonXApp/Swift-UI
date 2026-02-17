@@ -13,7 +13,6 @@ struct ApacheVersionsTab: View {
     @State private var isInstalling: String?
     @State private var installProgress: Double = 0.0
     @State private var installMessage: String = ""
-    @State private var showNotSupportedAlert = false
     
     var body: some View {
         VStack(alignment: .leading, spacing: AXSpacing.xl) {
@@ -61,33 +60,25 @@ struct ApacheVersionsTab: View {
                         .foregroundColor(.axTextTertiary)
                 }
                 .frame(maxWidth: .infinity, minHeight: 200)
-            } else {
-                // Info Banner
-                HStack(spacing: AXSpacing.md) {
-                    Image(systemName: "info.circle.fill")
-                        .font(.system(size: 20))
-                        .foregroundColor(.axAccentBlue)
-                    
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Version Management Coming Soon")
-                            .font(.system(size: 14, weight: .semibold))
+            } else if let installing = isInstalling {
+                VStack(spacing: AXSpacing.lg) {
+                    VStack(spacing: AXSpacing.sm) {
+                        Text("Applying Apache \(installing)...")
+                            .font(AXTypography.headline)
                             .foregroundColor(.axTextPrimary)
-                        
-                        Text("Switching Apache versions directly is not yet supported. You can install specific versions manually via SSH.")
-                            .font(.system(size: 12))
-                            .foregroundColor(.axTextSecondary)
+                        Text(installMessage)
+                            .font(AXTypography.caption)
+                            .foregroundColor(.axTextTertiary)
                     }
-                    
-                    Spacer()
+                    ProgressView(value: installProgress)
+                        .progressViewStyle(.linear)
+                        .frame(maxWidth: 400)
                 }
-                .padding(AXSpacing.lg)
-                .background(Color.axAccentBlue.opacity(0.1))
-                .cornerRadius(AXCornerRadius.md)
-                .overlay(
-                    RoundedRectangle(cornerRadius: AXCornerRadius.md)
-                        .stroke(Color.axAccentBlue.opacity(0.2), lineWidth: 1)
-                )
-
+                .frame(maxWidth: .infinity, minHeight: 200)
+                .padding(AXSpacing.xl)
+                .background(Color.axSurface.opacity(0.3))
+                .cornerRadius(AXCornerRadius.lg)
+            } else {
                 // Versions List
                 ScrollView {
                     VStack(spacing: AXSpacing.sm) {
@@ -96,17 +87,14 @@ struct ApacheVersionsTab: View {
                                 version: version,
                                 isCurrent: version == currentVersion,
                                 isInstalled: installedVersions.contains(where: { $0.hasPrefix(version) || version.hasPrefix($0) }),
-                                onAction: { showNotSupportedAlert = true }
+                                onAction: {
+                                    Task { await applyVersion(version) }
+                                }
                             )
                         }
                     }
                 }
             }
-        }
-        .alert("Coming Soon", isPresented: $showNotSupportedAlert) {
-            Button("OK", role: .cancel) { }
-        } message: {
-            Text("Apache version switching inside AevonX will be available in a future update.")
         }
         .onAppear {
             Task { await loadVersions() }
@@ -119,7 +107,8 @@ struct ApacheVersionsTab: View {
         do {
             let appInfo = try await ApplicationManager.shared.getApplicationInfo(type: .apache, serverId: serverId)
             currentVersion = appInfo.version
-            availableVersions = try await ApplicationManager.shared.getAvailableVersions(type: .apache, serverId: serverId)
+            let versions = try await ApplicationManager.shared.getAvailableVersions(type: .apache, serverId: serverId)
+            availableVersions = versions.sorted { compareVersions($0, $1) == .orderedDescending }
             
             // For Apache, check installed version specifically if needed, but currentVersion usually suffices for single install
             // Just mark current as installed for now
@@ -127,10 +116,57 @@ struct ApacheVersionsTab: View {
                 installedVersions = [current]
             }
         } catch {
-            print("Error loading versions: \(error)")
+            GlobalToastManager.shared.showError("Failed to load Apache versions: \(error.localizedDescription)")
         }
         
         isLoading = false
+    }
+
+    private func applyVersion(_ version: String) async {
+        isInstalling = version
+        installProgress = 0.0
+        installMessage = "Preparing..."
+
+        do {
+            let isInstalled = installedVersions.contains(where: { $0.hasPrefix(version) || version.hasPrefix($0) })
+            if isInstalled {
+                installMessage = "Switching Apache runtime..."
+                installProgress = 0.4
+                try await ApplicationManager.shared.switchVersion(version, type: .apache, serverId: serverId) { message, progress in
+                    Task { @MainActor in
+                        installMessage = message
+                        installProgress = progress
+                    }
+                }
+            } else {
+                installMessage = "Installing Apache..."
+                try await ApplicationManager.shared.installVersion(version, type: .apache, serverId: serverId) { message, progress in
+                    Task { @MainActor in
+                        installMessage = message
+                        installProgress = progress
+                    }
+                }
+            }
+
+            GlobalToastManager.shared.showSuccess("Apache \(version) applied successfully.")
+            isInstalling = nil
+            await loadVersions()
+        } catch {
+            isInstalling = nil
+            GlobalToastManager.shared.showError(error.localizedDescription)
+        }
+    }
+
+    private func compareVersions(_ lhs: String, _ rhs: String) -> ComparisonResult {
+        let left = lhs.split(separator: ".").compactMap { Int($0) }
+        let right = rhs.split(separator: ".").compactMap { Int($0) }
+        for i in 0..<max(left.count, right.count) {
+            let l = i < left.count ? left[i] : 0
+            let r = i < right.count ? right[i] : 0
+            if l > r { return .orderedDescending }
+            if l < r { return .orderedAscending }
+        }
+        return .orderedSame
     }
 }
 

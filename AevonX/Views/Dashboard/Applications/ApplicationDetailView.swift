@@ -12,17 +12,24 @@ import AevonXCore
 struct ApplicationDetailView: View {
     let application: ApplicationInstance
     let serverId: String
+    let onBack: (() -> Void)?
+
+    init(application: ApplicationInstance, serverId: String, onBack: (() -> Void)? = nil) {
+        self.application = application
+        self.serverId = serverId
+        self.onBack = onBack
+    }
 
     var body: some View {
         Group {
             // Route to specific detail view based on application type
             switch application.type {
             case .nginx:
-                NginxDetailView(application: application, serverId: serverId)
+                NginxDetailView(application: application, serverId: serverId, onBack: onBack)
             case .phpFpm:
-                PHPDetailView(application: application, serverId: serverId)
+                PHPDetailView(application: application, serverId: serverId, onBack: onBack)
             case .apache:
-                ApacheDetailView(application: application, serverId: serverId)
+                ApacheDetailView(application: application, serverId: serverId, onBack: onBack)
 
             // ✅ NEW: Route database engines to unified detail view
             case .mysql, .postgresql, .redis, .mongodb, .mariadb, .sqlite, .cockroachdb, .cassandra, .elasticsearch:
@@ -30,7 +37,8 @@ struct ApplicationDetailView: View {
                     UnifiedDatabaseDetailView(
                         application: application,
                         databaseType: dbType,
-                        serverId: serverId
+                        serverId: serverId,
+                        onBack: onBack
                     )
                 } else {
                     GenericApplicationDetailView(application: application, serverId: serverId)
@@ -40,7 +48,6 @@ struct ApplicationDetailView: View {
                 GenericApplicationDetailView(application: application, serverId: serverId)
             }
         }
-        .navigationTitle(application.name)
     }
 }
 

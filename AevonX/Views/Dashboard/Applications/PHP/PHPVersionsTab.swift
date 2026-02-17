@@ -89,7 +89,7 @@ struct PHPVersionsTab: View {
                             VersionCard(
                                 version: version,
                                 isCurrent: version == currentVersion,
-                                isInstalled: installedVersions.contains(where: { $0.hasPrefix(version.split(separator: ".").prefix(2).joined(separator: ".")) }),
+                                isInstalled: installedVersions.contains { normalizeMajorMinor($0) == normalizeMajorMinor(version) },
                                 onSwitch: { Task { await switchToVersion(version) } },
                                 onInstall: { Task { await installVersion(version) } }
                             )
@@ -109,14 +109,15 @@ struct PHPVersionsTab: View {
         do {
             let appInfo = try await ApplicationManager.shared.getApplicationInfo(type: .phpFpm, serverId: serverId)
             currentVersion = appInfo.version
-            availableVersions = try await ApplicationManager.shared.getAvailableVersions(type: .phpFpm, serverId: serverId)
+            let versions = try await ApplicationManager.shared.getAvailableVersions(type: .phpFpm, serverId: serverId)
+            availableVersions = versions.sorted { compareVersions($0, $1) == .orderedDescending }
             
             // Get actually installed versions
             if let adapter = ApplicationManager.shared.adapter(for: .phpFpm) as? ApplicationPHPAdapter {
                 installedVersions = try await adapter.getInstalledVersions(serverId: serverId)
             }
         } catch {
-            print("Error loading versions: \(error)")
+            GlobalToastManager.shared.showError("Failed to load PHP versions: \(error.localizedDescription)")
         }
         
         isLoading = false
@@ -134,8 +135,9 @@ struct PHPVersionsTab: View {
             }
             
             currentVersion = version
+            GlobalToastManager.shared.showSuccess("Switched to PHP \(version) successfully.")
         } catch {
-            print("Error switching version: \(error)")
+            GlobalToastManager.shared.showError(error.localizedDescription)
         }
         
         isInstalling = nil
@@ -154,12 +156,33 @@ struct PHPVersionsTab: View {
                     installProgress = progress
                 }
             }
+            GlobalToastManager.shared.showSuccess("Installed PHP \(version) successfully.")
         } catch {
-            print("Error installing version: \(error)")
+            GlobalToastManager.shared.showError(error.localizedDescription)
         }
         
         isInstalling = nil
         await loadVersions()
+    }
+
+    private func normalizeMajorMinor(_ version: String) -> String {
+        let parts = version.split(separator: ".")
+        if parts.count >= 2 {
+            return "\(parts[0]).\(parts[1])"
+        }
+        return version
+    }
+
+    private func compareVersions(_ lhs: String, _ rhs: String) -> ComparisonResult {
+        let left = lhs.split(separator: ".").compactMap { Int($0) }
+        let right = rhs.split(separator: ".").compactMap { Int($0) }
+        for i in 0..<max(left.count, right.count) {
+            let l = i < left.count ? left[i] : 0
+            let r = i < right.count ? right[i] : 0
+            if l > r { return .orderedDescending }
+            if l < r { return .orderedAscending }
+        }
+        return .orderedSame
     }
 }
 

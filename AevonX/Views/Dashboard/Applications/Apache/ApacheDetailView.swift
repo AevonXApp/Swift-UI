@@ -13,12 +13,17 @@ struct ApacheDetailView: View {
     @Environment(\.dismiss) private var dismiss
     let application: ApplicationInstance
     let serverId: String
+    let onBack: (() -> Void)?
+
+    init(application: ApplicationInstance, serverId: String, onBack: (() -> Void)? = nil) {
+        self.application = application
+        self.serverId = serverId
+        self.onBack = onBack
+    }
 
     @State private var selectedSection: ApacheSection = .overview
     @State private var apacheConfig = ApacheConfigData()
     @State private var isLoading = true
-    @State private var errorMessage: String?
-    @State private var successMessage: String?
 
     var body: some View {
         HStack(spacing: 0) {
@@ -26,7 +31,7 @@ struct ApacheDetailView: View {
             ApacheSidebar(
                 application: application,
                 selectedSection: $selectedSection,
-                onBack: { dismiss() },
+                onBack: { handleBack() },
                 onControl: { action in
                     Task { await controlService(action: action) }
                 }
@@ -38,25 +43,6 @@ struct ApacheDetailView: View {
             
             // Right Content Area
             VStack(spacing: 0) {
-                // Top Message Banners
-                VStack(spacing: 0) {
-                    if let error = errorMessage {
-                        ApacheMessageBanner(message: error, type: .error) {
-                            errorMessage = nil
-                        }
-                        .transition(.move(edge: .top).combined(with: .opacity))
-                    }
-                    
-                    if let success = successMessage {
-                        ApacheMessageBanner(message: success, type: .success) {
-                            successMessage = nil
-                        }
-                        .transition(.move(edge: .top).combined(with: .opacity))
-                    }
-                }
-                .animation(.spring(), value: errorMessage)
-                .animation(.spring(), value: successMessage)
-
                 // Scrollable Content
                 ScrollView {
                     VStack(spacing: AXSpacing.xl) {
@@ -107,8 +93,8 @@ struct ApacheDetailView: View {
             AXAdvancedLogsView(
                 source: AXLogSource.apacheService,
                 serverId: serverId,
-                onSuccess: { msg in successMessage = msg },
-                onError: { msg in errorMessage = msg }
+                onSuccess: { msg in showSuccess(msg) },
+                onError: { msg in showError(msg) }
             )
         case .versions:
             ApacheVersionsTab(application: application, serverId: serverId)
@@ -150,55 +136,46 @@ struct ApacheDetailView: View {
             )
             self.isLoading = false
         } catch {
-            self.errorMessage = "Failed to load Apache data: \(error.localizedDescription)"
+            showError("Failed to load Apache data: \(error.localizedDescription)")
             self.isLoading = false
         }
     }
 
     private func saveConfiguration(_ newConfig: String) {
         Task {
-            successMessage = nil
-            errorMessage = nil
-            
             do {
                 try await ApplicationManager.shared.updateConfig(newConfig, type: .apache, serverId: serverId)
-                self.successMessage = "Apache configuration updated and reloaded successfully"
+                showSuccess("Apache configuration updated and reloaded successfully")
                 await loadApacheData()
             } catch {
-                self.errorMessage = "Failed to save configuration: \(error.localizedDescription)"
+                showError("Failed to save configuration: \(error.localizedDescription)")
             }
         }
     }
 
     private func reloadService() async {
-        successMessage = nil
-        errorMessage = nil
         do {
             try await ApplicationManager.shared.restartService(type: .apache, serverId: serverId)
-            self.successMessage = "Apache service reloaded successfully"
+            showSuccess("Apache service reloaded successfully")
         } catch {
-            self.errorMessage = "Failed to reload Apache: \(error.localizedDescription)"
+            showError("Failed to reload Apache: \(error.localizedDescription)")
         }
     }
     
     private func testConfiguration() async {
-        successMessage = nil
-        errorMessage = nil
         do {
             let isValid = try await ApplicationManager.shared.validateConfig(type: .apache, serverId: serverId)
             if isValid {
-                self.successMessage = "Apache configuration is valid"
+                showSuccess("Apache configuration is valid")
             } else {
-                self.errorMessage = "Apache configuration validation failed"
+                showError("Apache configuration validation failed")
             }
         } catch {
-            self.errorMessage = "Validation error: \(error.localizedDescription)"
+            showError("Validation error: \(error.localizedDescription)")
         }
     }
 
     private func controlService(action: String) async {
-        successMessage = nil
-        errorMessage = nil
         do {
             switch action {
             case "start": try await ApplicationManager.shared.startService(type: .apache, serverId: serverId)
@@ -207,15 +184,31 @@ struct ApacheDetailView: View {
             default: break
             }
             await MainActor.run {
-                self.successMessage = "Apache service \(action)ed successfully"
+                showSuccess("Apache service \(action)ed successfully")
             }
             // Trigger refresh after control
             try? await Task.sleep(nanoseconds: 1_000_000_000)
             await loadApacheData()
         } catch {
             await MainActor.run {
-                self.errorMessage = "Failed to \(action) Apache: \(error.localizedDescription)"
+                showError("Failed to \(action) Apache: \(error.localizedDescription)")
             }
+        }
+    }
+
+    private func showSuccess(_ message: String) {
+        GlobalToastManager.shared.showSuccess(message)
+    }
+
+    private func showError(_ message: String) {
+        GlobalToastManager.shared.showError(message)
+    }
+
+    private func handleBack() {
+        if let onBack {
+            onBack()
+        } else {
+            dismiss()
         }
     }
 }

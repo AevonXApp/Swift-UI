@@ -14,11 +14,11 @@ struct ApacheVirtualHostsTab: View {
     let serverId: String
     
     @State private var showingAddSheet = false
-    @State private var errorMessage: String?
-    @State private var successMessage: String?
+    @State private var pendingDeleteVHost: ApacheVHost?
     
     var body: some View {
-        VStack(alignment: .leading, spacing: AXSpacing.lg) {
+        ZStack {
+            VStack(alignment: .leading, spacing: AXSpacing.lg) {
             // Header & Controls
             HStack {
                 Text("Virtual Hosts")
@@ -38,14 +38,6 @@ struct ApacheVirtualHostsTab: View {
                 .buttonStyle(.plain)
             }
             
-            if let error = errorMessage {
-                ApacheMessageBanner(message: error, type: .error) { errorMessage = nil }
-            }
-            
-            if let success = successMessage {
-                ApacheMessageBanner(message: success, type: .success) { successMessage = nil }
-            }
-            
             // VHost List
             ScrollView {
                 VStack(spacing: AXSpacing.md) {
@@ -58,7 +50,7 @@ struct ApacheVirtualHostsTab: View {
                         ForEach(apacheConfig.virtualHosts) { vhost in
                             VHostCard(
                                 vhost: vhost,
-                                onDelete: { deleteVHost(vhost) },
+                                onDelete: { pendingDeleteVHost = vhost },
                                 onToggle: { toggleVHost(vhost) }
                             )
                         }
@@ -66,9 +58,33 @@ struct ApacheVirtualHostsTab: View {
                 }
                 .padding(.bottom, AXSpacing.xl)
             }
+            }
+
+            if showingAddSheet {
+                Color.black.opacity(0.35)
+                    .ignoresSafeArea()
+                    .onTapGesture { showingAddSheet = false }
+
+                AddVHostSheet(isPresented: $showingAddSheet, onAdd: addVHost)
+                    .frame(maxWidth: 720, maxHeight: 560)
+                    .background(Color.axBackground)
+                    .cornerRadius(AXCornerRadius.lg)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: AXCornerRadius.lg)
+                            .stroke(Color.axBorder, lineWidth: 1)
+                    )
+                    .shadow(color: .black.opacity(0.35), radius: 18, x: 0, y: 8)
+            }
         }
-        .sheet(isPresented: $showingAddSheet) {
-            AddVHostSheet(isPresented: $showingAddSheet, onAdd: addVHost)
+        .alert(item: $pendingDeleteVHost) { vhost in
+            Alert(
+                title: Text("Delete Virtual Host?"),
+                message: Text("Are you sure you want to delete \(vhost.domain)? This action cannot be undone."),
+                primaryButton: .destructive(Text("Delete")) {
+                    deleteVHost(vhost)
+                },
+                secondaryButton: .cancel()
+            )
         }
     }
     
@@ -76,10 +92,10 @@ struct ApacheVirtualHostsTab: View {
         Task {
             do {
                 try await ApplicationManager.shared.createApacheVirtualHost(vhost, serverId: serverId)
-                successMessage = "Virtual Host \(vhost.domain) created successfully"
+                GlobalToastManager.shared.showSuccess("Virtual Host \(vhost.domain) created successfully")
                 try await refreshData()
             } catch {
-                errorMessage = "Failed to create Virtual Host: \(error.localizedDescription)"
+                GlobalToastManager.shared.showError("Failed to create Virtual Host: \(error.localizedDescription)")
             }
         }
     }
@@ -88,10 +104,10 @@ struct ApacheVirtualHostsTab: View {
         Task {
             do {
                 try await ApplicationManager.shared.deleteApacheVirtualHost(domain: vhost.domain, serverId: serverId)
-                successMessage = "Virtual Host \(vhost.domain) deleted successfully"
+                GlobalToastManager.shared.showSuccess("Virtual Host \(vhost.domain) deleted successfully")
                 try await refreshData()
             } catch {
-                errorMessage = "Failed to delete Virtual Host: \(error.localizedDescription)"
+                GlobalToastManager.shared.showError("Failed to delete Virtual Host: \(error.localizedDescription)")
             }
         }
     }
@@ -101,14 +117,14 @@ struct ApacheVirtualHostsTab: View {
             do {
                 if vhost.isEnabled {
                     try await ApplicationManager.shared.disableApacheVirtualHost(domain: vhost.domain, serverId: serverId)
-                    successMessage = "Virtual Host \(vhost.domain) disabled"
+                    GlobalToastManager.shared.showSuccess("Virtual Host \(vhost.domain) disabled")
                 } else {
                     try await ApplicationManager.shared.enableApacheVirtualHost(domain: vhost.domain, serverId: serverId)
-                    successMessage = "Virtual Host \(vhost.domain) enabled"
+                    GlobalToastManager.shared.showSuccess("Virtual Host \(vhost.domain) enabled")
                 }
                 try await refreshData()
             } catch {
-                errorMessage = "Failed to toggle Virtual Host: \(error.localizedDescription)"
+                GlobalToastManager.shared.showError("Failed to toggle Virtual Host: \(error.localizedDescription)")
             }
         }
     }

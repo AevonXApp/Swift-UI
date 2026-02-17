@@ -106,12 +106,14 @@ struct PHPDisabledFunctionsTab: View {
             if phpConfig.disabledFunctions.contains(functionName) {
                 try await ApplicationManager.shared.enablePHPFunction(functionName, serverId: serverId)
                 phpConfig.disabledFunctions.removeAll { $0 == functionName }
+                GlobalToastManager.shared.showSuccess("Function '\(functionName)' enabled.")
             } else {
                 try await ApplicationManager.shared.disablePHPFunction(functionName, serverId: serverId)
                 phpConfig.disabledFunctions.append(functionName)
+                GlobalToastManager.shared.showSuccess("Function '\(functionName)' disabled.")
             }
         } catch {
-            print("Error toggling function: \(error)")
+            GlobalToastManager.shared.showError(error.localizedDescription)
         }
         
         isProcessing.remove(functionName)
@@ -119,18 +121,19 @@ struct PHPDisabledFunctionsTab: View {
     
     private func addCustomFunction() async {
         guard !customFunction.isEmpty else { return }
-        
-        isProcessing.insert(customFunction)
+        let functionName = customFunction
+        isProcessing.insert(functionName)
         
         do {
-            try await ApplicationManager.shared.disablePHPFunction(customFunction, serverId: serverId)
-            phpConfig.disabledFunctions.append(customFunction)
+            try await ApplicationManager.shared.disablePHPFunction(functionName, serverId: serverId)
+            phpConfig.disabledFunctions.append(functionName)
             customFunction = ""
+            GlobalToastManager.shared.showSuccess("Function '\(functionName)' disabled.")
         } catch {
-            print("Error disabling function: \(error)")
+            GlobalToastManager.shared.showError(error.localizedDescription)
         }
         
-        isProcessing.remove(customFunction)
+        isProcessing.remove(functionName)
     }
 }
 

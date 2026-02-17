@@ -8,11 +8,13 @@ struct PHPFPMPoolsTab: View {
     let serverId: String
     
     @State private var isCreating = false
-    @State private var newPOOL: PHPFPMPool?
+    @State private var editingPool: PHPFPMPool?
     @State private var isDeleting: String?
+    @State private var pendingDeletePoolName: String?
     
     var body: some View {
-        VStack(alignment: .leading, spacing: AXSpacing.lg) {
+        ZStack {
+            VStack(alignment: .leading, spacing: AXSpacing.lg) {
             // Header
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
@@ -59,34 +61,76 @@ struct PHPFPMPoolsTab: View {
                             PoolCard(
                                 pool: pool,
                                 isDeleting: isDeleting == pool.name,
-                                onEdit: { /* TODO */ },
-                                onDelete: { Task { await deletePool(pool.name) } }
+                                onEdit: { editingPool = pool },
+                                onDelete: { pendingDeletePoolName = pool.name }
                             )
                         }
                     }
                 }
             }
+            }
+
+            if isCreating || editingPool != nil {
+                Color.black.opacity(0.35)
+                    .ignoresSafeArea()
+                    .onTapGesture {
+                        isCreating = false
+                        editingPool = nil
+                    }
+
+                PoolEditorSheet(
+                    pool: editingPool,
+                    onSave: { pool in
+                        Task { await savePool(pool) }
+                        isCreating = false
+                        editingPool = nil
+                    },
+                    onCancel: {
+                        isCreating = false
+                        editingPool = nil
+                    }
+                )
+                .frame(maxWidth: 560, maxHeight: 560)
+                .background(Color.axBackground)
+                .cornerRadius(AXCornerRadius.lg)
+                .overlay(
+                    RoundedRectangle(cornerRadius: AXCornerRadius.lg)
+                        .stroke(Color.axBorder, lineWidth: 1)
+                )
+                .shadow(color: .black.opacity(0.35), radius: 18, x: 0, y: 8)
+            }
         }
-        .sheet(isPresented: $isCreating) {
-            PoolEditorSheet(
-                pool: nil,
-                onSave: { pool in
-                    Task { await createPool(pool) }
-                    isCreating = false
-                },
-                onCancel: { isCreating = false }
-            )
+        .alert("Delete FPM Pool?", isPresented: Binding(
+            get: { pendingDeletePoolName != nil },
+            set: { if !$0 { pendingDeletePoolName = nil } }
+        )) {
+            Button("Delete", role: .destructive) {
+                if let poolName = pendingDeletePoolName {
+                    Task { await deletePool(poolName) }
+                }
+                pendingDeletePoolName = nil
+            }
+            Button("Cancel", role: .cancel) {
+                pendingDeletePoolName = nil
+            }
+        } message: {
+            Text("This will permanently delete pool '\(pendingDeletePoolName ?? "")'.")
         }
     }
     
-    private func createPool(_ pool: PHPFPMPool) async {
+    private func savePool(_ pool: PHPFPMPool) async {
         do {
-            try await ApplicationManager.shared.createPHPFPMPool(pool, serverId: serverId)
-            // Refresh pools
+            if editingPool != nil {
+                try await ApplicationManager.shared.updatePHPFPMPool(pool, serverId: serverId)
+                GlobalToastManager.shared.showSuccess("FPM pool '\(pool.name)' updated successfully.")
+            } else {
+                try await ApplicationManager.shared.createPHPFPMPool(pool, serverId: serverId)
+                GlobalToastManager.shared.showSuccess("FPM pool '\(pool.name)' created successfully.")
+            }
             let pools = try await ApplicationManager.shared.getPHPFPMPools(serverId: serverId)
             phpConfig.fpmPools = pools
         } catch {
-            print("Error creating pool: \(error)")
+            GlobalToastManager.shared.showError(error.localizedDescription)
         }
     }
     
@@ -96,8 +140,9 @@ struct PHPFPMPoolsTab: View {
         do {
             try await ApplicationManager.shared.deletePHPFPMPool(name: name, serverId: serverId)
             phpConfig.fpmPools.removeAll { $0.name == name }
+            GlobalToastManager.shared.showSuccess("FPM pool '\(name)' deleted.")
         } catch {
-            print("Error deleting pool: \(error)")
+            GlobalToastManager.shared.showError(error.localizedDescription)
         }
         
         isDeleting = nil
@@ -208,10 +253,23 @@ private struct PoolEditorSheet: View {
     @State private var listenAddress = "/var/run/php/php-fpm.sock"
     @State private var pmMode = PHPFPMPool.PMMode.dynamic
     @State private var maxChildren = "50"
+
+    init(pool: PHPFPMPool?, onSave: @escaping (PHPFPMPool) -> Void, onCancel: @escaping () -> Void) {
+        self.pool = pool
+        self.onSave = onSave
+        self.onCancel = onCancel
+
+        _name = State(initialValue: pool?.name ?? "")
+        _user = State(initialValue: pool?.user ?? "www-data")
+        _group = State(initialValue: pool?.group ?? "www-data")
+        _listenAddress = State(initialValue: pool?.listenAddress ?? "/var/run/php/php-fpm.sock")
+        _pmMode = State(initialValue: pool?.pm ?? .dynamic)
+        _maxChildren = State(initialValue: String(pool?.pmMaxChildren ?? 50))
+    }
     
     var body: some View {
         VStack(spacing: AXSpacing.lg) {
-            Text("Create FPM Pool")
+            Text(pool == nil ? "Create FPM Pool" : "Edit FPM Pool")
                 .font(.system(size: 20, weight: .bold))
             
             Form {
@@ -232,7 +290,7 @@ private struct PoolEditorSheet: View {
                 Button("Cancel", action: onCancel)
                     .buttonStyle(.bordered)
                 
-                Button("Save") {
+                Button(pool == nil ? "Create" : "Save") {
                     let newPool = PHPFPMPool(
                         name: name,
                         user: user,

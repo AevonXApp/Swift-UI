@@ -7,12 +7,17 @@ struct PHPDetailView: View {
     @Environment(\.dismiss) private var dismiss
     let application: ApplicationInstance
     let serverId: String
+    let onBack: (() -> Void)?
+
+    init(application: ApplicationInstance, serverId: String, onBack: (() -> Void)? = nil) {
+        self.application = application
+        self.serverId = serverId
+        self.onBack = onBack
+    }
 
     @State private var selectedSection: PHPSection = .overview
     @State private var phpConfig = PHPConfigData()
     @State private var isLoading = true
-    @State private var errorMessage: String?
-    @State private var successMessage: String?
 
     var body: some View {
         HStack(spacing: 0) {
@@ -20,7 +25,7 @@ struct PHPDetailView: View {
             PHPSidebar(
                 application: application,
                 selectedSection: $selectedSection,
-                onBack: { dismiss() },
+                onBack: { handleBack() },
                 onControl: { action in
                     Task { await controlService(action: action) }
                 }
@@ -32,25 +37,6 @@ struct PHPDetailView: View {
             
             // Right Content Area
             VStack(spacing: 0) {
-                // Top Message Banners
-                VStack(spacing: 0) {
-                    if let error = errorMessage {
-                        PHPMessageBanner(message: error, type: .error) {
-                            errorMessage = nil
-                        }
-                        .transition(.move(edge: .top).combined(with: .opacity))
-                    }
-                    
-                    if let success = successMessage {
-                        PHPMessageBanner(message: success, type: .success) {
-                            successMessage = nil
-                        }
-                        .transition(.move(edge: .top).combined(with: .opacity))
-                    }
-                }
-                .animation(.spring(), value: errorMessage)
-                .animation(.spring(), value: successMessage)
-
                 // Scrollable Content
                 ScrollView {
                     VStack(spacing: AXSpacing.xl) {
@@ -103,8 +89,8 @@ struct PHPDetailView: View {
             AXAdvancedLogsView(
                 source: AXLogSource.phpService,
                 serverId: serverId,
-                onSuccess: { msg in successMessage = msg },
-                onError: { msg in errorMessage = msg }
+                onSuccess: { msg in showSuccess(msg) },
+                onError: { msg in showError(msg) }
             )
         case .versions:
             PHPVersionsTab(application: application, serverId: serverId)
@@ -144,53 +130,44 @@ struct PHPDetailView: View {
             )
             self.isLoading = false
         } catch {
-            self.errorMessage = "Failed to load PHP data: \(error.localizedDescription)"
+            showError("Failed to load PHP data: \(error.localizedDescription)")
             self.isLoading = false
         }
     }
 
     private func saveConfiguration(_ newConfig: String) async {
-        successMessage = nil
-        errorMessage = nil
-        
         do {
             try await ApplicationManager.shared.updateConfig(newConfig, type: .phpFpm, serverId: serverId)
-            self.successMessage = "PHP configuration updated and reloaded successfully"
+            showSuccess("PHP configuration updated and reloaded successfully")
             await loadPHPData()
         } catch {
-            self.errorMessage = "Failed to save configuration: \(error.localizedDescription)"
+            showError("Failed to save configuration: \(error.localizedDescription)")
         }
     }
 
     private func reloadService() async {
-        successMessage = nil
-        errorMessage = nil
         do {
             try await ApplicationManager.shared.restartService(type: .phpFpm, serverId: serverId)
-            self.successMessage = "PHP-FPM service reloaded successfully"
+            showSuccess("PHP-FPM service reloaded successfully")
         } catch {
-            self.errorMessage = "Failed to reload PHP-FPM: \(error.localizedDescription)"
+            showError("Failed to reload PHP-FPM: \(error.localizedDescription)")
         }
     }
     
     private func testConfiguration() async {
-        successMessage = nil
-        errorMessage = nil
         do {
             let isValid = try await ApplicationManager.shared.validateConfig(type: .phpFpm, serverId: serverId)
             if isValid {
-                self.successMessage = "PHP configuration is valid"
+                showSuccess("PHP configuration is valid")
             } else {
-                self.errorMessage = "PHP configuration validation failed"
+                showError("PHP configuration validation failed")
             }
         } catch {
-            self.errorMessage = "Validation error: \(error.localizedDescription)"
+            showError("Validation error: \(error.localizedDescription)")
         }
     }
 
     private func controlService(action: String) async {
-        successMessage = nil
-        errorMessage = nil
         do {
             switch action {
             case "start": try await ApplicationManager.shared.startService(type: .phpFpm, serverId: serverId)
@@ -199,7 +176,7 @@ struct PHPDetailView: View {
             default: break
             }
             await MainActor.run {
-                self.successMessage = "PHP-FPM service \(action)ed successfully"
+                showSuccess("PHP-FPM service \(action)ed successfully")
             }
             // Trigger refresh after control
             Task {
@@ -208,8 +185,24 @@ struct PHPDetailView: View {
             }
         } catch {
             await MainActor.run {
-                self.errorMessage = "Failed to \(action) PHP-FPM: \(error.localizedDescription)"
+                showError("Failed to \(action) PHP-FPM: \(error.localizedDescription)")
             }
+        }
+    }
+
+    private func showSuccess(_ message: String) {
+        GlobalToastManager.shared.showSuccess(message)
+    }
+
+    private func showError(_ message: String) {
+        GlobalToastManager.shared.showError(message)
+    }
+
+    private func handleBack() {
+        if let onBack {
+            onBack()
+        } else {
+            dismiss()
         }
     }
 }

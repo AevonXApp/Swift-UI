@@ -7,12 +7,17 @@ struct NginxDetailView: View {
     @Environment(\.dismiss) private var dismiss
     let application: ApplicationInstance
     let serverId: String
+    let onBack: (() -> Void)?
+
+    init(application: ApplicationInstance, serverId: String, onBack: (() -> Void)? = nil) {
+        self.application = application
+        self.serverId = serverId
+        self.onBack = onBack
+    }
 
     @State private var selectedSection: NginxSection = .overview
     @State private var nginxConfig = NginxConfigData()
     @State private var isLoading = true
-    @State private var errorMessage: String?
-    @State private var successMessage: String?
 
     var body: some View {
         HStack(spacing: 0) {
@@ -20,7 +25,7 @@ struct NginxDetailView: View {
             NginxSidebar(
                 application: application,
                 selectedSection: $selectedSection,
-                onBack: { dismiss() },
+                onBack: { handleBack() },
                 onControl: { action in
                     Task { await controlService(action: action) }
                 }
@@ -32,25 +37,6 @@ struct NginxDetailView: View {
             
             // Right Content Area
             VStack(spacing: 0) {
-                // Top Message Banners (Global to detail view)
-                VStack(spacing: 0) {
-                    if let error = errorMessage {
-                        NginxMessageBanner(message: error, type: .error) {
-                            errorMessage = nil
-                        }
-                        .transition(.move(edge: .top).combined(with: .opacity))
-                    }
-                    
-                    if let success = successMessage {
-                        NginxMessageBanner(message: success, type: .success) {
-                            successMessage = nil
-                        }
-                        .transition(.move(edge: .top).combined(with: .opacity))
-                    }
-                }
-                .animation(.spring(), value: errorMessage)
-                .animation(.spring(), value: successMessage)
-
                 // Scrollable Content
                 ScrollView {
                     VStack(spacing: AXSpacing.xl) {
@@ -101,8 +87,8 @@ struct NginxDetailView: View {
             AXAdvancedLogsView(
                 source: AXLogSource.nginxService,
                 serverId: serverId,
-                onSuccess: { msg in successMessage = msg },
-                onError: { msg in errorMessage = msg }
+                onSuccess: { msg in showSuccess(msg) },
+                onError: { msg in showError(msg) }
             )
         case .versions:
             NginxVersionsTab(application: application, serverId: serverId)
@@ -136,90 +122,75 @@ struct NginxDetailView: View {
             )
             self.isLoading = false
         } catch {
-            self.errorMessage = "Failed to load Nginx data: \(error.localizedDescription)"
+            showError("Failed to load Nginx data: \(error.localizedDescription)")
             self.isLoading = false
         }
     }
 
     private func saveConfiguration(_ newConfig: String) async {
-        successMessage = nil
-        errorMessage = nil
-        
         do {
             try await ApplicationManager.shared.updateConfig(newConfig, type: .nginx, serverId: serverId)
-            self.successMessage = "Nginx configuration updated and reloaded successfully"
+            showSuccess("Nginx configuration updated and reloaded successfully")
             await loadNginxData()
         } catch {
-            self.errorMessage = "Failed to save configuration: \(error.localizedDescription)"
+            showError("Failed to save configuration: \(error.localizedDescription)")
         }
     }
 
     private func savePort(_ port: Int) async {
-        successMessage = nil
-        errorMessage = nil
         do {
             try await ApplicationManager.shared.updatePort(port, type: .nginx, serverId: serverId)
-            self.successMessage = "Nginx port updated to \(port)"
+            showSuccess("Nginx port updated to \(port)")
             await loadNginxData()
         } catch {
-            self.errorMessage = "Failed to update port: \(error.localizedDescription)"
+            showError("Failed to update port: \(error.localizedDescription)")
         }
     }
 
     private func blockIP(_ ip: String, reason: String? = nil, duration: String? = nil) async {
-        successMessage = nil
-        errorMessage = nil
         do {
             try await ApplicationManager.shared.blockIP(ip, reason: reason, duration: duration, type: .nginx, serverId: serverId)
-            self.successMessage = "IP \(ip) blocked successfully"
+            showSuccess("IP \(ip) blocked successfully")
             await loadNginxData()
         } catch {
-            self.errorMessage = "Failed to block IP: \(error.localizedDescription)"
+            showError("Failed to block IP: \(error.localizedDescription)")
         }
     }
 
     private func unblockIP(_ ip: String) async {
-        successMessage = nil
-        errorMessage = nil
         do {
             try await ApplicationManager.shared.unblockIP(ip, type: .nginx, serverId: serverId)
-            self.successMessage = "IP \(ip) unblocked successfully"
+            showSuccess("IP \(ip) unblocked successfully")
             await loadNginxData()
         } catch {
-            self.errorMessage = "Failed to unblock IP: \(error.localizedDescription)"
+            showError("Failed to unblock IP: \(error.localizedDescription)")
         }
     }
     
     // New specific Nginx actions
     private func reloadService() async {
-        successMessage = nil
-        errorMessage = nil
         do {
             try await ApplicationManager.shared.restartService(type: .nginx, serverId: serverId)
-            self.successMessage = "Nginx service reloaded successfully"
+            showSuccess("Nginx service reloaded successfully")
         } catch {
-            self.errorMessage = "Failed to reload Nginx: \(error.localizedDescription)"
+            showError("Failed to reload Nginx: \(error.localizedDescription)")
         }
     }
     
     private func testConfiguration() async {
-        successMessage = nil
-        errorMessage = nil
         do {
             let isValid = try await ApplicationManager.shared.validateConfig(type: .nginx, serverId: serverId)
             if isValid {
-                self.successMessage = "Nginx configuration is valid"
+                showSuccess("Nginx configuration is valid")
             } else {
-                self.errorMessage = "Nginx configuration validation failed"
+                showError("Nginx configuration validation failed")
             }
         } catch {
-            self.errorMessage = "Validation error: \(error.localizedDescription)"
+            showError("Validation error: \(error.localizedDescription)")
         }
     }
 
     private func controlService(action: String) async {
-        successMessage = nil
-        errorMessage = nil
         do {
             switch action {
             case "start": try await ApplicationManager.shared.startService(type: .nginx, serverId: serverId)
@@ -228,7 +199,7 @@ struct NginxDetailView: View {
             default: break
             }
             await MainActor.run {
-                self.successMessage = "Nginx service \(action)ed successfully"
+                showSuccess("Nginx service \(action)ed successfully")
             }
             // Trigger refresh after control
             Task {
@@ -237,8 +208,24 @@ struct NginxDetailView: View {
             }
         } catch {
             await MainActor.run {
-                self.errorMessage = "Failed to \(action) Nginx: \(error.localizedDescription)"
+                showError("Failed to \(action) Nginx: \(error.localizedDescription)")
             }
+        }
+    }
+
+    private func showSuccess(_ message: String) {
+        GlobalToastManager.shared.showSuccess(message)
+    }
+
+    private func showError(_ message: String) {
+        GlobalToastManager.shared.showError(message)
+    }
+
+    private func handleBack() {
+        if let onBack {
+            onBack()
+        } else {
+            dismiss()
         }
     }
 }

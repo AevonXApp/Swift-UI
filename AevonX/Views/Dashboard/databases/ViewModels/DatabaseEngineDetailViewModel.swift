@@ -507,12 +507,15 @@ public final class DatabaseEngineDetailViewModel: ObservableObject {
         guard let serverId = serverId else { return }
         
         isFetchingVersions = true
+        errorMessage = nil
         
         do {
             let coreVersions = try await DatabaseEngineService.shared.getAvailableVersions(type: databaseType, serverId: serverId)
             
             // Convert Core versions to UI versions
-            availableVersions = coreVersions.map { coreVersion in
+            let normalized = coreVersions
+                .filter { !$0.version.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+                .map { coreVersion in
                 AevonX.DatabaseVersion(
                     id: UUID(),
                     version: coreVersion.version,
@@ -526,6 +529,7 @@ public final class DatabaseEngineDetailViewModel: ObservableObject {
                     requirements: coreVersion.requirements
                 )
             }
+            availableVersions = normalized
         } catch {
             errorMessage = "Failed to fetch available versions: \(error.localizedDescription)"
             availableVersions = []
@@ -581,9 +585,10 @@ public final class DatabaseEngineDetailViewModel: ObservableObject {
         operationResult = .inProgress(message: "Updating \(databaseType.displayName)...", progress: nil)
         
         do {
+            let targetVersion = try await resolveLatestVersion(serverId: serverId)
             try await DatabaseEngineService.shared.installDatabase(
                 type: databaseType,
-                version: "latest",
+                version: targetVersion,
                 serverId: serverId,
                 progressHandler: { [weak self] progress in
                     Task { @MainActor [weak self] in
@@ -595,8 +600,8 @@ public final class DatabaseEngineDetailViewModel: ObservableObject {
                 }
             )
             
-            operationResult = .success(message: "\(databaseType.displayName) updated successfully!")
-            activeAlert = .operationSuccess(message: "\(databaseType.displayName) has been updated to the latest version.")
+            operationResult = .success(message: "\(databaseType.displayName) updated to \(targetVersion) successfully!")
+            activeAlert = .operationSuccess(message: "\(databaseType.displayName) has been updated to version \(targetVersion).")
             
             await loadData()
             
@@ -606,6 +611,22 @@ public final class DatabaseEngineDetailViewModel: ObservableObject {
         }
         
         isPerformingServiceAction = false
+    }
+
+    private func resolveLatestVersion(serverId: String) async throws -> String {
+        if availableVersions.isEmpty {
+            await fetchAvailableVersions()
+        }
+        if let selected = availableVersions.first(where: { !$0.version.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }) {
+            return selected.version
+        }
+
+        let fetched = try await DatabaseEngineService.shared.getAvailableVersions(type: databaseType, serverId: serverId)
+        if let selected = fetched.first(where: { !$0.version.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }) {
+            return selected.version
+        }
+
+        return "latest"
     }
     
     // MARK: - Service Control
@@ -1090,6 +1111,16 @@ public final class DatabaseEngineDetailViewModel: ObservableObject {
             return "\(hours)h \(minutes)m"
         } else {
             return "\(minutes)m"
+        }
+    }
+    
+    /// Whether this database engine supports user management features
+    public var supportsUserManagement: Bool {
+        switch databaseType {
+        case .mysql, .mariadb, .postgresql, .mongodb, .cassandra, .cockroachdb:
+            return true
+        default:
+            return false
         }
     }
 }
