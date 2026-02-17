@@ -283,7 +283,6 @@ struct RealTerminalView: NSViewRepresentable {
                 textView.setSelectedRange(NSRange(location: newLength, length: 0))
             } else {
                 // Keep cursor in input area
-                let promptLength = (viewModel.prompt as NSString).length
                 let inputStart = newLength - viewModel.inputCommand.count
                 let cursorInInput = max(inputStart, min(newLength, textView.selectedRange().location))
                 textView.setSelectedRange(NSRange(location: cursorInInput, length: 0))

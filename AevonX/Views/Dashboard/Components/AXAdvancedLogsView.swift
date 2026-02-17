@@ -1042,7 +1042,7 @@ public final class AXLogsViewModel: ObservableObject {
                     self.errorLogs = parseErrorLevelLogs(rawLogs)
                 }
 
-            case .genericService(let name, _):
+            case .genericService(_, _):
                 // Generic service logs - showing empty until custom path logic refined
                 self.accessLogs = []
                 self.errorLogs = []

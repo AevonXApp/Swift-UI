@@ -173,7 +173,7 @@ struct PHPConfigurationTab: View {
     
     private func saveConfig() async {
         isSaving = true
-        var updatedConfig = phpConfig.rawConfig
+        let updatedConfig = phpConfig.rawConfig
         
         // Update config string with new values
         // (simplified - in real implementation would parse and update php.ini properly)
@@ -233,7 +233,7 @@ private struct ConfigField: View {
                 .padding(AXSpacing.sm)
                 .background(Color.axSurface.opacity(0.5))
                 .cornerRadius(AXCornerRadius.sm)
-                .onChange(of: localValue) { onChange($0) }
+                .onChange(of: localValue) { oldValue, newValue in onChange(newValue) }
         }
     }
 }

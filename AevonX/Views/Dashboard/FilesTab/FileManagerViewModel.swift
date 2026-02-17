@@ -486,8 +486,8 @@ final class FileManagerViewModel: ObservableObject {
                         localURL: url,
                         remotePath: remotePath,
                         serverId: serverId,
-                        onProgress: { [weak self] transferred, total in
-                            Task { @MainActor in
+                        onProgress: { transferred, total in
+                            Task { @MainActor [weak self] in
                                 self?.updateTransferProgress(id: transferId, bytesTransferred: transferred)
                             }
                         }
@@ -534,8 +534,8 @@ final class FileManagerViewModel: ObservableObject {
                         remotePath: file.path,
                         localURL: localURL,
                         serverId: self.serverId,
-                        onProgress: { [weak self] transferred, total in
-                            Task { @MainActor in
+                        onProgress: { transferred, total in
+                            Task { @MainActor [weak self] in
                                 self?.updateTransferProgress(id: transferId, bytesTransferred: transferred)
                             }
                         }

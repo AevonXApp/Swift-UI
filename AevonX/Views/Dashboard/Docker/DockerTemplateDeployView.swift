@@ -118,7 +118,7 @@ services:
             
             Divider()
             
-            if let template = selectedTemplate {
+            if selectedTemplate != nil {
                 // Configuration Screen
                 VStack(spacing: AXSpacing.xl) {
                     VStack(alignment: .leading, spacing: AXSpacing.md) {

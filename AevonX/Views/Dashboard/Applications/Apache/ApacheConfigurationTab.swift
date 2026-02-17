@@ -98,7 +98,7 @@ struct ApacheConfigurationTab: View {
         .onAppear {
             editedConfig = apacheConfig.rawConfig
         }
-        .onChange(of: apacheConfig.rawConfig) { newValue in
+        .onChange(of: apacheConfig.rawConfig) { old, newValue in
             if !isEditing {
                 editedConfig = newValue
             }

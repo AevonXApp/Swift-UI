@@ -546,7 +546,7 @@ struct ServiceRow: View {
                         Toggle("", isOn: $localAutoStart)
                             .toggleStyle(SwitchToggleStyle(tint: .axAccentBlue))
                             .frame(width: 36)
-                            .onChange(of: localAutoStart) { _ in
+                            .onChange(of: localAutoStart) { old, new in
                                 Task {
                                     await onToggleAutoStart()
                                 }

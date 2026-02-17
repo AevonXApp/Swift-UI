@@ -246,15 +246,17 @@ struct PluginConfigurationView: View {
         VStack(alignment: .leading, spacing: AXSpacing.sm) {
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(field.title)
+                    Text(field.title ?? field.key)
                         .font(AXTypography.body)
                         .fontWeight(.medium)
                         .foregroundColor(.axTextPrimary)
                     
-                    Text(field.description)
-                        .font(AXTypography.caption)
-                        .foregroundColor(.axTextSecondary)
-                        .fixedSize(horizontal: false, vertical: true)
+                    if let description = field.description, !description.isEmpty {
+                        Text(description)
+                            .font(AXTypography.caption)
+                            .foregroundColor(.axTextSecondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
                 }
                 
                 Spacer()
@@ -320,6 +322,14 @@ struct PluginConfigurationView: View {
                         ),
                         options: field.options ?? []
                     )
+                    
+                case .array:
+                    Text(field.value.asString)
+                        .font(.system(size: 11, design: .monospaced))
+                        .padding(AXSpacing.xs)
+                        .background(Color.axSurface)
+                        .cornerRadius(AXCornerRadius.xs)
+                        .frame(maxWidth: 220, alignment: .trailing)
                 }
             }
         }

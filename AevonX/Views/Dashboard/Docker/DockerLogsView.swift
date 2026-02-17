@@ -54,7 +54,7 @@ struct DockerLogsView: View {
                             .id("Bottom")
                     }
                     .background(Color.black)
-                    .onChange(of: logs) { _ in
+                    .onChange(of: logs) { old, new in
                         if autoScroll {
                             proxy.scrollTo("Bottom", anchor: .bottom)
                         }

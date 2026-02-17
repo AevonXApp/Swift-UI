@@ -95,7 +95,9 @@ struct PHPDisabledFunctionsTab: View {
             }
         }
         .onAppear {
-            dangerousFunctions = ApplicationManager.shared.getDangerousPHPFunctions()
+            Task {
+                dangerousFunctions = await ApplicationManager.shared.getDangerousPHPFunctions()
+            }
         }
     }
     

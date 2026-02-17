@@ -66,7 +66,7 @@ struct DockerContainersTab: View {
                         .toggleStyle(.switch)
                         .controlSize(.small)
                         .labelsHidden()
-                        .onChange(of: showAll) { _ in refreshData() }
+                        .onChange(of: showAll) { old, new in refreshData() }
                     
                     Text(showAll ? "All" : "Running")
                         .font(AXTypography.caption)
@@ -220,7 +220,7 @@ struct DockerContainersTab: View {
                 
                 // Refresh after action
                 try await Task.sleep(nanoseconds: 1_000_000_000)
-                await refreshData()
+                refreshData()
                 
             } catch {
                 errorMessage = "Action failed: \(error.localizedDescription)"

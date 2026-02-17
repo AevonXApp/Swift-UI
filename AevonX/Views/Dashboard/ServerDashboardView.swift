@@ -82,7 +82,7 @@ struct ServerDashboardView: View {
         }
         .background(Color.axBackground)
         .frame(minWidth: 800, minHeight: 600)
-        .onChange(of: viewModel.selectedTab) { _ in
+        .onChange(of: viewModel.selectedTab) { old, newValue in
             viewModel.navigationPath = NavigationPath()
         }
         .onAppear {

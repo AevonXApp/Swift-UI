@@ -113,7 +113,7 @@ struct PHPVersionsTab: View {
             availableVersions = versions.sorted { compareVersions($0, $1) == .orderedDescending }
             
             // Get actually installed versions
-            if let adapter = ApplicationManager.shared.adapter(for: .phpFpm) as? ApplicationPHPAdapter {
+            if let adapter = await ApplicationManager.shared.adapter(for: .phpFpm) as? ApplicationPHPAdapter {
                 installedVersions = try await adapter.getInstalledVersions(serverId: serverId)
             }
         } catch {

@@ -90,23 +90,24 @@ struct ModernDatabasesTab: View {
         }
         .sheet(isPresented: $viewModel.showEngineDetail) {
             if let type = viewModel.selectedDatabaseType {
-                DatabaseEngineDetailView(
+                UnifiedDatabaseDetailView(
+                    application: applicationInstance(for: type),
                     databaseType: type,
-                    serverId: viewModel.serverId
+                    serverId: viewModel.serverId ?? ""
                 )
             }
         }
         .sheet(isPresented: $showEngineManagement) {
             if let type = engineManagementType {
-                DatabaseEngineManagementView(
+                UnifiedDatabaseDetailView(
+                    application: applicationInstance(for: type),
                     databaseType: type,
-                    serverId: viewModel.serverId,
+                    serverId: viewModel.serverId ?? "",
                     onBack: {
                         showEngineManagement = false
                         engineManagementType = nil
                     }
                 )
-                .frame(minWidth: 900, minHeight: 600)
             }
         }
         .sheet(isPresented: $viewModel.showErrorResolution) {
@@ -203,6 +204,29 @@ struct ModernDatabasesTab: View {
     private func showEngineDetail(for type: DatabaseType) {
         engineManagementType = type
         showEngineManagement = true
+    }
+
+    private func applicationInstance(for type: DatabaseType) -> ApplicationInstance {
+        let appType: ApplicationType
+        switch type {
+        case .mysql: appType = .mysql
+        case .postgresql: appType = .postgresql
+        case .redis: appType = .redis
+        case .mongodb: appType = .mongodb
+        case .mariadb: appType = .mariadb
+        case .cockroachdb: appType = .cockroachdb
+        case .elasticsearch: appType = .elasticsearch
+        case .cassandra: appType = .cassandra
+        default: appType = .unknown
+        }
+
+        return ApplicationInstance(
+            id: UUID(),
+            name: type.displayName,
+            type: appType,
+            status: .active,
+            isRunning: true
+        )
     }
     
     // MARK: - Legacy Loading/Error Views

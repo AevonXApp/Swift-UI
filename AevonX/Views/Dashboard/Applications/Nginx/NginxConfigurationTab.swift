@@ -106,7 +106,7 @@ public struct NginxConfigurationTab: View {
                 editedConfig = nginxConfig.rawConfig
             }
         }
-        .onChange(of: nginxConfig.rawConfig) { newValue in
+        .onChange(of: nginxConfig.rawConfig) { old, newValue in
             if editedConfig == "" || editedConfig == newValue {
                 editedConfig = newValue
             }
