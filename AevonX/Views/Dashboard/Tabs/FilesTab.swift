@@ -2,908 +2,839 @@
 //  FilesTab.swift
 //  AevonX
 //
-//  SFTP File Explorer with upload/download/edit capabilities
+//  SSH-powered file browser with real-time file management
+//  Multi-tab navigation, breadcrumbs, drag-drop upload, context menus
 //
 
 import SwiftUI
+import AevonXCore
 import UniformTypeIdentifiers
 
-struct FileItem: Identifiable {
-    let id = UUID()
-    var name: String
-    var isDirectory: Bool
-    var size: Int64?
-    var modifiedDate: Date
-    var permissions: String
-    var children: [FileItem]?
-    var isExpanded: Bool = false
-}
+// MARK: - Files Tab View
 
 struct FilesTab: View {
-    @State private var currentPath = "/var/www"
-    @State private var searchText = ""
-    @State private var selectedFile: FileItem?
-    @State private var showUploadSheet = false
-    @State private var showNewFolderSheet = false
-    @State private var showFileEditor = false
-    @State private var editingFile: FileItem?
+    let serverId: String
+    let connectionViewModel: ServerConnectionViewModel
     
-    @State private var files: [FileItem] = [
-        FileItem(
-            name: "html",
-            isDirectory: true,
-            size: nil,
-            modifiedDate: Date().addingTimeInterval(-86400),
-            permissions: "drwxr-xr-x",
-            children: [
-                FileItem(name: "index.html", isDirectory: false, size: 3456, modifiedDate: Date().addingTimeInterval(-3600), permissions: "-rw-r--r--", children: nil),
-                FileItem(name: "about.html", isDirectory: false, size: 2345, modifiedDate: Date().addingTimeInterval(-7200), permissions: "-rw-r--r--", children: nil),
-                FileItem(name: "css", isDirectory: true, size: nil, modifiedDate: Date().addingTimeInterval(-86400), permissions: "drwxr-xr-x", children: [
-                    FileItem(name: "main.css", isDirectory: false, size: 5678, modifiedDate: Date().addingTimeInterval(-3600), permissions: "-rw-r--r--", children: nil),
-                    FileItem(name: "responsive.css", isDirectory: false, size: 3456, modifiedDate: Date().addingTimeInterval(-7200), permissions: "-rw-r--r--", children: nil)
-                ]),
-                FileItem(name: "js", isDirectory: true, size: nil, modifiedDate: Date().addingTimeInterval(-86400), permissions: "drwxr-xr-x", children: [
-                    FileItem(name: "app.js", isDirectory: false, size: 12345, modifiedDate: Date().addingTimeInterval(-1800), permissions: "-rw-r--r--", children: nil),
-                    FileItem(name: "utils.js", isDirectory: false, size: 4567, modifiedDate: Date().addingTimeInterval(-3600), permissions: "-rw-r--r--", children: nil)
-                ])
-            ]
-        ),
-        FileItem(name: "logs", isDirectory: true, size: nil, modifiedDate: Date().addingTimeInterval(-172800), permissions: "drwxr-xr-x", children: [
-            FileItem(name: "access.log", isDirectory: false, size: 2345678, modifiedDate: Date().addingTimeInterval(-300), permissions: "-rw-r--r--", children: nil),
-            FileItem(name: "error.log", isDirectory: false, size: 123456, modifiedDate: Date().addingTimeInterval(-600), permissions: "-rw-r--r--", children: nil),
-            FileItem(name: "nginx.log", isDirectory: false, size: 567890, modifiedDate: Date().addingTimeInterval(-900), permissions: "-rw-r--r--", children: nil)
-        ]),
-        FileItem(name: "config", isDirectory: true, size: nil, modifiedDate: Date().addingTimeInterval(-259200), permissions: "drwxr-xr-x", children: [
-            FileItem(name: "nginx.conf", isDirectory: false, size: 3456, modifiedDate: Date().addingTimeInterval(-86400), permissions: "-rw-r--r--", children: nil),
-            FileItem(name: "php.ini", isDirectory: false, size: 12345, modifiedDate: Date().addingTimeInterval(-172800), permissions: "-rw-r--r--", children: nil)
-        ]),
-        FileItem(name: "README.md", isDirectory: false, size: 2345, modifiedDate: Date().addingTimeInterval(-432000), permissions: "-rw-r--r--", children: nil),
-        FileItem(name: ".env", isDirectory: false, size: 567, modifiedDate: Date().addingTimeInterval(-604800), permissions: "-rw-r--r--", children: nil),
-        FileItem(name: "deploy.sh", isDirectory: false, size: 1234, modifiedDate: Date().addingTimeInterval(-21600), permissions: "-rwxr-xr-x", children: nil)
-    ]
+    @StateObject private var viewModel: FileManagerViewModel
+    
+    init(serverId: String, connectionViewModel: ServerConnectionViewModel) {
+        self.serverId = serverId
+        self.connectionViewModel = connectionViewModel
+        _viewModel = StateObject(wrappedValue: FileManagerViewModel(serverId: serverId))
+    }
     
     var body: some View {
-        HStack(spacing: 0) {
-            // Sidebar - Quick Access
-            FileSidebar()
-                .frame(width: 200)
+        VStack(spacing: 0) {
+            // Tab Bar
+            fileTabBar
             
-            Divider()
-                .background(Color.axBorder)
+            Divider().background(Color.axBorder)
             
-            // Main File Browser
-            VStack(spacing: 0) {
-                // Toolbar
-                FileToolbar(
-                    currentPath: $currentPath,
-                    searchText: $searchText,
-                    showUploadSheet: $showUploadSheet,
-                    showNewFolderSheet: $showNewFolderSheet
-                )
+            // Toolbar
+            if !viewModel.isEditorOpen {
+                fileToolbar
+                Divider().background(Color.axBorder)
+            }
+            
+            // Main Content - switch between file browser and editor
+            if viewModel.isEditorOpen {
+                // Inline File Editor
+                inlineEditorHeader
+                Divider().background(Color.axBorder)
                 
-                Divider()
-                    .background(Color.axBorder)
-                
-                // File List Header
-                FileListHeader()
-                
-                Divider()
-                    .background(Color.axBorder)
-                
-                // File List
-                List {
-                    ForEach(files) { file in
-                        FileRow(
-                            file: file,
-                            level: 0,
-                            selectedFile: $selectedFile,
-                            onEdit: { file in
-                                editingFile = file
-                                showFileEditor = true
-                            }
+                ZStack {
+                    Color(nsColor: AtomOneDark.background)
+                    
+                    if viewModel.isLoadingFile {
+                        VStack(spacing: AXSpacing.md) {
+                            ProgressView()
+                                .progressViewStyle(CircularProgressViewStyle(tint: .axAccentBlue))
+                            Text("Loading file...")
+                                .font(AXTypography.caption)
+                                .foregroundColor(.axTextSecondary)
+                        }
+                    } else {
+                        SimpleCodeEditor(
+                            text: $viewModel.editorContent,
+                            language: viewModel.editorFile?.language ?? .plainText
                         )
                     }
                 }
-                .listStyle(PlainListStyle())
-                .background(Color.axBackground)
-                .scrollContentBackground(.hidden)
-                
-                // Status Bar
-                FileStatusBar(selectedFile: selectedFile, itemCount: files.count)
+            } else {
+                HStack(spacing: 0) {
+                    // Sidebar
+                    fileSidebar
+                        .frame(width: 190)
+                    
+                    Divider().background(Color.axBorder)
+                    
+                    // File List Area
+                    VStack(spacing: 0) {
+                        fileListHeader
+                        Divider().background(Color.axBorder)
+                        fileListContent
+                        Divider().background(Color.axBorder)
+                        fileStatusBar
+                    }
+                }
             }
-            .background(Color.axBackground)
+            
+            // Transfer Progress Bar
+            if !viewModel.activeTransfers.isEmpty {
+                Divider().background(Color.axBorder)
+                transferProgressBar
+            }
         }
         .background(Color.axBackground)
-        .sheet(isPresented: $showUploadSheet) {
-            UploadFileView()
+        .onAppear { Task { await viewModel.initialLoad() } }
+        .sheet(isPresented: $viewModel.isPermissionsEditorOpen) {
+            FilePermissionsEditorView(viewModel: viewModel)
         }
-        .sheet(isPresented: $showNewFolderSheet) {
-            NewFolderView()
+        .sheet(isPresented: $viewModel.showNewFolderSheet) {
+            newFolderSheet
         }
-        .sheet(isPresented: $showFileEditor) {
-            if let file = editingFile {
-                FileEditorView(file: file)
-            }
+        .alert("Delete Items", isPresented: $viewModel.showDeleteConfirmation) {
+            Button("Cancel", role: .cancel) {}
+            Button("Delete", role: .destructive) { viewModel.deleteConfirmed() }
+        } message: {
+            Text("Are you sure you want to delete \(viewModel.filesToDelete.count) item(s)? This cannot be undone.")
+        }
+        .alert("Rename", isPresented: $viewModel.isRenaming) {
+            TextField("Name", text: $viewModel.renameText)
+            Button("Cancel", role: .cancel) {}
+            Button("Rename") { viewModel.confirmRename() }
+        }
+        .onChange(of: viewModel.searchText) { _, newValue in
+            viewModel.performSearch(newValue)
+        }
+        .onDrop(of: [UTType.fileURL], isTargeted: nil) { providers in
+            handleFileDrop(providers)
+            return true
         }
     }
-}
-
-// MARK: - File Sidebar
-struct FileSidebar: View {
-    var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Text("FAVORITES")
-                .font(AXTypography.caption2)
-                .fontWeight(.bold)
-                .foregroundColor(.axTextMuted)
-                .padding(.horizontal, AXSpacing.lg)
-                .padding(.top, AXSpacing.lg)
-                .padding(.bottom, AXSpacing.sm)
-            
-            VStack(spacing: AXSpacing.xxs) {
-                FileSidebarItem(icon: "house", title: "Home")
-                FileSidebarItem(icon: "desktopcomputer", title: "Root")
-                FileSidebarItem(icon: "globe", title: "Web Root")
-                FileSidebarItem(icon: "doc.text", title: "Logs")
-                FileSidebarItem(icon: "gearshape", title: "Config")
-            }
-            
-            Text("QUICK ACCESS")
-                .font(AXTypography.caption2)
-                .fontWeight(.bold)
-                .foregroundColor(.axTextMuted)
-                .padding(.horizontal, AXSpacing.lg)
-                .padding(.top, AXSpacing.xl)
-                .padding(.bottom, AXSpacing.sm)
-            
-            VStack(spacing: AXSpacing.xxs) {
-                FileSidebarItem(icon: "clock", title: "Recent")
-                FileSidebarItem(icon: "star", title: "Starred")
+    
+    // MARK: - Tab Bar
+    
+    private var fileTabBar: some View {
+        HStack(spacing: 0) {
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 0) {
+                    ForEach(Array(viewModel.tabs.enumerated()), id: \.element.id) { index, tab in
+                        tabItem(tab, index: index)
+                    }
+                }
             }
             
             Spacer()
+            
+            // New Tab Button
+            Button(action: { viewModel.createTab() }) {
+                Image(systemName: "plus")
+                    .font(.system(size: 11))
+                    .foregroundColor(.axTextSecondary)
+                    .frame(width: 24, height: 24)
+            }
+            .buttonStyle(PlainButtonStyle())
+            .padding(.trailing, AXSpacing.sm)
         }
+        .frame(height: 32)
         .background(Color.axBackgroundSecondary)
     }
-}
-
-struct FileSidebarItem: View {
-    let icon: String
-    let title: String
     
-    var body: some View {
-        Button(action: {}) {
+    private func tabItem(_ tab: FileBrowserTabState, index: Int) -> some View {
+        let isActive = index == viewModel.activeTabIndex
+        
+        return HStack(spacing: AXSpacing.xs) {
+            Image(systemName: "folder")
+                .font(.system(size: 10))
+            Text(tab.title)
+                .font(.system(size: 11))
+                .lineLimit(1)
+            
+            if viewModel.tabs.count > 1 {
+                Button(action: { viewModel.closeTab(at: index) }) {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 8, weight: .bold))
+                        .foregroundColor(.axTextMuted)
+                }
+                .buttonStyle(PlainButtonStyle())
+            }
+        }
+        .foregroundColor(isActive ? .axTextPrimary : .axTextSecondary)
+        .padding(.horizontal, AXSpacing.md)
+        .padding(.vertical, AXSpacing.xs)
+        .background(isActive ? Color.axBackground : Color.clear)
+        .overlay(
+            Rectangle()
+                .fill(isActive ? Color.axAccentBlue : Color.clear)
+                .frame(height: 2),
+            alignment: .bottom
+        )
+        .contentShape(Rectangle())
+        .onTapGesture { viewModel.switchToTab(index) }
+    }
+    
+    // MARK: - Toolbar
+    
+    private var fileToolbar: some View {
+        HStack(spacing: AXSpacing.md) {
+            // Navigation buttons
+            HStack(spacing: AXSpacing.xs) {
+                toolbarButton(icon: "chevron.left", action: { viewModel.goBack() }, disabled: !viewModel.canGoBack)
+                toolbarButton(icon: "chevron.right", action: { viewModel.goForward() }, disabled: !viewModel.canGoForward)
+                toolbarButton(icon: "chevron.up", action: { viewModel.goToParent() })
+            }
+            
+            // Breadcrumb
+            breadcrumbBar
+            
+            Spacer()
+            
+            // Actions
+            HStack(spacing: AXSpacing.xs) {
+                // Search
+                HStack(spacing: AXSpacing.xs) {
+                    Image(systemName: "magnifyingglass")
+                        .font(.system(size: 11))
+                        .foregroundColor(.axTextMuted)
+                    TextField("Search files...", text: $viewModel.searchText)
+                        .textFieldStyle(PlainTextFieldStyle())
+                        .font(.system(size: 12))
+                        .frame(width: 140)
+                }
+                .padding(.horizontal, AXSpacing.sm)
+                .padding(.vertical, 4)
+                .background(Color.axSurface)
+                .cornerRadius(AXCornerRadius.sm)
+                .overlay(RoundedRectangle(cornerRadius: AXCornerRadius.sm).stroke(Color.axBorder, lineWidth: 1))
+                
+                Divider().frame(height: 16)
+                
+                toolbarButton(icon: "arrow.clockwise", action: { viewModel.refresh() })
+                toolbarButton(icon: "eye\(viewModel.showHiddenFiles ? "" : ".slash")", action: { viewModel.showHiddenFiles.toggle() })
+                
+                Divider().frame(height: 16)
+                
+                toolbarButton(icon: "folder.badge.plus", action: { viewModel.showNewFolderSheet = true })
+                toolbarButton(icon: "square.and.arrow.up", action: { showUploadPanel() })
+                
+                if !viewModel.selectedFiles.isEmpty {
+                    Divider().frame(height: 16)
+                    toolbarButton(icon: "trash", action: { viewModel.deleteSelected() }, tint: .axError)
+                }
+            }
+        }
+        .padding(.horizontal, AXSpacing.md)
+        .padding(.vertical, AXSpacing.sm)
+        .background(Color.axBackgroundSecondary)
+    }
+    
+    private func toolbarButton(icon: String, action: @escaping () -> Void, disabled: Bool = false, tint: Color = .axTextSecondary) -> some View {
+        Button(action: action) {
+            Image(systemName: icon)
+                .font(.system(size: 12))
+                .foregroundColor(disabled ? .axTextMuted.opacity(0.4) : tint)
+                .frame(width: 26, height: 26)
+                .background(Color.axSurface.opacity(0.5))
+                .cornerRadius(AXCornerRadius.sm)
+        }
+        .buttonStyle(PlainButtonStyle())
+        .disabled(disabled)
+    }
+    
+    // MARK: - Breadcrumb
+    
+    private var breadcrumbBar: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 2) {
+                // Root
+                Button(action: { viewModel.navigateTo("/") }) {
+                    Image(systemName: "desktopcomputer")
+                        .font(.system(size: 10))
+                        .foregroundColor(.axTextMuted)
+                }
+                .buttonStyle(PlainButtonStyle())
+                
+                ForEach(Array(viewModel.pathComponents.enumerated()), id: \.offset) { index, component in
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 8))
+                        .foregroundColor(.axTextMuted)
+                    
+                    Button(action: { viewModel.navigateTo(component.path) }) {
+                        Text(component.name)
+                            .font(.system(size: 12, weight: index == viewModel.pathComponents.count - 1 ? .semibold : .regular))
+                            .foregroundColor(index == viewModel.pathComponents.count - 1 ? .axTextPrimary : .axTextSecondary)
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                }
+            }
+        }
+    }
+    
+    // MARK: - Sidebar
+    
+    private var fileSidebar: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text("QUICK ACCESS")
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundColor(.axTextMuted)
+                .padding(.horizontal, AXSpacing.md)
+                .padding(.top, AXSpacing.md)
+                .padding(.bottom, AXSpacing.sm)
+            
+            ForEach(viewModel.quickAccessPaths, id: \.path) { item in
+                sidebarItem(icon: item.icon, title: item.title, path: item.path)
+            }
+            
+            if !viewModel.quickAccessPaths.isEmpty {
+                Divider()
+                    .background(Color.axBorder)
+                    .padding(.vertical, AXSpacing.sm)
+            }
+            
+            // Sort options
+            Text("SORT BY")
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundColor(.axTextMuted)
+                .padding(.horizontal, AXSpacing.md)
+                .padding(.bottom, AXSpacing.xs)
+            
+            Picker("Sort", selection: $viewModel.sortOrder) {
+                ForEach(FileSortOrder.allCases, id: \.self) { order in
+                    Text(order.rawValue).tag(order)
+                }
+            }
+            .pickerStyle(MenuPickerStyle())
+            .font(.system(size: 11))
+            .padding(.horizontal, AXSpacing.sm)
+            
+            Spacer()
+            
+            // Disk usage
+            if !viewModel.diskUsage.isEmpty {
+                HStack(spacing: AXSpacing.xs) {
+                    Image(systemName: "internaldrive")
+                        .font(.system(size: 10))
+                        .foregroundColor(.axTextMuted)
+                    Text("Used: \(viewModel.diskUsage)")
+                        .font(.system(size: 10))
+                        .foregroundColor(.axTextTertiary)
+                }
+                .padding(AXSpacing.md)
+            }
+        }
+        .background(Color.axSurface.opacity(0.4))
+    }
+    
+    private func sidebarItem(icon: String, title: String, path: String) -> some View {
+        let isActive = viewModel.currentPath == path
+        
+        return Button(action: { viewModel.navigateToQuickAccess(path) }) {
             HStack(spacing: AXSpacing.sm) {
                 Image(systemName: icon)
-                    .font(.system(size: 14))
-                    .foregroundColor(.axTextSecondary)
-                    .frame(width: 20)
-                
+                    .font(.system(size: 12))
+                    .foregroundColor(isActive ? .axAccentBlue : .axTextMuted)
+                    .frame(width: 16)
                 Text(title)
-                    .font(AXTypography.body)
-                    .foregroundColor(.axTextSecondary)
-                
+                    .font(.system(size: 12))
+                    .foregroundColor(isActive ? .axTextPrimary : .axTextSecondary)
                 Spacer()
             }
             .padding(.horizontal, AXSpacing.md)
             .padding(.vertical, AXSpacing.xs)
+            .background(isActive ? Color.axAccentBlue.opacity(0.1) : Color.clear)
         }
         .buttonStyle(PlainButtonStyle())
     }
-}
-
-// MARK: - File Toolbar
-struct FileToolbar: View {
-    @Binding var currentPath: String
-    @Binding var searchText: String
-    @Binding var showUploadSheet: Bool
-    @Binding var showNewFolderSheet: Bool
     
-    var body: some View {
-        HStack(spacing: AXSpacing.md) {
-            // Navigation
-            HStack(spacing: AXSpacing.xs) {
-                Button(action: {}) {
-                    Image(systemName: "chevron.left")
-                        .font(.system(size: 12))
-                        .foregroundColor(.axTextSecondary)
-                        .frame(width: 28, height: 28)
-                        .background(Color.axSurface)
-                        .cornerRadius(AXCornerRadius.sm)
-                }
-                .buttonStyle(PlainButtonStyle())
-                
-                Button(action: {}) {
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 12))
-                        .foregroundColor(.axTextMuted)
-                        .frame(width: 28, height: 28)
-                        .background(Color.axSurface)
-                        .cornerRadius(AXCornerRadius.sm)
-                }
-                .buttonStyle(PlainButtonStyle())
-                .disabled(true)
-            }
-            
-            // Path Bar
-            HStack(spacing: AXSpacing.xs) {
-                Image(systemName: "folder")
-                    .font(.system(size: 12))
-                    .foregroundColor(.axTextMuted)
-                
-                Text(currentPath)
-                    .font(AXTypography.subheadline)
-                    .foregroundColor(.axTextSecondary)
-            }
-            .padding(.horizontal, AXSpacing.sm)
-            .padding(.vertical, AXSpacing.xs)
-            .background(Color.axSurface)
-            .cornerRadius(AXCornerRadius.sm)
-            
-            Spacer()
-            
-            // Search
-            HStack(spacing: AXSpacing.sm) {
-                Image(systemName: "magnifyingglass")
-                    .font(.system(size: 12))
-                    .foregroundColor(.axTextMuted)
-                
-                TextField("Search files...", text: $searchText)
-                    .font(AXTypography.subheadline)
-                    .foregroundColor(.axTextPrimary)
-                    .textFieldStyle(PlainTextFieldStyle())
-                    .frame(width: 150)
-            }
-            .padding(.horizontal, AXSpacing.sm)
-            .padding(.vertical, AXSpacing.xs)
-            .background(Color.axSurface)
-            .overlay(
-                RoundedRectangle(cornerRadius: AXCornerRadius.sm)
-                    .stroke(Color.axBorder, lineWidth: 1)
-            )
-            .cornerRadius(AXCornerRadius.sm)
-            
-            // Actions
-            HStack(spacing: AXSpacing.xs) {
-                Button(action: { showUploadSheet = true }) {
-                    Image(systemName: "arrow.up.doc")
-                        .font(.system(size: 14))
-                        .foregroundColor(.axAccentBlue)
-                        .frame(width: 32, height: 32)
-                        .background(Color.axAccentBlue.opacity(0.1))
-                        .cornerRadius(AXCornerRadius.sm)
-                }
-                .buttonStyle(PlainButtonStyle())
-                .help("Upload File")
-                
-                Button(action: { showNewFolderSheet = true }) {
-                    Image(systemName: "folder.badge.plus")
-                        .font(.system(size: 14))
-                        .foregroundColor(.axAccentGreen)
-                        .frame(width: 32, height: 32)
-                        .background(Color.axAccentGreen.opacity(0.1))
-                        .cornerRadius(AXCornerRadius.sm)
-                }
-                .buttonStyle(PlainButtonStyle())
-                .help("New Folder")
-                
-                Button(action: {}) {
-                    Image(systemName: "arrow.down.circle")
-                        .font(.system(size: 14))
-                        .foregroundColor(.axTextSecondary)
-                        .frame(width: 32, height: 32)
-                        .background(Color.axSurface)
-                        .cornerRadius(AXCornerRadius.sm)
-                }
-                .buttonStyle(PlainButtonStyle())
-                .help("Download")
-                
-                Divider()
-                    .frame(height: 20)
-                    .background(Color.axBorder)
-                
-                Button(action: {}) {
-                    Image(systemName: "list.bullet")
-                        .font(.system(size: 14))
-                        .foregroundColor(.axTextSecondary)
-                        .frame(width: 32, height: 32)
-                        .background(Color.axSurface)
-                        .cornerRadius(AXCornerRadius.sm)
-                }
-                .buttonStyle(PlainButtonStyle())
+    // MARK: - File List Header
+    
+    private var fileListHeader: some View {
+        HStack(spacing: 0) {
+            headerColumn("Name", width: nil, alignment: .leading)
+            headerColumn("Size", width: 80, alignment: .trailing)
+            headerColumn("Permissions", width: 100, alignment: .center)
+            headerColumn("Owner", width: 70, alignment: .center)
+            headerColumn("Modified", width: 130, alignment: .trailing)
+        }
+        .padding(.horizontal, AXSpacing.md)
+        .padding(.vertical, AXSpacing.xs)
+        .background(Color.axBackgroundSecondary)
+    }
+    
+    private func headerColumn(_ title: String, width: CGFloat?, alignment: Alignment) -> some View {
+        Group {
+            if let w = width {
+                Text(title)
+                    .frame(width: w, alignment: alignment)
+            } else {
+                Text(title)
+                    .frame(maxWidth: .infinity, alignment: alignment)
             }
         }
-        .padding(.horizontal, AXSpacing.lg)
-        .padding(.vertical, AXSpacing.md)
+        .font(.system(size: 10, weight: .semibold))
+        .foregroundColor(.axTextMuted)
+    }
+    
+    // MARK: - File List Content
+    
+    private var fileListContent: some View {
+        Group {
+            if viewModel.isLoading && viewModel.files.isEmpty {
+                VStack(spacing: AXSpacing.md) {
+                    ProgressView()
+                        .progressViewStyle(CircularProgressViewStyle(tint: .axAccentBlue))
+                    Text("Loading files...")
+                        .font(AXTypography.caption)
+                        .foregroundColor(.axTextSecondary)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else if let error = viewModel.errorMessage, viewModel.files.isEmpty {
+                VStack(spacing: AXSpacing.md) {
+                    Image(systemName: "exclamationmark.triangle")
+                        .font(.system(size: 28))
+                        .foregroundColor(.axWarning)
+                    Text(error)
+                        .font(AXTypography.caption)
+                        .foregroundColor(.axTextSecondary)
+                        .multilineTextAlignment(.center)
+                    Button("Retry") { viewModel.refresh() }
+                        .buttonStyle(AXSecondaryButtonStyle())
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else if viewModel.displayFiles.isEmpty {
+                AXEmptyState(
+                    icon: "folder",
+                    title: "Empty Directory",
+                    description: "This directory has no files.",
+                    actionLabel: "New File",
+                    action: { viewModel.showNewFolderSheet = true }
+                )
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else {
+                ScrollView {
+                    LazyVStack(spacing: 0) {
+                        ForEach(viewModel.displayFiles) { file in
+                            fileRow(file)
+                            Divider().background(Color.axBorder.opacity(0.3))
+                        }
+                    }
+                }
+            }
+        }
         .background(Color.axBackground)
     }
-}
-
-// MARK: - File List Header
-struct FileListHeader: View {
-    var body: some View {
-        HStack(spacing: AXSpacing.md) {
-            Text("Name")
-                .font(AXTypography.caption)
-                .fontWeight(.semibold)
-                .foregroundColor(.axTextMuted)
-                .frame(width: 300, alignment: .leading)
+    
+    // MARK: - File Row
+    
+    private func fileRow(_ file: RemoteFileItem) -> some View {
+        let isSelected = viewModel.selectedFiles.contains(file.id)
+        
+        return HStack(spacing: 0) {
+            // Name column
+            HStack(spacing: AXSpacing.sm) {
+                Image(systemName: file.iconName)
+                    .font(.system(size: 14))
+                    .foregroundColor(file.isDirectory ? .axAccentBlue : fileColor(for: file))
+                    .frame(width: 18)
+                
+                VStack(alignment: .leading, spacing: 0) {
+                    Text(file.name)
+                        .font(.system(size: 12, weight: file.isDirectory ? .medium : .regular))
+                        .foregroundColor(.axTextPrimary)
+                        .lineLimit(1)
+                    
+                    if file.isSymlink, let target = file.symlinkTarget {
+                        Text("→ \(target)")
+                            .font(.system(size: 9))
+                            .foregroundColor(.axTextTertiary)
+                            .lineLimit(1)
+                    }
+                }
+                
+                Spacer()
+            }
             
-            Text("Size")
-                .font(AXTypography.caption)
-                .fontWeight(.semibold)
-                .foregroundColor(.axTextMuted)
+            // Size
+            Text(file.formattedSize)
+                .font(.system(size: 11, design: .monospaced))
+                .foregroundColor(.axTextSecondary)
                 .frame(width: 80, alignment: .trailing)
             
-            Text("Permissions")
-                .font(AXTypography.caption)
-                .fontWeight(.semibold)
-                .foregroundColor(.axTextMuted)
-                .frame(width: 90, alignment: .center)
+            // Permissions
+            Text(file.permissions.symbolic)
+                .font(.system(size: 10, design: .monospaced))
+                .foregroundColor(permissionColor(file.permissions))
+                .frame(width: 100, alignment: .center)
             
-            Text("Modified")
-                .font(AXTypography.caption)
-                .fontWeight(.semibold)
+            // Owner
+            Text(file.owner)
+                .font(.system(size: 11))
+                .foregroundColor(.axTextSecondary)
+                .frame(width: 70, alignment: .center)
+                .lineLimit(1)
+            
+            // Modified date
+            Text(formatDate(file.modifiedDate))
+                .font(.system(size: 11))
+                .foregroundColor(.axTextTertiary)
+                .frame(width: 130, alignment: .trailing)
+        }
+        .padding(.horizontal, AXSpacing.md)
+        .padding(.vertical, AXSpacing.xs)
+        .background(isSelected ? Color.axAccentBlue.opacity(0.12) : Color.clear)
+        .contentShape(Rectangle())
+        .onTapGesture { viewModel.selectSingleFile(file) }
+        .simultaneousGesture(
+            TapGesture(count: 2).onEnded { viewModel.handleFileDoubleTap(file) }
+        )
+        .contextMenu { fileContextMenu(file) }
+    }
+    
+    // MARK: - Context Menu
+    
+    @ViewBuilder
+    private func fileContextMenu(_ file: RemoteFileItem) -> some View {
+        if file.isDirectory {
+            Button { viewModel.navigateTo(file.path) } label: {
+                Label("Open", systemImage: "folder")
+            }
+            Button { viewModel.createTab(path: file.path) } label: {
+                Label("Open in New Tab", systemImage: "plus.rectangle")
+            }
+        } else {
+            Button { viewModel.openFileEditor(file) } label: {
+                Label("Edit", systemImage: "pencil")
+            }
+            Button { viewModel.downloadFile(file) } label: {
+                Label("Download", systemImage: "square.and.arrow.down")
+            }
+        }
+        
+        Divider()
+        
+        Button { viewModel.startRename(file) } label: {
+            Label("Rename", systemImage: "pencil.line")
+        }
+        Button { viewModel.duplicateFile(file) } label: {
+            Label("Duplicate", systemImage: "plus.square.on.square")
+        }
+        Button { viewModel.copyPath(file) } label: {
+            Label("Copy Path", systemImage: "doc.on.clipboard")
+        }
+        
+        Divider()
+        
+        Button { viewModel.openPermissionsEditor(file) } label: {
+            Label("Permissions (\(file.permissions.numericString))", systemImage: "lock.shield")
+        }
+        
+        Divider()
+        
+        Button(role: .destructive) { viewModel.confirmDelete([file]) } label: {
+            Label("Delete", systemImage: "trash")
+        }
+    }
+    
+    // MARK: - Status Bar
+    
+    private var fileStatusBar: some View {
+        HStack(spacing: AXSpacing.md) {
+            // Item count
+            Text("\(viewModel.displayFiles.count) items")
+                .font(.system(size: 10))
                 .foregroundColor(.axTextMuted)
-                .frame(width: 120, alignment: .leading)
+            
+            if !viewModel.selectedFiles.isEmpty {
+                Text("• \(viewModel.selectedFiles.count) selected")
+                    .font(.system(size: 10))
+                    .foregroundColor(.axAccentBlue)
+            }
             
             Spacer()
             
-            Text("Actions")
-                .font(AXTypography.caption)
-                .fontWeight(.semibold)
-                .foregroundColor(.axTextMuted)
-                .frame(width: 100, alignment: .center)
-        }
-        .padding(.horizontal, AXSpacing.lg)
-        .padding(.vertical, AXSpacing.sm)
-        .background(Color.axBackgroundTertiary)
-    }
-}
-
-// MARK: - File Row
-struct FileRow: View {
-    @State var file: FileItem
-    let level: Int
-    @Binding var selectedFile: FileItem?
-    var onEdit: (FileItem) -> Void
-    
-    var isSelected: Bool {
-        selectedFile?.id == file.id
-    }
-    
-    var body: some View {
-        VStack(spacing: 0) {
-            Button(action: {
-                selectedFile = file
-                if file.isDirectory {
-                    withAnimation(.easeInOut(duration: 0.2)) {
-                        file.isExpanded.toggle()
-                    }
+            // Error message
+            if let error = viewModel.errorMessage {
+                HStack(spacing: AXSpacing.xxs) {
+                    Image(systemName: "exclamationmark.triangle")
+                        .font(.system(size: 9))
+                    Text(error)
+                        .font(.system(size: 10))
+                        .lineLimit(1)
                 }
-            }) {
-                HStack(spacing: AXSpacing.md) {
-                    // Indentation + Expand Icon
-                    HStack(spacing: AXSpacing.xs) {
-                        ForEach(0..<level, id: \.self) { _ in
-                            Rectangle()
-                                .fill(Color.clear)
-                                .frame(width: 16)
-                        }
-                        
-                        if file.isDirectory {
-                            Image(systemName: file.isExpanded ? "chevron.down" : "chevron.right")
-                                .font(.system(size: 10))
-                                .foregroundColor(.axTextMuted)
-                                .frame(width: 16)
-                        } else {
-                            Rectangle()
-                                .fill(Color.clear)
-                                .frame(width: 16)
-                        }
-                        
-                        // File Icon
-                        Image(systemName: fileIcon)
-                            .font(.system(size: 16))
-                            .foregroundColor(fileColor)
-                        
-                        // Name
-                        Text(file.name)
-                            .font(AXTypography.body)
-                            .foregroundColor(.axTextPrimary)
+                .foregroundColor(.axWarning)
+            }
+            
+            // Loading indicator
+            if viewModel.isLoading {
+                ProgressView()
+                    .progressViewStyle(CircularProgressViewStyle(tint: .axAccentBlue))
+                    .scaleEffect(0.5)
+            }
+            
+            // Current path
+            Text(viewModel.currentPath)
+                .font(.system(size: 10, design: .monospaced))
+                .foregroundColor(.axTextMuted)
+                .lineLimit(1)
+        }
+        .padding(.horizontal, AXSpacing.md)
+        .padding(.vertical, 4)
+        .background(Color.axBackgroundSecondary)
+    }
+    
+    // MARK: - Transfer Progress
+    
+    private var transferProgressBar: some View {
+        VStack(spacing: AXSpacing.xs) {
+            ForEach(viewModel.activeTransfers) { transfer in
+                HStack(spacing: AXSpacing.sm) {
+                    Image(systemName: transfer.state == .completed ? "checkmark.circle.fill" :
+                            transfer.state == .failed ? "xmark.circle.fill" : "arrow.up.circle")
+                        .font(.system(size: 12))
+                        .foregroundColor(transfer.state == .completed ? .axSuccess :
+                                            transfer.state == .failed ? .axError : .axAccentBlue)
+                    
+                    Text(transfer.fileName)
+                        .font(.system(size: 11))
+                        .foregroundColor(.axTextPrimary)
+                        .lineLimit(1)
+                    
+                    if transfer.state == .transferring {
+                        ProgressView(value: transfer.percentage)
+                            .progressViewStyle(LinearProgressViewStyle(tint: .axAccentBlue))
+                            .frame(width: 100)
                     }
-                    .frame(width: 300, alignment: .leading)
                     
-                    // Size
-                    Text(fileSize)
-                        .font(AXTypography.caption)
+                    Text(transfer.progressText)
+                        .font(.system(size: 10, design: .monospaced))
                         .foregroundColor(.axTextTertiary)
-                        .frame(width: 80, alignment: .trailing)
-                    
-                    // Permissions
-                    Text(file.permissions)
-                        .font(AXTypography.caption)
-                        .fontWeight(.medium)
-                        .foregroundColor(permissionColor)
-                        .frame(width: 90, alignment: .center)
-                        .monospaced()
-                    
-                    // Modified Date
-                    Text(formatDate(file.modifiedDate))
-                        .font(AXTypography.caption)
-                        .foregroundColor(.axTextTertiary)
-                        .frame(width: 120, alignment: .leading)
                     
                     Spacer()
                     
-                    // Actions
-                    HStack(spacing: AXSpacing.sm) {
-                        if !file.isDirectory {
-                            Button(action: { onEdit(file) }) {
-                                Image(systemName: "pencil")
-                                    .font(.system(size: 11))
-                                    .foregroundColor(.axAccentBlue)
-                                    .frame(width: 26, height: 26)
-                                    .background(Color.axAccentBlue.opacity(0.1))
-                                    .cornerRadius(AXCornerRadius.sm)
-                            }
-                            .buttonStyle(PlainButtonStyle())
-                            .help("Edit")
-                            
-                            Button(action: {}) {
-                                Image(systemName: "arrow.down.circle")
-                                    .font(.system(size: 11))
-                                    .foregroundColor(.axTextSecondary)
-                                    .frame(width: 26, height: 26)
-                                    .background(Color.axSurface)
-                                    .cornerRadius(AXCornerRadius.sm)
-                            }
-                            .buttonStyle(PlainButtonStyle())
-                            .help("Download")
+                    if transfer.state == .transferring {
+                        Button(action: { viewModel.cancelTransfer(transfer) }) {
+                            Image(systemName: "xmark")
+                                .font(.system(size: 9))
+                                .foregroundColor(.axTextMuted)
                         }
-                        
-                        Menu {
-                            if file.isDirectory {
-                                Button("Open") {}
-                                Button("Upload Here") {}
-                            } else {
-                                Button("Edit") { onEdit(file) }
-                                Button("Download") {}
-                                Button("Duplicate") {}
-                            }
-                            Button("Rename") {}
-                            Button("Copy Path") {}
-                            Divider()
-                            Button("Permissions") {}
-                            Divider()
-                            Button("Delete", role: .destructive) {}
-                        } label: {
-                            Image(systemName: "ellipsis")
-                                .font(.system(size: 12))
-                                .foregroundColor(.axTextSecondary)
-                                .frame(width: 26, height: 26)
-                                .background(Color.axSurface)
-                                .cornerRadius(AXCornerRadius.sm)
-                        }
+                        .buttonStyle(PlainButtonStyle())
                     }
-                    .frame(width: 100, alignment: .center)
                 }
-                .padding(.horizontal, AXSpacing.lg)
-                .padding(.vertical, AXSpacing.sm)
-                .background(isSelected ? Color.axAccentBlue.opacity(0.1) : Color.clear)
-                .contentShape(Rectangle())
+            }
+        }
+        .padding(.horizontal, AXSpacing.md)
+        .padding(.vertical, AXSpacing.xs)
+        .background(Color.axBackgroundSecondary)
+    }
+    
+    // MARK: - Inline Editor Header
+    
+    private var inlineEditorHeader: some View {
+        HStack(spacing: AXSpacing.md) {
+            // Back to files
+            Button(action: { viewModel.closeEditor() }) {
+                HStack(spacing: AXSpacing.xs) {
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 11))
+                    Text("Files")
+                        .font(.system(size: 12))
+                }
+                .foregroundColor(.axAccentBlue)
             }
             .buttonStyle(PlainButtonStyle())
             
-            // Children
-            if file.isDirectory && file.isExpanded, let children = file.children {
-                ForEach(children) { child in
-                    FileRow(file: child, level: level + 1, selectedFile: $selectedFile, onEdit: onEdit)
-                }
+            Divider().frame(height: 16)
+            
+            // File icon + name
+            if let file = viewModel.editorFile {
+                Image(systemName: file.iconName)
+                    .font(.system(size: 13))
+                    .foregroundColor(fileColor(for: file))
             }
+            
+            VStack(alignment: .leading, spacing: 0) {
+                HStack(spacing: AXSpacing.xs) {
+                    Text(viewModel.editorFile?.name ?? "Untitled")
+                        .font(AXTypography.subheadline)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.axTextPrimary)
+                    
+                    if viewModel.isEditorDirty {
+                        Circle()
+                            .fill(Color.axWarning)
+                            .frame(width: 6, height: 6)
+                    }
+                }
+                
+                Text(viewModel.editorFile?.path ?? "")
+                    .font(.system(size: 10))
+                    .foregroundColor(.axTextTertiary)
+                    .lineLimit(1)
+            }
+            
+            Spacer()
+            
+            // Language badge
+            if let file = viewModel.editorFile {
+                Text(file.language.displayName)
+                    .font(.system(size: 10, weight: .medium, design: .monospaced))
+                    .foregroundColor(.axAccentBlue)
+                    .padding(.horizontal, AXSpacing.sm)
+                    .padding(.vertical, 2)
+                    .background(Color.axAccentBlue.opacity(0.1))
+                    .cornerRadius(AXCornerRadius.sm)
+            }
+            
+            // Discard
+            Button(action: { viewModel.editorContent = viewModel.editorOriginalContent }) {
+                Text("Discard")
+                    .font(.system(size: 11))
+                    .foregroundColor(.axTextSecondary)
+                    .padding(.horizontal, AXSpacing.sm)
+                    .padding(.vertical, 3)
+                    .background(Color.axSurface)
+                    .cornerRadius(AXCornerRadius.sm)
+                    .overlay(RoundedRectangle(cornerRadius: AXCornerRadius.sm).stroke(Color.axBorder, lineWidth: 1))
+            }
+            .buttonStyle(PlainButtonStyle())
+            .disabled(!viewModel.isEditorDirty)
+            .opacity(viewModel.isEditorDirty ? 1 : 0.4)
+            
+            // Save
+            Button(action: { viewModel.saveFile() }) {
+                HStack(spacing: AXSpacing.xxs) {
+                    if viewModel.isSavingFile {
+                        ProgressView()
+                            .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                            .scaleEffect(0.5)
+                    } else {
+                        Image(systemName: "square.and.arrow.down")
+                            .font(.system(size: 10))
+                    }
+                    Text("Save")
+                        .font(.system(size: 11, weight: .semibold))
+                }
+                .foregroundColor(.white)
+                .padding(.horizontal, AXSpacing.md)
+                .padding(.vertical, 3)
+                .background(viewModel.isEditorDirty ? Color.axAccentBlue : Color.axAccentBlue.opacity(0.4))
+                .cornerRadius(AXCornerRadius.sm)
+            }
+            .buttonStyle(PlainButtonStyle())
+            .disabled(!viewModel.isEditorDirty || viewModel.isSavingFile)
+        }
+        .padding(.horizontal, AXSpacing.md)
+        .padding(.vertical, AXSpacing.sm)
+        .background(Color.axBackgroundSecondary)
+    }
+    
+    // MARK: - New Folder Sheet
+    
+    private var newFolderSheet: some View {
+        NewFolderSheetView(viewModel: viewModel)
+    }
+    
+    // MARK: - Helpers
+    
+    private func fileColor(for file: RemoteFileItem) -> Color {
+        switch file.fileExtension {
+        case "html", "htm": return .orange
+        case "css", "scss": return .blue
+        case "js", "ts", "jsx", "tsx": return .yellow
+        case "json": return .green
+        case "php": return .purple
+        case "py": return .cyan
+        case "sh", "bash": return .mint
+        case "conf", "env", "ini", "md", "yml", "yaml": return .gray
+        case "log": return .secondary
+        case "png", "jpg", "gif", "svg": return .pink
+        case "zip", "tar", "gz": return .brown
+        case "key", "pem", "crt", "avx": return .red
+        default: return .axTextSecondary
         }
     }
     
-    private var fileIcon: String {
-        if file.isDirectory {
-            return "folder.fill"
-        }
-        let ext = (file.name as NSString).pathExtension.lowercased()
-        switch ext {
-        case "html", "htm": return "doc.text.magnifyingglass"
-        case "css": return "paintbrush"
-        case "js", "ts": return "doc.plaintext"
-        case "json": return "doc.text"
-        case "md": return "doc.text"
-        case "sh", "bash": return "terminal"
-        case "log": return "doc.text.below.ecg"
-        case "conf", "ini", "env": return "gearshape"
-        case "php": return "p.circle"
-        case "py": return "p.circle.fill"
-        case "go": return "g.circle"
-        default: return "doc"
-        }
-    }
-    
-    private var fileColor: Color {
-        if file.isDirectory {
-            return .axAccentBlue
-        }
-        let ext = (file.name as NSString).pathExtension.lowercased()
-        switch ext {
-        case "html", "htm": return .axError
-        case "css": return .axInfo
-        case "js", "ts": return .axWarning
-        case "sh", "bash": return .axSuccess
-        case "conf", "ini", "env": return .axTextSecondary
-        default: return .axTextTertiary
-        }
-    }
-    
-    private var fileSize: String {
-        guard let size = file.size else { return "--" }
-        if size < 1024 {
-            return "\(size) B"
-        } else if size < 1024 * 1024 {
-            return String(format: "%.1f KB", Double(size) / 1024)
-        } else {
-            return String(format: "%.1f MB", Double(size) / (1024 * 1024))
-        }
-    }
-    
-    private var permissionColor: Color {
-        if file.permissions.hasPrefix("d") {
-            return .axAccentBlue
-        } else if file.permissions.hasPrefix("-") && file.permissions.contains("x") {
-            return .axSuccess
-        } else {
-            return .axTextTertiary
-        }
+    private func permissionColor(_ perms: FilePermissions) -> Color {
+        if perms.ownerWrite && perms.othersWrite { return .axWarning }
+        if perms.ownerExecute { return .axAccentGreen }
+        return .axTextSecondary
     }
     
     private func formatDate(_ date: Date) -> String {
         let formatter = RelativeDateTimeFormatter()
-        formatter.unitsStyle = .short
+        formatter.unitsStyle = .abbreviated
         return formatter.localizedString(for: date, relativeTo: Date())
     }
-}
-
-// MARK: - File Status Bar
-struct FileStatusBar: View {
-    let selectedFile: FileItem?
-    let itemCount: Int
     
-    var body: some View {
-        HStack(spacing: AXSpacing.md) {
-            if let file = selectedFile {
-                HStack(spacing: AXSpacing.sm) {
-                    Image(systemName: file.isDirectory ? "folder" : "doc")
-                        .font(.system(size: 12))
-                        .foregroundColor(.axTextMuted)
-                    
-                    Text(file.name)
-                        .font(AXTypography.caption)
-                        .foregroundColor(.axTextSecondary)
-                    
-                    if let size = file.size {
-                        Text("•")
-                            .foregroundColor(.axTextMuted)
-                        
-                        Text(formatSize(size))
-                            .font(AXTypography.caption)
-                            .foregroundColor(.axTextTertiary)
-                    }
-                }
-                
-                Spacer()
-                
-                Text(file.permissions)
-                    .font(AXTypography.caption)
-                    .foregroundColor(.axTextTertiary)
-                    .monospaced()
-            } else {
-                Text("\(itemCount) items")
-                    .font(AXTypography.caption)
-                    .foregroundColor(.axTextSecondary)
-                
-                Spacer()
+    private func showUploadPanel() {
+        #if os(macOS)
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = true
+        panel.canChooseDirectories = false
+        panel.allowsMultipleSelection = true
+        panel.begin { response in
+            if response == .OK {
+                viewModel.uploadFiles(urls: panel.urls)
             }
         }
-        .padding(.horizontal, AXSpacing.lg)
-        .padding(.vertical, AXSpacing.sm)
-        .background(Color.axBackgroundTertiary)
+        #endif
     }
     
-    private func formatSize(_ size: Int64) -> String {
-        if size < 1024 {
-            return "\(size) B"
-        } else if size < 1024 * 1024 {
-            return String(format: "%.1f KB", Double(size) / 1024)
-        } else {
-            return String(format: "%.1f MB", Double(size) / (1024 * 1024))
+    private func handleFileDrop(_ providers: [NSItemProvider]) {
+        for provider in providers {
+            provider.loadItem(forTypeIdentifier: UTType.fileURL.identifier, options: nil) { item, _ in
+                guard let data = item as? Data,
+                      let url = URL(dataRepresentation: data, relativeTo: nil) else { return }
+                Task { @MainActor in
+                    viewModel.uploadFiles(urls: [url])
+                }
+            }
         }
     }
 }
 
-// MARK: - Upload File View
-struct UploadFileView: View {
-    @Environment(\.dismiss) private var dismiss
-    @State private var selectedFiles: [String] = []
-    
-    var body: some View {
-        VStack(spacing: AXSpacing.xl) {
-            HStack {
-                Text("Upload Files")
-                    .font(AXTypography.title)
-                    .foregroundColor(.axTextPrimary)
-                
-                Spacer()
-                
-                Button(action: { dismiss() }) {
-                    Image(systemName: "xmark")
-                        .font(.system(size: 14))
-                        .foregroundColor(.axTextSecondary)
-                        .frame(width: 28, height: 28)
-                        .background(Color.axSurface)
-                        .cornerRadius(AXCornerRadius.sm)
-                }
-                .buttonStyle(PlainButtonStyle())
-            }
-            
-            Divider()
-                .background(Color.axBorder)
-            
-            // Drop Zone
-            VStack(spacing: AXSpacing.lg) {
-                Image(systemName: "arrow.up.doc")
-                    .font(.system(size: 48))
-                    .foregroundColor(.axAccentBlue)
-                
-                Text("Drag & Drop Files Here")
-                    .font(AXTypography.headline)
-                    .foregroundColor(.axTextPrimary)
-                
-                Text("or")
-                    .font(AXTypography.caption)
-                    .foregroundColor(.axTextTertiary)
-                
-                Button(action: {}) {
-                    Text("Browse Files")
-                        .font(AXTypography.subheadline)
-                        .fontWeight(.medium)
-                        .foregroundColor(.axAccentBlue)
-                        .padding(.horizontal, AXSpacing.lg)
-                        .padding(.vertical, AXSpacing.sm)
-                        .background(Color.axAccentBlue.opacity(0.1))
-                        .cornerRadius(AXCornerRadius.md)
-                }
-                .buttonStyle(PlainButtonStyle())
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(Color.axSurface)
-            .overlay(
-                RoundedRectangle(cornerRadius: AXCornerRadius.lg)
-                    .stroke(Color.axAccentBlue.opacity(0.3), style: StrokeStyle(lineWidth: 2, dash: [8]))
-            )
-            .cornerRadius(AXCornerRadius.lg)
-            
-            HStack(spacing: AXSpacing.md) {
-                Button(action: { dismiss() }) {
-                    Text("Cancel")
-                        .font(AXTypography.subheadline)
-                        .foregroundColor(.axTextSecondary)
-                        .padding(.horizontal, AXSpacing.lg)
-                        .padding(.vertical, AXSpacing.sm)
-                }
-                .buttonStyle(PlainButtonStyle())
-                
-                Button(action: { dismiss() }) {
-                    Text("Upload")
-                        .font(AXTypography.subheadline)
-                        .fontWeight(.semibold)
-                        .foregroundColor(.axBackground)
-                        .padding(.horizontal, AXSpacing.lg)
-                        .padding(.vertical, AXSpacing.sm)
-                        .background(Color.axAccentBlue)
-                        .cornerRadius(AXCornerRadius.md)
-                }
-                .buttonStyle(PlainButtonStyle())
-            }
-        }
-        .padding(AXSpacing.xl)
-        .frame(width: 500, height: 450)
-        .background(Color.axBackground)
-    }
-}
+// MARK: - New Folder Sheet View
 
-// MARK: - New Folder View
-struct NewFolderView: View {
-    @Environment(\.dismiss) private var dismiss
+struct NewFolderSheetView: View {
+    @ObservedObject var viewModel: FileManagerViewModel
     @State private var folderName = ""
     
     var body: some View {
-        VStack(spacing: AXSpacing.xl) {
-            HStack {
-                Text("New Folder")
-                    .font(AXTypography.title)
-                    .foregroundColor(.axTextPrimary)
-                
-                Spacer()
-                
-                Button(action: { dismiss() }) {
-                    Image(systemName: "xmark")
-                        .font(.system(size: 14))
-                        .foregroundColor(.axTextSecondary)
-                        .frame(width: 28, height: 28)
-                        .background(Color.axSurface)
-                        .cornerRadius(AXCornerRadius.sm)
-                }
-                .buttonStyle(PlainButtonStyle())
-            }
+        VStack(spacing: AXSpacing.lg) {
+            Text("New Folder")
+                .font(AXTypography.headline)
+                .foregroundColor(.axTextPrimary)
             
-            Divider()
-                .background(Color.axBorder)
-            
-            VStack(alignment: .leading, spacing: AXSpacing.sm) {
+            VStack(alignment: .leading, spacing: AXSpacing.xs) {
                 Text("Folder Name")
                     .font(AXTypography.caption)
                     .foregroundColor(.axTextSecondary)
-                
-                TextField("new-folder", text: $folderName)
-                    .font(AXTypography.body)
-                    .foregroundColor(.axTextPrimary)
-                    .padding(AXSpacing.md)
-                    .background(Color.axSurface)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: AXCornerRadius.md)
-                            .stroke(Color.axBorder, lineWidth: 1)
-                    )
-                    .cornerRadius(AXCornerRadius.md)
+                TextField("folder-name", text: $folderName)
+                    .textFieldStyle(AXTextFieldStyle())
+                    .onSubmit {
+                        createIfValid()
+                    }
             }
             
-            Spacer()
-            
             HStack(spacing: AXSpacing.md) {
-                Button(action: { dismiss() }) {
-                    Text("Cancel")
-                        .font(AXTypography.subheadline)
-                        .foregroundColor(.axTextSecondary)
-                        .padding(.horizontal, AXSpacing.lg)
-                        .padding(.vertical, AXSpacing.sm)
-                }
-                .buttonStyle(PlainButtonStyle())
-                
-                Button(action: { dismiss() }) {
-                    Text("Create")
-                        .font(AXTypography.subheadline)
-                        .fontWeight(.semibold)
-                        .foregroundColor(.axBackground)
-                        .padding(.horizontal, AXSpacing.lg)
-                        .padding(.vertical, AXSpacing.sm)
-                        .background(Color.axAccentGreen)
-                        .cornerRadius(AXCornerRadius.md)
-                }
-                .buttonStyle(PlainButtonStyle())
+                Button("Cancel") { viewModel.showNewFolderSheet = false }
+                    .buttonStyle(AXSecondaryButtonStyle())
+                Button("Create") { createIfValid() }
+                    .buttonStyle(AXPrimaryButtonStyle())
+                    .disabled(folderName.trimmingCharacters(in: .whitespaces).isEmpty)
             }
         }
         .padding(AXSpacing.xl)
-        .frame(width: 350, height: 250)
-        .background(Color.axBackground)
-    }
-}
-
-// MARK: - File Editor View
-struct FileEditorView: View {
-    let file: FileItem
-    @Environment(\.dismiss) private var dismiss
-    @State private var content = "// Sample file content\nfunction hello() {\n  console.log('Hello, AevonX!');\n}\n"
-    
-    var body: some View {
-        VStack(spacing: 0) {
-            // Header
-            HStack {
-                VStack(alignment: .leading, spacing: AXSpacing.xxs) {
-                    Text("Editing: \(file.name)")
-                        .font(AXTypography.headline)
-                        .foregroundColor(.axTextPrimary)
-                    
-                    Text("\(formatSize(file.size ?? 0)) • \(file.permissions)")
-                        .font(AXTypography.caption)
-                        .foregroundColor(.axTextTertiary)
-                }
-                
-                Spacer()
-                
-                HStack(spacing: AXSpacing.sm) {
-                    Button(action: {}) {
-                        Image(systemName: "arrow.down.circle")
-                            .font(.system(size: 14))
-                            .foregroundColor(.axTextSecondary)
-                            .frame(width: 32, height: 32)
-                            .background(Color.axSurface)
-                            .cornerRadius(AXCornerRadius.sm)
-                    }
-                    .buttonStyle(PlainButtonStyle())
-                    .help("Download")
-                    
-                    Button(action: { dismiss() }) {
-                        Image(systemName: "xmark")
-                            .font(.system(size: 14))
-                            .foregroundColor(.axTextSecondary)
-                            .frame(width: 32, height: 32)
-                            .background(Color.axSurface)
-                            .cornerRadius(AXCornerRadius.sm)
-                    }
-                    .buttonStyle(PlainButtonStyle())
-                }
-            }
-            .padding(AXSpacing.lg)
-            .background(Color.axBackgroundSecondary)
-            
-            Divider()
-                .background(Color.axBorder)
-            
-            // Editor
-            TextEditor(text: $content)
-                .font(.system(size: 13, design: .monospaced))
-                .foregroundColor(.axTextPrimary)
-                .background(Color.axBackground)
-                .scrollContentBackground(.hidden)
-            
-            Divider()
-                .background(Color.axBorder)
-            
-            // Footer
-            HStack {
-                Text("UTF-8")
-                    .font(AXTypography.caption2)
-                    .foregroundColor(.axTextMuted)
-                
-                Spacer()
-                
-                HStack(spacing: AXSpacing.md) {
-                    Button(action: { dismiss() }) {
-                        Text("Cancel")
-                            .font(AXTypography.subheadline)
-                            .foregroundColor(.axTextSecondary)
-                            .padding(.horizontal, AXSpacing.md)
-                            .padding(.vertical, AXSpacing.sm)
-                    }
-                    .buttonStyle(PlainButtonStyle())
-                    
-                    Button(action: { dismiss() }) {
-                        Text("Save Changes")
-                            .font(AXTypography.subheadline)
-                            .fontWeight(.semibold)
-                            .foregroundColor(.axBackground)
-                            .padding(.horizontal, AXSpacing.md)
-                            .padding(.vertical, AXSpacing.sm)
-                            .background(Color.axAccentBlue)
-                            .cornerRadius(AXCornerRadius.md)
-                    }
-                    .buttonStyle(PlainButtonStyle())
-                }
-            }
-            .padding(AXSpacing.lg)
-            .background(Color.axBackgroundSecondary)
-        }
-        .frame(width: 700, height: 500)
+        .frame(width: 340)
         .background(Color.axBackground)
     }
     
-    private func formatSize(_ size: Int64) -> String {
-        if size < 1024 {
-            return "\(size) B"
-        } else if size < 1024 * 1024 {
-            return String(format: "%.1f KB", Double(size) / 1024)
-        } else {
-            return String(format: "%.1f MB", Double(size) / (1024 * 1024))
-        }
+    private func createIfValid() {
+        let name = folderName.trimmingCharacters(in: .whitespaces)
+        guard !name.isEmpty else { return }
+        viewModel.createFolder(name: name)
+        viewModel.showNewFolderSheet = false
     }
-}
-
-#Preview {
-    FilesTab()
-        .frame(height: 600)
-        .background(Color.axBackground)
 }
