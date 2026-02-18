@@ -116,9 +116,7 @@ public final class WebsiteDetailViewModel: ObservableObject {
         do {
             let updatedCore = try await websiteManager.getWebsiteConfiguration(websiteId: website.domain, serverId: serverId)
 
-            print("📥 Loading website details...")
-            print("   Received PHP Version: \(updatedCore.phpVersion ?? "nil")")
-            print("   Received Document Root: \(updatedCore.documentRoot ?? "nil")")
+            CoreLogger.shared.debug("Loading website details - PHP: \(updatedCore.phpVersion ?? "nil"), Root: \(updatedCore.documentRoot ?? "nil")", module: "WebsiteDetail")
 
             // Sync UI model
             self.website.aliases = updatedCore.aliases
@@ -130,9 +128,7 @@ public final class WebsiteDetailViewModel: ObservableObject {
             self.phpVersion = updatedCore.phpVersion ?? "8.2"
             self.documentRoot = updatedCore.documentRoot ?? ""
 
-            print("✅ Website details loaded")
-            print("   Local phpVersion: \(self.phpVersion)")
-            print("   Local documentRoot: \(self.documentRoot)")
+            CoreLogger.shared.debug("Website details loaded - PHP: \(self.phpVersion), Root: \(self.documentRoot)", module: "WebsiteDetail")
 
             // Start polling
             startMonitoring()
@@ -143,7 +139,7 @@ public final class WebsiteDetailViewModel: ObservableObject {
             // Load all section ViewModels in parallel
             await loadAllSections()
         } catch {
-            print("Failed to load website details: \(error)")
+            CoreLogger.shared.debug("Failed to load website details: \(error)", module: "WebsiteDetail")
         }
 
         isLoadingAll = false
@@ -190,9 +186,7 @@ public final class WebsiteDetailViewModel: ObservableObject {
         isSavingConfig = true
         errorMessage = nil
 
-        print("💾 Saving configuration...")
-        print("   PHP Version: \(phpVersion)")
-        print("   Document Root: \(documentRoot)")
+        CoreLogger.shared.debug("Saving config - PHP: \(phpVersion), Root: \(documentRoot)", module: "WebsiteDetail")
 
         do {
             // Update the core model
@@ -218,13 +212,12 @@ public final class WebsiteDetailViewModel: ObservableObject {
             website.documentRoot = documentRoot
             website.phpVersion = phpVersion
 
-            print("✅ Configuration saved successfully")
-            print("   Local website.phpVersion: \(website.phpVersion ?? "nil")")
+            CoreLogger.shared.debug("Configuration saved - phpVersion: \(website.phpVersion ?? "nil")", module: "WebsiteDetail")
 
             toastManager.showSuccess("Configuration Updated")
         } catch {
             errorMessage = "Failed to save configuration: \(error.localizedDescription)"
-            print("❌ Failed to save: \(error.localizedDescription)")
+            CoreLogger.shared.debug("Failed to save config: \(error.localizedDescription)", module: "WebsiteDetail")
             toastManager.showError(errorMessage!)
         }
 
@@ -266,6 +259,13 @@ public final class WebsiteDetailViewModel: ObservableObject {
                 }
             }
     }
+
+    /// Stops all timers and background monitoring
+    public func stopMonitoring() {
+        statsTimer?.cancel()
+        statsTimer = nil
+        trafficAnalyticsVM.stopAutoRefresh()
+    }
     
     /// Fetches live connection stats via SSH (Zero-Mock)
     public func fetchRealTimeStats() async {
@@ -286,7 +286,7 @@ public final class WebsiteDetailViewModel: ObservableObject {
             self.website.connectionList = self.connectionList
             
         } catch {
-            print("Failed to fetch real-time stats: \(error)")
+            CoreLogger.shared.debug("Failed to fetch real-time stats: \(error)", module: "WebsiteDetail")
         }
         
         isLoadingStats = false
@@ -342,7 +342,7 @@ public final class WebsiteDetailViewModel: ObservableObject {
         do {
             installedPHPVersions = try await websiteManager.getInstalledPHPVersions(serverId: serverId)
         } catch {
-            print("Failed to fetch PHP versions: \(error)")
+            CoreLogger.shared.debug("Failed to fetch PHP versions: \(error)", module: "WebsiteDetail")
         }
         
         isLoadingPHPVersions = false
@@ -361,19 +361,19 @@ public final class WebsiteDetailViewModel: ObservableObject {
     /// Fetches subdirectories for the current browsing path
     public func fetchBrowsingItems(path: String) async {
         guard let serverId = serverId else {
-            print("⚠️ No serverId available")
+            CoreLogger.shared.debug("No serverId available", module: "WebsiteDetail")
             return
         }
         isLoadingBrowsingItems = true
 
-        print("📁 Fetching directories for path: \(path)")
+        CoreLogger.shared.debug("Fetching directories for path: \(path)", module: "WebsiteDetail")
 
         do {
             browsingItems = try await websiteManager.listDirectories(path: path, serverId: serverId)
-            print("✅ Found \(browsingItems.count) directories")
+            CoreLogger.shared.debug("Found \(browsingItems.count) directories", module: "WebsiteDetail")
         } catch {
             errorMessage = "Failed to browse: \(error.localizedDescription)"
-            print("❌ Error fetching directories: \(error.localizedDescription)")
+            CoreLogger.shared.debug("Error fetching directories: \(error.localizedDescription)", module: "WebsiteDetail")
         }
 
         isLoadingBrowsingItems = false
@@ -388,16 +388,16 @@ public final class WebsiteDetailViewModel: ObservableObject {
     
     /// Goes back to the parent directory
     public func backToParent() {
-        print("⬆️ backToParent called. Current path: \(currentBrowsingPath)")
+        CoreLogger.shared.debug("backToParent called. Current path: \(currentBrowsingPath)", module: "WebsiteDetail")
 
         // Don't go up if already at root
         guard currentBrowsingPath != "/" else {
-            print("⚠️ Already at root, cannot go up")
+            CoreLogger.shared.debug("Already at root, cannot go up", module: "WebsiteDetail")
             return
         }
 
         let components = currentBrowsingPath.split(separator: "/")
-        print("📊 Path components: \(components)")
+        CoreLogger.shared.debug("Path components: \(components)", module: "WebsiteDetail")
 
         if components.count > 1 {
             currentBrowsingPath = "/" + components.dropLast().joined(separator: "/")
@@ -408,7 +408,7 @@ public final class WebsiteDetailViewModel: ObservableObject {
             currentBrowsingPath = "/"
         }
 
-        print("✅ New path: \(currentBrowsingPath)")
+        CoreLogger.shared.debug("New path: \(currentBrowsingPath)", module: "WebsiteDetail")
         Task { await fetchBrowsingItems(path: currentBrowsingPath) }
     }
     

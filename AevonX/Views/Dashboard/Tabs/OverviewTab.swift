@@ -296,7 +296,7 @@ struct OverviewTab: View {
         .onAppear {
             // Note: Connection is managed by parent ServerDashboardView
             // We don't auto-connect here to avoid duplicate connections
-            print("[OverviewTab] onAppear - isConnected: \(viewModel.isConnected)")
+            CoreLogger.shared.debug("onAppear - isConnected: \(viewModel.isConnected)", module: "OverviewTab")
         }
         .onChange(of: scenePhase) { _, newPhase in
             switch newPhase {
@@ -659,69 +659,52 @@ struct SparklineView: View {
     let color: Color
     let lineWidth: CGFloat
     let fillGradient: Bool
-    
+
+    /// Produces the array of CGPoints for the given geometry size.
+    private func sparklinePoints(in size: CGSize) -> [CGPoint] {
+        guard data.count > 1,
+              let maxValue = data.max(),
+              let minValue = data.min(),
+              maxValue > minValue else { return [] }
+
+        let stepX = size.width / CGFloat(data.count - 1)
+        let range = maxValue - minValue
+        return data.enumerated().map { index, value in
+            CGPoint(
+                x: CGFloat(index) * stepX,
+                y: size.height - ((value - minValue) / range) * size.height
+            )
+        }
+    }
+
     var body: some View {
         GeometryReader { geometry in
-            Path { path in
-                guard data.count > 1,
-                      let maxValue = data.max(),
-                      let minValue = data.min(),
-                      maxValue > minValue else { return }
-                
-                let width = geometry.size.width
-                let height = geometry.size.height
-                let stepX = width / CGFloat(data.count - 1)
-                let range = maxValue - minValue
-                
-                var points: [CGPoint] = []
-                for (index, value) in data.enumerated() {
-                    let x = CGFloat(index) * stepX
-                    let y = height - ((value - minValue) / range) * height
-                    points.append(CGPoint(x: x, y: y))
-                }
-                
-                guard let firstPoint = points.first else { return }
-                path.move(to: firstPoint)
-                
-                for point in points.dropFirst() {
-                    path.addLine(to: point)
-                }
-            }
-            .stroke(color, lineWidth: lineWidth)
-            .background(
-                fillGradient ? 
+            let points = sparklinePoints(in: geometry.size)
+
+            if !points.isEmpty {
+                // Stroke path
                 Path { path in
-                    guard data.count > 1,
-                          let maxValue = data.max(),
-                          let minValue = data.min(),
-                          maxValue > minValue else { return }
-                    
-                    let width = geometry.size.width
-                    let height = geometry.size.height
-                    let stepX = width / CGFloat(data.count - 1)
-                    let range = maxValue - minValue
-                    
-                    var points: [CGPoint] = []
-                    for (index, value) in data.enumerated() {
-                        let x = CGFloat(index) * stepX
-                        let y = height - ((value - minValue) / range) * height
-                        points.append(CGPoint(x: x, y: y))
-                    }
-                    
-                    guard let firstPoint = points.first else { return }
-                    path.move(to: firstPoint)
-                    
+                    path.move(to: points[0])
                     for point in points.dropFirst() {
                         path.addLine(to: point)
                     }
-                    
-                    // Close the path for fill
-                    path.addLine(to: CGPoint(x: width, y: height))
-                    path.addLine(to: CGPoint(x: 0, y: height))
-                    path.closeSubpath()
                 }
-                .fill(color.opacity(0.1)) : nil
-            )
+                .stroke(color, lineWidth: lineWidth)
+
+                // Fill gradient (optional)
+                if fillGradient {
+                    Path { path in
+                        path.move(to: points[0])
+                        for point in points.dropFirst() {
+                            path.addLine(to: point)
+                        }
+                        path.addLine(to: CGPoint(x: geometry.size.width, y: geometry.size.height))
+                        path.addLine(to: CGPoint(x: 0, y: geometry.size.height))
+                        path.closeSubpath()
+                    }
+                    .fill(color.opacity(0.1))
+                }
+            }
         }
     }
 }

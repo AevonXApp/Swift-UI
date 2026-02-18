@@ -277,7 +277,7 @@ public struct AXAdvancedLogsView: View {
 
     private var logsTable: some View {
         ScrollView {
-            VStack(spacing: 0) {
+            LazyVStack(spacing: 0) {
                 // Table Header
                 tableHeader
 
@@ -859,8 +859,12 @@ public final class AXLogsViewModel: ObservableObject {
     @Published var showIPBlockSheet: Bool = false
     @Published var selectedIP: String? = nil
 
+    /// Cached filtered & sorted logs — updated via Combine when inputs change
+    @Published var filteredLogs: [AXLogEntryDisplay] = []
+
     private let source: AXLogSource
     private let serverId: String?
+    private var cancellables = Set<AnyCancellable>()
     
     // Callbacks for UI feedback
     var onSuccess: ((String) -> Void)?
@@ -880,13 +884,27 @@ public final class AXLogsViewModel: ObservableObject {
         self.serverId = serverId
         self.onSuccess = onSuccess
         self.onError = onError
+
+        // Set up Combine pipeline to recompute filteredLogs when any input changes
+        Publishers.CombineLatest4(
+            $selectedTab,
+            $searchText.debounce(for: .milliseconds(150), scheduler: RunLoop.main),
+            $statusFilter,
+            $sortOption
+        )
+        .combineLatest($accessLogs, $errorLogs)
+        .sink { [weak self] _ in
+            self?.updateFilteredLogs()
+        }
+        .store(in: &cancellables)
     }
 
     var allLogs: [AXLogEntryDisplay] {
         accessLogs + errorLogs
     }
 
-    var filteredLogs: [AXLogEntryDisplay] {
+    /// Recomputes the cached filteredLogs from current state
+    private func updateFilteredLogs() {
         var logs: [AXLogEntryDisplay]
 
         // Filter by tab
@@ -927,7 +945,7 @@ public final class AXLogsViewModel: ObservableObject {
             logs.sort { ($0.statusCode ?? 0) < ($1.statusCode ?? 0) }
         }
 
-        return logs
+        filteredLogs = logs
     }
 
     var statusFilterLabel: String {

@@ -156,8 +156,11 @@ public class ServerConnectionViewModel: ObservableObject {
     /// Currently selected plugin-injected sidebar tab (nil = no plugin tab selected)
     @Published var selectedPluginTab: HookPluginDefinition? = nil
 
-    /// Navigation path for the detail area
+    /// Navigation path for the detail area (legacy, kept for compatibility)
     @Published var navigationPath = NavigationPath()
+
+    /// Active plugin configuration being shown (replaces NavigationStack navigation)
+    @Published var activeConfigPlugin: Plugin? = nil
     
     /// Whether to show connection error alert
     @Published var showConnectionError: Bool = false

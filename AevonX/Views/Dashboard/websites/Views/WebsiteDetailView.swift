@@ -23,5 +23,8 @@ struct WebsiteDetailView: View {
             .task {
                 await viewModel.loadAllSections()
             }
+            .onDisappear {
+                viewModel.stopMonitoring()
+            }
     }
 }

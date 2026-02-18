@@ -44,8 +44,7 @@ struct PluginComponentRenderer: View {
             PluginFormComponent(plugin: plugin, serverId: serverId, context: context)
 
         case .chart:
-            // Chart component — falls back to data table for now
-            PluginDataTableComponent(plugin: plugin, serverId: serverId, context: context)
+            PluginPageComponent(plugin: plugin, serverId: serverId, context: context)
 
         case .timeline:
             PluginTableComponent(plugin: plugin, serverId: serverId, context: context)

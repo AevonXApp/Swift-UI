@@ -61,7 +61,7 @@ public final class TrafficAnalyticsViewModel: ObservableObject {
                         timeRange: self.selectedTimeRange
                     )
                 } catch {
-                    print("Failed to load statistics: \(error)")
+                    CoreLogger.shared.debug("Failed to load statistics: \(error)", module: "TrafficAnalytics")
                 }
             }
 
@@ -74,7 +74,7 @@ public final class TrafficAnalyticsViewModel: ObservableObject {
                         timeRange: self.selectedTimeRange
                     )
                 } catch {
-                    print("Failed to load bandwidth data: \(error)")
+                    CoreLogger.shared.debug("Failed to load bandwidth data: \(error)", module: "TrafficAnalytics")
                 }
             }
 
@@ -87,7 +87,7 @@ public final class TrafficAnalyticsViewModel: ObservableObject {
                         limit: 10
                     )
                 } catch {
-                    print("Failed to load top endpoints: \(error)")
+                    CoreLogger.shared.debug("Failed to load top endpoints: \(error)", module: "TrafficAnalytics")
                 }
             }
         }

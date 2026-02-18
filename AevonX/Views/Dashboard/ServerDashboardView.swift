@@ -41,66 +41,72 @@ struct ServerDashboardView: View {
             .frame(minWidth: 260)
             .background(Color.axSurface.opacity(0.4))
         } detail: {
-            // Right Content Area
-            NavigationStack(path: $viewModel.navigationPath) {
+            // Right Content Area — renders directly, no NavigationStack,
+            // to avoid macOS safe-area gap from NavigationStack's implicit toolbar.
+            if let configPlugin = viewModel.activeConfigPlugin {
+                PluginConfigurationView(
+                    viewModel: PluginConfigurationViewModel(plugin: configPlugin, serverId: serverId),
+                    onBack: { viewModel.activeConfigPlugin = nil }
+                )
+            } else {
                 VStack(spacing: 0) {
-                    // Main Content
-                    Group {
-                        if let pluginTab = viewModel.selectedPluginTab {
-                            // Plugin-injected page
-                            PluginPageComponent(
+                    if let pluginTab = viewModel.selectedPluginTab {
+                        if pluginTab.component == .dataTable || pluginTab.component == .chart {
+                            PluginComponentRenderer(
                                 plugin: pluginTab,
                                 serverId: serverId,
                                 context: [:]
                             )
                         } else {
-                            switch viewModel.selectedTab {
-                            case .overview:
-                                OverviewTab(server: server, serverId: serverId, viewModel: viewModel)
-                            case .websites:
-                                ModernWebsitesTab(server: server, serverId: serverId, connectionViewModel: viewModel)
-                            case .databases:
-                                ModernDatabasesTab(server: server, serverId: serverId, connectionViewModel: viewModel)
-                            case .applications:
-                                ApplicationsTab(server: server, serverId: serverId, connectionViewModel: viewModel)
-                            case .docker:
-                                DockerDetailView(server: server, serverId: serverId, connectionViewModel: viewModel)
-                            case .terminal:
-                                TerminalTab(server: server, serverId: serverId, viewModel: viewModel)
-                            case .files:
-                                FilesTab(serverId: serverId, connectionViewModel: viewModel)
-                            case .plugins:
-                                PluginsTab(server: server, serverId: serverId, connectionViewModel: viewModel)
-                            case .settings:
-                                ServerSettingsTab(server: server)
-                            }
+                            PluginPageComponent(
+                                plugin: pluginTab,
+                                serverId: serverId,
+                                context: [:]
+                            )
+                        }
+                    } else {
+                        switch viewModel.selectedTab {
+                        case .overview:
+                            OverviewTab(server: server, serverId: serverId, viewModel: viewModel)
+                        case .websites:
+                            ModernWebsitesTab(server: server, serverId: serverId, connectionViewModel: viewModel)
+                        case .databases:
+                            ModernDatabasesTab(server: server, serverId: serverId, connectionViewModel: viewModel)
+                        case .applications:
+                            ApplicationsTab(server: server, serverId: serverId, connectionViewModel: viewModel)
+                        case .docker:
+                            DockerDetailView(server: server, serverId: serverId, connectionViewModel: viewModel)
+                        case .terminal:
+                            TerminalTab(server: server, serverId: serverId, viewModel: viewModel)
+                        case .files:
+                            FilesTab(serverId: serverId, connectionViewModel: viewModel)
+                        case .plugins:
+                            PluginsTab(server: server, serverId: serverId, connectionViewModel: viewModel)
+                        case .settings:
+                            ServerSettingsTab(server: server)
                         }
                     }
-                    .background(Color.axBackground)
                 }
-                .navigationDestination(for: DashboardDestination.self) { destination in
-                    switch destination {
-                    case .pluginConfig(let plugin):
-                        PluginConfigurationView(
-                            viewModel: PluginConfigurationViewModel(plugin: plugin, serverId: serverId),
-                            onBack: { viewModel.navigationPath = NavigationPath() }
-                        )
-                    }
-                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(Color.axBackground)
+                #if os(macOS)
+                .navigationTitle("")
+                .toolbar(.hidden)
+                #endif
             }
         }
         .background(Color.axBackground)
         .frame(minWidth: 800, minHeight: 600)
         .onChange(of: viewModel.selectedTab) { old, newValue in
-            viewModel.navigationPath = NavigationPath()
+            viewModel.activeConfigPlugin = nil
             viewModel.selectedPluginTab = nil
         }
         .onAppear {
             // Auto-connect when dashboard appears if not already connected
-            print("[ServerDashboardView] onAppear - isConnected: \(viewModel.isConnected), isConnecting: \(viewModel.isConnecting)")
+            CoreLogger.shared.debug("onAppear - isConnected: \(viewModel.isConnected), isConnecting: \(viewModel.isConnecting)", module: "ServerDashboardView")
             Task {
                 if !viewModel.isConnected && !viewModel.isConnecting {
-                    print("[ServerDashboardView] Auto-connecting...")
+                    CoreLogger.shared.debug("Auto-connecting...", module: "ServerDashboardView")
                     await viewModel.connect()
                 }
             }
