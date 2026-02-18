@@ -59,6 +59,14 @@ enum DashboardTab: String, CaseIterable, Identifiable {
     }
 }
 
+/// A dynamically injected sidebar tab from the Hook & Plugin System
+struct PluginSidebarTab: Identifiable, Equatable {
+    let id: String        // plugin.id
+    let name: String      // plugin.name
+    let icon: String      // plugin.icon ?? "puzzlepiece"
+    let pluginId: String  // same as id, for lookup in HookRegistry
+}
+
 /// Navigation destinations for the dashboard detail area
 enum DashboardDestination: Hashable {
     case pluginConfig(Plugin)
@@ -144,7 +152,10 @@ public class ServerConnectionViewModel: ObservableObject {
     
     /// Currently selected dashboard tab
     @Published var selectedTab: DashboardTab = .overview
-    
+
+    /// Currently selected plugin-injected sidebar tab (nil = no plugin tab selected)
+    @Published var selectedPluginTab: HookPluginDefinition? = nil
+
     /// Navigation path for the detail area
     @Published var navigationPath = NavigationPath()
     

@@ -1,3 +1,7 @@
+//
+//  DashboardSidebar.swift
+//  AevonX
+//
 
 import SwiftUI
 import AevonXCore
@@ -6,7 +10,10 @@ struct DashboardSidebar: View {
     let server: Server
     @ObservedObject var viewModel: ServerConnectionViewModel
     let onBack: () -> Void
-    
+
+    @ObservedObject private var hookRegistry = HookRegistry.shared
+    @State private var selectedPluginTabId: String? = nil
+
     var body: some View {
         VStack(spacing: 0) {
             // Header: Back & Server Info
@@ -26,7 +33,7 @@ struct DashboardSidebar: View {
                     ZStack {
                         RoundedRectangle(cornerRadius: AXCornerRadius.sm)
                             .fill(statusColor.opacity(0.15))
-                        
+
                         Image(systemName: server.type == .remote ? "server.rack" : "desktopcomputer")
                             .font(.system(size: 20, weight: .medium))
                             .foregroundColor(statusColor)
@@ -37,7 +44,7 @@ struct DashboardSidebar: View {
                         Text(server.name)
                             .font(.system(size: 20, weight: .bold))
                             .foregroundColor(.axTextPrimary)
-                        
+
                         Text(server.host)
                             .font(.system(size: 11, weight: .regular))
                             .foregroundColor(.axTextMuted)
@@ -56,17 +63,55 @@ struct DashboardSidebar: View {
             // Navigation
             ScrollView {
                 VStack(spacing: AXSpacing.xs) {
+                    // Standard tabs
                     ForEach(DashboardTab.allCases) { tab in
                         SidebarNavRow(
                             title: tab.rawValue,
                             icon: tab.icon,
-                            isSelected: viewModel.selectedTab == tab,
+                            isSelected: viewModel.selectedTab == tab && selectedPluginTabId == nil,
+                            isPlugin: false,
                             action: {
                                 withAnimation(.spring(response: 0.3)) {
+                                    selectedPluginTabId = nil
+                                    viewModel.selectedPluginTab = nil
                                     viewModel.selectedTab = tab
                                 }
                             }
                         )
+                    }
+
+                    // Plugin-injected sidebar tabs
+                    let pluginTabs = hookRegistry.plugins(for: .sidebarTabs)
+                    if !pluginTabs.isEmpty {
+                        Divider()
+                            .padding(.horizontal, AXSpacing.sm)
+                            .padding(.vertical, AXSpacing.xs)
+
+                        HStack {
+                            Text("Extensions")
+                                .font(.system(size: 9, weight: .semibold))
+                                .foregroundColor(.axTextMuted)
+                                .textCase(.uppercase)
+                                .tracking(0.8)
+                            Spacer()
+                        }
+                        .padding(.horizontal, AXSpacing.md)
+                        .padding(.bottom, 2)
+
+                        ForEach(pluginTabs) { plugin in
+                            SidebarNavRow(
+                                title: plugin.name,
+                                icon: plugin.icon ?? "puzzlepiece",
+                                isSelected: selectedPluginTabId == plugin.id,
+                                isPlugin: true,
+                                action: {
+                                    withAnimation(.spring(response: 0.3)) {
+                                        selectedPluginTabId = plugin.id
+                                        viewModel.selectedPluginTab = plugin
+                                    }
+                                }
+                            )
+                        }
                     }
                 }
                 .padding(AXSpacing.md)
@@ -77,13 +122,12 @@ struct DashboardSidebar: View {
             // Footer: Connection & Quick Controls
             VStack(spacing: AXSpacing.md) {
                 Divider()
-                
+
                 // Status & Connection Toggle
                 HStack {
                     DashboardConnectionStatusIndicator(viewModel: viewModel)
                     Spacer()
-                    
-                    // Connection Toggle
+
                     Button(action: {
                         Task {
                             if viewModel.isConnected {
@@ -109,6 +153,8 @@ struct DashboardSidebar: View {
                 // Quick Action Grid
                 HStack(spacing: AXSpacing.sm) {
                     SidebarActionBtn(icon: "terminal", color: .axTextSecondary, isEnabled: viewModel.isConnected) {
+                        selectedPluginTabId = nil
+                        viewModel.selectedPluginTab = nil
                         viewModel.selectedTab = .terminal
                     }
 
@@ -124,8 +170,17 @@ struct DashboardSidebar: View {
             .padding(AXSpacing.lg)
             .background(Color.axSurface.opacity(0.3))
         }
+        .onChange(of: viewModel.isConnected) { connected in
+            if connected {
+                Task {
+                    await PluginLoader.shared.load(serverId: server.id.uuidString)
+                }
+            } else {
+                PluginLoader.shared.unload()
+            }
+        }
     }
-    
+
     private var statusColor: Color {
         switch server.status {
         case .online: return .axSuccess
@@ -136,12 +191,15 @@ struct DashboardSidebar: View {
     }
 }
 
+// MARK: - Sidebar Nav Row
+
 private struct SidebarNavRow: View {
     let title: String
     let icon: String
     let isSelected: Bool
+    let isPlugin: Bool
     let action: () -> Void
-    
+
     var body: some View {
         Button(action: action) {
             HStack(spacing: AXSpacing.md) {
@@ -149,15 +207,34 @@ private struct SidebarNavRow: View {
                     .font(.system(size: 14))
                     .foregroundColor(isSelected ? .axAccentBlue : .axTextMuted)
                     .frame(width: 20)
-                
+
                 Text(title)
                     .font(AXTypography.subheadline)
                     .fontWeight(isSelected ? .semibold : .medium)
                     .foregroundColor(isSelected ? .axTextPrimary : .axTextSecondary)
-                
+
                 Spacer()
-                
-                if isSelected {
+
+                if isPlugin {
+                    // Plugin badge
+                    HStack(spacing: 2) {
+                        Image(systemName: "puzzlepiece.fill")
+                            .font(.system(size: 7))
+                        Text("Plugin")
+                            .font(.system(size: 8, weight: .medium))
+                    }
+                    .foregroundColor(.axTextMuted)
+                    .padding(.horizontal, 5)
+                    .padding(.vertical, 2)
+                    .background(
+                        RoundedRectangle(cornerRadius: 3)
+                            .fill(Color.axSurface)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 3)
+                                    .stroke(Color.axBorder, lineWidth: 0.5)
+                            )
+                    )
+                } else if isSelected {
                     Circle()
                         .fill(Color.axAccentBlue)
                         .frame(width: 4, height: 4)
@@ -174,12 +251,14 @@ private struct SidebarNavRow: View {
     }
 }
 
+// MARK: - Sidebar Action Button
+
 private struct SidebarActionBtn: View {
     let icon: String
     let color: Color
     let isEnabled: Bool
     let action: () -> Void
-    
+
     var body: some View {
         Button(action: action) {
             Image(systemName: icon)
@@ -199,28 +278,29 @@ private struct SidebarActionBtn: View {
     }
 }
 
-// Minimal status indicator for sidebar
+// MARK: - Connection Status Indicator
+
 struct DashboardConnectionStatusIndicator: View {
     @ObservedObject var viewModel: ServerConnectionViewModel
-    
+
     var body: some View {
         HStack(spacing: 6) {
             Circle()
                 .fill(statusColor)
                 .frame(width: 6, height: 6)
-            
+
             Text(statusText)
                 .font(AXTypography.caption2)
                 .foregroundColor(statusColor)
         }
     }
-    
+
     private var statusColor: Color {
         if viewModel.isConnected { return .axSuccess }
         if viewModel.isConnecting { return .axWarning }
         return .axTextMuted
     }
-    
+
     private var statusText: String {
         if viewModel.isConnected { return "Connected" }
         if viewModel.isConnecting { return "Connecting..." }

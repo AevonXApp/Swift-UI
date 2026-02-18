@@ -46,25 +46,34 @@ struct ServerDashboardView: View {
                 VStack(spacing: 0) {
                     // Main Content
                     Group {
-                        switch viewModel.selectedTab {
-                        case .overview:
-                            OverviewTab(server: server, serverId: serverId, viewModel: viewModel)
-                        case .websites:
-                            ModernWebsitesTab(server: server, serverId: serverId, connectionViewModel: viewModel)
-                        case .databases:
-                            ModernDatabasesTab(server: server, serverId: serverId, connectionViewModel: viewModel)
-                        case .applications:
-                            ApplicationsTab(server: server, serverId: serverId, connectionViewModel: viewModel)
-                        case .docker:
-                            DockerDetailView(server: server, serverId: serverId, connectionViewModel: viewModel)
-                        case .terminal:
-                            TerminalTab(server: server, serverId: serverId, viewModel: viewModel)
-                        case .files:
-                            FilesTab(serverId: serverId, connectionViewModel: viewModel)
-                        case .plugins:
-                            PluginsTab(server: server, serverId: serverId, connectionViewModel: viewModel)
-                        case .settings:
-                            ServerSettingsTab(server: server)
+                        if let pluginTab = viewModel.selectedPluginTab {
+                            // Plugin-injected page
+                            PluginPageComponent(
+                                plugin: pluginTab,
+                                serverId: serverId,
+                                context: [:]
+                            )
+                        } else {
+                            switch viewModel.selectedTab {
+                            case .overview:
+                                OverviewTab(server: server, serverId: serverId, viewModel: viewModel)
+                            case .websites:
+                                ModernWebsitesTab(server: server, serverId: serverId, connectionViewModel: viewModel)
+                            case .databases:
+                                ModernDatabasesTab(server: server, serverId: serverId, connectionViewModel: viewModel)
+                            case .applications:
+                                ApplicationsTab(server: server, serverId: serverId, connectionViewModel: viewModel)
+                            case .docker:
+                                DockerDetailView(server: server, serverId: serverId, connectionViewModel: viewModel)
+                            case .terminal:
+                                TerminalTab(server: server, serverId: serverId, viewModel: viewModel)
+                            case .files:
+                                FilesTab(serverId: serverId, connectionViewModel: viewModel)
+                            case .plugins:
+                                PluginsTab(server: server, serverId: serverId, connectionViewModel: viewModel)
+                            case .settings:
+                                ServerSettingsTab(server: server)
+                            }
                         }
                     }
                     .background(Color.axBackground)
@@ -84,6 +93,7 @@ struct ServerDashboardView: View {
         .frame(minWidth: 800, minHeight: 600)
         .onChange(of: viewModel.selectedTab) { old, newValue in
             viewModel.navigationPath = NavigationPath()
+            viewModel.selectedPluginTab = nil
         }
         .onAppear {
             // Auto-connect when dashboard appears if not already connected
