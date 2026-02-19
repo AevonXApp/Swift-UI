@@ -39,6 +39,7 @@ enum DashboardTab: String, CaseIterable, Identifiable {
     case docker = "Docker"
     case terminal = "Terminal"
     case files = "Files"
+    case security = "Security"
     case plugins = "Plugins"
     case settings = "Settings"
 
@@ -53,6 +54,7 @@ enum DashboardTab: String, CaseIterable, Identifiable {
         case .docker: return "shippingbox"
         case .terminal: return "terminal"
         case .files: return "folder"
+        case .security: return "shield.lefthalf.filled"
         case .plugins: return "puzzlepiece.fill"
         case .settings: return "gearshape"
         }
