@@ -101,7 +101,8 @@ struct DBAddColumnView: View {
             }
             .padding(AXSpacing.xl)
         }
-        .frame(width: 500, height: 420)
+        .frame(width: 500)
+        .fixedSize(horizontal: false, vertical: true)
         .background(Color.axBackground)
     }
 

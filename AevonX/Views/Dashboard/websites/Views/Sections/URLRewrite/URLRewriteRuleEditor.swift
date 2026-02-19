@@ -115,7 +115,8 @@ struct URLRewriteRuleEditor: View {
             }
             .background(Color.axBackground)
         }
-        .frame(width: 600, height: 700)
+        .frame(width: 600)
+        .fixedSize(horizontal: false, vertical: true)
         .onAppear {
             loadRule()
         }

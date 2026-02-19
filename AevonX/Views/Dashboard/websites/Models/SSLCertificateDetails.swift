@@ -133,16 +133,22 @@ public enum SSLCertificateStatus: String, Codable {
 public enum SSLChallengeType: String, Codable, CaseIterable {
     case http01 = "HTTP-01"
     case dns01 = "DNS-01"
-    case tlsAlpn01 = "TLS-ALPN-01"
 
     public var description: String {
         switch self {
         case .http01:
-            return "Places a verification file on the web server"
+            return "Automatic — verifies via your web server (recommended)"
         case .dns01:
-            return "Adds a TXT record to DNS (supports wildcards)"
-        case .tlsAlpn01:
-            return "Uses TLS protocol extension for verification"
+            return "Manual — requires adding a DNS TXT record"
+        }
+    }
+
+    public var detailedDescription: String? {
+        switch self {
+        case .http01:
+            return nil
+        case .dns01:
+            return "You must add a TXT record to your DNS:\n\nName: _acme-challenge.yourdomain.com\nType: TXT\nValue: (provided by certbot)\n\n⚠️ DNS-01 requires manual steps and is only needed for wildcard certificates. Use HTTP-01 for standard domains."
         }
     }
 
@@ -150,7 +156,6 @@ public enum SSLChallengeType: String, Codable, CaseIterable {
         switch self {
         case .http01: return "network"
         case .dns01: return "globe"
-        case .tlsAlpn01: return "lock.shield"
         }
     }
 }

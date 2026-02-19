@@ -175,7 +175,8 @@ struct FilePermissionsEditorView: View {
             .padding(AXSpacing.lg)
             .background(Color.axBackgroundSecondary)
         }
-        .frame(width: 460, height: 520)
+        .frame(width: 460)
+        .fixedSize(horizontal: false, vertical: true)
         .background(Color.axBackground)
         .onAppear { loadPermissions() }
     }

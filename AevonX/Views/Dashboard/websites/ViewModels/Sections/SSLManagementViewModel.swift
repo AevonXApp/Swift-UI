@@ -42,10 +42,24 @@ public final class SSLManagementViewModel: ObservableObject {
     // Renewal
     @Published public var isRenewing: Bool = false
 
+    // Certificate Content (PEM data)
+    @Published public var certificateContent: SSLCertificateContent?
+    @Published public var isLoadingContent: Bool = false
+    @Published public var showCertificateContent: Bool = false
+
+    // DNS Challenge Records
+    @Published public var dnsRecords: [SSLDNSRecord] = []
+    @Published public var isLoadingDNSRecords: Bool = false
+
     private let website: WebsiteInfo
     private let serverId: String?
     private let sslService = WebsiteSSLService.shared
     private let toastManager = GlobalToastManager.shared
+
+    // MARK: - Computed Properties
+
+    /// The website domain for display
+    public var domain: String { website.domain }
 
     // MARK: - Initialization
 
@@ -62,22 +76,60 @@ public final class SSLManagementViewModel: ObservableObject {
             return
         }
 
-        guard website.sslEnabled else {
-            certificateDetails = nil
-            return
-        }
-
         isLoading = true
         error = nil
 
+        // Detect Force SSL state
+        isForceSSLEnabled = await sslService.isForceSSLEnabled(domain: website.domain, serverId: serverId)
+
+        // Always try to fetch certificate details from the server.
+        // We cannot rely on website.sslEnabled because it's a stale snapshot
+        // that doesn't update after issuing/uploading a certificate.
         do {
             certificateDetails = try await sslService.getSSLCertificateDetails(domain: website.domain, serverId: serverId)
+            print("[SSLManagementVM] ✅ certificateDetails loaded: issuer=\(certificateDetails?.issuer ?? "nil"), brand=\(certificateDetails?.brand ?? "nil")")
         } catch {
-            self.error = "Failed to load SSL details: \(error.localizedDescription)"
-            toastManager.showError(self.error!)
+            // No certificate found or unable to read — this is normal for sites without SSL
+            certificateDetails = nil
+            print("[SSLManagementVM] ⚠️ certificateDetails set to nil: \(error.localizedDescription)")
         }
 
         isLoading = false
+        print("[SSLManagementVM] 🔄 isLoading=false, certificateDetails is \(certificateDetails != nil ? "SET" : "NIL")")
+    }
+
+    // MARK: - Certificate Content
+
+    public func loadCertificateContent() async {
+        guard let serverId = serverId else { return }
+
+        isLoadingContent = true
+
+        do {
+            certificateContent = try await sslService.getSSLCertificateContent(domain: website.domain, serverId: serverId)
+        } catch {
+            self.error = "Failed to load certificate content: \(error.localizedDescription)"
+            toastManager.showError(self.error!)
+        }
+
+        isLoadingContent = false
+    }
+
+    // MARK: - DNS Challenge Records
+
+    public func loadDNSRecords() async {
+        guard let serverId = serverId else { return }
+
+        isLoadingDNSRecords = true
+
+        do {
+            dnsRecords = try await sslService.getDNSChallengeRecords(domain: website.domain, serverId: serverId)
+        } catch {
+            self.error = "Failed to load DNS records: \(error.localizedDescription)"
+            toastManager.showError(self.error!)
+        }
+
+        isLoadingDNSRecords = false
     }
 
     // MARK: - Let's Encrypt
@@ -85,13 +137,8 @@ public final class SSLManagementViewModel: ObservableObject {
     public func issueLetsEncryptCertificate() async {
         guard let serverId = serverId else { return }
 
-        guard !letsEncryptEmail.isEmpty else {
-            error = "Please enter an email address"
-            toastManager.showError("Email address is required")
-            return
-        }
-
         isIssuingCertificate = true
+        error = nil
 
         do {
             try await sslService.issueNewLetsEncryptCert(
@@ -173,13 +220,14 @@ public final class SSLManagementViewModel: ObservableObject {
             if !isForceSSLEnabled {
                 try await sslService.enableForceSSL(domain: website.domain, serverId: serverId)
                 isForceSSLEnabled = true
-                toastManager.showSuccess("Force SSL enabled")
+                toastManager.showSuccess("Force HTTPS enabled — all HTTP traffic will redirect to HTTPS")
             } else {
-                // Would need a disable method
-                toastManager.showInfo("Force SSL disable not yet implemented")
+                try await sslService.disableForceSSL(domain: website.domain, serverId: serverId)
+                isForceSSLEnabled = false
+                toastManager.showSuccess("Force HTTPS disabled")
             }
         } catch {
-            self.error = "Failed to toggle Force SSL: \(error.localizedDescription)"
+            self.error = "Failed to toggle Force HTTPS: \(error.localizedDescription)"
             toastManager.showError(self.error!)
         }
 

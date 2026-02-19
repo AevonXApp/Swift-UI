@@ -170,8 +170,8 @@ struct DashboardSidebar: View {
             .padding(AXSpacing.lg)
             .background(Color.axSurface.opacity(0.3))
         }
-        .onChange(of: viewModel.isConnected) { connected in
-            if connected {
+        .onChange(of: viewModel.isConnected) {
+            if viewModel.isConnected {
                 Task {
                     await PluginLoader.shared.load(serverId: server.id.uuidString)
                 }

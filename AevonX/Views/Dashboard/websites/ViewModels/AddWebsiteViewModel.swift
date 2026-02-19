@@ -3,7 +3,7 @@
 //  AevonX
 //
 //  ViewModel for adding new websites
-//  Handles validation and creation via Core layer
+//  Handles validation, runtime detection, and creation via Core layer
 //
 
 import Foundation
@@ -18,14 +18,33 @@ public final class AddWebsiteViewModel: ObservableObject {
 
     // MARK: - Published Properties
 
-    @Published public var domain = ""
-    @Published public var name = ""
-    @Published public var phpVersion = "8.2"
-    @Published public var runtime: RuntimeType = .php
+    @Published public var domain = "" {
+        didSet { onDomainChanged() }
+    }
+    @Published public var runtime: RuntimeType = .php {
+        didSet { onRuntimeChanged() }
+    }
+    @Published public var selectedVersion = ""
     @Published public var enableSSL = true
-    @Published public var environment: EnvironmentType = .production
     @Published public var documentRoot = ""
+    @Published public var userEditedDocumentRoot = false
 
+    // Server capabilities
+    @Published public var isLoadingCapabilities = true
+    @Published public var availableRuntimes: [RuntimeType] = [.static]
+    @Published public var phpVersions: [String] = []
+    @Published public var nodeVersions: [String] = []
+    @Published public var pythonVersions: [String] = []
+    @Published public var detectedWebRoot = "/var/www"
+
+    // Directory browser
+    @Published public var isShowingDirectoryBrowser = false
+    @Published public var browserCurrentPath = "/"
+    @Published public var browserDirectories: [String] = []
+    @Published public var isLoadingDirectories = false
+    @Published public var newFolderName = ""
+
+    // State
     @Published public var isCreating = false
     @Published public var errorMessage: String?
     @Published public var validationErrors: [String: String] = [:]
@@ -33,6 +52,7 @@ public final class AddWebsiteViewModel: ObservableObject {
     // MARK: - Properties
 
     private let serverId: String?
+    private let configService = WebsiteConfigService.shared
 
     // MARK: - Initialization
 
@@ -40,9 +60,163 @@ public final class AddWebsiteViewModel: ObservableObject {
         self.serverId = serverId
     }
 
+    // MARK: - Server Capabilities
+
+    /// Fetches installed runtimes and versions from the server.
+    public func loadServerCapabilities() async {
+        guard let serverId = serverId else {
+            isLoadingCapabilities = false
+            return
+        }
+
+        isLoadingCapabilities = true
+
+        do {
+            // Fetch installed runtimes
+            let coreRuntimes = try await configService.getInstalledRuntimes(serverId: serverId)
+            availableRuntimes = coreRuntimes.compactMap { coreType in
+                RuntimeType(rawValue: coreType.rawValue)
+            }
+
+            // Ensure Static is included
+            if !availableRuntimes.contains(.static) {
+                availableRuntimes.insert(.static, at: 0)
+            }
+
+            // Set default runtime
+            if availableRuntimes.contains(.php) {
+                runtime = .php
+            } else if let first = availableRuntimes.first {
+                runtime = first
+            }
+
+            // Detect web root
+            detectedWebRoot = try await configService.detectWebRoot(serverId: serverId)
+
+            // Load versions for the selected runtime
+            await loadVersionsForRuntime(runtime)
+
+        } catch {
+            CoreLogger.shared.error("Failed to load server capabilities: \(error.localizedDescription)", module: "AddWebsiteViewModel")
+            // Fallback to defaults
+            availableRuntimes = RuntimeType.allCases
+        }
+
+        isLoadingCapabilities = false
+    }
+
+    /// Loads version list for the given runtime type.
+    private func loadVersionsForRuntime(_ runtime: RuntimeType) async {
+        guard let serverId = serverId else { return }
+
+        do {
+            switch runtime {
+            case .php:
+                phpVersions = try await configService.getInstalledPHPVersions(serverId: serverId)
+                selectedVersion = phpVersions.first ?? ""
+            case .nodejs:
+                nodeVersions = try await configService.getInstalledNodeVersions(serverId: serverId)
+                selectedVersion = nodeVersions.first ?? ""
+            case .python:
+                pythonVersions = try await configService.getInstalledPythonVersions(serverId: serverId)
+                selectedVersion = pythonVersions.first ?? ""
+            default:
+                selectedVersion = ""
+            }
+        } catch {
+            CoreLogger.shared.error("Failed to load versions for \(runtime.rawValue): \(error.localizedDescription)", module: "AddWebsiteViewModel")
+        }
+    }
+
+    /// Returns the version list for the currently selected runtime.
+    public var currentVersions: [String] {
+        switch runtime {
+        case .php: return phpVersions
+        case .nodejs: return nodeVersions
+        case .python: return pythonVersions
+        default: return []
+        }
+    }
+
+    /// Whether the current runtime supports version selection.
+    public var runtimeHasVersions: Bool {
+        switch runtime {
+        case .php, .nodejs, .python: return true
+        default: return false
+        }
+    }
+
+    // MARK: - Domain & Path Handling
+
+    private func onDomainChanged() {
+        // Sanitize domain: only allow valid characters
+        let sanitized = domain.filter { char in
+            char.isASCII && (char.isLetter || char.isNumber || char == "." || char == "-")
+        }.lowercased()
+
+        if sanitized != domain {
+            domain = sanitized
+            return // will re-trigger didSet
+        }
+
+        // Clear validation error when user starts typing
+        validationErrors.removeValue(forKey: "domain")
+
+        // Auto-fill document root if user hasn't manually edited it
+        if !userEditedDocumentRoot && !domain.isEmpty {
+            documentRoot = "\(detectedWebRoot)/\(domain)"
+        }
+    }
+
+    private func onRuntimeChanged() {
+        Task {
+            await loadVersionsForRuntime(runtime)
+        }
+    }
+
+    // MARK: - Directory Browser
+
+    public func loadDirectories(at path: String) async {
+        guard let serverId = serverId else { return }
+        isLoadingDirectories = true
+        browserCurrentPath = path
+
+        do {
+            browserDirectories = try await configService.listDirectories(path: path, serverId: serverId)
+        } catch {
+            browserDirectories = []
+            CoreLogger.shared.error("Failed to list directories: \(error.localizedDescription)", module: "AddWebsiteViewModel")
+        }
+
+        isLoadingDirectories = false
+    }
+
+    public func createNewFolder() async {
+        guard let serverId = serverId, !newFolderName.isEmpty else { return }
+
+        let sanitizedName = newFolderName.filter { $0.isASCII && !$0.isWhitespace }
+        guard !sanitizedName.isEmpty else { return }
+
+        let fullPath = "\(browserCurrentPath)/\(sanitizedName)"
+
+        do {
+            try await configService.createDirectory(path: fullPath, serverId: serverId)
+            newFolderName = ""
+            await loadDirectories(at: browserCurrentPath)
+        } catch {
+            errorMessage = "Failed to create folder: \(error.localizedDescription)"
+        }
+    }
+
+    public func selectDirectory(_ path: String) {
+        documentRoot = path
+        userEditedDocumentRoot = true
+        isShowingDirectoryBrowser = false
+    }
+
     // MARK: - Validation
 
-    /// Validates all form fields
+    /// Validates all form fields.
     public func validate() -> Bool {
         validationErrors.removeAll()
 
@@ -50,28 +224,33 @@ public final class AddWebsiteViewModel: ObservableObject {
         if domain.isEmpty {
             validationErrors["domain"] = "Domain is required"
         } else if !isValidDomain(domain) {
-            validationErrors["domain"] = "Invalid domain format"
+            validationErrors["domain"] = "Invalid domain format (e.g. example.com)"
         }
 
-        // Validate name
-        if name.isEmpty {
-            name = domain // Auto-generate from domain
+        // Validate document root
+        if !documentRoot.isEmpty && !isValidPath(documentRoot) {
+            validationErrors["documentRoot"] = "Invalid path (English characters only, no spaces)"
         }
 
         return validationErrors.isEmpty
     }
 
-    /// Validates domain format
+    /// Validates domain format: only English chars, digits, dots, hyphens.
     private func isValidDomain(_ domain: String) -> Bool {
-        // Basic domain validation
         let domainRegex = "^(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\\.)+[a-zA-Z]{2,}$"
         let predicate = NSPredicate(format: "SELF MATCHES %@", domainRegex)
         return predicate.evaluate(with: domain)
     }
 
+    /// Validates path: ASCII only, no spaces, must start with /.
+    private func isValidPath(_ path: String) -> Bool {
+        guard path.hasPrefix("/") else { return false }
+        return path.allSatisfy { $0.isASCII && !$0.isWhitespace }
+    }
+
     // MARK: - Website Creation
 
-    /// Creates website via Core layer
+    /// Creates website via Core layer.
     public func createWebsite() async throws {
         guard validate() else {
             throw AddWebsiteError.validationFailed
@@ -85,39 +264,30 @@ public final class AddWebsiteViewModel: ObservableObject {
         errorMessage = nil
 
         do {
+            let phpVersion: String? = runtime == .php ? selectedVersion : nil
+            
             try await WebsiteLifecycleService.shared.createWebsite(
-                name: name,
+                name: domain,
                 domain: domain,
-                phpVersion: runtime == .php ? phpVersion : nil,
+                phpVersion: phpVersion,
                 runtime: CoreRuntimeType(rawValue: runtime.rawValue) ?? .php,
                 enableSSL: enableSSL,
                 documentRoot: documentRoot.isEmpty ? nil : documentRoot,
                 serverId: serverId
             )
 
-            CoreLogger.shared.info("Website '\(name)' created successfully",
+            CoreLogger.shared.info("Website '\(domain)' created successfully",
                                   module: "AddWebsiteViewModel")
 
         } catch {
             CoreLogger.shared.error("Failed to create website: \(error.localizedDescription)",
                                    module: "AddWebsiteViewModel")
             errorMessage = error.localizedDescription
+            isCreating = false
             throw error
         }
 
         isCreating = false
-    }
-
-    // MARK: - Available Options
-
-    /// Available PHP versions
-    public var availablePHPVersions: [String] {
-        ["8.3", "8.2", "8.1", "8.0", "7.4"]
-    }
-
-    /// Available runtime types
-    public var availableRuntimes: [RuntimeType] {
-        RuntimeType.allCases
     }
 }
 

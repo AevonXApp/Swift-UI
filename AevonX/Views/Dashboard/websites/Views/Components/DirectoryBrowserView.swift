@@ -102,7 +102,8 @@ struct DirectoryBrowserView: View {
             .listStyle(.plain)
             .scrollContentBackground(.hidden)
         }
-        .frame(width: 500, height: 600)
+        .frame(width: 500)
+        .fixedSize(horizontal: false, vertical: true)
         .background(Color.axBackground)
         .onAppear {
             viewModel.startBrowsing(initialPath: viewModel.website.documentRoot)

@@ -175,7 +175,8 @@ struct URLRewriteTemplateSelector: View {
                 }
             }
         }
-        .frame(width: 600, height: 520)
+        .frame(width: 600)
+        .fixedSize(horizontal: false, vertical: true)
         .onAppear {
             ruleCode = selectedTemplate.getRuleCode(domain: domain)
         }

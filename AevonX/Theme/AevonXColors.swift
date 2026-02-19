@@ -27,6 +27,7 @@ extension Color {
     public static let axAccentBlueDimmed = Color(hex: "#00D4FF").opacity(0.6)
     public static let axAccentGreen = Color(hex: "#10B981")
     public static let axAccentGreenDimmed = Color(hex: "#10B981").opacity(0.6)
+    public static let axAccentPurple = Color(hex: "#A855F7")
     
     // Status Colors
     public static let axSuccess = Color(hex: "#22C55E")

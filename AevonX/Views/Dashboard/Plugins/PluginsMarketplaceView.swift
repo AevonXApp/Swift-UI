@@ -145,7 +145,8 @@ struct PluginsMarketplaceView: View {
                         .buttonStyle(AXSecondaryButtonStyle())
                 }
                 .padding(AXSpacing.xxl)
-                .frame(width: 400, height: 300)
+                .frame(width: 400)
+                .fixedSize(horizontal: false, vertical: true)
                 .background(Color.axBackground)
             }
         }
@@ -423,7 +424,8 @@ struct PluginVersionPickerView: View {
                 .padding(AXSpacing.xl)
             }
         }
-        .frame(width: 500, height: 600)
+        .frame(width: 500)
+        .fixedSize(horizontal: false, vertical: true)
         .background(Color.axBackground)
         .cornerRadius(AXCornerRadius.lg)
     }

@@ -27,7 +27,8 @@ struct ModernAddUserView: View {
             Divider()
             footer
         }
-        .frame(width: 450, height: 400)
+        .frame(width: 450)
+        .fixedSize(horizontal: false, vertical: true)
         .background(Color.axBackground)
     }
     

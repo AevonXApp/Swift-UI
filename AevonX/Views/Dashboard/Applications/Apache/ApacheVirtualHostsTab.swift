@@ -260,6 +260,7 @@ private struct AddVHostSheet: View {
             }
             .formStyle(.grouped)
         }
-        .frame(width: 400, height: 500)
+        .frame(width: 400)
+        .fixedSize(horizontal: false, vertical: true)
     }
 }

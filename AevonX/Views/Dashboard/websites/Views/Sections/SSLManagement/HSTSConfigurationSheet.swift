@@ -147,6 +147,7 @@ struct HSTSConfigurationSheet: View {
             }
             .background(Color.axBackground)
         }
-        .frame(width: 500, height: 700)
+        .frame(width: 500)
+        .fixedSize(horizontal: false, vertical: true)
     }
 }

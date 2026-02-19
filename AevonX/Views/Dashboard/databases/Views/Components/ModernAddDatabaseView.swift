@@ -41,7 +41,8 @@ struct ModernAddDatabaseView: View {
             }
             errorOverlay
         }
-        .frame(width: 520, height: 550)
+        .frame(width: 520)
+        .fixedSize(horizontal: false, vertical: true)
         .background(Color.axBackground)
     }
 

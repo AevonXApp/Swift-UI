@@ -306,6 +306,7 @@ private struct PoolEditorSheet: View {
             }
         }
         .padding()
-        .frame(width: 500, height: 500)
+        .frame(width: 500)
+        .fixedSize(horizontal: false, vertical: true)
     }
 }

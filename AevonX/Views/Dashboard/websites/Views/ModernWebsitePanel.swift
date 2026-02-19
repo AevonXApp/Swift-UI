@@ -55,6 +55,7 @@ enum ModernSidebarItem: String, CaseIterable, Identifiable {
 struct ModernWebsitePanel: View {
     @ObservedObject var viewModel: WebsiteDetailViewModel
     var onBack: () -> Void
+    var initialItem: ModernSidebarItem = .overview
 
     @State private var selectedItem: ModernSidebarItem = .overview
     @State private var isHoveringBack = false
@@ -82,6 +83,7 @@ struct ModernWebsitePanel: View {
             }
         }
         .onAppear {
+            selectedItem = initialItem
             Task { await viewModel.loadWebsiteDetails() }
         }
     }
@@ -469,47 +471,206 @@ struct ModernWebsitePanel: View {
     }
 
     private var siteDirectoryView: some View {
-        VStack(spacing: AXSpacing.xl) {
-            Image(systemName: "folder.fill.badge.gearshape")
-                .font(.system(size: 70))
-                .foregroundColor(.axAccentBlue.opacity(0.3))
-                .padding(.top, 60)
+        VStack(spacing: 0) {
+            // Current Document Root Card
+            AXCard(padding: AXSpacing.lg) {
+                HStack(spacing: AXSpacing.md) {
+                    Image(systemName: "folder.fill.badge.gearshape")
+                        .font(.system(size: 28))
+                        .foregroundColor(.axAccentBlue)
 
-            VStack(spacing: AXSpacing.sm) {
-                Text("Site Directory")
-                    .font(.system(size: 22, weight: .bold))
-                    .foregroundColor(.axTextPrimary)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Document Root")
+                            .font(AXTypography.caption)
+                            .foregroundColor(.axTextTertiary)
+                        Text(viewModel.documentRoot.isEmpty ? "/var/www/html" : viewModel.documentRoot)
+                            .font(.system(.body, design: .monospaced))
+                            .foregroundColor(.axTextPrimary)
+                    }
 
-                Text(viewModel.website.documentRoot ?? "/var/www/html")
-                    .font(.system(.body, design: .monospaced))
-                    .foregroundColor(.axTextTertiary)
-                    .padding(.horizontal, AXSpacing.md)
-                    .padding(.vertical, AXSpacing.xs)
-                    .background(Color.axSurface)
-                    .cornerRadius(AXCornerRadius.sm)
-            }
+                    Spacer()
 
-            Button(action: {
-                showingDirectoryBrowser = true
-            }) {
-                HStack(spacing: AXSpacing.sm) {
-                    Image(systemName: "folder.badge.plus")
-                    Text("Browse Files")
-                        .fontWeight(.semibold)
+                    if viewModel.isSavingConfig {
+                        ProgressView()
+                            .scaleEffect(0.7)
+                    }
                 }
-                .foregroundColor(.white)
-                .padding(.horizontal, AXSpacing.lg)
-                .padding(.vertical, AXSpacing.md)
-                .background(Color.axAccentBlue)
-                .cornerRadius(AXCornerRadius.md)
             }
-            .buttonStyle(PlainButtonStyle())
+            .padding(.horizontal, AXSpacing.lg)
+            .padding(.top, AXSpacing.lg)
+
+            // Directory Browser
+            AXCard(padding: 0) {
+                VStack(spacing: 0) {
+                    // Browser Toolbar
+                    HStack(spacing: AXSpacing.md) {
+                        // Back Button
+                        Button(action: { viewModel.backToParent() }) {
+                            Image(systemName: "chevron.left")
+                                .font(.system(size: 12, weight: .bold))
+                                .foregroundColor(viewModel.currentBrowsingPath == "/" ? .axTextMuted : .axTextPrimary)
+                                .frame(width: 28, height: 28)
+                                .background(Color.axBackground)
+                                .cornerRadius(AXCornerRadius.sm)
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                        .disabled(viewModel.currentBrowsingPath == "/")
+
+                        // Up Button
+                        Button(action: { viewModel.backToParent() }) {
+                            Image(systemName: "arrow.up")
+                                .font(.system(size: 12, weight: .bold))
+                                .foregroundColor(viewModel.currentBrowsingPath == "/" ? .axTextMuted : .axTextPrimary)
+                                .frame(width: 28, height: 28)
+                                .background(Color.axBackground)
+                                .cornerRadius(AXCornerRadius.sm)
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                        .disabled(viewModel.currentBrowsingPath == "/")
+
+                        // Path Breadcrumb
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 2) {
+                                let pathComponents = viewModel.currentBrowsingPath.split(separator: "/")
+                                
+                                // Root
+                                Button(action: {
+                                    viewModel.currentBrowsingPath = "/"
+                                    Task { await viewModel.fetchBrowsingItems(path: "/") }
+                                }) {
+                                    Text("/")
+                                        .font(.system(size: 12, weight: .medium, design: .monospaced))
+                                        .foregroundColor(.axAccentBlue)
+                                }
+                                .buttonStyle(PlainButtonStyle())
+
+                                ForEach(Array(pathComponents.enumerated()), id: \.offset) { index, component in
+                                    Image(systemName: "chevron.right")
+                                        .font(.system(size: 8))
+                                        .foregroundColor(.axTextMuted)
+                                    
+                                    Button(action: {
+                                        let targetPath = "/" + pathComponents.prefix(index + 1).joined(separator: "/")
+                                        viewModel.currentBrowsingPath = targetPath
+                                        Task { await viewModel.fetchBrowsingItems(path: targetPath) }
+                                    }) {
+                                        Text(String(component))
+                                            .font(.system(size: 12, weight: index == pathComponents.count - 1 ? .bold : .medium, design: .monospaced))
+                                            .foregroundColor(index == pathComponents.count - 1 ? .axTextPrimary : .axAccentBlue)
+                                    }
+                                    .buttonStyle(PlainButtonStyle())
+                                }
+                            }
+                        }
+
+                        Spacer()
+
+                        // Refresh
+                        Button(action: {
+                            Task { await viewModel.fetchBrowsingItems(path: viewModel.currentBrowsingPath) }
+                        }) {
+                            Image(systemName: "arrow.clockwise")
+                                .font(.system(size: 11, weight: .semibold))
+                                .foregroundColor(.axTextSecondary)
+                                .frame(width: 28, height: 28)
+                                .background(Color.axBackground)
+                                .cornerRadius(AXCornerRadius.sm)
+                        }
+                        .buttonStyle(PlainButtonStyle())
+
+                        // Set as Root
+                        Button(action: {
+                            viewModel.selectCurrentDirectory()
+                            Task { await viewModel.saveConfiguration() }
+                        }) {
+                            HStack(spacing: 4) {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .font(.system(size: 11))
+                                Text("Set as Root")
+                                    .font(.system(size: 11, weight: .semibold))
+                            }
+                            .foregroundColor(.white)
+                            .padding(.horizontal, AXSpacing.md)
+                            .padding(.vertical, 6)
+                            .background(Color.axAccentBlue)
+                            .cornerRadius(AXCornerRadius.sm)
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                    }
+                    .padding(AXSpacing.md)
+                    .background(Color.axBackgroundTertiary)
+
+                    Divider().background(Color.axBorder)
+
+                    // Directory Content
+                    if viewModel.isLoadingBrowsingItems {
+                        VStack(spacing: AXSpacing.md) {
+                            ProgressView()
+                            Text("Loading directories...")
+                                .font(AXTypography.caption)
+                                .foregroundColor(.axTextSecondary)
+                        }
+                        .frame(maxWidth: .infinity, minHeight: 200)
+                    } else if viewModel.browsingItems.isEmpty {
+                        VStack(spacing: AXSpacing.md) {
+                            Image(systemName: "folder")
+                                .font(.system(size: 36))
+                                .foregroundColor(.axTextMuted)
+                            Text("No subdirectories found")
+                                .font(AXTypography.body)
+                                .foregroundColor(.axTextMuted)
+                            Text(viewModel.currentBrowsingPath)
+                                .font(.system(size: 11, design: .monospaced))
+                                .foregroundColor(.axTextTertiary)
+                        }
+                        .frame(maxWidth: .infinity, minHeight: 200)
+                    } else {
+                        ScrollView {
+                            LazyVStack(spacing: 1) {
+                                ForEach(viewModel.browsingItems, id: \.self) { folder in
+                                    Button(action: { viewModel.navigateToPath(folder) }) {
+                                        HStack(spacing: AXSpacing.md) {
+                                            Image(systemName: "folder.fill")
+                                                .font(.system(size: 16))
+                                                .foregroundColor(.axWarning)
+                                                .frame(width: 24)
+
+                                            Text(folder)
+                                                .font(.system(size: 13, weight: .medium))
+                                                .foregroundColor(.axTextPrimary)
+
+                                            Spacer()
+
+                                            Image(systemName: "chevron.right")
+                                                .font(.system(size: 10, weight: .semibold))
+                                                .foregroundColor(.axTextMuted)
+                                        }
+                                        .padding(.horizontal, AXSpacing.lg)
+                                        .padding(.vertical, AXSpacing.md)
+                                        .background(Color.axBackground)
+                                    }
+                                    .buttonStyle(PlainButtonStyle())
+                                    .onHover { hovering in
+                                        if hovering {
+                                            NSCursor.pointingHand.push()
+                                        } else {
+                                            NSCursor.pop()
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        .frame(minHeight: 200)
+                    }
+                }
+            }
+            .padding(.horizontal, AXSpacing.lg)
+            .padding(.top, AXSpacing.md)
 
             Spacer()
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .sheet(isPresented: $showingDirectoryBrowser) {
-            DirectoryBrowserView(viewModel: viewModel)
+        .onAppear {
+            viewModel.startBrowsing(initialPath: viewModel.website.documentRoot)
         }
     }
 
@@ -890,10 +1051,19 @@ struct InfoGrid: View {
 
     var body: some View {
         VStack(spacing: AXSpacing.xs) {
-            InfoRow(label: "Document Root", value: website.documentRoot ?? "Not set")
+            InfoRow(label: "Document Root", value: website.documentRoot ?? "N/A")
             InfoRow(label: "Runtime", value: website.runtime.rawValue)
+            if let phpVersion = website.phpVersion {
+                InfoRow(label: "PHP Version", value: phpVersion)
+            }
+            if let port = website.port {
+                InfoRow(label: "Port", value: "\(port)")
+            }
             InfoRow(label: "Disk Usage", value: website.formattedDiskUsage)
             InfoRow(label: "Bandwidth", value: website.formattedBandwidth)
+            if let created = website.createdAt {
+                InfoRow(label: "Created", value: created.formatted())
+            }
             if let deployed = website.lastDeployed {
                 InfoRow(label: "Last Deployed", value: deployed.formatted())
             }

@@ -113,6 +113,12 @@ public final class WebsiteDetailViewModel: ObservableObject {
 
         isLoadingAll = true
 
+        // Repair any nginx redirect loops in the background
+        let domain = website.domain
+        Task.detached(priority: .utility) {
+            await WebsiteManager.shared.repairNginxConfig(domain: domain, serverId: serverId)
+        }
+
         do {
             let updatedCore = try await websiteManager.getWebsiteConfiguration(websiteId: website.domain, serverId: serverId)
 
@@ -359,18 +365,21 @@ public final class WebsiteDetailViewModel: ObservableObject {
     }
     
     /// Fetches subdirectories for the current browsing path
+    @MainActor
     public func fetchBrowsingItems(path: String) async {
         guard let serverId = serverId else {
             CoreLogger.shared.debug("No serverId available", module: "WebsiteDetail")
             return
         }
         isLoadingBrowsingItems = true
+        browsingItems = []
 
         CoreLogger.shared.debug("Fetching directories for path: \(path)", module: "WebsiteDetail")
 
         do {
-            browsingItems = try await websiteManager.listDirectories(path: path, serverId: serverId)
-            CoreLogger.shared.debug("Found \(browsingItems.count) directories", module: "WebsiteDetail")
+            let items = try await websiteManager.listDirectories(path: path, serverId: serverId)
+            browsingItems = items
+            CoreLogger.shared.debug("Found \(items.count) directories", module: "WebsiteDetail")
         } catch {
             errorMessage = "Failed to browse: \(error.localizedDescription)"
             CoreLogger.shared.debug("Error fetching directories: \(error.localizedDescription)", module: "WebsiteDetail")

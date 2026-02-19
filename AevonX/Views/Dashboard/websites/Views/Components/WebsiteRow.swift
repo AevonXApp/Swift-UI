@@ -86,20 +86,20 @@ struct WebsiteRow: View {
             .cornerRadius(AXCornerRadius.sm)
             .frame(width: 90, alignment: .center)
 
-            // Active Connections (Zero-Mock Live)
+            // Total Requests
             HStack(spacing: AXSpacing.xs) {
-                Image(systemName: "bolt.horizontal.fill")
+                Image(systemName: "chart.bar.fill")
                     .font(.system(size: 8))
-                Text("\(website.activeConnections)")
+                Text(formattedRequests(website.dailyRequests))
                     .font(AXTypography.caption)
                     .fontWeight(.bold)
             }
-            .foregroundColor(.axAccentGreen)
+            .foregroundColor(.axAccentPurple)
             .padding(.horizontal, AXSpacing.sm)
             .padding(.vertical, 4)
-            .background(Color.axAccentGreen.opacity(0.1))
+            .background(Color.axAccentPurple.opacity(0.1))
             .cornerRadius(AXCornerRadius.sm)
-            .frame(width: 50, alignment: .center)
+            .frame(width: 70, alignment: .center)
 
             // Resource Metrics
             HStack(spacing: AXSpacing.md) {
@@ -196,6 +196,16 @@ struct WebsiteRow: View {
         else if interval < 3600 { return "\(Int(interval / 60))m ago" }
         else if interval < 86400 { return "\(Int(interval / 3600))h ago" }
         else { return "\(Int(interval / 86400))d ago" }
+    }
+
+    private func formattedRequests(_ count: Int?) -> String {
+        guard let count = count, count > 0 else { return "0" }
+        if count >= 1_000_000 {
+            return String(format: "%.1fM", Double(count) / 1_000_000)
+        } else if count >= 1_000 {
+            return String(format: "%.1fK", Double(count) / 1_000)
+        }
+        return "\(count)"
     }
 }
 

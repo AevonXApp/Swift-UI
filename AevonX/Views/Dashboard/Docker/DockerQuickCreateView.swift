@@ -96,7 +96,8 @@ struct DockerQuickCreateView: View {
             .padding(AXSpacing.lg)
             .background(Color.axSurface)
         }
-        .frame(width: 450, height: 500)
+        .frame(width: 450)
+        .fixedSize(horizontal: false, vertical: true)
         .background(Color.axBackground)
     }
     

@@ -263,7 +263,7 @@ public final class WebsiteManagementViewModel: ObservableObject {
         }
 
         try await WebsiteLifecycleService.shared.deleteWebsite(
-            websiteId: website.id.uuidString,
+            websiteId: website.domain,
             serverId: serverId
         )
 
@@ -278,7 +278,7 @@ public final class WebsiteManagementViewModel: ObservableObject {
         }
 
         try await WebsiteLifecycleService.shared.startWebsite(
-            websiteId: website.id.uuidString,
+            websiteId: website.domain,
             serverId: serverId
         )
 
@@ -292,7 +292,7 @@ public final class WebsiteManagementViewModel: ObservableObject {
         }
 
         try await WebsiteLifecycleService.shared.stopWebsite(
-            websiteId: website.id.uuidString,
+            websiteId: website.domain,
             serverId: serverId
         )
 
@@ -315,7 +315,7 @@ public final class WebsiteManagementViewModel: ObservableObject {
         }
 
         try await WebsiteLifecycleService.shared.restartWebsite(
-            websiteId: website.id.uuidString,
+            websiteId: website.domain,
             serverId: serverId
         )
 
@@ -329,7 +329,7 @@ public final class WebsiteManagementViewModel: ObservableObject {
         }
 
         try await WebsiteDeploymentService.shared.deployWebsite(
-            websiteId: website.id.uuidString,
+            websiteId: website.domain,
             serverId: serverId
         )
 
@@ -343,7 +343,7 @@ public final class WebsiteManagementViewModel: ObservableObject {
         }
 
         try await WebsiteSSLService.shared.enableSSL(
-            websiteId: website.id.uuidString,
+            websiteId: website.domain,
             provider: CoreSSLProvider(rawValue: provider.rawValue) ?? .letsEncrypt,
             serverId: serverId
         )

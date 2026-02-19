@@ -95,18 +95,30 @@ class PluginsViewModel: ObservableObject {
             
             let installedSlugs = try await pluginManager.listInstalledPluginSlugs(on: serverId)
             
-            // Map slugs to full Plugin objects if we have them in the text search results, or fetch them specifically
-            // For now, we'll try to match against loaded plugins.
-            // Ideally, we should fetch detailed info for each installed slug from the API.
-            
             var matchedPlugins: [Plugin] = []
             for slug in installedSlugs {
                 if let existing = plugins.first(where: { $0.slug == slug }) {
                     matchedPlugins.append(existing)
                 } else {
-                    // Start fetching details for unknown plugins
-                    // This is a placeholder; real implementation needs bulk fetch endpoint or individual calls
-                    CoreLogger.shared.info("Installed plugin \(slug) details not loaded locally.", module: "PluginsViewModel")
+                    // Create a stub Plugin for installed plugins not in marketplace
+                    // so they still appear in the installed list
+                    let stub = Plugin(
+                        id: slug,
+                        name: slug,
+                        slug: slug,
+                        description: "Installed plugin",
+                        imageUrl: nil,
+                        status: "installed",
+                        isOfficial: false,
+                        downloadsCount: 0,
+                        rating: nil,
+                        activeVersion: nil,
+                        pricing: nil,
+                        user: nil,
+                        versions: nil
+                    )
+                    matchedPlugins.append(stub)
+                    CoreLogger.shared.info("Installed plugin \(slug) not in marketplace — showing as stub.", module: "PluginsViewModel")
                 }
             }
             

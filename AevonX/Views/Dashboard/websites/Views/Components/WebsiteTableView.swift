@@ -71,25 +71,31 @@ struct WebsiteTableView: View {
                 .font(AXTypography.caption)
                 .fontWeight(.semibold)
                 .foregroundColor(.axTextMuted)
-                .frame(width: 60, alignment: .center)
+                .frame(width: 100, alignment: .center)
 
             Text("Runtime")
                 .font(AXTypography.caption)
                 .fontWeight(.semibold)
                 .foregroundColor(.axTextMuted)
-                .frame(width: 80, alignment: .center)
+                .frame(width: 90, alignment: .center)
+
+            Text("Requests")
+                .font(AXTypography.caption)
+                .fontWeight(.semibold)
+                .foregroundColor(.axTextMuted)
+                .frame(width: 70, alignment: .center)
 
             Text("Disk")
                 .font(AXTypography.caption)
                 .fontWeight(.semibold)
                 .foregroundColor(.axTextMuted)
-                .frame(width: 80, alignment: .trailing)
+                .frame(width: 60, alignment: .trailing)
 
             Text("Deployed")
                 .font(AXTypography.caption)
                 .fontWeight(.semibold)
                 .foregroundColor(.axTextMuted)
-                .frame(width: 100, alignment: .leading)
+                .frame(width: 80, alignment: .leading)
 
             Spacer()
 

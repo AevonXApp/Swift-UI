@@ -95,6 +95,7 @@ enum AXLogSortOption: String, CaseIterable {
 
 public struct AXAdvancedLogsView: View {
     @StateObject private var viewModel: AXLogsViewModel
+    @State private var showClearConfirmation = false
 
     public init(
         source: AXLogSource,
@@ -143,6 +144,14 @@ public struct AXAdvancedLogsView: View {
         .task {
             await viewModel.loadLogs()
         }
+        .alert("Clear Logs", isPresented: $showClearConfirmation) {
+            Button("Cancel", role: .cancel) { }
+            Button("Clear", role: .destructive) {
+                Task { await viewModel.clearLogs() }
+            }
+        } message: {
+            Text("Are you sure you want to clear all log files for this source? This action cannot be undone.")
+        }
     }
 
     // MARK: - Controls Header
@@ -183,6 +192,23 @@ public struct AXAdvancedLogsView: View {
                 }
                 .buttonStyle(PlainButtonStyle())
                 .disabled(viewModel.isLoading)
+
+                // Clear Logs Button
+                Button(action: { showClearConfirmation = true }) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "trash")
+                            .font(.system(size: 11, weight: .semibold))
+                        Text("Clear")
+                            .font(.system(size: 11, weight: .medium))
+                    }
+                    .foregroundColor(.axError)
+                    .padding(.horizontal, AXSpacing.md)
+                    .padding(.vertical, AXSpacing.xs)
+                    .background(Color.axError.opacity(0.1))
+                    .cornerRadius(AXCornerRadius.sm)
+                }
+                .buttonStyle(PlainButtonStyle())
+                .disabled(viewModel.isLoading)
             }
 
             // Filters Row
@@ -203,8 +229,8 @@ public struct AXAdvancedLogsView: View {
                 .cornerRadius(AXCornerRadius.sm)
                 .frame(width: 280)
 
-                // Status Filter (for access logs)
-                if viewModel.selectedTab == .access {
+                // Status Filter (for access and all logs)
+                if viewModel.selectedTab == .access || viewModel.selectedTab == .all {
                     Menu {
                         Button("All Status") { viewModel.statusFilter = nil }
                         Divider()
@@ -571,7 +597,8 @@ struct AXLogDetailSheet: View {
                 .padding(AXSpacing.xl)
             }
         }
-        .frame(width: 700, height: 600)
+        .frame(width: 700)
+        .fixedSize(horizontal: false, vertical: true)
         .background(Color.axBackground)
     }
 
@@ -793,7 +820,8 @@ struct AXIPBlockSheet: View {
             }
             .padding(AXSpacing.xl)
         }
-        .frame(width: 500, height: 400)
+        .frame(width: 500)
+        .fixedSize(horizontal: false, vertical: true)
         .background(Color.axBackground)
     }
 }
@@ -1079,6 +1107,50 @@ public final class AXLogsViewModel: ObservableObject {
             onSuccess?("IP \(ip) blocked successfully")
         } catch {
             onError?("Failed to block IP: \(error.localizedDescription)")
+        }
+    }
+
+    func clearLogs() async {
+        guard let serverId = serverId else { return }
+        isLoading = true
+
+        do {
+            let sshService = SSHService.shared
+
+            switch source {
+            case .website(let domain):
+                // Truncate access and error log files for this website
+                let clearCommand = """
+                sudo truncate -s 0 /var/log/nginx/\(domain)-access.log 2>/dev/null; \
+                sudo truncate -s 0 /var/log/nginx/\(domain)-error.log 2>/dev/null; \
+                sudo truncate -s 0 /var/log/nginx/\(domain)-ssl-access.log 2>/dev/null; \
+                sudo truncate -s 0 /var/log/nginx/\(domain)-ssl-error.log 2>/dev/null; \
+                echo 'OK'
+                """
+                _ = try await sshService.execute(clearCommand, serverId: serverId)
+
+            case .nginxService:
+                let clearCommand = """
+                sudo truncate -s 0 /var/log/nginx/access.log 2>/dev/null; \
+                sudo truncate -s 0 /var/log/nginx/error.log 2>/dev/null; \
+                echo 'OK'
+                """
+                _ = try await sshService.execute(clearCommand, serverId: serverId)
+
+            default:
+                break
+            }
+
+            // Clear local state
+            self.accessLogs = []
+            self.errorLogs = []
+            onSuccess?("Logs cleared successfully")
+
+            // Reload to show empty state
+            await loadLogs()
+        } catch {
+            onError?("Failed to clear logs: \(error.localizedDescription)")
+            isLoading = false
         }
     }
     

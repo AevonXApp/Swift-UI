@@ -2,7 +2,8 @@
 //  SSLManagementSection.swift
 //  AevonX
 //
-//  Enhanced SSL Management section with full certificate control
+//  Enhanced SSL Management section with full certificate control,
+//  certificate content viewer, and real certificate data display
 //
 
 import SwiftUI
@@ -23,14 +24,17 @@ struct SSLManagementSection: View {
                     // Certificate Details
                     certificateStatusCard(cert)
                     certificateDetailsCard(cert)
+                    certificateContentCard
                     certificateActionsCard
                 } else {
                     // No SSL
                     noSSLView
                 }
 
-                // Force SSL & HSTS
-                advancedSecurityCard
+                // Force SSL & HSTS — only when certificate exists
+                if viewModel.certificateDetails != nil {
+                    advancedSecurityCard
+                }
             }
             .padding(AXSpacing.xl)
         }
@@ -125,7 +129,7 @@ struct SSLManagementSection: View {
         .cornerRadius(AXCornerRadius.lg)
     }
 
-    // MARK: - Certificate Status Card
+    // MARK: - Certificate Status Card (Enhanced with brand + expiry badge)
 
     private func certificateStatusCard(_ cert: SSLCertificateDetails) -> some View {
         VStack(alignment: .leading, spacing: AXSpacing.md) {
@@ -135,22 +139,49 @@ struct SSLManagementSection: View {
                     .foregroundColor(Color(cert.status.color))
 
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(cert.status.rawValue)
-                        .font(AXTypography.title2)
-                        .foregroundColor(.axTextPrimary)
+                    HStack(spacing: AXSpacing.sm) {
+                        Text(cert.status.rawValue)
+                            .font(AXTypography.title2)
+                            .foregroundColor(.axTextPrimary)
 
-                    if cert.isValid {
-                        Text("Certificate is active and valid")
-                            .font(AXTypography.body)
-                            .foregroundColor(.axTextSecondary)
-                    } else if cert.isExpired {
-                        Text("Certificate has expired")
-                            .font(AXTypography.body)
-                            .foregroundColor(.axError)
-                    } else if cert.isExpiringSoon {
-                        Text("Certificate expires in \(cert.daysUntilExpiry) days")
-                            .font(AXTypography.body)
-                            .foregroundColor(.axWarning)
+                        // Brand badge
+                        Text(cert.brand)
+                            .font(.system(.caption2, design: .monospaced))
+                            .fontWeight(.bold)
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 3)
+                            .background(cert.isLetsEncrypt ? Color.axSuccess : Color.axAccentBlue)
+                            .cornerRadius(4)
+                    }
+
+                    HStack(spacing: AXSpacing.sm) {
+                        if cert.isValid {
+                            Text("Certificate is active and valid")
+                                .font(AXTypography.body)
+                                .foregroundColor(.axTextSecondary)
+                        } else if cert.isExpired {
+                            Text("Certificate has expired")
+                                .font(AXTypography.body)
+                                .foregroundColor(.axError)
+                        } else if cert.isExpiringSoon {
+                            Text("Certificate expires in \(cert.daysUntilExpiry) days")
+                                .font(AXTypography.body)
+                                .foregroundColor(.axWarning)
+                        }
+
+                        Text("·")
+                            .foregroundColor(.axTextMuted)
+
+                        // Expiry badge
+                        HStack(spacing: 4) {
+                            Image(systemName: "clock")
+                                .font(.system(size: 10))
+                            Text("Exp in \(cert.daysUntilExpiry) days")
+                                .font(AXTypography.caption)
+                                .fontWeight(.medium)
+                        }
+                        .foregroundColor(cert.isExpiringSoon ? .axWarning : cert.isExpired ? .axError : .axTextSecondary)
                     }
                 }
 
@@ -199,6 +230,7 @@ struct SSLManagementSection: View {
 
             VStack(spacing: AXSpacing.sm) {
                 DetailRow(label: "Issuer", value: cert.issuer, icon: "building.2")
+                DetailRow(label: "Brand", value: cert.brand, icon: "tag")
                 DetailRow(label: "Subject", value: cert.subject, icon: "person.text.rectangle")
                 DetailRow(label: "Valid From", value: formattedDate(cert.validFrom), icon: "calendar")
                 DetailRow(label: "Valid Until", value: formattedDate(cert.validUntil), icon: "calendar.badge.clock")
@@ -233,6 +265,78 @@ struct SSLManagementSection: View {
                         icon: "shield.checkered"
                     )
                 }
+            }
+        }
+        .padding(AXSpacing.lg)
+        .background(Color.axSurface)
+        .cornerRadius(AXCornerRadius.lg)
+        .overlay(
+            RoundedRectangle(cornerRadius: AXCornerRadius.lg)
+                .stroke(Color.axBorder, lineWidth: 1)
+        )
+    }
+
+    // MARK: - Certificate Content Card (PEM Viewer)
+
+    private var certificateContentCard: some View {
+        VStack(alignment: .leading, spacing: AXSpacing.md) {
+            HStack {
+                Text("Certificate Content")
+                    .font(AXTypography.headline)
+                    .foregroundColor(.axTextPrimary)
+
+                Spacer()
+
+                if viewModel.certificateContent == nil && !viewModel.isLoadingContent {
+                    Button(action: {
+                        Task { await viewModel.loadCertificateContent() }
+                    }) {
+                        HStack(spacing: AXSpacing.xs) {
+                            Image(systemName: "eye")
+                            Text("View Content")
+                        }
+                        .font(AXTypography.caption)
+                        .foregroundColor(.axAccentBlue)
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                }
+            }
+
+            if viewModel.isLoadingContent {
+                HStack {
+                    Spacer()
+                    ProgressView("Loading certificate content...")
+                        .font(AXTypography.caption)
+                    Spacer()
+                }
+                .padding(AXSpacing.md)
+            } else if let content = viewModel.certificateContent {
+                // Certificate PEM
+                PEMContentBlock(
+                    title: "Certificate (PEM)",
+                    content: content.certificate,
+                    icon: "doc.text"
+                )
+
+                // Private Key PEM
+                PEMContentBlock(
+                    title: "Private Key (PEM)",
+                    content: content.privateKey,
+                    icon: "key",
+                    isSensitive: true
+                )
+            } else {
+                HStack(spacing: AXSpacing.sm) {
+                    Image(systemName: "doc.text")
+                        .foregroundColor(.axTextTertiary)
+                    Text("Click \"View Content\" to load the certificate and private key PEM data")
+                        .font(AXTypography.caption)
+                        .foregroundColor(.axTextSecondary)
+                }
+                .padding(AXSpacing.md)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(Color.axBackground)
+                .cornerRadius(AXCornerRadius.md)
             }
         }
         .padding(AXSpacing.lg)
@@ -302,15 +406,43 @@ struct SSLManagementSection: View {
                 .foregroundColor(.axTextPrimary)
 
             VStack(spacing: AXSpacing.sm) {
-                SSLActionButton(
-                    title: "Force HTTPS",
-                    subtitle: viewModel.isForceSSLEnabled ? "All traffic redirected to HTTPS" : "Redirect HTTP to HTTPS",
-                    icon: "lock.fill",
-                    color: viewModel.isForceSSLEnabled ? .axSuccess : .axTextSecondary,
-                    isLoading: viewModel.isEnablingForceSSL
-                ) {
-                    Task { await viewModel.toggleForceSSL() }
+                // Force HTTPS Toggle
+                HStack(spacing: AXSpacing.md) {
+                    Image(systemName: "lock.fill")
+                        .font(.system(size: 24))
+                        .foregroundColor(viewModel.isForceSSLEnabled ? .axSuccess : .axTextSecondary)
+                        .frame(width: 40)
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Force HTTPS")
+                            .font(AXTypography.body)
+                            .fontWeight(.medium)
+                            .foregroundColor(.axTextPrimary)
+
+                        Text(viewModel.isForceSSLEnabled ? "All HTTP traffic is redirected to HTTPS" : "Redirect all HTTP traffic to HTTPS")
+                            .font(AXTypography.caption)
+                            .foregroundColor(.axTextSecondary)
+                    }
+
+                    Spacer()
+
+                    if viewModel.isEnablingForceSSL {
+                        ProgressView()
+                            .scaleEffect(0.8)
+                    } else {
+                        Toggle("", isOn: Binding(
+                            get: { viewModel.isForceSSLEnabled },
+                            set: { _ in
+                                Task { await viewModel.toggleForceSSL() }
+                            }
+                        ))
+                        .toggleStyle(SwitchToggleStyle(tint: .axSuccess))
+                        .frame(width: 40)
+                    }
                 }
+                .padding(AXSpacing.md)
+                .background(Color.axBackground)
+                .cornerRadius(AXCornerRadius.md)
 
                 SSLActionButton(
                     title: "Configure HSTS",
@@ -347,6 +479,96 @@ struct SSLManagementSection: View {
         formatter.dateStyle = .medium
         formatter.timeStyle = .short
         return formatter.string(from: date)
+    }
+}
+
+// MARK: - PEM Content Block
+
+struct PEMContentBlock: View {
+    let title: String
+    let content: String
+    let icon: String
+    var isSensitive: Bool = false
+
+    @State private var isRevealed: Bool = false
+    @State private var copied: Bool = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: AXSpacing.sm) {
+            HStack {
+                Image(systemName: icon)
+                    .foregroundColor(.axTextTertiary)
+                    .font(.system(size: 14))
+
+                Text(title)
+                    .font(AXTypography.caption)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.axTextSecondary)
+
+                Spacer()
+
+                HStack(spacing: AXSpacing.sm) {
+                    if isSensitive {
+                        Button(action: { isRevealed.toggle() }) {
+                            HStack(spacing: 4) {
+                                Image(systemName: isRevealed ? "eye.slash" : "eye")
+                                Text(isRevealed ? "Hide" : "Show")
+                            }
+                            .font(.system(size: 11))
+                            .foregroundColor(.axAccentBlue)
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                    }
+
+                    Button(action: {
+                        NSPasteboard.general.clearContents()
+                        NSPasteboard.general.setString(content, forType: .string)
+                        copied = true
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                            copied = false
+                        }
+                    }) {
+                        HStack(spacing: 4) {
+                            Image(systemName: copied ? "checkmark" : "doc.on.doc")
+                            Text(copied ? "Copied!" : "Copy")
+                        }
+                        .font(.system(size: 11))
+                        .foregroundColor(copied ? .axSuccess : .axTextTertiary)
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                }
+            }
+
+            if !isSensitive || isRevealed {
+                ScrollView {
+                    Text(content)
+                        .font(.system(size: 10, design: .monospaced))
+                        .foregroundColor(.axTextPrimary)
+                        .textSelection(.enabled)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .frame(maxHeight: 150)
+                .padding(AXSpacing.sm)
+                .background(Color.axBackground)
+                .cornerRadius(AXCornerRadius.sm)
+                .overlay(
+                    RoundedRectangle(cornerRadius: AXCornerRadius.sm)
+                        .stroke(Color.axBorder, lineWidth: 1)
+                )
+            } else {
+                HStack(spacing: AXSpacing.xs) {
+                    Image(systemName: "lock.fill")
+                        .foregroundColor(.axTextMuted)
+                    Text("Content hidden — click \"Show\" to reveal")
+                        .font(AXTypography.caption)
+                        .foregroundColor(.axTextMuted)
+                }
+                .padding(AXSpacing.md)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(Color.axBackground)
+                .cornerRadius(AXCornerRadius.sm)
+            }
+        }
     }
 }
 

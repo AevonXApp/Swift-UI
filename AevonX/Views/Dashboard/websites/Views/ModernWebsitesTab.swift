@@ -137,7 +137,7 @@ struct ModernWebsitesTab: View {
                     websiteForDetail = website
                 },
                 onSSL: { website in
-                    initialDetailTab = 0 // SSL is in Overview for now
+                    initialDetailTab = 4 // SSL/TLS tab
                     websiteForDetail = website
                 }
             )

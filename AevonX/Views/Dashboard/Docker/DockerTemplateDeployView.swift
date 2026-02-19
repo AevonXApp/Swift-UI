@@ -170,7 +170,8 @@ services:
                 }
             }
         }
-        .frame(width: 550, height: 600)
+        .frame(width: 550)
+        .fixedSize(horizontal: false, vertical: true)
         .background(Color.axBackground)
     }
     
