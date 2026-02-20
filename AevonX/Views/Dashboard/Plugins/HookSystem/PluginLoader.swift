@@ -56,6 +56,11 @@ final class PluginLoader: ObservableObject {
         var total = 0
 
         for ns in discovered {
+            // Register manifest for dynamic command resolution
+            if let manifest = ns.manifest {
+                registry.registerManifest(manifest, namespace: ns.id)
+                PluginManifestStore.shared.register(manifest, namespace: ns.id)
+            }
             for plugin in ns.plugins {
                 registry.register(plugin)
             }
@@ -73,6 +78,7 @@ final class PluginLoader: ObservableObject {
     /// Clear all plugins (called on disconnect)
     func unload() {
         HookRegistry.shared.clearAll()
+        PluginManifestStore.shared.clearAll()
         namespaces = []
         totalPluginCount = 0
         print("[PluginLoader] Unloaded all plugins")

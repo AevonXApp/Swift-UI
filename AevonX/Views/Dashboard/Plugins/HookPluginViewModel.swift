@@ -33,7 +33,8 @@ public final class HookPluginViewModel: ObservableObject {
         command: HookPluginCommand,
         pluginId: String,
         serverId: String,
-        context: [String: String] = [:]
+        context: [String: String] = [:],
+        namespace: String? = nil
     ) async {
         guard !isLoading else { return }
 
@@ -47,11 +48,18 @@ public final class HookPluginViewModel: ObservableObject {
                 command: command,
                 pluginId: pluginId,
                 serverId: serverId,
-                context: context
+                context: context,
+                namespace: namespace
             )
             isLoading = false
             isSuccess = true
             resultOutput = result.output
+
+            // Show success toast if defined
+            if let msg = command.onSuccess, !msg.isEmpty {
+                PluginToastManager.shared.success(msg)
+            }
+
             // Auto-clear success state after 3 seconds
             Task {
                 try? await Task.sleep(nanoseconds: 3_000_000_000)
@@ -60,6 +68,13 @@ public final class HookPluginViewModel: ObservableObject {
         } catch {
             isLoading = false
             errorMessage = error.localizedDescription
+
+            // Show error toast if defined, otherwise show generic
+            if let msg = command.onError, !msg.isEmpty {
+                PluginToastManager.shared.error(msg)
+            } else {
+                PluginToastManager.shared.error(error.localizedDescription)
+            }
         }
     }
 

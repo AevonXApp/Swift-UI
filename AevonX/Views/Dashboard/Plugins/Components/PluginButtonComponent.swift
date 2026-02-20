@@ -93,7 +93,8 @@ public struct PluginButtonComponent: View {
                 command: command,
                 pluginId: plugin.id,
                 serverId: serverId,
-                context: context
+                context: context,
+                namespace: plugin.namespace
             )
         }
     }

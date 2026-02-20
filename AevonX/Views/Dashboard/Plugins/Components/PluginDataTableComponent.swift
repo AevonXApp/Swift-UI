@@ -9,6 +9,8 @@
 
 import SwiftUI
 import Combine
+import AppKit
+import UniformTypeIdentifiers
 import AevonXCore
 
 struct PluginDataTableComponent: View {
@@ -21,6 +23,9 @@ struct PluginDataTableComponent: View {
     @State private var sortAscending: Bool = true
     @State private var searchText: String = ""
     @State private var hoveredRow: Int? = nil
+    @State private var currentPage: Int = 0
+    @State private var selectedRow: [String: String]? = nil
+    @State private var showDetailSheet: Bool = false
 
     private var columns: [HookColumnDefinition] { plugin.columns ?? [] }
     private var dataSource: HookDataSource? { plugin.dataSource }
@@ -71,10 +76,21 @@ struct PluginDataTableComponent: View {
                 // Scrollable data rows
                 ScrollView(.vertical) {
                     LazyVStack(spacing: 0) {
-                        ForEach(Array(filteredRows.enumerated()), id: \.offset) { index, row in
-                            dataRowFlex(row: row, index: index)
+                        ForEach(Array(paginatedRows.enumerated()), id: \.offset) { index, row in
+                            dataRowFlex(row: row, index: (currentPage * pageSize) + index)
+                                .onTapGesture {
+                                    if plugin.onRowTap != nil {
+                                        selectedRow = row
+                                        showDetailSheet = true
+                                    }
+                                }
                         }
                     }
+                }
+
+                // Pagination bar
+                if pageSize < filteredRows.count {
+                    paginationBar
                 }
             }
         }
@@ -87,6 +103,117 @@ struct PluginDataTableComponent: View {
         .onDisappear {
             vm.cancelRefresh()
         }
+        .sheet(isPresented: $showDetailSheet) {
+            if let row = selectedRow {
+                rowDetailSheet(row)
+            }
+        }
+    }
+
+    // MARK: - Pagination
+
+    private var pageSize: Int {
+        plugin.dataSource?.pageSize ?? Int.max
+    }
+
+    private var totalPages: Int {
+        let total = filteredRows.count
+        guard pageSize < total else { return 1 }
+        return (total + pageSize - 1) / pageSize
+    }
+
+    private var paginatedRows: [[String: String]] {
+        guard pageSize < filteredRows.count else { return filteredRows }
+        let start = currentPage * pageSize
+        let end = min(start + pageSize, filteredRows.count)
+        guard start < end else { return [] }
+        return Array(filteredRows[start..<end])
+    }
+
+    private var paginationBar: some View {
+        HStack(spacing: AXSpacing.md) {
+            Spacer()
+            Button(action: { if currentPage > 0 { currentPage -= 1 } }) {
+                Image(systemName: "chevron.left")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundColor(currentPage > 0 ? .axAccentBlue : .axTextMuted)
+            }
+            .buttonStyle(.plain)
+            .disabled(currentPage == 0)
+
+            Text("Page \(currentPage + 1) of \(totalPages)")
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundColor(.axTextSecondary)
+
+            Button(action: { if currentPage < totalPages - 1 { currentPage += 1 } }) {
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundColor(currentPage < totalPages - 1 ? .axAccentBlue : .axTextMuted)
+            }
+            .buttonStyle(.plain)
+            .disabled(currentPage >= totalPages - 1)
+
+            Text("\(filteredRows.count) total")
+                .font(.system(size: 10, design: .monospaced))
+                .foregroundColor(.axTextMuted)
+            Spacer()
+        }
+        .padding(.vertical, AXSpacing.sm)
+        .background(Color.axSurface.opacity(0.6))
+    }
+
+    // MARK: - Row Detail Sheet
+
+    private func rowDetailSheet(_ row: [String: String]) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            // Sheet header
+            HStack {
+                Text(plugin.onRowTap?.title ?? "Details")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(.axTextPrimary)
+                Spacer()
+                Button(action: { showDetailSheet = false }) {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 16))
+                        .foregroundColor(.axTextMuted)
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(AXSpacing.lg)
+
+            Divider().opacity(0.3)
+
+            // Detail rows
+            ScrollView {
+                VStack(spacing: 0) {
+                    ForEach(columns, id: \.key) { col in
+                        HStack(alignment: .top, spacing: AXSpacing.lg) {
+                            HStack(spacing: 4) {
+                                if let icon = col.icon {
+                                    Image(systemName: icon)
+                                        .font(.system(size: 10))
+                                        .foregroundColor(.axTextMuted)
+                                }
+                                Text(col.label)
+                                    .font(.system(size: 12, weight: .semibold))
+                                    .foregroundColor(.axTextSecondary)
+                            }
+                            .frame(width: 120, alignment: .trailing)
+
+                            cellView(value: row[col.key] ?? "—", column: col)
+                            Spacer()
+                        }
+                        .padding(.horizontal, AXSpacing.lg)
+                        .padding(.vertical, AXSpacing.sm)
+
+                        Divider().opacity(0.15).padding(.leading, 140)
+                    }
+                }
+                .padding(.vertical, AXSpacing.md)
+            }
+        }
+        .frame(minWidth: 400, minHeight: 300)
+        .background(Color.axSurface)
     }
 
     // MARK: - Toolbar
@@ -156,6 +283,32 @@ struct PluginDataTableComponent: View {
                 .padding(.vertical, 2)
                 .background((vm.isRefreshing ? Color.axWarning : Color.axSuccess).opacity(0.08))
                 .cornerRadius(AXCornerRadius.sm)
+            }
+
+            // Export button
+            if !vm.rows.isEmpty {
+                Menu {
+                    Button(action: { exportData(format: .csv) }) {
+                        Label("Export CSV", systemImage: "tablecells")
+                    }
+                    Button(action: { exportData(format: .json) }) {
+                        Label("Export JSON", systemImage: "curlybraces")
+                    }
+                } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: "square.and.arrow.up")
+                            .font(.system(size: 11, weight: .medium))
+                        Text("Export")
+                            .font(.system(size: 12, weight: .medium))
+                    }
+                    .foregroundColor(.axTextSecondary)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 4)
+                    .background(Color.axSurface)
+                    .cornerRadius(AXCornerRadius.md)
+                    .overlay(RoundedRectangle(cornerRadius: AXCornerRadius.md).stroke(Color.axBorder.opacity(0.6), lineWidth: 1))
+                }
+                .menuStyle(.borderlessButton)
             }
 
             // Refresh button
@@ -491,6 +644,62 @@ struct PluginDataTableComponent: View {
         formatter.numberStyle = .decimal
         return formatter.string(from: NSNumber(value: num)) ?? value
     }
+
+    // MARK: - Export
+
+    private enum ExportFormat { case csv, json }
+
+    private func exportData(format: ExportFormat) {
+        let panel = NSSavePanel()
+        panel.canCreateDirectories = true
+        panel.nameFieldStringValue = "\(plugin.name.replacingOccurrences(of: " ", with: "_"))_export"
+
+        switch format {
+        case .csv:
+            panel.allowedContentTypes = [.commaSeparatedText]
+            panel.nameFieldStringValue += ".csv"
+        case .json:
+            panel.allowedContentTypes = [.json]
+            panel.nameFieldStringValue += ".json"
+        }
+
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+
+        let rows = filteredRows
+        var content = ""
+
+        switch format {
+        case .csv:
+            // Header
+            content = columns.map { $0.label }.joined(separator: ",") + "\n"
+            // Rows
+            for row in rows {
+                let line = columns.map { col in
+                    let val = row[col.key] ?? ""
+                    return val.contains(",") || val.contains("\"") ? "\"\(val.replacingOccurrences(of: "\"", with: "\"\""))\"" : val
+                }.joined(separator: ",")
+                content += line + "\n"
+            }
+
+        case .json:
+            let jsonArray = rows.map { row in
+                var dict: [String: String] = [:]
+                for col in columns { dict[col.key] = row[col.key] ?? "" }
+                return dict
+            }
+            if let data = try? JSONSerialization.data(withJSONObject: jsonArray, options: .prettyPrinted),
+               let json = String(data: data, encoding: .utf8) {
+                content = json
+            }
+        }
+
+        do {
+            try content.write(to: url, atomically: true, encoding: .utf8)
+            PluginToastManager.shared.success("Exported \(rows.count) rows to \(url.lastPathComponent)")
+        } catch {
+            PluginToastManager.shared.error("Export failed: \(error.localizedDescription)")
+        }
+    }
 }
 
 // MARK: - ViewModel
@@ -528,7 +737,9 @@ final class PluginDataTableViewModel: ObservableObject {
                 format: ds.format,
                 rowsPath: ds.rowsPath,
                 serverId: serverId,
-                context: context
+                context: context,
+                type: ds.type,
+                namespace: plugin.namespace
             )
             rows = result
             lastUpdated = Date()

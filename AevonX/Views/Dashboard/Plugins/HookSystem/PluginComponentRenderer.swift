@@ -54,6 +54,21 @@ struct PluginComponentRenderer: View {
 
         case .tabs, .grid, .detailsView:
             PluginPageComponent(plugin: plugin, serverId: serverId, context: context)
+
+        case .logViewer:
+            PluginLogViewerComponent(plugin: plugin, serverId: serverId, context: context)
+
+        case .progress:
+            PluginProgressComponent(plugin: plugin, serverId: serverId, context: context)
+
+        case .toggleList:
+            PluginToggleListComponent(plugin: plugin, serverId: serverId, context: context)
+
+        case .gauge:
+            PluginGaugeComponent(plugin: plugin, serverId: serverId, context: context)
+
+        case .codeEditor:
+            PluginCodeEditorComponent(plugin: plugin, serverId: serverId, context: context)
         }
     }
 }

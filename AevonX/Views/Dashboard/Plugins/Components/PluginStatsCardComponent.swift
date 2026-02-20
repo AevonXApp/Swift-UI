@@ -59,7 +59,7 @@ public struct PluginStatsCardComponent: View {
                     .font(.system(size: 13, weight: .semibold, design: .monospaced))
                     .foregroundColor(.axTextPrimary)
                     .lineLimit(3)
-            } else if let error = vm.errorMessage {
+            } else if vm.errorMessage != nil {
                 HStack(spacing: AXSpacing.xs) {
                     Image(systemName: "exclamationmark.triangle.fill")
                         .font(.system(size: 10))

@@ -18,6 +18,9 @@ final class HookRegistry: ObservableObject {
     /// All registered plugins, keyed by hook point
     @Published private(set) var registrations: [HookPoint: [HookPluginDefinition]] = [:]
 
+    /// Namespace manifests (binary path + allowed_actions)
+    private(set) var manifests: [String: HookNamespaceManifest] = [:]
+
     private init() {}
 
     // MARK: - Registration
@@ -31,6 +34,11 @@ final class HookRegistry: ObservableObject {
         }
     }
 
+    /// Store a namespace manifest for dynamic command resolution
+    func registerManifest(_ manifest: HookNamespaceManifest, namespace: String) {
+        manifests[namespace] = manifest
+    }
+
     func unregister(pluginId: String) {
         for hook in HookPoint.allCases {
             registrations[hook]?.removeAll { $0.id == pluginId }
@@ -40,6 +48,7 @@ final class HookRegistry: ObservableObject {
     /// Remove all registrations (called before reload)
     func clearAll() {
         registrations = [:]
+        manifests = [:]
     }
 
     // MARK: - Queries
@@ -53,6 +62,11 @@ final class HookRegistry: ObservableObject {
     func plugins(inNamespace namespace: String) -> [HookPluginDefinition] {
         HookPoint.allCases.flatMap { registrations[$0] ?? [] }
             .filter { $0.namespace == namespace }
+    }
+
+    /// Look up the manifest for a namespace (used by PluginCommandDispatcher)
+    func manifest(for namespace: String) -> HookNamespaceManifest? {
+        manifests[namespace]
     }
 
     /// Total count across all hooks
