@@ -86,7 +86,7 @@ struct ServerDashboardView: View {
                         case .plugins:
                             PluginsTab(server: server, serverId: serverId, connectionViewModel: viewModel)
                         case .settings:
-                            ServerSettingsTab(server: server)
+                            ServerSettingsTab(server: server, serverId: serverId, connectionViewModel: viewModel)
                         }
                     }
                 }
