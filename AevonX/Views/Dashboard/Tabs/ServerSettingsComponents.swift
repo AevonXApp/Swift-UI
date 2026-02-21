@@ -42,10 +42,6 @@ class ServerSettingsViewModel: ObservableObject {
     @Published var systemUsers: [(name: String, uid: String, shell: String, lastLogin: String)] = []
     @Published var isLoadingUsers = true
     
-    // Cron Jobs
-    @Published var cronJobs: [(schedule: String, command: String)] = []
-    @Published var isLoadingCron = true
-    
     // Services
     @Published var runningServices: [(name: String, status: String, isActive: Bool)] = []
     @Published var isLoadingServices = true
@@ -101,12 +97,6 @@ class ServerSettingsViewModel: ObservableObject {
     @Published var isAddingUser = false
     @Published var userMsg: (String, Bool)? = nil
     
-    // New cron
-    @Published var newCronSchedule = ""
-    @Published var newCronCommand = ""
-    @Published var isAddingCron = false
-    @Published var cronMsg: (String, Bool)? = nil
-    
     let commonTimezones = [
         "UTC", "US/Eastern", "US/Central", "US/Mountain", "US/Pacific",
         "Europe/London", "Europe/Paris", "Europe/Berlin", "Europe/Moscow",
@@ -130,7 +120,7 @@ class ServerSettingsViewModel: ObservableObject {
             group.addTask { await self.loadServerInfo() }
             group.addTask { await self.loadSSHConfig() }
             group.addTask { await self.loadUsers() }
-            group.addTask { await self.loadCronJobs() }
+
             group.addTask { await self.loadServices() }
             group.addTask { await self.loadDisk() }
         }
@@ -224,20 +214,7 @@ class ServerSettingsViewModel: ObservableObject {
         }
     }
     
-    func loadCronJobs() async {
-        isLoadingCron = true
-        defer { isLoadingCron = false }
-        
-        let output = await ssh("crontab -l 2>/dev/null | grep -v '^#' | grep -v '^$'")
-        cronJobs = output.split(separator: "\n").compactMap { line in
-            let str = String(line)
-            let parts = str.split(separator: " ", maxSplits: 5)
-            guard parts.count >= 6 else { return nil }
-            let schedule = parts[0..<5].joined(separator: " ")
-            let cmd = parts[5...].joined(separator: " ")
-            return (schedule: schedule, command: cmd)
-        }
-    }
+
     
     func loadServices() async {
         isLoadingServices = true
@@ -350,25 +327,7 @@ class ServerSettingsViewModel: ObservableObject {
         await loadUsers()
     }
     
-    func addCronJob() async {
-        guard !newCronSchedule.isEmpty, !newCronCommand.isEmpty else { return }
-        isAddingCron = true; defer { isAddingCron = false }
-        let out = await ssh("(crontab -l 2>/dev/null; echo '\(newCronSchedule) \(newCronCommand)') | crontab - 2>&1 && echo 'OK' || echo 'FAIL'")
-        if out.contains("OK") {
-            cronMsg = ("Cron job added", true); newCronSchedule = ""; newCronCommand = ""
-            await loadCronJobs()
-        } else { cronMsg = ("Failed: \(out)", false) }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 5) { self.cronMsg = nil }
-    }
-    
-    func deleteCronJob(_ index: Int) async {
-        guard index < cronJobs.count else { return }
-        let job = cronJobs[index]
-        let full = "\(job.schedule) \(job.command)"
-        let escaped = full.replacingOccurrences(of: "/", with: "\\/")
-        let _ = await ssh("crontab -l 2>/dev/null | grep -v '\(escaped)' | crontab - 2>&1")
-        await loadCronJobs()
-    }
+
     
     func toggleService(_ name: String, start: Bool) async {
         let action = start ? "start" : "stop"

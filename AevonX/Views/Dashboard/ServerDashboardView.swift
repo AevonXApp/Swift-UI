@@ -83,6 +83,8 @@ struct ServerDashboardView: View {
                             FilesTab(serverId: serverId, connectionViewModel: viewModel)
                         case .security:
                             SecurityTab(server: server, serverId: serverId, connectionViewModel: viewModel)
+                        case .cron:
+                            CronTab(serverId: serverId, connectionViewModel: viewModel)
                         case .plugins:
                             PluginsTab(server: server, serverId: serverId, connectionViewModel: viewModel)
                         case .settings:

@@ -48,7 +48,6 @@ struct ServerSettingsTab: View {
                 // Full width sections
                 passwordManagementCard
                 userManagementCard
-                cronJobsCard
                 servicesCard
                 dangerZoneCard
             }
@@ -419,71 +418,6 @@ struct ServerSettingsTab: View {
         }
     }
 
-    // MARK: - Cron Jobs
-
-    private var cronJobsCard: some View {
-        AXCard {
-            VStack(alignment: .leading, spacing: AXSpacing.md) {
-                SettingsGradientHeader(icon: "clock.badge.checkmark", title: "Cron Jobs", subtitle: "Scheduled tasks", gradient: [.indigo, .purple.opacity(0.7)])
-                Divider().background(Color.axBorder)
-
-                if vm.isLoadingCron {
-                    SettingsLoadingPlaceholder(text: "Loading cron jobs...")
-                } else {
-                    if vm.cronJobs.isEmpty {
-                        Text("No cron jobs configured").font(AXTypography.caption).foregroundColor(.axTextTertiary).padding(.vertical, AXSpacing.sm)
-                    } else {
-                        ForEach(Array(vm.cronJobs.enumerated()), id: \.offset) { idx, job in
-                            HStack(spacing: AXSpacing.sm) {
-                                Text(job.schedule)
-                                    .font(.system(size: 11, weight: .medium, design: .monospaced))
-                                    .foregroundColor(.axAccentBlue)
-                                    .frame(width: 120, alignment: .leading)
-                                Text(job.command)
-                                    .font(.system(size: 11, design: .monospaced))
-                                    .foregroundColor(.axTextSecondary)
-                                    .lineLimit(1)
-                                Spacer()
-                                Button(action: { Task { await vm.deleteCronJob(idx) } }) {
-                                    Image(systemName: "trash").font(.system(size: 10)).foregroundColor(.axError.opacity(0.7))
-                                }
-                                .buttonStyle(PlainButtonStyle())
-                            }
-                            .padding(.vertical, 2)
-                        }
-                    }
-
-                    Divider().background(Color.axBorder.opacity(0.4))
-
-                    HStack(spacing: AXSpacing.sm) {
-                        TextField("Schedule (e.g. 0 * * * *)", text: $vm.newCronSchedule)
-                            .font(.system(size: 11, design: .monospaced)).textFieldStyle(PlainTextFieldStyle())
-                            .padding(.horizontal, AXSpacing.sm).padding(.vertical, 5)
-                            .background(Color.axBackgroundTertiary)
-                            .overlay(RoundedRectangle(cornerRadius: AXCornerRadius.sm).stroke(Color.axBorder, lineWidth: 1))
-                            .cornerRadius(AXCornerRadius.sm).frame(width: 160)
-                        TextField("Command", text: $vm.newCronCommand)
-                            .font(.system(size: 11, design: .monospaced)).textFieldStyle(PlainTextFieldStyle())
-                            .padding(.horizontal, AXSpacing.sm).padding(.vertical, 5)
-                            .background(Color.axBackgroundTertiary)
-                            .overlay(RoundedRectangle(cornerRadius: AXCornerRadius.sm).stroke(Color.axBorder, lineWidth: 1))
-                            .cornerRadius(AXCornerRadius.sm)
-                        Button(action: { Task { await vm.addCronJob() } }) {
-                            HStack(spacing: 3) {
-                                if vm.isAddingCron { ProgressView().scaleEffect(0.5) }
-                                else { Image(systemName: "plus").font(.system(size: 10, weight: .bold)) }
-                                Text("Add").font(.system(size: 11, weight: .semibold))
-                            }
-                            .foregroundColor(.white).padding(.horizontal, AXSpacing.md).padding(.vertical, 5)
-                            .background(Color.indigo).cornerRadius(AXCornerRadius.sm)
-                        }
-                        .buttonStyle(PlainButtonStyle()).disabled(vm.isAddingCron || vm.newCronSchedule.isEmpty)
-                    }
-                    if let msg = vm.cronMsg { SettingsInlineMsg(text: msg.0, isSuccess: msg.1) }
-                }
-            }
-        }
-    }
 
     // MARK: - Services
 
