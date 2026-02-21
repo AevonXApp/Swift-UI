@@ -2,7 +2,7 @@
 //  CronJobRow.swift
 //  AevonX
 //
-//  Website-style BlueprintNode card for individual cron jobs
+//  Individual cron job row with status, schedule, and actions
 //
 
 import SwiftUI
@@ -20,176 +20,139 @@ struct CronJobRow: View {
     @State private var isHovered = false
     
     var body: some View {
-        HStack(spacing: 14) {
-            // Icon container — matches website bg-cyan-500/15 border border-cyan-500/25
+        HStack(spacing: AXSpacing.md) {
+            // Task type icon
             ZStack {
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(typeColor.opacity(job.isEnabled ? 0.12 : 0.04))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12)
-                            .stroke(typeColor.opacity(job.isEnabled ? 0.25 : 0.08), lineWidth: 1)
-                    )
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(typeColor.opacity(job.isEnabled ? 0.15 : 0.05))
+                    .frame(width: 36, height: 36)
                 Image(systemName: job.taskType.icon)
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(job.isEnabled ? typeColor : .white.opacity(0.2))
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundColor(job.isEnabled ? typeColor : .axTextMuted)
             }
-            .frame(width: 42, height: 42)
-            .scaleEffect(isHovered ? 1.08 : 1.0)
-            .rotationEffect(.degrees(isHovered ? -3 : 0))
-            .animation(.spring(response: 0.35), value: isHovered)
             
-            // Info block
-            VStack(alignment: .leading, spacing: 4) {
-                HStack(spacing: 6) {
+            // Info
+            VStack(alignment: .leading, spacing: 3) {
+                HStack(spacing: AXSpacing.xs) {
                     Text(job.name)
-                        .font(.system(size: 13, weight: .bold))
-                        .foregroundColor(job.isEnabled ? .white.opacity(0.85) : .white.opacity(0.35))
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(job.isEnabled ? .axTextPrimary : .axTextMuted)
                         .lineLimit(1)
                     
                     if !job.isEnabled {
                         Text("DISABLED")
-                            .font(.system(size: 7, weight: .heavy))
-                            .foregroundColor(.white.opacity(0.25))
-                            .tracking(1)
+                            .font(.system(size: 8, weight: .bold))
+                            .foregroundColor(.axTextMuted)
                             .padding(.horizontal, 5)
-                            .padding(.vertical, 2)
-                            .background(Color.white.opacity(0.04))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 4)
-                                    .stroke(Color.white.opacity(0.06), lineWidth: 1)
-                            )
-                            .cornerRadius(4)
+                            .padding(.vertical, 1)
+                            .background(Color.axTextMuted.opacity(0.1))
+                            .cornerRadius(3)
                     }
                 }
                 
-                // Metadata tags — matches website text-[10px] px-2.5 py-1 rounded-lg pills
-                HStack(spacing: 6) {
-                    // Schedule pill
+                HStack(spacing: AXSpacing.sm) {
+                    // Schedule badge
                     HStack(spacing: 3) {
                         Image(systemName: "clock")
-                            .font(.system(size: 8))
+                            .font(.system(size: 9))
                         Text(job.schedule.humanReadable)
-                            .font(.system(size: 10, weight: .medium))
+                            .font(.system(size: 10))
                     }
-                    .foregroundColor(typeColor.opacity(0.6))
-                    .padding(.horizontal, 7)
-                    .padding(.vertical, 3)
-                    .background(typeColor.opacity(0.05))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 6)
-                            .stroke(typeColor.opacity(0.1), lineWidth: 1)
-                    )
-                    .cornerRadius(6)
+                    .foregroundColor(.axTextTertiary)
                     
-                    // Task type pill
+                    // Task type
                     Text(job.taskType.rawValue)
-                        .font(.system(size: 9, weight: .semibold))
-                        .foregroundColor(.white.opacity(0.25))
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 3)
-                        .background(Color.white.opacity(0.02))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 6)
-                                .stroke(Color.white.opacity(0.04), lineWidth: 1)
-                        )
-                        .cornerRadius(6)
+                        .font(.system(size: 9, weight: .medium))
+                        .foregroundColor(typeColor)
+                        .padding(.horizontal, 5)
+                        .padding(.vertical, 1)
+                        .background(typeColor.opacity(0.08))
+                        .cornerRadius(3)
                 }
             }
             
             Spacer()
             
-            // Status indicator
+            // Status
             if let status = job.lastStatus {
-                HStack(spacing: 4) {
-                    Circle()
-                        .fill(status == .success ? Color.green.opacity(0.7) : Color.red.opacity(0.7))
-                        .frame(width: 6, height: 6)
-                    Text(status.rawValue)
-                        .font(.system(size: 10, weight: .bold))
-                        .foregroundColor(status == .success ? .green.opacity(0.7) : .red.opacity(0.7))
+                HStack(spacing: 3) {
+                    Circle().fill(status == .success ? Color.axSuccess : Color.axError).frame(width: 6, height: 6)
+                    Text(status.rawValue).font(.system(size: 10, weight: .medium)).foregroundColor(status == .success ? .axSuccess : .axError)
                 }
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
-                .background((status == .success ? Color.green : Color.red).opacity(0.06))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 6)
-                        .stroke((status == .success ? Color.green : Color.red).opacity(0.1), lineWidth: 1)
-                )
-                .cornerRadius(6)
+                .padding(.horizontal, 6)
+                .padding(.vertical, 3)
+                .background((status == .success ? Color.axSuccess : Color.axError).opacity(0.08))
+                .cornerRadius(4)
             }
             
-            // Action buttons — reveal on hover
-            HStack(spacing: 4) {
-                actionButton(icon: isExecuting ? "hourglass" : "play.fill", color: .green, tooltip: "Execute Now") { onExecute() }
-                    .disabled(isExecuting)
-                actionButton(icon: "pencil", color: .axAccentBlue, tooltip: "Edit") { onEdit() }
-                actionButton(icon: "doc.text", color: .purple, tooltip: "Logs") { onLog() }
-                actionButton(icon: job.isEnabled ? "pause.fill" : "play.fill", color: .orange, tooltip: job.isEnabled ? "Disable" : "Enable") { onToggle() }
-                actionButton(icon: "trash", color: .red, tooltip: "Delete") { onDelete() }
+            // Last executed
+            if let last = job.lastExecuted {
+                Text(last)
+                    .font(.system(size: 10, design: .monospaced))
+                    .foregroundColor(.axTextTertiary)
+                    .frame(width: 90, alignment: .trailing)
             }
-            .opacity(isHovered ? 1 : 0.25)
-            .animation(.easeOut(duration: 0.2), value: isHovered)
-        }
-        .padding(14)
-        .background(
-            ZStack {
-                // Card background
-                RoundedRectangle(cornerRadius: 16)
-                    .fill(Color.white.opacity(isHovered ? 0.025 : 0.012))
-                // Border
-                RoundedRectangle(cornerRadius: 16)
-                    .stroke(
-                        isHovered ? typeColor.opacity(0.2) : Color.white.opacity(0.06),
-                        lineWidth: 1
-                    )
-                // Top glow bar on hover
-                if isHovered {
-                    VStack {
-                        LinearGradient(
-                            colors: [.clear, typeColor.opacity(0.3), .clear],
-                            startPoint: .leading,
-                            endPoint: .trailing
-                        )
-                        .frame(height: 1)
-                        Spacer()
-                    }
-                    .clipShape(RoundedRectangle(cornerRadius: 16))
+            
+            // Actions
+            HStack(spacing: AXSpacing.xs) {
+                // Execute
+                actionButton(icon: isExecuting ? "hourglass" : "play.fill", color: .axAccentGreen, tooltip: "Execute Now") {
+                    onExecute()
+                }
+                .disabled(isExecuting)
+                
+                // Edit
+                actionButton(icon: "pencil", color: .axAccentBlue, tooltip: "Edit") {
+                    onEdit()
+                }
+                
+                // Logs
+                actionButton(icon: "doc.text", color: .purple, tooltip: "View Logs") {
+                    onLog()
+                }
+                
+                // Toggle
+                actionButton(icon: job.isEnabled ? "pause.fill" : "play.fill", color: .axWarning, tooltip: job.isEnabled ? "Disable" : "Enable") {
+                    onToggle()
+                }
+                
+                // Delete
+                actionButton(icon: "trash", color: .axError, tooltip: "Delete") {
+                    onDelete()
                 }
             }
+            .opacity(isHovered ? 1 : 0.4)
+        }
+        .padding(.horizontal, AXSpacing.md)
+        .padding(.vertical, AXSpacing.sm)
+        .background(
+            RoundedRectangle(cornerRadius: AXCornerRadius.md)
+                .fill(isHovered ? Color.axSurface.opacity(0.5) : Color.clear)
         )
-        .offset(y: isHovered ? -1 : 0)
-        .animation(.spring(response: 0.3), value: isHovered)
         .onHover { isHovered = $0 }
     }
     
-    // MARK: - Helpers
-    
     private var typeColor: Color {
         switch job.taskType {
-        case .backupWebsite, .backupDatabase, .backupDirectory: return Color(red: 0.13, green: 0.83, blue: 0.93) // cyan-400
-        case .sslRenewal: return .green
-        case .systemUpdate: return Color(red: 0.13, green: 0.83, blue: 0.93)
-        case .diskCleanup: return .red
+        case .backupWebsite, .backupDatabase, .backupDirectory: return .axAccentBlue
+        case .sslRenewal, .systemUpdate: return .axSuccess
+        case .diskCleanup: return .axError
         case .freeRAM, .cutLog: return .orange
         case .syncTime: return .cyan
         case .accessURL: return .teal
         case .dbOptimization: return .indigo
-        case .shellScript: return Color(red: 0.13, green: 0.83, blue: 0.93) // default cyan
+        case .shellScript: return .axTextSecondary
         }
     }
     
     private func actionButton(icon: String, color: Color, tooltip: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Image(systemName: icon)
-                .font(.system(size: 10, weight: .semibold))
-                .foregroundColor(color.opacity(0.7))
-                .frame(width: 26, height: 26)
-                .background(color.opacity(0.06))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 7)
-                        .stroke(color.opacity(0.1), lineWidth: 1)
-                )
-                .cornerRadius(7)
+                .font(.system(size: 10, weight: .medium))
+                .foregroundColor(color)
+                .frame(width: 24, height: 24)
+                .background(color.opacity(0.08))
+                .cornerRadius(5)
         }
         .buttonStyle(PlainButtonStyle())
         .help(tooltip)
