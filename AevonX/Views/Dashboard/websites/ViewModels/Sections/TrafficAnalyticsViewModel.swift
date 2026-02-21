@@ -105,6 +105,10 @@ public final class TrafficAnalyticsViewModel: ObservableObject {
     // MARK: - Auto Refresh
 
     public func startAutoRefresh() {
+        // Invalidate existing timer to prevent stacking (P3-1)
+        autoRefreshTimer?.invalidate()
+        autoRefreshTimer = nil
+        
         guard autoRefreshEnabled else { return }
 
         autoRefreshTimer = Timer.scheduledTimer(withTimeInterval: 30, repeats: true) { [weak self] _ in

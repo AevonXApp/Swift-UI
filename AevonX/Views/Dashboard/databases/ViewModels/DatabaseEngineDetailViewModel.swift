@@ -249,7 +249,12 @@ public final class DatabaseEngineDetailViewModel: ObservableObject {
     // MARK: - Auto Refresh
     
     private func setupAutoRefresh() {
-        // Refresh every 30 seconds when enabled
+        // Invalidate any existing timer first to prevent stacking (P2-6)
+        refreshTimer?.invalidate()
+        refreshTimer = nil
+        
+        guard autoRefreshEnabled else { return }
+        
         refreshTimer = Timer.scheduledTimer(withTimeInterval: 30.0, repeats: true) { [weak self] _ in
             Task { @MainActor [weak self] in
                 guard let self = self, self.autoRefreshEnabled else { return }
@@ -629,130 +634,99 @@ public final class DatabaseEngineDetailViewModel: ObservableObject {
         return "latest"
     }
     
+    // MARK: - Operation Helper
+    
+    /// Shared operation runner that handles isPerformingServiceAction, operationResult, and activeAlert.
+    /// Preserves all features: progress, success/failure alerts, and loadData after success.
+    private func performOperation(
+        progressMessage: String,
+        successMessage: String,
+        successAlert: String,
+        failurePrefix: String,
+        reloadAfterSuccess: Bool = true,
+        action: () async throws -> Void
+    ) async {
+        guard serverId != nil else { return }
+        
+        isPerformingServiceAction = true
+        operationResult = .inProgress(message: progressMessage, progress: nil)
+        
+        do {
+            try await action()
+            operationResult = .success(message: successMessage)
+            activeAlert = .operationSuccess(message: successAlert)
+            if reloadAfterSuccess { await loadData() }
+        } catch {
+            operationResult = .failure(message: "\(failurePrefix): \(error.localizedDescription)")
+            activeAlert = .operationFailure(message: "\(failurePrefix) \(databaseType.displayName): \(error.localizedDescription)")
+        }
+        
+        isPerformingServiceAction = false
+    }
+    
     // MARK: - Service Control
     
     /// Start the database service
     public func startService() async {
-        guard let serverId = serverId else { return }
-        
-        isPerformingServiceAction = true
-        operationResult = .inProgress(message: "Starting \(databaseType.displayName)...", progress: nil)
-        
-        do {
-            try await DatabaseEngineService.shared.startService(type: databaseType, serverId: serverId)
-            
-            // Wait a moment for service to fully start
-            try await Task.sleep(nanoseconds: 2_000_000_000) // 2 seconds
-            
-            operationResult = .success(message: "\(databaseType.displayName) started successfully!")
-            activeAlert = .operationSuccess(message: "\(databaseType.displayName) service has been started.")
-            
-            await loadData()
-            
-        } catch {
-            operationResult = .failure(message: "Failed to start: \(error.localizedDescription)")
-            activeAlert = .operationFailure(message: "Failed to start \(databaseType.displayName): \(error.localizedDescription)")
+        await performOperation(
+            progressMessage: "Starting \(databaseType.displayName)...",
+            successMessage: "\(databaseType.displayName) started successfully!",
+            successAlert: "\(databaseType.displayName) service has been started.",
+            failurePrefix: "Failed to start"
+        ) {
+            try await DatabaseEngineService.shared.startService(type: databaseType, serverId: serverId!)
+            try await Task.sleep(nanoseconds: 2_000_000_000)
         }
-        
-        isPerformingServiceAction = false
     }
     
     /// Stop the database service
     public func stopService() async {
-        guard let serverId = serverId else { return }
-        
-        isPerformingServiceAction = true
-        operationResult = .inProgress(message: "Stopping \(databaseType.displayName)...", progress: nil)
-        
-        do {
-            try await DatabaseEngineService.shared.stopService(type: databaseType, serverId: serverId)
-            
-            // Wait a moment for service to fully stop
-            try await Task.sleep(nanoseconds: 2_000_000_000) // 2 seconds
-            
-            operationResult = .success(message: "\(databaseType.displayName) stopped successfully!")
-            activeAlert = .operationSuccess(message: "\(databaseType.displayName) service has been stopped.")
-            
-            await loadData()
-            
-        } catch {
-            operationResult = .failure(message: "Failed to stop: \(error.localizedDescription)")
-            activeAlert = .operationFailure(message: "Failed to stop \(databaseType.displayName): \(error.localizedDescription)")
+        await performOperation(
+            progressMessage: "Stopping \(databaseType.displayName)...",
+            successMessage: "\(databaseType.displayName) stopped successfully!",
+            successAlert: "\(databaseType.displayName) service has been stopped.",
+            failurePrefix: "Failed to stop"
+        ) {
+            try await DatabaseEngineService.shared.stopService(type: databaseType, serverId: serverId!)
+            try await Task.sleep(nanoseconds: 2_000_000_000)
         }
-        
-        isPerformingServiceAction = false
     }
     
     /// Restart the database service
     public func restartService() async {
-        guard let serverId = serverId else { return }
-        
-        isPerformingServiceAction = true
-        operationResult = .inProgress(message: "Restarting \(databaseType.displayName)...", progress: nil)
-        
-        do {
-            try await DatabaseEngineService.shared.restartService(type: databaseType, serverId: serverId)
-            
-            // Wait a moment for service to fully restart
-            try await Task.sleep(nanoseconds: 3_000_000_000) // 3 seconds
-            
-            operationResult = .success(message: "\(databaseType.displayName) restarted successfully!")
-            activeAlert = .operationSuccess(message: "\(databaseType.displayName) service has been restarted.")
-            
-            await loadData()
-            
-        } catch {
-            operationResult = .failure(message: "Failed to restart: \(error.localizedDescription)")
-            activeAlert = .operationFailure(message: "Failed to restart \(databaseType.displayName): \(error.localizedDescription)")
+        await performOperation(
+            progressMessage: "Restarting \(databaseType.displayName)...",
+            successMessage: "\(databaseType.displayName) restarted successfully!",
+            successAlert: "\(databaseType.displayName) service has been restarted.",
+            failurePrefix: "Failed to restart"
+        ) {
+            try await DatabaseEngineService.shared.restartService(type: databaseType, serverId: serverId!)
+            try await Task.sleep(nanoseconds: 3_000_000_000)
         }
-        
-        isPerformingServiceAction = false
     }
     
     /// Enable service on boot
     public func enableOnBoot() async {
-        guard let serverId = serverId else { return }
-        
-        isPerformingServiceAction = true
-        operationResult = .inProgress(message: "Enabling \(databaseType.displayName) on boot...", progress: nil)
-        
-        do {
-            try await DatabaseEngineService.shared.enableService(type: databaseType, serverId: serverId)
-            
-            operationResult = .success(message: "\(databaseType.displayName) will start on boot!")
-            activeAlert = .operationSuccess(message: "\(databaseType.displayName) has been enabled to start on system boot.")
-            
-            await loadData()
-            
-        } catch {
-            operationResult = .failure(message: "Failed to enable: \(error.localizedDescription)")
-            activeAlert = .operationFailure(message: "Failed to enable \(databaseType.displayName) on boot: \(error.localizedDescription)")
+        await performOperation(
+            progressMessage: "Enabling \(databaseType.displayName) on boot...",
+            successMessage: "\(databaseType.displayName) will start on boot!",
+            successAlert: "\(databaseType.displayName) has been enabled to start on system boot.",
+            failurePrefix: "Failed to enable"
+        ) {
+            try await DatabaseEngineService.shared.enableService(type: databaseType, serverId: serverId!)
         }
-        
-        isPerformingServiceAction = false
     }
     
     /// Disable service on boot
     public func disableOnBoot() async {
-        guard let serverId = serverId else { return }
-        
-        isPerformingServiceAction = true
-        operationResult = .inProgress(message: "Disabling \(databaseType.displayName) on boot...", progress: nil)
-        
-        do {
-            try await DatabaseEngineService.shared.disableService(type: databaseType, serverId: serverId)
-            
-            operationResult = .success(message: "\(databaseType.displayName) will not start on boot!")
-            activeAlert = .operationSuccess(message: "\(databaseType.displayName) has been disabled from starting on system boot.")
-            
-            await loadData()
-            
-        } catch {
-            operationResult = .failure(message: "Failed to disable: \(error.localizedDescription)")
-            activeAlert = .operationFailure(message: "Failed to disable \(databaseType.displayName) on boot: \(error.localizedDescription)")
+        await performOperation(
+            progressMessage: "Disabling \(databaseType.displayName) on boot...",
+            successMessage: "\(databaseType.displayName) will not start on boot!",
+            successAlert: "\(databaseType.displayName) has been disabled from starting on system boot.",
+            failurePrefix: "Failed to disable"
+        ) {
+            try await DatabaseEngineService.shared.disableService(type: databaseType, serverId: serverId!)
         }
-        
-        isPerformingServiceAction = false
     }
     
     // MARK: - Confirmation Actions
@@ -876,24 +850,17 @@ public final class DatabaseEngineDetailViewModel: ObservableObject {
 
     /// Save configuration content to the server
     public func saveConfiguration(content: String) async {
-        guard let serverId = serverId else { return }
-
-        isPerformingServiceAction = true
-        operationResult = .inProgress(message: "Saving configuration...", progress: nil)
-
-        do {
+        await performOperation(
+            progressMessage: "Saving configuration...",
+            successMessage: "Configuration saved successfully!",
+            successAlert: "Configuration has been saved. A restart may be required for changes to take effect.",
+            failurePrefix: "Save failed",
+            reloadAfterSuccess: false
+        ) {
             let config = AevonXCore.DatabaseConfiguration(engineType: databaseType, settings: [:], rawContent: content)
-            try await DatabaseEngineService.shared.updateConfiguration(config, type: databaseType, serverId: serverId)
-
-            operationResult = .success(message: "Configuration saved successfully!")
-            activeAlert = .operationSuccess(message: "Configuration has been saved. A restart may be required for changes to take effect.")
+            try await DatabaseEngineService.shared.updateConfiguration(config, type: databaseType, serverId: serverId!)
             await loadConfiguration()
-        } catch {
-            operationResult = .failure(message: "Save failed: \(error.localizedDescription)")
-            activeAlert = .operationFailure(message: "Failed to save configuration: \(error.localizedDescription)")
         }
-
-        isPerformingServiceAction = false
     }
 
     // MARK: - Optimization
@@ -922,31 +889,21 @@ public final class DatabaseEngineDetailViewModel: ObservableObject {
 
     /// Apply an optimization preset to the configuration
     public func applyOptimizationPreset(_ preset: String) async {
-        guard let serverId = serverId else { return }
-
-        isPerformingServiceAction = true
-        operationResult = .inProgress(message: "Applying '\(preset)' preset...", progress: nil)
-
-        do {
-            let currentConfig = try await DatabaseEngineService.shared.getConfiguration(type: databaseType, serverId: serverId)
+        await performOperation(
+            progressMessage: "Applying '\(preset)' preset...",
+            successMessage: "'\(preset)' preset applied!",
+            successAlert: "The '\(preset)' optimization preset has been applied. Restart the service for changes to take effect.",
+            failurePrefix: "Failed to apply preset",
+            reloadAfterSuccess: false
+        ) {
+            let currentConfig = try await DatabaseEngineService.shared.getConfiguration(type: databaseType, serverId: serverId!)
             let presetSettings = optimizationPresetSettings(for: preset)
-
-            // Merge preset settings into current config
             var merged = currentConfig.settings
             for (key, value) in presetSettings { merged[key] = value }
-
             let updated = AevonXCore.DatabaseConfiguration(engineType: databaseType, settings: merged, rawContent: currentConfig.rawContent)
-            try await DatabaseEngineService.shared.updateConfiguration(updated, type: databaseType, serverId: serverId)
-
-            operationResult = .success(message: "'\(preset)' preset applied!")
-            activeAlert = .operationSuccess(message: "The '\(preset)' optimization preset has been applied. Restart the service for changes to take effect.")
+            try await DatabaseEngineService.shared.updateConfiguration(updated, type: databaseType, serverId: serverId!)
             await loadConfiguration()
-        } catch {
-            operationResult = .failure(message: "Failed to apply preset: \(error.localizedDescription)")
-            activeAlert = .operationFailure(message: "Failed to apply '\(preset)' preset: \(error.localizedDescription)")
         }
-
-        isPerformingServiceAction = false
     }
 
     private func optimizationPresetSettings(for preset: String) -> [String: String] {
@@ -981,25 +938,14 @@ public final class DatabaseEngineDetailViewModel: ObservableObject {
 
     /// Uninstall the database engine
     public func uninstallEngine() async {
-        guard let serverId = serverId else { return }
-
-        isPerformingServiceAction = true
-        operationResult = .inProgress(message: "Uninstalling \(databaseType.displayName)...", progress: nil)
-
-        do {
-            // Service stopping is now handled by the adapter/manager if necessary,
-            // but we can still be safe here if we want to show it in the UI
-            try await DatabaseEngineService.shared.uninstallDatabaseEngine(type: databaseType, serverId: serverId)
-
-            operationResult = .success(message: "\(databaseType.displayName) uninstalled successfully!")
-            activeAlert = .operationSuccess(message: "\(databaseType.displayName) has been uninstalled from the server.")
-            await loadData()
-        } catch {
-            operationResult = .failure(message: "Uninstall failed: \(error.localizedDescription)")
-            activeAlert = .operationFailure(message: "Failed to uninstall \(databaseType.displayName): \(error.localizedDescription)")
+        await performOperation(
+            progressMessage: "Uninstalling \(databaseType.displayName)...",
+            successMessage: "\(databaseType.displayName) uninstalled successfully!",
+            successAlert: "\(databaseType.displayName) has been uninstalled from the server.",
+            failurePrefix: "Uninstall failed"
+        ) {
+            try await DatabaseEngineService.shared.uninstallDatabaseEngine(type: databaseType, serverId: serverId!)
         }
-
-        isPerformingServiceAction = false
     }
 
     /// Show uninstall confirmation

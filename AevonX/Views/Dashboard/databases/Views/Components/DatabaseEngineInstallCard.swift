@@ -2,7 +2,8 @@
 //  DatabaseEngineInstallCard.swift
 //  AevonX
 //
-//  Created by Automation on 2026-02-08.
+//  Card showing an installed database engine with manage button.
+//  Only used for installed engines (uninstalled are hidden).
 //
 
 import SwiftUI
@@ -14,7 +15,7 @@ struct DatabaseEngineInstallCard: View {
     let onManage: (DatabaseType) -> Void
     
     var body: some View {
-        let isInstalled = viewModel.isEngineInstalled(type)
+        let state = viewModel.installationState(for: type)
         
         return AXGlassCard(padding: AXSpacing.lg, accentColor: type.brandColor) {
             VStack(alignment: .leading, spacing: AXSpacing.md) {
@@ -31,11 +32,11 @@ struct DatabaseEngineInstallCard: View {
                     
                     Spacer()
                     
-                    if isInstalled {
-                        Image(systemName: "checkmark.seal.fill")
-                            .foregroundColor(.axSuccess)
-                            .font(.system(size: 14))
-                    }
+                    // Status indicator
+                    Circle()
+                        .fill(state?.isRunning == true ? Color.axSuccess : Color.axTextMuted)
+                        .frame(width: 8, height: 8)
+                        .shadow(color: state?.isRunning == true ? .axSuccess.opacity(0.5) : .clear, radius: 3)
                 }
                 
                 VStack(alignment: .leading, spacing: AXSpacing.xxs) {
@@ -43,54 +44,40 @@ struct DatabaseEngineInstallCard: View {
                         .font(AXTypography.headline)
                         .foregroundColor(.axTextPrimary)
                     
-                    Text(type.category.displayName)
-                        .font(AXTypography.caption2)
-                        .foregroundColor(.axTextMuted)
+                    if let version = state?.installedVersion {
+                        Text("v\(version)")
+                            .font(AXTypography.caption2)
+                            .foregroundColor(.axTextMuted)
+                    } else {
+                        Text(type.category.displayName)
+                            .font(AXTypography.caption2)
+                            .foregroundColor(.axTextMuted)
+                    }
                 }
                 
                 Spacer()
                 
-                if isInstalled {
-                    Button {
-                        onManage(type)
-                    } label: {
-                        HStack(spacing: AXSpacing.sm) {
-                            Image(systemName: "slider.horizontal.3")
-                                .font(.system(size: 12))
-                            Text("Manage")
-                                .font(AXTypography.caption)
-                                .fontWeight(.semibold)
-                        }
-                        .foregroundColor(.axTextPrimary)
-                        .padding(.horizontal, AXSpacing.md)
-                        .padding(.vertical, AXSpacing.sm)
-                        .background(Color.axSurface)
-                        .cornerRadius(AXCornerRadius.md)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: AXCornerRadius.md)
-                                .stroke(Color.axBorder, lineWidth: 1)
-                        )
+                Button {
+                    onManage(type)
+                } label: {
+                    HStack(spacing: AXSpacing.sm) {
+                        Image(systemName: "slider.horizontal.3")
+                            .font(.system(size: 12))
+                        Text("Manage")
+                            .font(AXTypography.caption)
+                            .fontWeight(.semibold)
                     }
-                    .buttonStyle(.plain)
-                } else {
-                    Button {
-                        viewModel.openInstallation(for: type)
-                    } label: {
-                        HStack(spacing: AXSpacing.sm) {
-                            Image(systemName: "arrow.down.circle")
-                                .font(.system(size: 12))
-                            Text("Install")
-                                .font(AXTypography.caption)
-                                .fontWeight(.semibold)
-                        }
-                        .foregroundColor(.axBackground)
-                        .padding(.horizontal, AXSpacing.md)
-                        .padding(.vertical, AXSpacing.sm)
-                        .background(type.brandColor)
-                        .cornerRadius(AXCornerRadius.md)
-                    }
-                    .buttonStyle(.plain)
+                    .foregroundColor(.axTextPrimary)
+                    .padding(.horizontal, AXSpacing.md)
+                    .padding(.vertical, AXSpacing.sm)
+                    .background(Color.axSurface)
+                    .cornerRadius(AXCornerRadius.md)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: AXCornerRadius.md)
+                            .stroke(Color.axBorder, lineWidth: 1)
+                    )
                 }
+                .buttonStyle(.plain)
             }
             .frame(width: 140, height: 160)
         }

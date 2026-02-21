@@ -656,20 +656,22 @@ struct ServiceRow: View {
                         .disabled(isProcessing)
                     }
 
-                    Button(action: onOpenDetails) {
-                        Image(systemName: "gearshape.fill")
-                            .font(.system(size: 11))
-                            .foregroundColor(.axTextSecondary)
-                            .frame(width: 32, height: 32)
-                            .background(Color.axSurface)
-                            .cornerRadius(AXCornerRadius.sm)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: AXCornerRadius.sm)
-                                    .stroke(Color.axBorder, lineWidth: 1)
-                            )
+                    if !isNotInstalled {
+                        Button(action: onOpenDetails) {
+                            Image(systemName: "gearshape.fill")
+                                .font(.system(size: 11))
+                                .foregroundColor(.axTextSecondary)
+                                .frame(width: 32, height: 32)
+                                .background(Color.axSurface)
+                                .cornerRadius(AXCornerRadius.sm)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: AXCornerRadius.sm)
+                                        .stroke(Color.axBorder, lineWidth: 1)
+                                )
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                        .disabled(isProcessing)
                     }
-                    .buttonStyle(PlainButtonStyle())
-                    .disabled(isProcessing)
                 }
             }
             .padding(.horizontal, AXSpacing.lg)
@@ -697,7 +699,7 @@ struct ServiceRow: View {
         case .elasticsearch: return "magnifyingglass"
         case .mongodb: return "leaf.fill"
         case .sqlite: return "square.stack.3d.up.fill"
-        case .cassandra: return "filingcabinet.fill"
+        case .cassandra: return "server.rack"
         case .nodejs: return "n.circle"
         case .python: return "snake"
         case .rabbitmq: return "hare.fill"

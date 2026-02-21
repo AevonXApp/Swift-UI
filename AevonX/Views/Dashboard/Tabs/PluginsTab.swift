@@ -50,7 +50,7 @@ struct PluginsTab: View {
                             }
                         }
                         .pickerStyle(SegmentedPickerStyle())
-                        .frame(width: 200)
+                        .frame(width: LayoutConstants.Input.medium)
                     }
                     .padding(.horizontal, AXSpacing.xl)
                     .padding(.vertical, AXSpacing.lg)
@@ -94,6 +94,6 @@ struct PluginsTab: View {
 
 #Preview {
     PluginsTab(server: nil, serverId: nil, connectionViewModel: nil)
-        .frame(width: 800, height: 600)
+        .frame(width: LayoutConstants.Dialog.marketplace.width, height: LayoutConstants.Dialog.marketplace.height)
         .background(Color.axBackground)
 }

@@ -75,19 +75,7 @@ struct ModernDatabasesTab: View {
                 }
             }
         }
-        .sheet(isPresented: $viewModel.showInstallation) {
-            if let type = viewModel.databaseTypeForInstallation, let serverId = viewModel.serverId {
-                AIInstallationView(
-                    databaseType: type,
-                    serverId: serverId,
-                    onSuccess: {
-                        Task {
-                            await viewModel.loadData()
-                        }
-                    }
-                )
-            }
-        }
+
         .sheet(isPresented: $viewModel.showEngineDetail) {
             if let type = viewModel.selectedDatabaseType {
                 UnifiedDatabaseDetailView(
@@ -110,16 +98,7 @@ struct ModernDatabasesTab: View {
                 )
             }
         }
-        .sheet(isPresented: $viewModel.showErrorResolution) {
-            if let context = viewModel.errorResolutionContext {
-                ErrorResolutionView(
-                    databaseType: context.databaseType,
-                    serverId: context.serverId,
-                    erroredStep: context.step,
-                    errorLog: context.log
-                )
-            }
-        }
+
         .alert(
             "Delete Database",
             isPresented: Binding<Bool>(
@@ -137,10 +116,8 @@ struct ModernDatabasesTab: View {
         } message: { db in
             Text("Are you sure you want to delete '\(db.name)'? This action cannot be undone.")
         }
-        .onAppear {
-            Task {
-                await viewModel.loadData()
-            }
+        .task {
+            await viewModel.loadData()
         }
     }
     
@@ -164,10 +141,12 @@ struct ModernDatabasesTab: View {
             DatabaseToolbar(viewModel: viewModel)
             
             if viewModel.allDatabases.isEmpty {
-                DatabaseEngineOverview(
-                    viewModel: viewModel,
-                    onManage: showEngineDetail
-                )
+                ScrollView {
+                    DatabaseEngineOverview(
+                        viewModel: viewModel,
+                        onManage: showEngineDetail
+                    )
+                }
             } else {
                 DatabaseListView(
                     viewModel: viewModel,

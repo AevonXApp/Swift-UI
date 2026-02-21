@@ -135,6 +135,8 @@ struct DockerDetailView: View {
                 }
             }
         }
+        .padding(.horizontal, AXSpacing.xl)
+        .padding(.top, AXSpacing.lg)
         .onAppear {
             checkInstallation()
         }

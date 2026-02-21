@@ -161,7 +161,7 @@ struct OverviewTab: View {
                                         icon: "cylinder.split.1x2",
                                         color: .axAccentGreen,
                                         title: "Databases",
-                                        count: viewModel.databases.count,
+                                        count: viewModel.databaseCount,
                                         subtitle: viewModel.isConnected ? "MySQL & PostgreSQL" : "Connect to view"
                                     )
                                 }

@@ -130,7 +130,7 @@ struct OldWebsitesTab: View {
                         .stroke(Color.axBorder, lineWidth: 1)
                 )
                 .cornerRadius(AXCornerRadius.md)
-                .frame(width: 280)
+                .frame(width: LayoutConstants.sidebarWidth)
                 
                 Spacer()
                 
@@ -161,37 +161,37 @@ struct OldWebsitesTab: View {
                             .font(AXTypography.caption)
                             .fontWeight(.semibold)
                             .foregroundColor(.axTextMuted)
-                            .frame(width: 70, alignment: .leading)
+                            .frame(width: LayoutConstants.TableColumn.smallLabel, alignment: .leading)
                         
                         Text("Website")
                             .font(AXTypography.caption)
                             .fontWeight(.semibold)
                             .foregroundColor(.axTextMuted)
-                            .frame(width: 200, alignment: .leading)
+                            .frame(width: LayoutConstants.TableColumn.fullName, alignment: .leading)
                         
                         Text("SSL")
                             .font(AXTypography.caption)
                             .fontWeight(.semibold)
                             .foregroundColor(.axTextMuted)
-                            .frame(width: 60, alignment: .center)
+                            .frame(width: LayoutConstants.TableColumn.status, alignment: .center)
                         
                         Text("MOCK PHP")
                             .font(AXTypography.caption)
                             .fontWeight(.semibold)
                             .foregroundColor(.axTextMuted)
-                            .frame(width: 60, alignment: .center)
+                            .frame(width: LayoutConstants.TableColumn.status, alignment: .center)
                         
                         Text("Disk")
                             .font(AXTypography.caption)
                             .fontWeight(.semibold)
                             .foregroundColor(.axTextMuted)
-                            .frame(width: 80, alignment: .trailing)
+                            .frame(width: LayoutConstants.TableColumn.actions, alignment: .trailing)
                         
                         Text("Deployed")
                             .font(AXTypography.caption)
                             .fontWeight(.semibold)
                             .foregroundColor(.axTextMuted)
-                            .frame(width: 100, alignment: .leading)
+                            .frame(width: LayoutConstants.TableColumn.medium, alignment: .leading)
                         
                         Spacer()
                         
@@ -199,7 +199,7 @@ struct OldWebsitesTab: View {
                             .font(AXTypography.caption)
                             .fontWeight(.semibold)
                             .foregroundColor(.axTextMuted)
-                            .frame(width: 120, alignment: .center)
+                            .frame(width: LayoutConstants.TableColumn.standard, alignment: .center)
                     }
                     .padding(.horizontal, AXSpacing.lg)
                     .padding(.vertical, AXSpacing.md)
@@ -246,7 +246,7 @@ private struct WebsitesTabRow: View {
                 }
             ))
             .toggleStyle(SwitchToggleStyle(tint: .axSuccess))
-            .frame(width: 50)
+            .frame(width: LayoutConstants.TableColumn.narrow)
             .help(website.status == .online ? "Click to stop" : "Click to start")
             
             // Website Info
@@ -260,7 +260,7 @@ private struct WebsitesTabRow: View {
                     .font(AXTypography.caption)
                     .foregroundColor(.axTextTertiary)
             }
-            .frame(width: 200, alignment: .leading)
+            .frame(width: LayoutConstants.TableColumn.fullName, alignment: .leading)
             
             // SSL Status
             HStack {
@@ -279,14 +279,14 @@ private struct WebsitesTabRow: View {
                         .foregroundColor(.axTextMuted)
                 }
             }
-            .frame(width: 60, alignment: .center)
+            .frame(width: LayoutConstants.TableColumn.status, alignment: .center)
             
             // PHP Version
             Text(website.phpVersion ?? "-")
                 .font(AXTypography.caption)
                 .fontWeight(.medium)
                 .foregroundColor(.axTextSecondary)
-                .frame(width: 60, alignment: .center)
+                .frame(width: LayoutConstants.TableColumn.status, alignment: .center)
                 .padding(.vertical, AXSpacing.xxs)
                 .background(Color.axBackgroundTertiary)
                 .cornerRadius(AXCornerRadius.sm)
@@ -295,14 +295,14 @@ private struct WebsitesTabRow: View {
             Text("\(String(format: "%.1f", website.diskUsage)) MB")
                 .font(AXTypography.caption)
                 .foregroundColor(.axTextTertiary)
-                .frame(width: 80, alignment: .trailing)
+                .frame(width: LayoutConstants.TableColumn.actions, alignment: .trailing)
                 .monospaced()
             
             // Last Deployed
             Text(timeAgo(from: website.lastDeployed))
                 .font(AXTypography.caption)
                 .foregroundColor(.axTextTertiary)
-                .frame(width: 100, alignment: .leading)
+                .frame(width: LayoutConstants.TableColumn.medium, alignment: .leading)
             
             Spacer()
             
@@ -312,7 +312,7 @@ private struct WebsitesTabRow: View {
                     Image(systemName: "arrow.clockwise")
                         .font(.system(size: 11))
                         .foregroundColor(.axAccentBlue)
-                        .frame(width: 28, height: 28)
+                        .frame(width: LayoutConstants.IconSize.button, height: LayoutConstants.IconSize.button)
                         .background(Color.axAccentBlue.opacity(0.1))
                         .cornerRadius(AXCornerRadius.sm)
                 }
@@ -323,7 +323,7 @@ private struct WebsitesTabRow: View {
                     Image(systemName: "doc.text")
                         .font(.system(size: 11))
                         .foregroundColor(.axTextSecondary)
-                        .frame(width: 28, height: 28)
+                        .frame(width: LayoutConstants.IconSize.button, height: LayoutConstants.IconSize.button)
                         .background(Color.axSurface)
                         .cornerRadius(AXCornerRadius.sm)
                 }
@@ -343,12 +343,12 @@ private struct WebsitesTabRow: View {
                     Image(systemName: "ellipsis")
                         .font(.system(size: 14))
                         .foregroundColor(.axTextSecondary)
-                        .frame(width: 28, height: 28)
+                        .frame(width: LayoutConstants.IconSize.button, height: LayoutConstants.IconSize.button)
                         .background(Color.axSurface)
                         .cornerRadius(AXCornerRadius.sm)
                 }
             }
-            .frame(width: 120, alignment: .center)
+            .frame(width: LayoutConstants.TableColumn.standard, alignment: .center)
         }
         .padding(.horizontal, AXSpacing.lg)
         .padding(.vertical, AXSpacing.md)

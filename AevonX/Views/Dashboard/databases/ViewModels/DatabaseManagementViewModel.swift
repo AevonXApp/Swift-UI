@@ -78,20 +78,9 @@ public final class DatabaseManagementViewModel: ObservableObject {
     /// Show add user sheet
     @Published public var showAddUser = false
 
-    /// Show installation view
-    @Published public var showInstallation = false
-
-    /// Database type selected for installation
-    @Published public var databaseTypeForInstallation: DatabaseType?
-
     /// Show engine detail view
     @Published public var showEngineDetail = false
 
-    /// Show error resolution sheet
-    @Published public var showErrorResolution = false
-    
-    /// Context for error resolution
-    @Published public var errorResolutionContext: DatabaseInstallationService.ErrorResolutionContext?
 
     public enum DatabaseViewMode: String, CaseIterable, Identifiable {
         case grid, list
@@ -105,8 +94,6 @@ public final class DatabaseManagementViewModel: ObservableObject {
 
     // NOTE: We use specialized core services for all database operations
     // This ensures proper architecture separation (UI -> Core -> SSH)
-    private let installationService = DatabaseInstallationService.shared
-    private var cancellables = Set<AnyCancellable>()
 
     // MARK: - Server Properties
 
@@ -125,41 +112,9 @@ public final class DatabaseManagementViewModel: ObservableObject {
         self.serverId = serverId
         self.connectionViewModel = connectionViewModel
 
-        setupSubscriptions()
     }
 
-    // MARK: - Setup
 
-    private func setupSubscriptions() {
-        // Subscribe to installation service updates
-        installationService.$currentInstallation
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] _ in
-                self?.objectWillChange.send()
-            }
-            .store(in: &cancellables)
-
-        installationService.$isInstalling
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] _ in
-                self?.objectWillChange.send()
-            }
-            .store(in: &cancellables)
-            
-        installationService.$errorResolutionContext
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] context in
-                if let context = context {
-                    self?.showInstallation = false // Dismiss installation view
-                    // Small delay to allow dismissal animation to start/complete roughly
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                        self?.errorResolutionContext = context
-                        self?.showErrorResolution = true
-                    }
-                }
-            }
-            .store(in: &cancellables)
-    }
 
     // MARK: - Data Loading
 
@@ -453,27 +408,6 @@ public final class DatabaseManagementViewModel: ObservableObject {
         return installationStates.first { $0.type == type }
     }
 
-    /// Opens installation view for a database type
-    public func openInstallation(for type: DatabaseType) {
-        databaseTypeForInstallation = type
-        showInstallation = true
-    }
-
-    /// Gets AI recommendations for installation
-    public func getInstallationRecommendations(
-        for type: DatabaseType,
-        useCase: DatabaseUseCase? = nil
-    ) async throws -> AIInstallationResponse {
-        guard let serverId = serverId else {
-            throw DatabaseOperationError.serverNotConfigured
-        }
-
-        return try await installationService.getInstallationRecommendations(
-            databaseType: type,
-            serverId: serverId,
-            useCase: useCase
-        )
-    }
 
     // MARK: - Statistics
 
@@ -511,9 +445,9 @@ public final class DatabaseManagementViewModel: ObservableObject {
         installationStates.filter { $0.isInstalled }.count
     }
 
-    /// Available database types for tabs
+    /// Available database types for tabs — ONLY installed engines
     public var availableDatabaseTypes: [DatabaseType] {
-        DatabaseType.allCases.filter { $0 != .unknown }
+        installationStates.filter { $0.isInstalled }.map { $0.type }.sorted { $0.displayName < $1.displayName }
     }
 }
 

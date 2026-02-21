@@ -21,38 +21,10 @@ struct DatabaseEngineOverview: View {
                     AXEmptyState(
                         icon: "cylinder.split.1x2",
                         title: "No Database Engines Installed",
-                        description: "To create databases, you first need to install a database engine like MySQL, PostgreSQL, or Redis.",
+                        description: "Go to the Applications tab to install database engines like MySQL, PostgreSQL, or Redis. Installed engines will appear here automatically.",
                         actionLabel: nil,
                         action: nil
                     )
-
-                    // Guide to Applications section
-                    VStack(alignment: .leading, spacing: AXSpacing.md) {
-                        HStack(spacing: AXSpacing.md) {
-                            Image(systemName: "info.circle.fill")
-                                .font(.system(size: 20))
-                                .foregroundColor(.axAccentBlue)
-
-                            VStack(alignment: .leading, spacing: AXSpacing.xs) {
-                                Text("Database engines are managed in Applications")
-                                    .font(AXTypography.body)
-                                    .fontWeight(.semibold)
-                                    .foregroundColor(.axTextPrimary)
-
-                                Text("Navigate to the Applications tab to install and manage database engines (MySQL, PostgreSQL, Redis, etc.)")
-                                    .font(AXTypography.caption)
-                                    .foregroundColor(.axTextSecondary)
-                            }
-                        }
-                        .padding(AXSpacing.lg)
-                        .background(Color.axAccentBlue.opacity(0.1))
-                        .cornerRadius(AXCornerRadius.md)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: AXCornerRadius.md)
-                                .stroke(Color.axAccentBlue.opacity(0.3), lineWidth: 1)
-                        )
-                    }
-                    .padding(.horizontal, AXSpacing.xl)
                 }
                 .padding(.top, AXSpacing.xl)
             } else {

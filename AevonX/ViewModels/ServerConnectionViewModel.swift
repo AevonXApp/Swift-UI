@@ -103,52 +103,55 @@ public class ServerConnectionViewModel: ObservableObject {
     /// Connection progress (0.0 to 1.0)
     @Published private(set) var connectionProgress: Double = 0.0
     
-    // MARK: - Published Properties - System Stats
+    // MARK: - Child ViewModels (Single Responsibility)
     
-    /// Current CPU usage percentage (0-100)
-    @Published private(set) var cpuUsage: Double = 0.0
+    /// Stats management (CPU, memory, disk, uptime, polling)
+    @Published private(set) var stats: ServerStatsViewModel
     
-    /// CPU usage history for sparklines
-    @Published private(set) var cpuUsageHistory: [Double] = []
+    /// Database discovery and listing
+    @Published private(set) var databasesVM: ServerDatabasesViewModel
     
-    /// Current memory usage percentage (0-100)
-    @Published private(set) var memoryUsage: Double = 0.0
+    /// Website listing
+    @Published private(set) var websitesVM: ServerWebsitesViewModel
     
-    /// Memory usage history for sparklines
-    @Published private(set) var memoryUsageHistory: [Double] = []
+    /// Server actions (restart, reboot, shutdown)
+    @Published private(set) var actions: ServerActionsViewModel
     
-    /// Current disk usage percentage (0-100)
-    @Published private(set) var diskUsage: Double = 0.0
+    // MARK: - Backward-Compatible Computed Accessors
+    // These allow existing views to continue using viewModel.cpuUsage etc.
     
-    /// Disk usage history for sparklines
-    @Published private(set) var diskUsageHistory: [Double] = []
+    var cpuUsage: Double { stats.cpuUsage }
+    var cpuUsageHistory: [Double] { stats.cpuUsageHistory }
+    var memoryUsage: Double { stats.memoryUsage }
+    var memoryUsageHistory: [Double] { stats.memoryUsageHistory }
+    var diskUsage: Double { stats.diskUsage }
+    var diskUsageHistory: [Double] { stats.diskUsageHistory }
+    var uptime: String { stats.uptime }
+    var loadAverage: String { stats.loadAverage }
+    var cpuTemperature: Double? { stats.cpuTemperature }
+    var temperatureHistory: [Double] { stats.temperatureHistory }
     
-    /// Server uptime string
-    @Published private(set) var uptime: String = "N/A"
-    
-    /// Load average (1, 5, 15 minute)
-    @Published private(set) var loadAverage: String = "N/A"
-    
-    /// CPU temperature (if available)
-    @Published private(set) var cpuTemperature: Double?
-    
-    /// Temperature history for sparklines
-    @Published private(set) var temperatureHistory: [Double] = []
-    
-    // MARK: - Published Properties - Database Info
-    
-    /// View modes for the database list
-    public enum DatabaseViewMode: String, CaseIterable, Identifiable {
-        case grid = "Grid"
-        case table = "Table"
-        public var id: String { rawValue }
+    var databases: [DatabaseInfo] { databasesVM.databases }
+    var isLoadingDatabases: Bool { databasesVM.isLoading }
+    var databaseError: String? { databasesVM.error }
+    var databaseViewMode: ServerDatabasesViewModel.DatabaseViewMode {
+        get { databasesVM.viewMode }
+        set { databasesVM.viewMode = newValue }
     }
     
-    /// Current view mode for databases
-    @Published var databaseViewMode: DatabaseViewMode = .grid
+    var websites: [CoreWebsiteInfo] { websitesVM.websites }
+    var websiteCount: Int { websitesVM.count > 0 ? websitesVM.count : websiteInventoryCount }
+    var databaseCount: Int { databasesVM.databases.count > 0 ? databasesVM.databases.count : databaseInventoryCount }
+    var isLoadingWebsites: Bool { websitesVM.isLoading }
     
-    /// Array of databases on the server
-    @Published private(set) var databases: [DatabaseInfo] = []
+    var isRestartConfirming: Bool {
+        get { actions.isRestartConfirming }
+        set { actions.isRestartConfirming = newValue }
+    }
+    var isShutdownConfirming: Bool {
+        get { actions.isShutdownConfirming }
+        set { actions.isShutdownConfirming = newValue }
+    }
     
     // MARK: - Published Properties - UI State
     
@@ -167,17 +170,10 @@ public class ServerConnectionViewModel: ObservableObject {
     /// Whether to show connection error alert
     @Published var showConnectionError: Bool = false
     
-    /// Whether databases are being loaded
-    @Published private(set) var isLoadingDatabases: Bool = false
-    
-    /// Error from database loading, if any
-    @Published private(set) var databaseError: String?
-    
-    /// Whether a server reboot confirmation is showing
-    @Published var isRestartConfirming: Bool = false
-    
-    /// Whether a server shutdown confirmation is showing
-    @Published var isShutdownConfirming: Bool = false
+    /// Lightweight inventory counts (from quick SSH queries, used before full data loads)
+    @Published private(set) var applicationCount: Int = 0
+    @Published private(set) var websiteInventoryCount: Int = 0
+    @Published private(set) var databaseInventoryCount: Int = 0
     
     // MARK: - Published Properties - Terminal Sessions
     
@@ -187,19 +183,18 @@ public class ServerConnectionViewModel: ObservableObject {
     /// Currently active terminal index
     @Published var activeTerminalIndex: Int = 0
     
-    // MARK: - Published Properties - Inventory
+    // MARK: - File Manager (persisted across tab switches)
     
-    /// Number of websites (from SSH data)
-    @Published private(set) var websiteCount: Int = 0
-
-    /// Number of applications/services (from SSH data)
-    @Published private(set) var applicationCount: Int = 0
-
-    /// Array of websites on the server
-    @Published private(set) var websites: [CoreWebsiteInfo] = []
-
-    /// Whether websites are being loaded
-    @Published private(set) var isLoadingWebsites: Bool = false
+    /// Lazy-initialized file manager ViewModel — persists when user switches tabs
+    private var _fileManagerViewModel: FileManagerViewModel?
+    var fileManagerViewModel: FileManagerViewModel {
+        if let existing = _fileManagerViewModel {
+            return existing
+        }
+        let vm = FileManagerViewModel(serverId: serverId)
+        _fileManagerViewModel = vm
+        return vm
+    }
     
     // MARK: - Private Properties
     
@@ -211,20 +206,21 @@ public class ServerConnectionViewModel: ObservableObject {
     
     /// SSH connection service from Core
     private let sshService = SSHService.shared
+    
+    /// Server profile (detected capabilities: OS, init system, package manager)
+    @Published private(set) var serverProfile: ServerProfile?
+    
+    /// Service management strategy (based on detected init system)
+    private(set) var serviceStrategy: (any ServiceManagementStrategy)?
+    
+    /// Package management strategy (based on detected package manager)
+    private(set) var packageStrategy: (any PackageManagementStrategy)?
 
     // Note: ConnectionPoolManager is not available in the current AevonXCore
     // Connection pool events are handled directly by the SSHConnectionService
     
-    /// Stats polling task
-    private var statsPollingTask: Task<Void, Never>?
-    
-    /// Polling interval - uses Core configuration
-    private var pollingInterval: TimeInterval {
-        InternalConfiguration.statsPollingInterval
-    }
-    
-    /// Maximum history points to keep
-    private let maxHistoryPoints = 20
+    /// Combine subscriptions for child VM changes
+    private var childCancellables = Set<AnyCancellable>()
     
     /// Whether the app is currently in foreground
     private var isInForeground: Bool = true
@@ -234,20 +230,53 @@ public class ServerConnectionViewModel: ObservableObject {
     
     // MARK: - Initialization
     
-    init(server: Server, serverId: String, serverListViewModel: ServerListViewModel? = nil) {
+    init(server: Server, serverId: String) {
         self.server = server
         self.serverId = serverId
-        self.serverListViewModel = serverListViewModel
         
-        // Initialize empty history arrays
-        self.cpuUsageHistory = Array(repeating: 0.0, count: maxHistoryPoints)
-        self.memoryUsageHistory = Array(repeating: 0.0, count: maxHistoryPoints)
-        self.diskUsageHistory = Array(repeating: 0.0, count: maxHistoryPoints)
-        self.temperatureHistory = Array(repeating: 0.0, count: maxHistoryPoints)
+        // Initialize child ViewModels
+        self.stats = ServerStatsViewModel(serverId: serverId)
+        self.databasesVM = ServerDatabasesViewModel(serverId: serverId)
+        self.websitesVM = ServerWebsitesViewModel(serverId: serverId)
+        self.actions = ServerActionsViewModel(serverId: serverId)
+        
+        // Wire callbacks for actions VM
+        self.actions.onDisconnectNeeded = { [weak self] in
+            await self?.disconnect()
+        }
+        self.actions.onError = { [weak self] msg in
+            self?.connectionError = msg
+            self?.showConnectionError = true
+        }
+        self.actions.onRefreshStats = { [weak self] in
+            await self?.stats.refreshStats()
+        }
+        
+        // Forward child VM objectWillChange to parent
+        stats.objectWillChange.sink { [weak self] _ in
+            self?.objectWillChange.send()
+        }.store(in: &childCancellables)
+        databasesVM.objectWillChange.sink { [weak self] _ in
+            self?.objectWillChange.send()
+        }.store(in: &childCancellables)
+        websitesVM.objectWillChange.sink { [weak self] _ in
+            self?.objectWillChange.send()
+        }.store(in: &childCancellables)
+        actions.objectWillChange.sink { [weak self] _ in
+            self?.objectWillChange.send()
+        }.store(in: &childCancellables)
+        
+        // Observe app lifecycle for polling control
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(appWillEnterForeground),
+            name: NSApplication.willBecomeActiveNotification,
+            object: nil
+        )
     }
     
     deinit {
-        statsPollingTask?.cancel()
+        // Child VMs handle their own cleanup in their own deinit
     }
     
     // MARK: - Connection Management
@@ -308,13 +337,29 @@ public class ServerConnectionViewModel: ObservableObject {
             
             CoreLogger.shared.info("Connected to server: \(server.name)", module: "ServerConnection")
             
+            // Detect server capabilities (OS, init system, package manager)
+            Task {
+                do {
+                    let detector = CapabilityDetector(sshService: sshService)
+                    let profile = try await detector.detect(serverId: serverId)
+                    self.serverProfile = profile
+                    self.serviceStrategy = ServiceStrategyFactory.strategy(for: profile, sshService: sshService)
+                    self.packageStrategy = PackageStrategyFactory.strategy(for: profile, sshService: sshService)
+                    CoreLogger.shared.info(
+                        "Server profile: \(profile.distro.rawValue), init=\(profile.initSystem.rawValue), pkg=\(profile.packageManager.rawValue)",
+                        module: "ServerConnection"
+                    )
+                } catch {
+                    CoreLogger.shared.warning("Failed to detect server capabilities: \(error.localizedDescription)", module: "ServerConnection")
+                }
+            }
+            
             // Start stats polling
             startStatsPolling()
             
-            // Load initial data
-            await loadDatabases()
-            await loadWebsites()
+            // Load overview stats + inventory counts on connect — full data loads on demand per tab
             await refreshStats()
+            await updateInventoryCounts()
             
             // Create initial terminal session if none exist
             if terminalSessions.isEmpty {
@@ -405,8 +450,12 @@ public class ServerConnectionViewModel: ObservableObject {
     }
     
     /// Called when app enters foreground
-    func appWillEnterForeground() {
+    @objc func appWillEnterForeground() {
         isInForeground = true
+        
+        // M11: Cleanup expired cache entries to free memory
+        Task { await CacheManager.shared.cleanup() }
+        
         if isConnected {
             // Check if connection is still alive after waking from sleep
             Task {
@@ -442,191 +491,49 @@ public class ServerConnectionViewModel: ObservableObject {
     /// Called when app enters background
     func appDidEnterBackground() {
         isInForeground = false
-        stopStatsPolling()
+        stats.appDidEnterBackground()
+        stats.stopPolling()
+        
+        // M11: Persist long-lived cache entries to disk for efficiency on resume
+        Task {
+            await CacheManager.shared.persistToDisk()
+        }
     }
     
-    // MARK: - Stats Management
+    // MARK: - Delegated Methods (to Child ViewModels)
     
-    /// Refreshes system stats from server via SSH
+    /// Refreshes system stats — delegates to ServerStatsViewModel
     func refreshStats() async {
-        guard isConnected else { return }
-        
-        do {
-            // Fetch CPU usage using predefined command template
-            let cpuResult = try await executeCommand(.overview(.cpuUsage))
-            if let cpuValue = parsePercentage(cpuResult.stdout) {
-                updateHistory(&cpuUsageHistory, with: cpuValue)
-                cpuUsage = cpuValue
-            }
-            
-            // Fetch memory usage
-            let memResult = try await executeCommand(.overview(.memoryUsage))
-            if let memValue = parsePercentage(memResult.stdout) {
-                updateHistory(&memoryUsageHistory, with: memValue)
-                memoryUsage = memValue
-            }
-            
-            // Fetch disk usage
-            let diskResult = try await executeCommand(.overview(.diskUsage))
-            if let diskValue = parsePercentage(diskResult.stdout) {
-                updateHistory(&diskUsageHistory, with: diskValue)
-                diskUsage = diskValue
-            }
-            
-            // Fetch uptime
-            let uptimeResult = try await executeCommand(.overview(.uptime))
-            uptime = parseUptime(uptimeResult.stdout)
-            
-            // Fetch load average
-            let loadResult = try await executeCommand(.overview(.loadAverage))
-            loadAverage = loadResult.stdout.trimmingCharacters(in: .whitespacesAndNewlines)
-            
-            // Try to fetch temperature (may not be available on all systems)
-            if let tempResult = try? await executeCommand(.overview(.cpuTemperature)),
-               let temp = parseTemperature(tempResult.stdout) {
-                updateHistory(&temperatureHistory, with: temp)
-                cpuTemperature = temp
-            }
-            
-        } catch {
-            CoreLogger.shared.warning("Failed to refresh stats: \(error.localizedDescription)", module: "ServerConnection")
-        }
+        await stats.refreshStats()
     }
     
-    // MARK: - Quick Actions
-
-    /// Restart server services (nginx, mysql, etc)
+    /// Restart server services — delegates to ServerActionsViewModel
     func restartServices() async {
-        guard isConnected else { return }
-
-        CoreLogger.shared.info("Restarting services...", module: "ServerConnection")
-
-        do {
-            // Restart nginx
-            _ = try await executeCommand(.services(.restartNginx))
-
-            // Restart MySQL if available
-            _ = try? await executeCommand(.services(.restartMySQL))
-
-            // Restart PHP-FPM if available
-            _ = try? await executeCommand(.services(.restartPHPFPM))
-
-            CoreLogger.shared.info("Services restarted successfully", module: "ServerConnection")
-
-            // Refresh stats after restart
-            await refreshStats()
-        } catch {
-            CoreLogger.shared.error("Failed to restart services: \(error.localizedDescription)", module: "ServerConnection")
-        }
+        actions.isConnected = isConnected
+        await actions.restartServices()
     }
     
-    /// Reboots the entire server host
+    /// Reboots the server — delegates to ServerActionsViewModel
     func rebootServer() async {
-        guard isConnected else { return }
-        
-        CoreLogger.shared.warning("Initiating server reboot...", module: "ServerConnection")
-        
-        do {
-            // Call Core SystemControlService
-            try await SystemControlService.shared.reboot(serverId: serverId)
-            
-            // Note: Connection will be lost as server reboots
-            // Handled by disconnect logic or health check
-            await disconnect()
-        } catch {
-            CoreLogger.shared.error("Failed to reboot server: \(error.localizedDescription)", module: "ServerConnection")
-            connectionError = "Reboot failed: \(error.localizedDescription)"
-            showConnectionError = true
-        }
+        actions.isConnected = isConnected
+        await actions.rebootServer()
     }
     
-    /// Shuts down the entire server host
+    /// Shuts down the server — delegates to ServerActionsViewModel
     func shutdownServer() async {
-        guard isConnected else { return }
-        
-        CoreLogger.shared.warning("Initiating server shutdown...", module: "ServerConnection")
-        
-        do {
-            // Call Core SystemControlService
-            try await SystemControlService.shared.shutdown(serverId: serverId)
-            
-            // Note: Connection will be lost as server shuts down
-            await disconnect()
-        } catch {
-            CoreLogger.shared.error("Failed to shutdown server: \(error.localizedDescription)", module: "ServerConnection")
-            connectionError = "Shutdown failed: \(error.localizedDescription)"
-            showConnectionError = true
-        }
+        actions.isConnected = isConnected
+        await actions.shutdownServer()
     }
 
-    // MARK: - Website Management
-
-    /// Loads website information from server via SSH
+    /// Loads websites — delegates to ServerWebsitesViewModel
     func loadWebsites() async {
-        guard isConnected else { return }
-
-        isLoadingWebsites = true
-
-        do {
-            // Fetch websites using WebsiteListService
-            let loadedWebsites = try await WebsiteListService.shared.listWebsites(serverId: serverId)
-            websites = loadedWebsites
-            websiteCount = loadedWebsites.count
-
-            CoreLogger.shared.info("Loaded \(websiteCount) websites", module: "ServerConnection")
-        } catch {
-            CoreLogger.shared.error("Failed to load websites: \(error.localizedDescription)", module: "ServerConnection")
-            // Don't fail silently - show 0 websites if error
-            websites = []
-            websiteCount = 0
-        }
-
-        isLoadingWebsites = false
+        await websitesVM.loadWebsites()
     }
 
-    // MARK: - Database Management
-
-    /// Loads database information from server via SSH
+    /// Loads databases — delegates to ServerDatabasesViewModel
     func loadDatabases() async {
-        guard isConnected else { return }
-        
-        isLoadingDatabases = true
-        databaseError = nil
-        
-        var loadedDatabases: [DatabaseInfo] = []
-            
-            // Try to fetch MySQL databases
-            if let mysqlResult = try? await executeCommand(.databases(.listMySQL)) {
-                let mysqlDBs = parseMySQLDatabases(mysqlResult.stdout)
-                loadedDatabases.append(contentsOf: mysqlDBs)
-            }
-            
-            // Try to fetch PostgreSQL databases
-            if let pgResult = try? await executeCommand(.databases(.listPostgreSQL)) {
-                let pgDBs = parsePostgreSQLDatabases(pgResult.stdout)
-                loadedDatabases.append(contentsOf: pgDBs)
-            }
-            
-            // Try to fetch Redis info
-            if let redisResult = try? await executeCommand(.databases(.listRedis)) {
-                if let redisDB = parseRedisInfo(redisResult.stdout) {
-                    loadedDatabases.append(redisDB)
-                }
-            }
-            
-            databases = loadedDatabases
-            
-            
-            // Update counts
-            await updateInventoryCounts()
-            
-        // Removed unreachable catch block
-        // catch {
-        //    databaseError = error.localizedDescription
-        //    CoreLogger.shared.error("Failed to load databases: \(error.localizedDescription)", module: "ServerConnection")
-        // }
-        
-        isLoadingDatabases = false
+        await databasesVM.loadDatabases()
+        await updateInventoryCounts()
     }
     
     // MARK: - Private Methods
@@ -732,28 +639,14 @@ public class ServerConnectionViewModel: ObservableObject {
         }
     }
     
-    /// Starts stats polling timer
+    /// Starts stats polling via child VM
     private func startStatsPolling() {
-        stopStatsPolling()
-        
-        statsPollingTask = Task { [weak self] in
-            while !Task.isCancelled {
-                guard let self = self, self.isInForeground else {
-                    try? await Task.sleep(nanoseconds: 1_000_000_000)
-                    continue
-                }
-                
-                await self.refreshStats()
-                
-                try? await Task.sleep(nanoseconds: UInt64(self.pollingInterval * 1_000_000_000))
-            }
-        }
+        stats.startPolling()
     }
     
-    /// Stops stats polling
+    /// Stops stats polling via child VM
     private func stopStatsPolling() {
-        statsPollingTask?.cancel()
-        statsPollingTask = nil
+        stats.stopPolling()
     }
     
     // Note: Connection pool monitoring is not available in current AevonXCore
@@ -765,149 +658,51 @@ public class ServerConnectionViewModel: ObservableObject {
         return try await sshService.execute(commandString, serverId: serverId)
     }
     
-    /// Updates history array with new value
-    private func updateHistory(_ history: inout [Double], with value: Double) {
-        history.append(value)
-        if history.count > maxHistoryPoints {
-            history.removeFirst()
-        }
-    }
-    
     /// Resets all stats to default values
     private func resetStats() {
-        cpuUsage = 0.0
-        memoryUsage = 0.0
-        diskUsage = 0.0
-        cpuTemperature = nil
-        uptime = "N/A"
-        loadAverage = "N/A"
-        databases = []
-        websites = []
-        websiteCount = 0
+        stats.reset()
+        databasesVM.reset()
+        websitesVM.reset()
         applicationCount = 0
     }
     
     /// Updates inventory counts from SSH data
     private func updateInventoryCounts() async {
-        // Website count is already updated by loadWebsites()
-        // Just ensure it's in sync
-        websiteCount = websites.count
-
-        // Count applications/services
+        // Count applications/services (1 SSH command)
         if let serviceResult = try? await executeCommand(.overview(.serviceCount)) {
             applicationCount = parseCount(serviceResult.stdout) ?? 0
         }
-    }
-    
-    // MARK: - Parsing Helpers
-    
-    private func parsePercentage(_ output: String) -> Double? {
-        let cleaned = output.trimmingCharacters(in: .whitespacesAndNewlines)
-            .replacingOccurrences(of: "%", with: "")
-        return Double(cleaned)
-    }
-    
-    private func parseUptime(_ output: String) -> String {
-        let cleaned = output.trimmingCharacters(in: .whitespacesAndNewlines)
-        // Parse uptime format and convert to readable string
-        return cleaned
-    }
-    
-    private func parseTemperature(_ output: String) -> Double? {
-        let cleaned = output.trimmingCharacters(in: .whitespacesAndNewlines)
-            .replacingOccurrences(of: "°C", with: "")
-            .replacingOccurrences(of: "C", with: "")
-        return Double(cleaned)
+        
+        // Count websites — lightweight ls | wc -l (1 SSH command)
+        if let result = try? await SSHService.shared.execute(
+            "ls -1 /etc/nginx/sites-enabled/ 2>/dev/null | grep -v default | wc -l",
+            serverId: serverId
+        ) {
+            websiteInventoryCount = parseCount(result.stdout) ?? 0
+        }
+        
+        // Count databases — quick queries (2 SSH commands)
+        var dbCount = 0
+        // MySQL databases
+        if let mysqlResult = try? await SSHService.shared.execute(
+            "mysql -N -e 'SHOW DATABASES;' 2>/dev/null | grep -vcE '^(information_schema|performance_schema|mysql|sys)$' || echo '0'",
+            serverId: serverId
+        ) {
+            dbCount += parseCount(mysqlResult.stdout) ?? 0
+        }
+        // PostgreSQL databases
+        if let pgResult = try? await SSHService.shared.execute(
+            "sudo -u postgres psql -t -c 'SELECT count(*) FROM pg_database WHERE NOT datistemplate;' 2>/dev/null || echo '0'",
+            serverId: serverId
+        ) {
+            dbCount += parseCount(pgResult.stdout) ?? 0
+        }
+        databaseInventoryCount = dbCount
     }
     
     private func parseCount(_ output: String) -> Int? {
         let cleaned = output.trimmingCharacters(in: .whitespacesAndNewlines)
         return Int(cleaned)
-    }
-    
-    private func parseMySQLDatabases(_ output: String) -> [DatabaseInfo] {
-        // Parse MySQL SHOW DATABASES output
-        var databases: [DatabaseInfo] = []
-        let lines = output.components(separatedBy: .newlines)
-        
-        for line in lines {
-            let trimmed = line.trimmingCharacters(in: .whitespaces)
-            guard !trimmed.isEmpty,
-                  trimmed != "Database",
-                  !trimmed.hasPrefix("+"),
-                  !trimmed.hasPrefix("|") else { continue }
-            
-            // Skip system databases
-            let systemDBs = ["information_schema", "mysql", "performance_schema", "sys"]
-            guard !systemDBs.contains(trimmed) else { continue }
-            
-            databases.append(DatabaseInfo(
-                name: trimmed,
-                type: .mysql,
-                status: .online
-            ))
-        }
-        
-        return databases
-    }
-    
-    private func parsePostgreSQLDatabases(_ output: String) -> [DatabaseInfo] {
-        // Parse PostgreSQL \l output
-        var databases: [DatabaseInfo] = []
-        let lines = output.components(separatedBy: .newlines)
-        
-        for line in lines {
-            let trimmed = line.trimmingCharacters(in: .whitespaces)
-            guard !trimmed.isEmpty,
-                  !trimmed.hasPrefix("Name"),
-                  !trimmed.hasPrefix("-"),
-                  !trimmed.hasPrefix("(") else { continue }
-            
-            // Extract database name (first column)
-            let components = trimmed.components(separatedBy: "|")
-            guard let name = components.first?.trimmingCharacters(in: .whitespaces),
-                  !name.isEmpty,
-                  name != "postgres",
-                  name != "template0",
-                  name != "template1" else { continue }
-            
-            databases.append(DatabaseInfo(
-                name: name,
-                type: .postgresql,
-                status: .online
-            ))
-        }
-        
-        return databases
-    }
-    
-    private func parseRedisInfo(_ output: String) -> DatabaseInfo? {
-        // Parse Redis INFO output
-        guard output.contains("redis_version") else { return nil }
-        
-        var version: String?
-        var usedMemory: Double = 0
-        
-        let lines = output.components(separatedBy: .newlines)
-        for line in lines {
-            if line.hasPrefix("redis_version:") {
-                version = line.components(separatedBy: ":").last?.trimmingCharacters(in: .whitespaces)
-            }
-            if line.hasPrefix("used_memory:") {
-                if let bytesStr = line.components(separatedBy: ":").last?.trimmingCharacters(in: .whitespaces),
-                   let bytes = Double(bytesStr) {
-                    usedMemory = bytes / (1024 * 1024) // Convert to MB
-                }
-            }
-        }
-        
-        return DatabaseInfo(
-            name: "Redis Server",
-            type: .redis,
-            version: version,
-            status: .online,
-            size: usedMemory
-        )
     }
 }
 

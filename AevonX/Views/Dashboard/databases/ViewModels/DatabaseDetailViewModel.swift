@@ -383,6 +383,30 @@ public final class DatabaseDetailViewModel: ObservableObject {
         }
     }
 
+    // MARK: - Operation Helper
+    
+    /// Shared helper for table operations: sets progress, executes, shows toast, logs activity.
+    /// Preserves all features: operationResult tracking, toast notifications, and activity logging.
+    private func loggedAction(
+        action actionLabel: String,
+        detail: String,
+        progressMessage: String,
+        execute: () async throws -> Void,
+        onSuccess: (() async -> Void)? = nil
+    ) async {
+        guard serverId != nil else { return }
+        operationResult = .inProgress(message: progressMessage, progress: nil)
+        do {
+            try await execute()
+            GlobalToastManager.shared.showSuccess("\(actionLabel) successful")
+            log(action: actionLabel, detail: detail, success: true)
+            await onSuccess?()
+        } catch {
+            GlobalToastManager.shared.showError("\(actionLabel) failed: \(error.localizedDescription)")
+            log(action: actionLabel, detail: detail, success: false, error: error.localizedDescription)
+        }
+    }
+
     // MARK: - Table Actions
 
     public func confirmDropTable(_ tableName: String) {
@@ -394,87 +418,67 @@ public final class DatabaseDetailViewModel: ObservableObject {
     }
 
     public func dropTable(_ tableName: String) async {
-        guard let serverId = serverId else { return }
-
-        operationResult = .inProgress(message: "Dropping table '\(tableName)'...", progress: nil)
-        do {
-            try await DatabaseTableService.shared.dropTable(
-                database: database.name,
-                table: tableName,
-                type: database.type,
-                serverId: serverId
-            )
-            GlobalToastManager.shared.showSuccess("Table '\(tableName)' dropped successfully")
-            log(action: "Drop Table", detail: "Table '\(tableName)' from '\(database.name)'", success: true)
-            if selectedTable?.name == tableName {
-                deselectTable()
+        await loggedAction(
+            action: "Drop Table",
+            detail: "Table '\(tableName)' from '\(database.name)'",
+            progressMessage: "Dropping table '\(tableName)'...",
+            execute: {
+                try await DatabaseTableService.shared.dropTable(
+                    database: database.name, table: tableName,
+                    type: database.type, serverId: serverId!
+                )
+            },
+            onSuccess: {
+                if self.selectedTable?.name == tableName { self.deselectTable() }
+                await self.loadTables()
             }
-            await loadTables()
-        } catch {
-            GlobalToastManager.shared.showError("Failed to drop table: \(error.localizedDescription)")
-            log(action: "Drop Table", detail: "Table '\(tableName)'", success: false, error: error.localizedDescription)
-        }
+        )
     }
 
     public func truncateTable(_ tableName: String) async {
-        guard let serverId = serverId else { return }
-
-        operationResult = .inProgress(message: "Truncating table '\(tableName)'...", progress: nil)
-        do {
-            try await DatabaseTableService.shared.truncateTable(
-                database: database.name,
-                table: tableName,
-                type: database.type,
-                serverId: serverId
-            )
-            GlobalToastManager.shared.showSuccess("Table '\(tableName)' truncated successfully")
-            log(action: "Truncate Table", detail: "Table '\(tableName)'", success: true)
-            await loadTables()
-            if selectedTable?.name == tableName {
-                await loadTableData()
+        await loggedAction(
+            action: "Truncate Table",
+            detail: "Table '\(tableName)'",
+            progressMessage: "Truncating table '\(tableName)'...",
+            execute: {
+                try await DatabaseTableService.shared.truncateTable(
+                    database: database.name, table: tableName,
+                    type: database.type, serverId: serverId!
+                )
+            },
+            onSuccess: {
+                await self.loadTables()
+                if self.selectedTable?.name == tableName { await self.loadTableData() }
             }
-        } catch {
-            GlobalToastManager.shared.showError("Failed to truncate table: \(error.localizedDescription)")
-            log(action: "Truncate Table", detail: "Table '\(tableName)'", success: false, error: error.localizedDescription)
-        }
+        )
     }
 
     public func optimizeTable(_ tableName: String) async {
-        guard let serverId = serverId else { return }
-
-        operationResult = .inProgress(message: "Optimizing table '\(tableName)'...", progress: nil)
-        do {
-            _ = try await DatabaseTableService.shared.optimizeTable(
-                database: database.name,
-                table: tableName,
-                type: database.type,
-                serverId: serverId
-            )
-            GlobalToastManager.shared.showSuccess("Table '\(tableName)' optimized")
-            log(action: "Optimize Table", detail: "Table '\(tableName)'", success: true)
-        } catch {
-            GlobalToastManager.shared.showError("Failed to optimize table: \(error.localizedDescription)")
-            log(action: "Optimize Table", detail: "Table '\(tableName)'", success: false, error: error.localizedDescription)
-        }
+        await loggedAction(
+            action: "Optimize Table",
+            detail: "Table '\(tableName)'",
+            progressMessage: "Optimizing table '\(tableName)'...",
+            execute: {
+                _ = try await DatabaseTableService.shared.optimizeTable(
+                    database: database.name, table: tableName,
+                    type: database.type, serverId: serverId!
+                )
+            }
+        )
     }
 
     public func analyzeTable(_ tableName: String) async {
-        guard let serverId = serverId else { return }
-
-        operationResult = .inProgress(message: "Analyzing table '\(tableName)'...", progress: nil)
-        do {
-            _ = try await DatabaseTableService.shared.analyzeTable(
-                database: database.name,
-                table: tableName,
-                type: database.type,
-                serverId: serverId
-            )
-            GlobalToastManager.shared.showSuccess("Table '\(tableName)' analyzed")
-            log(action: "Analyze Table", detail: "Table '\(tableName)'", success: true)
-        } catch {
-            GlobalToastManager.shared.showError("Failed to analyze table: \(error.localizedDescription)")
-            log(action: "Analyze Table", detail: "Table '\(tableName)'", success: false, error: error.localizedDescription)
-        }
+        await loggedAction(
+            action: "Analyze Table",
+            detail: "Table '\(tableName)'",
+            progressMessage: "Analyzing table '\(tableName)'...",
+            execute: {
+                _ = try await DatabaseTableService.shared.analyzeTable(
+                    database: database.name, table: tableName,
+                    type: database.type, serverId: serverId!
+                )
+            }
+        )
     }
 
     // MARK: - Create Table
@@ -506,47 +510,40 @@ public final class DatabaseDetailViewModel: ObservableObject {
     @Published public var showAddColumn = false
 
     public func addColumn(_ column: CreateTableColumnDefinition, afterColumn: String?) async {
-        guard let serverId = serverId, let table = selectedTable else { return }
-
-        operationResult = .inProgress(message: "Adding column '\(column.name)'...", progress: nil)
-        do {
-            try await DatabaseTableService.shared.addColumn(
-                database: database.name,
-                table: table.name,
-                column: column,
-                afterColumn: afterColumn,
-                type: database.type,
-                serverId: serverId
-            )
-            GlobalToastManager.shared.showSuccess("Column '\(column.name)' added successfully")
-            log(action: "Add Column", detail: "Column '\(column.name)' (\(column.type)) to table '\(table.name)'", success: true)
-            showAddColumn = false
-            await loadTableStructure()
-        } catch {
-            GlobalToastManager.shared.showError("Failed to add column: \(error.localizedDescription)")
-            log(action: "Add Column", detail: "Column '\(column.name)' to table '\(table.name)'", success: false, error: error.localizedDescription)
-        }
+        guard let table = selectedTable else { return }
+        await loggedAction(
+            action: "Add Column",
+            detail: "Column '\(column.name)' (\(column.type)) to table '\(table.name)'",
+            progressMessage: "Adding column '\(column.name)'...",
+            execute: {
+                try await DatabaseTableService.shared.addColumn(
+                    database: database.name, table: table.name,
+                    column: column, afterColumn: afterColumn,
+                    type: database.type, serverId: serverId!
+                )
+            },
+            onSuccess: {
+                self.showAddColumn = false
+                await self.loadTableStructure()
+            }
+        )
     }
 
     public func dropColumn(_ columnName: String) async {
-        guard let serverId = serverId, let table = selectedTable else { return }
-
-        operationResult = .inProgress(message: "Dropping column '\(columnName)'...", progress: nil)
-        do {
-            try await DatabaseTableService.shared.dropColumn(
-                database: database.name,
-                table: table.name,
-                columnName: columnName,
-                type: database.type,
-                serverId: serverId
-            )
-            GlobalToastManager.shared.showSuccess("Column '\(columnName)' dropped successfully")
-            log(action: "Drop Column", detail: "Column '\(columnName)' from table '\(table.name)'", success: true)
-            await loadTableStructure()
-        } catch {
-            GlobalToastManager.shared.showError("Failed to drop column: \(error.localizedDescription)")
-            log(action: "Drop Column", detail: "Column '\(columnName)' from table '\(table.name)'", success: false, error: error.localizedDescription)
-        }
+        guard let table = selectedTable else { return }
+        await loggedAction(
+            action: "Drop Column",
+            detail: "Column '\(columnName)' from table '\(table.name)'",
+            progressMessage: "Dropping column '\(columnName)'...",
+            execute: {
+                try await DatabaseTableService.shared.dropColumn(
+                    database: database.name, table: table.name,
+                    columnName: columnName,
+                    type: database.type, serverId: serverId!
+                )
+            },
+            onSuccess: { await self.loadTableStructure() }
+        )
     }
 
     // MARK: - Row Management Methods

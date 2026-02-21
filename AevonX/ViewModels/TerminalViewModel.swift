@@ -12,13 +12,17 @@ import Combine
 
 // MARK: - Terminal Line Model
 
-/// Represents a single line in the terminal output
+/// Represents a single line in the terminal output.
+/// Uses auto-incrementing Int ID instead of UUID for performance (P2-2).
 struct SSHTerminalLine: Identifiable, Equatable {
-    let id = UUID()
+    static var nextId: Int = 0
+    let id: Int
     let content: String
     let timestamp: Date
 
     init(content: String) {
+        Self.nextId += 1
+        self.id = Self.nextId
         self.content = content
         self.timestamp = Date()
     }
@@ -90,6 +94,16 @@ class TerminalViewModel: ObservableObject {
 
     /// Maximum command history size
     private let maxHistorySize = 100
+    
+    /// Maximum terminal lines to prevent unbounded memory growth (P2-1)
+    private let maxLines = 5000
+    
+    /// Cached system info to avoid redundant SSH calls (P2-3)
+    private var cachedUsername: String?
+    private var cachedHostname: String?
+    
+    /// Debounce task for path-based SSH suggestions (P2-4)
+    private var suggestionDebounceTask: Task<Void, Never>?
 
     // MARK: - Computed Properties
 
@@ -312,37 +326,53 @@ class TerminalViewModel: ObservableObject {
     // MARK: - Private Methods
 
     /// Fetch initial system information (username, hostname, path)
+    /// Caches username/hostname to avoid redundant SSH calls (P2-3)
     private func fetchSystemInfo() async {
-        // Get username
-        if let result = try? await sshService.execute("whoami", serverId: serverId) {
-            username = result.stdout.trimmingCharacters(in: .whitespacesAndNewlines)
+        // Get username (cache on first call)
+        if cachedUsername == nil {
+            if let result = try? await sshService.execute("whoami", serverId: serverId) {
+                cachedUsername = result.stdout.trimmingCharacters(in: .whitespacesAndNewlines)
+            }
         }
+        username = cachedUsername ?? "user"
 
-        // Get hostname
-        if let result = try? await sshService.execute("hostname", serverId: serverId) {
-            hostname = result.stdout.trimmingCharacters(in: .whitespacesAndNewlines)
+        // Get hostname (cache on first call)
+        if cachedHostname == nil {
+            if let result = try? await sshService.execute("hostname", serverId: serverId) {
+                cachedHostname = result.stdout.trimmingCharacters(in: .whitespacesAndNewlines)
+            }
         }
+        hostname = cachedHostname ?? "server"
 
-        // Get current path
+        // Get current path (always refresh — it changes with cd)
+        let previousPath = currentPath
         if let result = try? await sshService.execute("pwd", serverId: serverId) {
             currentPath = result.stdout.trimmingCharacters(in: .whitespacesAndNewlines)
         }
         
-        // Fetch current directory contents
-        await fetchDirectoryContents()
+        // Only fetch directory contents if path changed (P3-2)
+        if currentPath != previousPath {
+            await fetchDirectoryContents()
+        }
     }
 
-    /// Refresh all system context (path, user, directory content)
+    /// Refresh context after a command — only refreshes pwd (P2-3)
     private func refreshContext() async {
-        await fetchSystemInfo()
+        let previousPath = currentPath
+        if let result = try? await sshService.execute("pwd", serverId: serverId) {
+            currentPath = result.stdout.trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+        if currentPath != previousPath {
+            await fetchDirectoryContents()
+        }
     }
 
-    /// Fetch files and folders in a specific directory for suggestions
+    /// Fetch files and folders in a specific directory for suggestions.
+    /// Uses ShellSanitizer for path safety (P4-1).
     private func fetchDirectoryContents(path: String? = nil) async {
         let fetchPath = path ?? "."
-        // Use ls -F to identify directories (ends with /)
-        // We use -a to show hidden files too
-        guard let result = try? await sshService.execute("ls -F1a \(fetchPath)", serverId: serverId) else { return }
+        let safePath = ShellSanitizer.escapePath(fetchPath)
+        guard let result = try? await sshService.execute("ls -F1a \(safePath)", serverId: serverId) else { return }
         
         let rawItems = result.stdout.components(separatedBy: "\n")
         let contents = rawItems
@@ -351,9 +381,6 @@ class TerminalViewModel: ObservableObject {
         
         if path == nil || path == "." {
             currentDirectoryContents = contents
-        } else {
-            // If it's a different path, we might want to cache it or just return it
-            // For now, let's just update suggestions directly if we are in an async update
         }
     }
 
@@ -420,10 +447,13 @@ class TerminalViewModel: ObservableObject {
         }
     }
 
-    /// Add a line to the terminal output
-    /// - Parameter content: Line content
+    /// Add a line to the terminal output.
+    /// Caps at `maxLines` to prevent unbounded memory growth (P2-1).
     private func addLine(_ content: String) {
         lines.append(SSHTerminalLine(content: content))
+        if lines.count > maxLines {
+            lines.removeFirst(lines.count - maxLines)
+        }
     }
 
     // MARK: - AI Command Suggestions
@@ -465,29 +495,33 @@ class TerminalViewModel: ObservableObject {
                 searchPart = parts.last ?? ""
             }
             
-            // Trigger an async fetch if needed
-            Task {
-                // Fetch and update
-                guard let result = try? await sshService.execute("ls -F1a \(pathPart)", serverId: serverId) else { return }
+            // Debounce path-based SSH suggestions to 300ms (P2-4)
+            suggestionDebounceTask?.cancel()
+            suggestionDebounceTask = Task {
+                try? await Task.sleep(nanoseconds: 300_000_000)
+                guard !Task.isCancelled else { return }
+                
+                // Sanitize path before sending to SSH (P4-1)
+                let safePath = ShellSanitizer.escapePath(pathPart)
+                guard let result = try? await sshService.execute("ls -F1a \(safePath)", serverId: serverId) else { return }
                 let items = result.stdout.components(separatedBy: "\n")
                     .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
                     .filter { !$0.isEmpty && $0 != "./" && $0 != "../" }
                 
-                await MainActor.run {
-                    let filtered = items.filter { item in
-                        let matches = item.lowercased().starts(with: searchPart.lowercased())
-                        if isCD {
-                            return matches && (item.hasSuffix("/") || !item.contains("."))
-                        }
-                        return matches
+                guard !Task.isCancelled else { return }
+                let filtered = items.filter { item in
+                    let matches = item.lowercased().starts(with: searchPart.lowercased())
+                    if isCD {
+                        return matches && (item.hasSuffix("/") || !item.contains("."))
                     }
-                    let base = components.dropLast().joined(separator: " ")
-                    let prefix = base.isEmpty ? "" : base + " "
-                    
-                    let newSuggestions = filtered.map { prefix + pathPart + $0 }
-                    if !newSuggestions.isEmpty {
-                        self.commandSuggestions = Array(newSuggestions.prefix(5))
-                    }
+                    return matches
+                }
+                let base = components.dropLast().joined(separator: " ")
+                let prefix = base.isEmpty ? "" : base + " "
+                
+                let newSuggestions = filtered.map { prefix + pathPart + $0 }
+                if !newSuggestions.isEmpty {
+                    self.commandSuggestions = Array(newSuggestions.prefix(5))
                 }
             }
         }

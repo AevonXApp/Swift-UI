@@ -23,11 +23,12 @@ struct ServerDashboardView: View {
     init(server: Server, serverId: String, serverListViewModel: ServerListViewModel? = nil) {
         self.server = server
         self.serverId = serverId
-        _viewModel = StateObject(wrappedValue: ServerConnectionViewModel(
+        let vm = ServerConnectionViewModel(
             server: server,
-            serverId: serverId,
-            serverListViewModel: serverListViewModel
-        ))
+            serverId: serverId
+        )
+        vm.serverListViewModel = serverListViewModel
+        _viewModel = StateObject(wrappedValue: vm)
     }
     
     var body: some View {
@@ -94,6 +95,8 @@ struct ServerDashboardView: View {
                 #if os(macOS)
                 .navigationTitle("")
                 .toolbar(.hidden)
+                .toolbarBackground(.hidden)
+                .ignoresSafeArea(.all, edges: .top)
                 #endif
             }
         }
