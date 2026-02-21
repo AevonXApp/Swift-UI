@@ -145,68 +145,71 @@ public struct PluginPageComponent: View {
     @ViewBuilder
     private func tabsLayout(_ layout: HookPluginLayout) -> some View {
         let tabs = layout.tabs ?? []
-        guard !tabs.isEmpty else { return }
 
-        VStack(spacing: 0) {
-            // Tab bar
-            HStack(spacing: 2) {
-                ForEach(Array(tabs.enumerated()), id: \.offset) { index, tab in
-                    Button(action: {
-                        withAnimation(.easeInOut(duration: 0.2)) {
-                            selectedTabIndex = index
-                        }
-                    }) {
-                        HStack(spacing: 6) {
-                            if let icon = tab.icon {
-                                Image(systemName: icon)
-                                    .font(.system(size: 11, weight: .medium))
+        if tabs.isEmpty {
+            EmptyView()
+        } else {
+            VStack(spacing: 0) {
+                // Tab bar
+                HStack(spacing: 2) {
+                    ForEach(Array(tabs.enumerated()), id: \.offset) { index, tab in
+                        Button(action: {
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                selectedTabIndex = index
                             }
-                            Text(tab.title)
-                                .font(.system(size: 12, weight: .semibold))
-                        }
-                        .foregroundColor(selectedTabIndex == index ? .axAccentBlue : .axTextMuted)
-                        .padding(.horizontal, AXSpacing.lg)
-                        .padding(.vertical, AXSpacing.sm)
-                        .background(
-                            Group {
-                                if selectedTabIndex == index {
-                                    RoundedRectangle(cornerRadius: AXCornerRadius.sm)
-                                        .fill(Color.axAccentBlue.opacity(0.1))
+                        }) {
+                            HStack(spacing: 6) {
+                                if let icon = tab.icon {
+                                    Image(systemName: icon)
+                                        .font(.system(size: 11, weight: .medium))
                                 }
+                                Text(tab.title)
+                                    .font(.system(size: 12, weight: .semibold))
                             }
-                        )
-                        .overlay(
-                            VStack {
-                                Spacer()
-                                if selectedTabIndex == index {
-                                    Rectangle()
-                                        .fill(Color.axAccentBlue)
-                                        .frame(height: 2)
-                                        .cornerRadius(1)
+                            .foregroundColor(selectedTabIndex == index ? .axAccentBlue : .axTextMuted)
+                            .padding(.horizontal, AXSpacing.lg)
+                            .padding(.vertical, AXSpacing.sm)
+                            .background(
+                                Group {
+                                    if selectedTabIndex == index {
+                                        RoundedRectangle(cornerRadius: AXCornerRadius.sm)
+                                            .fill(Color.axAccentBlue.opacity(0.1))
+                                    }
                                 }
-                            }
-                        )
+                            )
+                            .overlay(
+                                VStack {
+                                    Spacer()
+                                    if selectedTabIndex == index {
+                                        Rectangle()
+                                            .fill(Color.axAccentBlue)
+                                            .frame(height: 2)
+                                            .cornerRadius(1)
+                                    }
+                                }
+                            )
+                        }
+                        .buttonStyle(.plain)
                     }
-                    .buttonStyle(.plain)
+                    Spacer()
                 }
-                Spacer()
-            }
-            .padding(.horizontal, AXSpacing.xxl)
-            .padding(.top, AXSpacing.md)
-            .background(Color.axSurface.opacity(0.4))
+                .padding(.horizontal, AXSpacing.xxl)
+                .padding(.top, AXSpacing.md)
+                .background(Color.axSurface.opacity(0.4))
 
-            Divider().opacity(0.3)
+                Divider().opacity(0.3)
 
-            // Tab content
-            let safeIndex = min(selectedTabIndex, tabs.count - 1)
-            let activeTab = tabs[max(0, safeIndex)]
+                // Tab content
+                let safeIndex = min(selectedTabIndex, tabs.count - 1)
+                let activeTab = tabs[max(0, safeIndex)]
 
-            ScrollView {
-                dashboardCardsContent(
-                    cards: activeTab.cards ?? [],
-                    columns: activeTab.columns ?? layout.columns ?? 2
-                )
-                .padding(.bottom, AXSpacing.xl)
+                ScrollView {
+                    dashboardCardsContent(
+                        cards: activeTab.cards ?? [],
+                        columns: activeTab.columns ?? layout.columns ?? 2
+                    )
+                    .padding(.bottom, AXSpacing.xl)
+                }
             }
         }
     }
@@ -274,8 +277,8 @@ public struct PluginPageComponent: View {
             component: card.component ?? .form,
             icon: card.icon,
             command: card.command,
-            fields: card.fields,
-            namespace: plugin.namespace
+            namespace: plugin.namespace,
+            fields: card.fields
         )
     }
 

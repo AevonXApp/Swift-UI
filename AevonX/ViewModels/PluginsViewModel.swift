@@ -10,10 +10,12 @@ import Combine
 @MainActor
 class PluginsViewModel: ObservableObject {
     @Published var plugins: [Plugin] = []
+    @Published var categories: [PluginCategory] = []
     @Published var isLoading = false
     @Published var errorMessage: String?
     @Published var searchQuery = ""
     @Published var selectedPricing: String? = nil
+    @Published var selectedCategory: String? = nil   // slug
     
     @Published var installedPlugins: [Plugin] = []
     @Published var installationProgress: [String: Double] = [:] // pluginId: progress
@@ -32,12 +34,24 @@ class PluginsViewModel: ObservableObject {
         errorMessage = nil
         
         do {
-            let response = try await apiService.fetchPlugins(search: searchQuery.isEmpty ? nil : searchQuery, pricing: selectedPricing)
+            let response = try await apiService.fetchPlugins(
+                search: searchQuery.isEmpty ? nil : searchQuery,
+                pricing: selectedPricing,
+                category: selectedCategory
+            )
             self.plugins = response.data
             self.isLoading = false
         } catch {
             self.errorMessage = "Failed to load plugins: \(error.localizedDescription)"
             self.isLoading = false
+        }
+    }
+    
+    func loadCategories() async {
+        do {
+            self.categories = try await apiService.fetchCategories()
+        } catch {
+            CoreLogger.shared.error("Failed to load categories: \(error.localizedDescription)", module: "PluginsViewModel")
         }
     }
     
@@ -51,22 +65,31 @@ class PluginsViewModel: ObservableObject {
         installationProgress[plugin.id] = 0.1
         
         do {
-            // 1. Get download info
-            installationStatus[plugin.id] = "Fetching download info..."
-            let downloadInfo = try await apiService.getDownloadInfo(id: plugin.id, versionId: targetVersion?.id)
-            installationProgress[plugin.id] = 0.3
+            // 1. Get one-time download token from API
+            installationStatus[plugin.id] = "Requesting download..."
+            let downloadInfo = try await apiService.getDownloadInfo(
+                id: plugin.id,
+                versionId: targetVersion?.id,
+                serverId: serverId
+            )
+            installationProgress[plugin.id] = 0.2
             
-            // 2. Download file
+            // 2. Download ZIP locally (Mac can reach the API, remote server may not)
             installationStatus[plugin.id] = "Downloading package..."
             guard let url = URL(string: downloadInfo.downloadUrl) else {
                 throw NSError(domain: "PluginsViewModel", code: 400, userInfo: [NSLocalizedDescriptionKey: "Invalid download URL"])
             }
-            let localURL = try await apiService.downloadPluginFile(url: url)
-            installationProgress[plugin.id] = 0.6
+            let localZipURL = try await apiService.downloadPluginFile(url: url)
+            installationProgress[plugin.id] = 0.5
             
-            // 3. Install via PluginManager
+            // 3. Upload ZIP to server + extract + run setup via SSH
             installationStatus[plugin.id] = "Installing on server..."
-            try await pluginManager.installPlugin(plugin: plugin, version: targetVersion, zipURL: localURL, on: serverId)
+            try await pluginManager.installPlugin(
+                plugin: plugin,
+                version: targetVersion,
+                zipURL: localZipURL,
+                on: serverId
+            )
             installationProgress[plugin.id] = 1.0
             installationStatus[plugin.id] = "Installed"
             

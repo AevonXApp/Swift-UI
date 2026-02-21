@@ -320,7 +320,7 @@ public struct PluginFormComponent: View {
         let stepVal = field.step ?? 1
 
         let value = Binding<Double>(
-            get: { sliderValues[field.key] ?? field.defaultValue?.stringValue.flatMap(Double.init) ?? minVal },
+            get: { sliderValues[field.key] ?? (field.defaultValue?.stringValue).flatMap(Double.init) ?? minVal },
             set: {
                 sliderValues[field.key] = $0
                 fieldValues[field.key] = String(Int($0))

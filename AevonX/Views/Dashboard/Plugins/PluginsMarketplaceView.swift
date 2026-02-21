@@ -2,9 +2,33 @@
 //  PluginsMarketplaceView.swift
 //  AevonX
 //
+//  Premium Plugin Marketplace with Glassmorphism
+//
 
 import SwiftUI
 import AevonXCore
+
+// MARK: - Pricing Badge Color
+
+private extension PluginPricing {
+    var badgeColor: Color {
+        switch type {
+        case .free: return .axSuccess
+        case .paid: return .axAccentBlue
+        case .subscribers: return .axWarning
+        }
+    }
+    
+    var badgeIcon: String {
+        switch type {
+        case .free: return "gift.fill"
+        case .paid: return "dollarsign.circle.fill"
+        case .subscribers: return "crown.fill"
+        }
+    }
+}
+
+// MARK: - Main Marketplace View
 
 struct PluginsMarketplaceView: View {
     let serverId: String?
@@ -12,120 +36,35 @@ struct PluginsMarketplaceView: View {
     let onSettings: (Plugin) -> Void
     
     @StateObject private var viewModel = PluginsViewModel()
+    @State private var pluginToInstall: Plugin?
     
     let columns = [
-        GridItem(.adaptive(minimum: 360, maximum: 480), spacing: AXSpacing.lg)
+        GridItem(.adaptive(minimum: 340, maximum: 480), spacing: AXSpacing.md)
     ]
-    
-    @State private var pluginToInstall: Plugin?
     
     var body: some View {
         ScrollView {
-            VStack(spacing: AXSpacing.xl) {
-                // Search & Filter Bar
-                HStack(spacing: AXSpacing.md) {
-                    HStack {
-                        Image(systemName: "magnifyingglass")
-                            .foregroundColor(.axTextMuted)
-                        TextField("Search plugins...", text: $viewModel.searchQuery)
-                            .textFieldStyle(PlainTextFieldStyle())
-                    }
-                    .padding(AXSpacing.sm)
-                    .background(Color.axSurface)
-                    .cornerRadius(AXCornerRadius.sm)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: AXCornerRadius.sm)
-                            .stroke(Color.axBorder, lineWidth: 1)
-                    )
-                    
-                    Button(action: { Task { await viewModel.loadMarketplace() } }) {
-                        Text("Search")
-                            .font(AXTypography.caption)
-                            .fontWeight(.semibold)
-                            .foregroundColor(.white)
-                            .padding(.horizontal, AXSpacing.md)
-                            .padding(.vertical, AXSpacing.sm)
-                            .background(Color.axAccentBlue)
-                            .cornerRadius(AXCornerRadius.sm)
-                    }
-                    .buttonStyle(PlainButtonStyle())
-                }
-                .padding(.horizontal, AXSpacing.xl)
-                .padding(.top, AXSpacing.xl)
+            VStack(spacing: 0) {
+                // Search + Filter bar
+                searchAndFilterBar
                 
-                if viewModel.isLoading {
-                    VStack(spacing: AXSpacing.md) {
-                        ProgressView()
-                        Text("Loading marketplace...")
-                            .font(AXTypography.caption)
-                            .foregroundColor(.axTextSecondary)
-                    }
-                    .frame(maxWidth: .infinity, minHeight: 300)
-                } else if let error = viewModel.errorMessage {
-                    VStack(spacing: AXSpacing.md) {
-                        Image(systemName: "exclamationmark.triangle")
-                            .font(.system(size: 32))
-                            .foregroundColor(.axError)
-                        Text(error)
-                            .font(AXTypography.body)
-                            .foregroundColor(.axTextSecondary)
-                            .multilineTextAlignment(.center)
-                        
-                        Button("Retry") {
-                            Task { await viewModel.loadMarketplace() }
-                        }
-                        .buttonStyle(AXSecondaryButtonStyle())
-                    }
-                    .frame(maxWidth: .infinity, minHeight: 300)
-                } else {
-                    let displayedPlugins = showInstalledOnly ? viewModel.installedPlugins : viewModel.plugins
+                if !showInstalledOnly {
+                    // Category pills
+                    categoryFilterBar
+                        .padding(.top, AXSpacing.sm)
                     
-                    if displayedPlugins.isEmpty {
-                        VStack(spacing: AXSpacing.md) {
-                            Image(systemName: "puzzlepiece")
-                                .font(.system(size: 48))
-                                .foregroundColor(.axTextMuted)
-                            Text(showInstalledOnly ? "No installed plugins found" : "No plugins found")
-                                .font(AXTypography.headline)
-                                .foregroundColor(.axTextSecondary)
-                        }
-                        .frame(maxWidth: .infinity, minHeight: 300)
-                    } else {
-                        // Grid of Plugins
-                        LazyVGrid(columns: columns, spacing: AXSpacing.lg) {
-                            ForEach(displayedPlugins) { plugin in
-                                let isInstalled = viewModel.installedPlugins.contains(where: { $0.slug == plugin.slug })
-                                
-                                PluginCard(
-                                    plugin: plugin,
-                                    isInstalling: viewModel.installationProgress.keys.contains(plugin.id),
-                                    isInstalled: isInstalled,
-                                    progress: viewModel.installationProgress[plugin.id] ?? 0,
-                                    status: viewModel.installationStatus[plugin.id] ?? "",
-                                    onInstall: {
-                                        if let versions = plugin.versions, !versions.isEmpty {
-                                            pluginToInstall = plugin
-                                        } else if let sid = serverId {
-                                            Task { await viewModel.installPlugin(plugin, on: sid) }
-                                        }
-                                    },
-                                    onSettings: {
-                                        onSettings(plugin)
-                                    },
-                                    onUninstall: {
-                                        if let sid = serverId {
-                                            Task {
-                                                await viewModel.uninstallPlugin(plugin, on: sid)
-                                            }
-                                        }
-                                    }
-                                )
-                            }
-                        }
-                        .padding(.horizontal, AXSpacing.xl)
-                        .padding(.bottom, AXSpacing.xl)
-                    }
+                    // Pricing pills
+                    pricingFilterBar
+                        .padding(.top, AXSpacing.sm)
                 }
+                
+                Divider()
+                    .background(Color.axBorder)
+                    .padding(.top, AXSpacing.md)
+                
+                // Content
+                contentArea
+                    .padding(.top, AXSpacing.lg)
             }
         }
         .sheet(item: $pluginToInstall) { plugin in
@@ -151,13 +90,244 @@ struct PluginsMarketplaceView: View {
             }
         }
         .task {
+            await viewModel.loadCategories()
             await viewModel.loadMarketplace()
             if let sid = serverId {
                 await viewModel.loadInstalledPlugins(on: sid)
             }
         }
     }
+    
+    // MARK: - Search Bar
+    
+    private var searchAndFilterBar: some View {
+        HStack(spacing: AXSpacing.sm) {
+            HStack(spacing: AXSpacing.sm) {
+                Image(systemName: "magnifyingglass")
+                    .font(.system(size: 14))
+                    .foregroundColor(.axTextMuted)
+                TextField("Search plugins...", text: $viewModel.searchQuery)
+                    .textFieldStyle(PlainTextFieldStyle())
+                    .font(AXTypography.body)
+                
+                if !viewModel.searchQuery.isEmpty {
+                    Button(action: {
+                        viewModel.searchQuery = ""
+                        Task { await viewModel.loadMarketplace() }
+                    }) {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.system(size: 14))
+                            .foregroundColor(.axTextMuted)
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                }
+            }
+            .padding(.horizontal, AXSpacing.md)
+            .padding(.vertical, AXSpacing.sm + 2)
+            .background(Color.axSurface)
+            .cornerRadius(AXCornerRadius.md)
+            .overlay(
+                RoundedRectangle(cornerRadius: AXCornerRadius.md)
+                    .stroke(Color.axBorder, lineWidth: 1)
+            )
+            
+            Button(action: { Task { await viewModel.loadMarketplace() } }) {
+                HStack(spacing: AXSpacing.xs) {
+                    Image(systemName: "arrow.clockwise")
+                        .font(.system(size: 12, weight: .semibold))
+                    Text("Search")
+                        .font(AXTypography.caption)
+                        .fontWeight(.semibold)
+                }
+                .foregroundColor(.axBackground)
+                .padding(.horizontal, AXSpacing.md)
+                .padding(.vertical, AXSpacing.sm + 2)
+                .background(Color.axAccentBlue)
+                .cornerRadius(AXCornerRadius.md)
+            }
+            .buttonStyle(PlainButtonStyle())
+        }
+        .padding(.horizontal, AXSpacing.xl)
+        .padding(.top, AXSpacing.lg)
+    }
+    
+    // MARK: - Category Filter
+    
+    private var categoryFilterBar: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: AXSpacing.sm) {
+                FilterChip(
+                    label: "All",
+                    icon: "square.grid.2x2",
+                    isSelected: viewModel.selectedCategory == nil,
+                    color: .axAccentBlue
+                ) {
+                    viewModel.selectedCategory = nil
+                    Task { await viewModel.loadMarketplace() }
+                }
+                
+                ForEach(viewModel.categories) { category in
+                    FilterChip(
+                        label: category.name,
+                        icon: category.icon ?? "folder",
+                        isSelected: viewModel.selectedCategory == category.slug,
+                        color: .axAccentBlue,
+                        count: category.pluginsCount
+                    ) {
+                        viewModel.selectedCategory = category.slug
+                        Task { await viewModel.loadMarketplace() }
+                    }
+                }
+            }
+            .padding(.horizontal, AXSpacing.xl)
+        }
+    }
+    
+    // MARK: - Pricing Filter
+    
+    private var pricingFilterBar: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: AXSpacing.sm) {
+                let options: [(label: String, value: String?, icon: String, color: Color)] = [
+                    ("All", nil, "square.grid.2x2", .axTextSecondary),
+                    ("Free", "free", "gift.fill", .axSuccess),
+                    ("Paid", "paid", "dollarsign.circle.fill", .axAccentBlue),
+                    ("Pro", "subscribers", "crown.fill", .axWarning),
+                ]
+                
+                ForEach(options, id: \.label) { option in
+                    FilterChip(
+                        label: option.label,
+                        icon: option.icon,
+                        isSelected: viewModel.selectedPricing == option.value,
+                        color: option.color
+                    ) {
+                        viewModel.selectedPricing = option.value
+                        Task { await viewModel.loadMarketplace() }
+                    }
+                }
+            }
+            .padding(.horizontal, AXSpacing.xl)
+        }
+    }
+    
+    // MARK: - Content Area
+    
+    @ViewBuilder
+    private var contentArea: some View {
+        if viewModel.isLoading {
+            VStack(spacing: AXSpacing.lg) {
+                ProgressView()
+                    .scaleEffect(1.2)
+                Text("Loading marketplace...")
+                    .font(AXTypography.caption)
+                    .foregroundColor(.axTextMuted)
+            }
+            .frame(maxWidth: .infinity, minHeight: 300)
+        } else if let error = viewModel.errorMessage {
+            AXEmptyState(
+                icon: "exclamationmark.triangle",
+                title: "Something went wrong",
+                description: error,
+                actionLabel: "Retry",
+                action: { Task { await viewModel.loadMarketplace() } }
+            )
+        } else {
+            let displayedPlugins = showInstalledOnly ? viewModel.installedPlugins : viewModel.plugins
+            
+            if displayedPlugins.isEmpty {
+                AXEmptyState(
+                    icon: "puzzlepiece.extension",
+                    title: showInstalledOnly ? "No plugins installed" : "No plugins found",
+                    description: showInstalledOnly
+                        ? "Browse the marketplace to find powerful extensions."
+                        : "Try adjusting your search or filters."
+                )
+            } else {
+                LazyVGrid(columns: columns, spacing: AXSpacing.md) {
+                    ForEach(displayedPlugins) { plugin in
+                        let isInstalled = viewModel.installedPlugins.contains(where: { $0.slug == plugin.slug })
+                        
+                        PluginCard(
+                            plugin: plugin,
+                            isInstalling: viewModel.installationProgress.keys.contains(plugin.id),
+                            isInstalled: isInstalled,
+                            progress: viewModel.installationProgress[plugin.id] ?? 0,
+                            status: viewModel.installationStatus[plugin.id] ?? "",
+                            onInstall: {
+                                if let versions = plugin.versions, !versions.isEmpty {
+                                    pluginToInstall = plugin
+                                } else if let sid = serverId {
+                                    Task { await viewModel.installPlugin(plugin, on: sid) }
+                                }
+                            },
+                            onSettings: { onSettings(plugin) },
+                            onUninstall: {
+                                if let sid = serverId {
+                                    Task { await viewModel.uninstallPlugin(plugin, on: sid) }
+                                }
+                            }
+                        )
+                    }
+                }
+                .padding(.horizontal, AXSpacing.xl)
+                .padding(.bottom, AXSpacing.xxl)
+            }
+        }
+    }
 }
+
+// MARK: - Filter Chip
+
+private struct FilterChip: View {
+    let label: String
+    let icon: String
+    let isSelected: Bool
+    let color: Color
+    var count: Int? = nil
+    let action: () -> Void
+    
+    @State private var isHovered = false
+    
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: AXSpacing.xs) {
+                Image(systemName: icon)
+                    .font(.system(size: 10, weight: .semibold))
+                
+                Text(label)
+                    .font(.system(size: 11, weight: .bold))
+                
+                if let count = count, count > 0 {
+                    Text("\(count)")
+                        .font(.system(size: 9, weight: .bold, design: .rounded))
+                        .foregroundColor(isSelected ? color : .axTextMuted)
+                        .padding(.horizontal, 4)
+                        .padding(.vertical, 1)
+                        .background((isSelected ? color : Color.axTextMuted).opacity(0.15))
+                        .cornerRadius(4)
+                }
+            }
+            .foregroundColor(isSelected ? color : .axTextSecondary)
+            .padding(.horizontal, AXSpacing.md)
+            .padding(.vertical, AXSpacing.xs + 2)
+            .background(
+                RoundedRectangle(cornerRadius: AXCornerRadius.md)
+                    .fill(isSelected ? color.opacity(0.12) : (isHovered ? Color.axSurface : Color.clear))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: AXCornerRadius.md)
+                    .stroke(isSelected ? color.opacity(0.3) : Color.axBorder.opacity(isHovered ? 1 : 0), lineWidth: 1)
+            )
+        }
+        .buttonStyle(PlainButtonStyle())
+        .onHover { hovering in
+            withAnimation(.easeInOut(duration: 0.15)) { isHovered = hovering }
+        }
+    }
+}
+
+// MARK: - Plugin Card (Premium Redesign)
 
 struct PluginCard: View {
     let plugin: Plugin
@@ -169,150 +339,266 @@ struct PluginCard: View {
     let onSettings: () -> Void
     let onUninstall: () -> Void
     
-    @State private var isStatsHovered = false
+    @State private var isHovered = false
     @State private var showUninstallConfirmation = false
     
+    private var accentColor: Color {
+        .axAccentBlue
+    }
+    
     var body: some View {
-        AXCard(padding: AXSpacing.md) {
-            HStack(alignment: .top, spacing: AXSpacing.md) {
-                // Icon on the left
-                ZStack {
-                    if let imageUrl = plugin.imageUrl, let url = URL(string: imageUrl) {
-                        AsyncImage(url: url) { image in
-                            image.resizable()
-                                .aspectRatio(contentMode: .fit)
-                        } placeholder: {
-                            Color.axBackgroundTertiary
-                        }
-                    } else {
-                        Color.axBackgroundTertiary
-                        Image(systemName: "puzzlepiece.fill")
-                            .font(.system(size: 32))
-                            .foregroundColor(.axAccentBlue.opacity(0.3))
-                    }
+        AXGlassCard(padding: 0, cornerRadius: AXCornerRadius.lg, accentColor: accentColor) {
+            VStack(alignment: .leading, spacing: 0) {
+                // Top — Icon + Info
+                HStack(alignment: .top, spacing: AXSpacing.md) {
+                    // Plugin icon
+                    pluginIcon
                     
-                    if plugin.isOfficial {
-                        VStack {
-                            HStack {
-                                Spacer()
-                                Image(systemName: "checkmark.seal.fill")
-                                    .font(.system(size: 14))
-                                    .foregroundColor(.axAccentBlue)
-                                    .background(Circle().fill(.white).padding(2))
-                                    .offset(x: 4, y: -4)
-                            }
-                            Spacer()
-                        }
-                    }
-                }
-                .frame(width: 72, height: 72)
-                .background(Color.axBackgroundTertiary)
-                .cornerRadius(AXCornerRadius.sm)
-                .clipped()
-                
-                // Content on the right
-                VStack(alignment: .leading, spacing: AXSpacing.xs) {
-                    HStack {
-                        Text(plugin.name)
-                            .font(AXTypography.body)
-                            .fontWeight(.bold)
-                            .foregroundColor(.axTextPrimary)
-                            .lineLimit(1)
-                        
-                        Spacer()
-                        
-                        if let price = plugin.pricing?.price {
-                            Text(price == "0.00" ? "FREE" : "$\(price)")
-                                .font(AXTypography.caption)
+                    // Text content
+                    VStack(alignment: .leading, spacing: AXSpacing.xxs) {
+                        // Name row
+                        HStack(spacing: AXSpacing.xs) {
+                            Text(plugin.name)
+                                .font(AXTypography.subheadline)
                                 .fontWeight(.bold)
-                                .foregroundColor(price == "0.00" ? .axSuccess : .axAccentBlue)
-                        }
-                    }
-                    
-                    Text(plugin.user?.name ?? "Community")
-                        .font(AXTypography.caption)
-                        .foregroundColor(.axAccentBlue)
-                        .padding(.bottom, 2)
-                    
-                    Text(plugin.description)
-                        .font(AXTypography.caption2)
-                        .foregroundColor(.axTextSecondary)
-                        .lineLimit(2)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                    
-                    Spacer(minLength: AXSpacing.xs)
-                    
-                    HStack(alignment: .bottom) {
-                        HStack(spacing: 4) {
-                            Image(systemName: "arrow.down.circle")
-                            Text("\(plugin.downloadsCount)")
-                        }
-                        .font(AXTypography.caption2)
-                        .foregroundColor(.axTextMuted)
-                        
-                        Spacer()
-                        
-                        if isInstalling {
-                            VStack(alignment: .trailing, spacing: 2) {
-                                ProgressView(value: progress)
-                                    .progressViewStyle(LinearProgressViewStyle(tint: .axAccentBlue))
-                                    .frame(width: 60)
-                                Text(status)
-                                    .font(.system(size: 8))
-                                    .foregroundColor(.axAccentBlue)
-                            }
-                        } else if isInstalled {
-                            HStack(spacing: 8) {
-                                Button(action: { showUninstallConfirmation = true }) {
-                                    Image(systemName: "trash")
-                                        .font(.system(size: 12))
-                                        .foregroundColor(.axError)
-                                        .padding(6)
-                                        .background(Color.axError.opacity(0.1))
-                                        .cornerRadius(AXCornerRadius.xs)
-                                }
-                                .buttonStyle(PlainButtonStyle())
-                                .help("Uninstall Plugin")
-                                .alert(isPresented: $showUninstallConfirmation) {
-                                    Alert(
-                                        title: Text("Uninstall Plugin"),
-                                        message: Text("Are you sure you want to uninstall \(plugin.name)? This action cannot be undone."),
-                                        primaryButton: .destructive(Text("Uninstall"), action: onUninstall),
-                                        secondaryButton: .cancel()
+                                .foregroundColor(.axTextPrimary)
+                                .lineLimit(1)
+                            
+                            if plugin.isOfficial {
+                                Image(systemName: "checkmark.seal.fill")
+                                    .font(.system(size: 13))
+                                    .foregroundStyle(
+                                        LinearGradient(
+                                            colors: [.axAccentBlue, .cyan],
+                                            startPoint: .topLeading,
+                                            endPoint: .bottomTrailing
+                                        )
                                     )
-                                }
-                                
-                                Button(action: onSettings) {
-                                    Text("Settings")
-                                        .font(AXTypography.caption2)
-                                        .fontWeight(.bold)
-                                        .foregroundColor(.white)
-                                        .padding(.horizontal, AXSpacing.md)
-                                        .padding(.vertical, AXSpacing.xs)
-                                        .background(Color.axBackgroundSecondary)
-                                        .cornerRadius(AXCornerRadius.xs)
-                                }
-                                .buttonStyle(PlainButtonStyle())
+                                    .help("Official AevonX Plugin")
                             }
-                        } else {
-                            Button(action: onInstall) {
-                                Text("Install")
-                                    .font(AXTypography.caption2)
-                                    .fontWeight(.bold)
-                                    .foregroundColor(.white)
-                                    .padding(.horizontal, AXSpacing.md)
-                                    .padding(.vertical, AXSpacing.xs)
-                                    .background(Color.axAccentBlue)
-                                    .cornerRadius(AXCornerRadius.xs)
-                            }
-                            .buttonStyle(PlainButtonStyle())
+                            
+                            Spacer()
+                            
+                            pricingBadge
                         }
+                        
+                        // Developer
+                        Text(plugin.user?.name ?? "Community")
+                            .font(AXTypography.caption2)
+                            .foregroundColor(.axAccentBlue)
+                        
+                        // Description
+                        Text(plugin.description)
+                            .font(AXTypography.caption2)
+                            .foregroundColor(.axTextTertiary)
+                            .lineLimit(2)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
                 }
+                .padding(AXSpacing.md)
+                
+                // Divider
+                Rectangle()
+                    .fill(Color.axBorder.opacity(0.5))
+                    .frame(height: 1)
+                
+                // Bottom — Stats + Actions
+                HStack(alignment: .center, spacing: AXSpacing.md) {
+                    // Stats
+                    HStack(spacing: AXSpacing.lg) {
+                        statItem(icon: "arrow.down.circle", value: formatCount(plugin.downloadsCount), color: .axSuccess)
+                        
+                        if let rating = plugin.rating, !rating.isEmpty {
+                            statItem(icon: "star.fill", value: rating, color: .yellow)
+                        }
+                        
+                        if let cat = plugin.category {
+                            HStack(spacing: 3) {
+                                Image(systemName: cat.icon ?? "folder")
+                                    .font(.system(size: 9))
+                                Text(cat.name)
+                                    .font(.system(size: 9, weight: .medium))
+                            }
+                            .foregroundColor(.axTextMuted)
+                        }
+                        
+                        if plugin.pricing?.isPaid == true, let limit = plugin.pricing?.serverLimit {
+                            statItem(icon: "server.rack", value: "\(limit)", color: .axAccentBlue)
+                        }
+                    }
+                    
+                    Spacer()
+                    
+                    // Actions
+                    actionButtons
+                }
+                .padding(.horizontal, AXSpacing.md)
+                .padding(.vertical, AXSpacing.sm + 2)
             }
         }
     }
+    
+    // MARK: - Sub-views
+    
+    private var pluginIcon: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: AXCornerRadius.md)
+                .fill(
+                    LinearGradient(
+                        colors: [accentColor.opacity(0.12), accentColor.opacity(0.04)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .frame(width: 56, height: 56)
+            
+            if let imageUrl = plugin.imageUrl, let url = URL(string: imageUrl) {
+                AsyncImage(url: url) { image in
+                    image.resizable().aspectRatio(contentMode: .fit)
+                } placeholder: {
+                    Image(systemName: "puzzlepiece.fill")
+                        .font(.system(size: 24))
+                        .foregroundColor(accentColor.opacity(0.4))
+                }
+                .frame(width: 56, height: 56)
+                .cornerRadius(AXCornerRadius.md)
+                .clipped()
+            } else {
+                Image(systemName: "puzzlepiece.fill")
+                    .font(.system(size: 24))
+                    .foregroundColor(accentColor.opacity(0.4))
+            }
+        }
+        .overlay(
+            RoundedRectangle(cornerRadius: AXCornerRadius.md)
+                .stroke(accentColor.opacity(0.15), lineWidth: 1)
+        )
+        .shadow(color: accentColor.opacity(isHovered ? 0.2 : 0.05), radius: 8)
+    }
+    
+    @ViewBuilder
+    private var pricingBadge: some View {
+        if let pricing = plugin.pricing {
+            HStack(spacing: 3) {
+                Image(systemName: pricing.badgeIcon)
+                    .font(.system(size: 9, weight: .bold))
+                Text(pricing.displayLabel)
+                    .font(.system(size: 9, weight: .black))
+                    .textCase(.uppercase)
+            }
+            .foregroundColor(pricing.badgeColor)
+            .padding(.horizontal, AXSpacing.sm)
+            .padding(.vertical, 3)
+            .background(pricing.badgeColor.opacity(0.12))
+            .cornerRadius(AXCornerRadius.sm)
+            .overlay(
+                RoundedRectangle(cornerRadius: AXCornerRadius.sm)
+                    .stroke(pricing.badgeColor.opacity(0.2), lineWidth: 1)
+            )
+        }
+    }
+    
+    private func statItem(icon: String, value: String, color: Color) -> some View {
+        HStack(spacing: 3) {
+            Image(systemName: icon)
+                .font(.system(size: 9))
+                .foregroundColor(color.opacity(0.7))
+            Text(value)
+                .font(.system(size: 10, weight: .semibold, design: .rounded))
+                .foregroundColor(.axTextMuted)
+        }
+    }
+    
+    @ViewBuilder
+    private var actionButtons: some View {
+        if isInstalling {
+            HStack(spacing: AXSpacing.xs) {
+                ProgressView(value: progress)
+                    .progressViewStyle(LinearProgressViewStyle(tint: accentColor))
+                    .frame(width: 50)
+                Text(status)
+                    .font(.system(size: 8, weight: .semibold))
+                    .foregroundColor(accentColor)
+                    .lineLimit(1)
+            }
+        } else if isInstalled {
+            HStack(spacing: AXSpacing.xs) {
+                Button(action: { showUninstallConfirmation = true }) {
+                    Image(systemName: "trash")
+                        .font(.system(size: 11))
+                        .foregroundColor(.axError)
+                        .padding(AXSpacing.xs + 2)
+                        .background(Color.axError.opacity(0.1))
+                        .cornerRadius(AXCornerRadius.sm)
+                }
+                .buttonStyle(PlainButtonStyle())
+                .help("Uninstall")
+                .alert(isPresented: $showUninstallConfirmation) {
+                    Alert(
+                        title: Text("Uninstall Plugin"),
+                        message: Text("Are you sure you want to uninstall \(plugin.name)?"),
+                        primaryButton: .destructive(Text("Uninstall"), action: onUninstall),
+                        secondaryButton: .cancel()
+                    )
+                }
+                
+                Button(action: onSettings) {
+                    HStack(spacing: AXSpacing.xxs) {
+                        Image(systemName: "slider.horizontal.3")
+                            .font(.system(size: 10))
+                        Text("Settings")
+                            .font(.system(size: 10, weight: .semibold))
+                    }
+                    .foregroundColor(.axTextPrimary)
+                    .padding(.horizontal, AXSpacing.sm)
+                    .padding(.vertical, AXSpacing.xs + 2)
+                    .background(Color.axSurface)
+                    .cornerRadius(AXCornerRadius.sm)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: AXCornerRadius.sm)
+                            .stroke(Color.axBorder, lineWidth: 1)
+                    )
+                }
+                .buttonStyle(PlainButtonStyle())
+            }
+        } else {
+            Button(action: onInstall) {
+                HStack(spacing: AXSpacing.xxs) {
+                    Image(systemName: "arrow.down.circle.fill")
+                        .font(.system(size: 11))
+                    Text("Install")
+                        .font(.system(size: 11, weight: .bold))
+                }
+                .foregroundColor(.axBackground)
+                .padding(.horizontal, AXSpacing.md)
+                .padding(.vertical, AXSpacing.xs + 2)
+                .background(
+                    LinearGradient(
+                        colors: [accentColor, accentColor.opacity(0.8)],
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                )
+                .cornerRadius(AXCornerRadius.sm)
+                .shadow(color: accentColor.opacity(0.3), radius: 4, y: 2)
+            }
+            .buttonStyle(PlainButtonStyle())
+        }
+    }
+    
+    // MARK: - Helpers
+    
+    private func formatCount(_ count: Int) -> String {
+        if count >= 1_000_000 {
+            return String(format: "%.1fM", Double(count) / 1_000_000)
+        } else if count >= 1_000 {
+            return String(format: "%.1fK", Double(count) / 1_000)
+        }
+        return "\(count)"
+    }
 }
+
+// MARK: - Version Picker
 
 struct PluginVersionPickerView: View {
     let plugin: Plugin
@@ -320,18 +606,47 @@ struct PluginVersionPickerView: View {
     @ObservedObject var viewModel: PluginsViewModel
     @Environment(\.dismiss) var dismiss
     
+    private var accentColor: Color {
+        .axAccentBlue
+    }
+    
     var body: some View {
         VStack(spacing: 0) {
             // Header
-            HStack {
-                VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: AXSpacing.md) {
+                // Icon
+                ZStack {
+                    RoundedRectangle(cornerRadius: AXCornerRadius.sm)
+                        .fill(accentColor.opacity(0.1))
+                        .frame(width: 40, height: 40)
+                    
+                    if let imageUrl = plugin.imageUrl, let url = URL(string: imageUrl) {
+                        AsyncImage(url: url) { image in
+                            image.resizable().aspectRatio(contentMode: .fit)
+                        } placeholder: {
+                            Image(systemName: "puzzlepiece.fill")
+                                .foregroundColor(accentColor.opacity(0.4))
+                        }
+                        .frame(width: 40, height: 40)
+                        .cornerRadius(AXCornerRadius.sm)
+                        .clipped()
+                    } else {
+                        Image(systemName: "puzzlepiece.fill")
+                            .foregroundColor(accentColor.opacity(0.4))
+                    }
+                }
+                
+                VStack(alignment: .leading, spacing: 2) {
                     Text("Install \(plugin.name)")
                         .font(AXTypography.headline)
-                    Text("Select a version to install on your server")
+                        .foregroundColor(.axTextPrimary)
+                    Text("Select a version to install")
                         .font(AXTypography.caption)
                         .foregroundColor(.axTextSecondary)
                 }
+                
                 Spacer()
+                
                 Button(action: { dismiss() }) {
                     Image(systemName: "xmark.circle.fill")
                         .font(.title2)
@@ -343,10 +658,11 @@ struct PluginVersionPickerView: View {
             .background(Color.axBackgroundSecondary)
             
             Divider()
+                .background(Color.axBorder)
             
             // Version List
             ScrollView {
-                VStack(spacing: AXSpacing.md) {
+                VStack(spacing: AXSpacing.sm) {
                     if let versions = plugin.versions, !versions.isEmpty {
                         ForEach(versions) { version in
                             Button(action: {
@@ -356,29 +672,26 @@ struct PluginVersionPickerView: View {
                                 }
                             }) {
                                 HStack(spacing: AXSpacing.md) {
-                                    // Version Indicator
-                                    VStack(alignment: .leading, spacing: 2) {
-                                        Text("v\(version.versionNumber)")
-                                            .font(AXTypography.body)
-                                            .fontWeight(.bold)
-                                            .foregroundColor(.axTextPrimary)
-                                        
-                                        if version.isActive {
-                                            Text("LATEST")
-                                                .font(.system(size: 8, weight: .black))
-                                                .padding(.horizontal, 4)
-                                                .padding(.vertical, 1)
-                                                .background(Color.axSuccess.opacity(0.15))
-                                                .foregroundColor(.axSuccess)
-                                                .cornerRadius(3)
+                                    VStack(alignment: .leading, spacing: 3) {
+                                        HStack(spacing: AXSpacing.xs) {
+                                            Text("v\(version.versionNumber)")
+                                                .font(AXTypography.body)
+                                                .fontWeight(.bold)
+                                                .foregroundColor(.axTextPrimary)
+                                            
+                                            if version.isActive {
+                                                Text("LATEST")
+                                                    .font(.system(size: 8, weight: .black))
+                                                    .padding(.horizontal, 5)
+                                                    .padding(.vertical, 2)
+                                                    .background(Color.axSuccess.opacity(0.15))
+                                                    .foregroundColor(.axSuccess)
+                                                    .cornerRadius(4)
+                                            }
                                         }
                                     }
-                                    .frame(width: 80, alignment: .leading)
+                                    .frame(width: 100, alignment: .leading)
                                     
-                                    Divider()
-                                        .frame(height: 30)
-                                    
-                                    // Content
                                     VStack(alignment: .leading, spacing: 2) {
                                         if let changelog = version.changelog, !changelog.isEmpty {
                                             Text(changelog)
@@ -386,7 +699,7 @@ struct PluginVersionPickerView: View {
                                                 .foregroundColor(.axTextSecondary)
                                                 .lineLimit(2)
                                         } else {
-                                            Text("No changelog provided")
+                                            Text("No changelog")
                                                 .font(AXTypography.caption)
                                                 .italic()
                                                 .foregroundColor(.axTextMuted)
@@ -396,12 +709,14 @@ struct PluginVersionPickerView: View {
                                     Spacer()
                                     
                                     Image(systemName: "arrow.down.circle.fill")
-                                        .foregroundColor(.axAccentBlue)
+                                        .foregroundColor(accentColor)
                                         .font(.title3)
                                 }
                                 .padding(AXSpacing.md)
-                                .background(Color.axSurface.opacity(0.5))
-                                .cornerRadius(AXCornerRadius.md)
+                                .background(
+                                    RoundedRectangle(cornerRadius: AXCornerRadius.md)
+                                        .fill(Color.axSurface.opacity(0.5))
+                                )
                                 .overlay(
                                     RoundedRectangle(cornerRadius: AXCornerRadius.md)
                                         .stroke(Color.axBorder, lineWidth: 1)
@@ -410,21 +725,17 @@ struct PluginVersionPickerView: View {
                             .buttonStyle(PlainButtonStyle())
                         }
                     } else {
-                        VStack(spacing: AXSpacing.lg) {
-                            Image(systemName: "tray.and.arrow.down")
-                                .font(.system(size: 48))
-                                .foregroundColor(.axTextMuted)
-                            Text("No versions found")
-                                .font(AXTypography.body)
-                                .foregroundColor(.axTextSecondary)
-                        }
-                        .frame(maxWidth: .infinity, minHeight: 200)
+                        AXEmptyState(
+                            icon: "tray.and.arrow.down",
+                            title: "No versions",
+                            description: "No versions are available for this plugin."
+                        )
                     }
                 }
                 .padding(AXSpacing.xl)
             }
         }
-        .frame(width: 500)
+        .frame(width: 540)
         .fixedSize(horizontal: false, vertical: true)
         .background(Color.axBackground)
         .cornerRadius(AXCornerRadius.lg)
