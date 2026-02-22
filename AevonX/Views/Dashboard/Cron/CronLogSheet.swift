@@ -100,8 +100,8 @@ struct CronLogSheet: View {
                                     Spacer()
                                     
                                     if !entry.timestamp.isEmpty {
-                                        Text(entry.timestamp)
-                                            .font(.system(size: 10, design: .monospaced))
+                                        Text(formatTimestamp(entry.timestamp))
+                                            .font(.system(size: 10, weight: .medium))
                                             .foregroundColor(.axTextTertiary)
                                     }
                                 }
@@ -128,5 +128,18 @@ struct CronLogSheet: View {
         }
         .frame(width: 600, height: 500)
         .background(Color.axBackground)
+    }
+    
+    /// Format timestamp: convert ISO8601 to readable, or pass through already-formatted strings
+    private func formatTimestamp(_ raw: String) -> String {
+        // Try ISO8601 first (old logs)
+        let iso = ISO8601DateFormatter()
+        if let date = iso.date(from: raw) {
+            let df = DateFormatter()
+            df.dateFormat = "yyyy-MM-dd HH:mm:ss"
+            return df.string(from: date)
+        }
+        // Already in readable format or unknown — return as-is
+        return raw
     }
 }
