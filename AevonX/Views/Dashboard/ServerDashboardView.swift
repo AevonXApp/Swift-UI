@@ -85,6 +85,8 @@ struct ServerDashboardView: View {
                             SecurityTab(server: server, serverId: serverId, connectionViewModel: viewModel)
                         case .cron:
                             CronTab(serverId: serverId, connectionViewModel: viewModel)
+                        case .ftp:
+                            FTPTab(serverId: serverId, connectionViewModel: viewModel)
                         case .plugins:
                             PluginsTab(server: server, serverId: serverId, connectionViewModel: viewModel)
                         case .settings:

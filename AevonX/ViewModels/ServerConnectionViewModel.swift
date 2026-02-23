@@ -41,6 +41,7 @@ enum DashboardTab: String, CaseIterable, Identifiable {
     case files = "Files"
     case security = "Security"
     case cron = "Cron"
+    case ftp = "FTP"
     case plugins = "Plugins"
     case settings = "Settings"
 
@@ -57,6 +58,7 @@ enum DashboardTab: String, CaseIterable, Identifiable {
         case .files: return "folder"
         case .security: return "shield.lefthalf.filled"
         case .cron: return "clock.badge.checkmark"
+        case .ftp: return "externaldrive.connected.to.line.below"
         case .plugins: return "puzzlepiece.fill"
         case .settings: return "gearshape"
         }
