@@ -12,6 +12,15 @@ struct DockerDetailView: View {
     @State private var isDockerInstalled: Bool? = nil
     @State private var isCheckingInstallation = true
     
+    // Sheet states for advanced features
+    @State private var showAICompose = false
+    @State private var showDockerfileBuilder = false
+    @State private var showEventsStream = false // kept for backward compat
+    @State private var showExportImport = false
+    @State private var showCustomTemplate = false
+    @State private var showSystemPrune = false
+    @State private var showVolumeBrowser = false
+    
     enum DockerTab: String, CaseIterable, Identifiable {
         case overview = "Overview"
         case containers = "Containers"
@@ -19,6 +28,7 @@ struct DockerDetailView: View {
         case volumes = "Volumes"
         case networks = "Networks"
         case compose = "Compose"
+        case health = "Health"
         
         var id: String { rawValue }
         
@@ -30,6 +40,7 @@ struct DockerDetailView: View {
             case .volumes: return "internaldrive.fill"
             case .networks: return "network"
             case .compose: return "square.stack.3d.up.fill"
+            case .health: return "heart.fill"
             }
         }
     }
@@ -70,6 +81,33 @@ struct DockerDetailView: View {
                 .padding(.vertical, 6)
                 .background((isDockerInstalled == true ? Color.axSuccess : Color.axError).opacity(0.1))
                 .cornerRadius(16)
+            }
+            
+            // Quick actions toolbar
+            if isDockerInstalled == true {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        quickActionButton(icon: "sparkles", label: "AI Compose", color: .purple) {
+                            showAICompose = true
+                        }
+                        quickActionButton(icon: "hammer.fill", label: "Dockerfile", color: .orange) {
+                            showDockerfileBuilder = true
+                        }
+
+                        quickActionButton(icon: "arrow.left.arrow.right", label: "Export/Import", color: .axAccentBlue) {
+                            showExportImport = true
+                        }
+                        quickActionButton(icon: "plus.rectangle.on.folder.fill", label: "Template", color: .green) {
+                            showCustomTemplate = true
+                        }
+                        quickActionButton(icon: "folder.fill", label: "Volumes", color: .cyan) {
+                            showVolumeBrowser = true
+                        }
+                        quickActionButton(icon: "trash.circle.fill", label: "Prune", color: .red) {
+                            showSystemPrune = true
+                        }
+                    }
+                }
             }
             
             // Internal Tabs
@@ -130,6 +168,8 @@ struct DockerDetailView: View {
                             DockerNetworksTab(serverId: serverId)
                         case .compose:
                             DockerComposeTab(serverId: serverId)
+                        case .health:
+                            DockerHealthTab(serverId: serverId)
                         }
                     }
                 }
@@ -139,6 +179,25 @@ struct DockerDetailView: View {
         .padding(.top, AXSpacing.lg)
         .onAppear {
             checkInstallation()
+        }
+        .sheet(isPresented: $showAICompose) {
+            DockerAIComposeGenerator(serverId: serverId)
+        }
+        .sheet(isPresented: $showDockerfileBuilder) {
+            DockerfileBuilder(serverId: serverId)
+        }
+
+        .sheet(isPresented: $showExportImport) {
+            DockerContainerExportImport(serverId: serverId)
+        }
+        .sheet(isPresented: $showCustomTemplate) {
+            DockerCustomTemplateCreator(serverId: serverId)
+        }
+        .sheet(isPresented: $showSystemPrune) {
+            DockerSystemPrune(serverId: serverId)
+        }
+        .sheet(isPresented: $showVolumeBrowser) {
+            DockerVolumeBrowser(serverId: serverId)
         }
     }
     
@@ -158,5 +217,23 @@ struct DockerDetailView: View {
                 }
             }
         }
+    }
+    
+    private func quickActionButton(icon: String, label: String, color: Color, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 4) {
+                Image(systemName: icon)
+                    .font(.system(size: 10))
+                Text(label)
+                    .font(.system(size: 10, weight: .medium))
+            }
+            .foregroundColor(color)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 5)
+            .background(color.opacity(0.08))
+            .cornerRadius(6)
+            .overlay(RoundedRectangle(cornerRadius: 6).stroke(color.opacity(0.15), lineWidth: 1))
+        }
+        .buttonStyle(.plain)
     }
 }

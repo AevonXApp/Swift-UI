@@ -13,6 +13,9 @@ struct DockerImagesTab: View {
     @State private var errorMessage: String?
     @State private var actionInProgress: String? // ID of image being acted upon
     @State private var showPullSheet: Bool = false
+    @State private var showHubSearch: Bool = false
+    @State private var selectedImageForLayers: DockerImage?
+    @State private var selectedImageForTagPush: DockerImage?
     
     // Conflict handling
     @State private var showConflictAlert: Bool = false
@@ -60,6 +63,21 @@ struct DockerImagesTab: View {
                     .padding(.horizontal, 12)
                     .padding(.vertical, 8)
                     .background(Color.axAccentBlue)
+                    .cornerRadius(AXCornerRadius.sm)
+                }
+                .buttonStyle(.plain)
+                
+                // Docker Hub Search
+                Button(action: { showHubSearch = true }) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "magnifyingglass")
+                        Text("Search Hub")
+                    }
+                    .font(AXTypography.subheadline)
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                    .background(Color.purple)
                     .cornerRadius(AXCornerRadius.sm)
                 }
                 .buttonStyle(.plain)
@@ -123,6 +141,12 @@ struct DockerImagesTab: View {
                                 isActionInProgress: actionInProgress == image.id,
                                 onRemove: {
                                     handleRemoveImage(id: image.id)
+                                },
+                                onLayers: {
+                                    selectedImageForLayers = image
+                                },
+                                onTagPush: {
+                                    selectedImageForTagPush = image
                                 }
                             )
                         }
@@ -137,6 +161,15 @@ struct DockerImagesTab: View {
             PullImageSheet(isOpen: $showPullSheet) { imageName in
                 handlePullImage(imageName)
             }
+        }
+        .sheet(isPresented: $showHubSearch) {
+            DockerHubSearchView(serverId: serverId)
+        }
+        .sheet(item: $selectedImageForLayers) { image in
+            DockerImageLayerInspector(image: image, serverId: serverId)
+        }
+        .sheet(item: $selectedImageForTagPush) { image in
+            DockerImageTagPush(image: image, serverId: serverId)
         }
         .alert("Image Conflict", isPresented: $showConflictAlert, actions: {
             Button("Force Remove", role: .destructive) {
@@ -215,6 +248,8 @@ private struct ImageRow: View {
     let image: DockerImage
     let isActionInProgress: Bool
     let onRemove: () -> Void
+    let onLayers: () -> Void
+    let onTagPush: () -> Void
     
     @State private var isHovered = false
     
@@ -270,17 +305,41 @@ private struct ImageRow: View {
                         .scaleEffect(0.6)
                         .frame(width: 32)
                 } else {
-                    Button(action: onRemove) {
-                        Image(systemName: "trash")
-                            .font(.system(size: 14))
-                            .foregroundColor(isHovered ? .axError : .axTextSecondary)
-                            .frame(width: 32, height: 32)
-                            .background(Color.axSurface.opacity(0.5))
-                            .cornerRadius(AXCornerRadius.sm)
+                    HStack(spacing: 6) {
+                        Button(action: onLayers) {
+                            Image(systemName: "square.stack.3d.down.right")
+                                .font(.system(size: 14))
+                                .foregroundColor(.axAccentBlue)
+                                .frame(width: 32, height: 32)
+                                .background(Color.axSurface.opacity(0.5))
+                                .cornerRadius(AXCornerRadius.sm)
+                        }
+                        .buttonStyle(.plain)
+                        .help("View Layers")
+                        
+                        Button(action: onTagPush) {
+                            Image(systemName: "tag.fill")
+                                .font(.system(size: 14))
+                                .foregroundColor(.purple)
+                                .frame(width: 32, height: 32)
+                                .background(Color.axSurface.opacity(0.5))
+                                .cornerRadius(AXCornerRadius.sm)
+                        }
+                        .buttonStyle(.plain)
+                        .help("Tag & Push")
+                        
+                        Button(action: onRemove) {
+                            Image(systemName: "trash")
+                                .font(.system(size: 14))
+                                .foregroundColor(isHovered ? .axError : .axTextSecondary)
+                                .frame(width: 32, height: 32)
+                                .background(Color.axSurface.opacity(0.5))
+                                .cornerRadius(AXCornerRadius.sm)
+                        }
+                        .buttonStyle(.plain)
+                        .onHover { hover in isHovered = hover }
+                        .help("Remove Image")
                     }
-                    .buttonStyle(.plain)
-                    .onHover { hover in isHovered = hover }
-                    .help("Remove Image")
                 }
             }
         }

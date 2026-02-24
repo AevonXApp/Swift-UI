@@ -10,8 +10,12 @@ struct DockerComposeTab: View {
     @State private var errorMessage: String?
     @State private var actionInProgress: String?
     
-    // For logs
+    // For logs, editor, env, and scale
     @State private var showingLogsForProject: DockerComposeProject?
+    @State private var showingEditorForProject: DockerComposeProject?
+    @State private var showingEnvForProject: DockerComposeProject?
+    @State private var showingScaleForProject: DockerComposeProject?
+    @State private var showingValidatorForProject: DockerComposeProject?
     
     var body: some View {
         VStack(spacing: AXSpacing.md) {
@@ -105,6 +109,18 @@ struct DockerComposeTab: View {
                 )
             )
         }
+        .sheet(item: $showingEditorForProject) { project in
+            DockerComposeEditor(project: project, serverId: serverId)
+        }
+        .sheet(item: $showingEnvForProject) { project in
+            DockerComposeEnvEditor(project: project, serverId: serverId)
+        }
+        .sheet(item: $showingScaleForProject) { project in
+            DockerComposeScaleView(project: project, serverId: serverId)
+        }
+        .sheet(item: $showingValidatorForProject) { project in
+            DockerComposeValidator(serverId: serverId, workingDir: project.workingDir)
+        }
     }
     
     // MARK: - Actions
@@ -128,6 +144,26 @@ struct DockerComposeTab: View {
         
         if action == "logs" {
             showingLogsForProject = project
+            return
+        }
+        
+        if action == "edit" {
+            showingEditorForProject = project
+            return
+        }
+        
+        if action == "env" {
+            showingEnvForProject = project
+            return
+        }
+        
+        if action == "scale" {
+            showingScaleForProject = project
+            return
+        }
+        
+        if action == "validate" {
+            showingValidatorForProject = project
             return
         }
         
@@ -224,6 +260,26 @@ private struct ComposeProjectRow: View {
                             onAction("logs")
                         }
                         .help("Logs")
+                        
+                        ComposeActionButton(icon: "pencil", color: .axTextSecondary, hoverColor: .purple) {
+                            onAction("edit")
+                        }
+                        .help("Edit Compose File")
+                        
+                        ComposeActionButton(icon: "key.fill", color: .axTextSecondary, hoverColor: .orange) {
+                            onAction("env")
+                        }
+                        .help("Environment")
+                        
+                        ComposeActionButton(icon: "arrow.up.left.and.arrow.down.right", color: .axTextSecondary, hoverColor: .axAccentBlue) {
+                            onAction("scale")
+                        }
+                        .help("Scale")
+                        
+                        ComposeActionButton(icon: "checkmark.shield", color: .axTextSecondary, hoverColor: .axSuccess) {
+                            onAction("validate")
+                        }
+                        .help("Validate")
                     }
                 }
             }

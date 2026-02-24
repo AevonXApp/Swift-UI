@@ -17,8 +17,20 @@ struct DockerContainersTab: View {
     @State private var selectedContainerForLogs: DockerContainer?
     @State private var selectedContainerForTerminal: DockerContainer?
     
-    @State private var showQuickCreate = false
+    @State private var showContainerWizard = false
     @State private var showTemplateDeploy = false
+    @State private var selectedContainerForInspector: DockerContainer?
+    @State private var selectedContainerForAILog: DockerContainer?
+    @State private var selectedContainerForStats: DockerContainer?
+    @State private var selectedContainerIds: Set<String> = []
+    @State private var showRenameAlert = false
+    @State private var renameContainerId: String = ""
+    @State private var newContainerName: String = ""
+    @State private var selectedContainerForLimits: DockerContainer?
+    @State private var selectedContainerForRestart: DockerContainer?
+    @State private var selectedContainerForDiff: DockerContainer?
+    @State private var selectedContainerForDomain: DockerContainer?
+    @State private var connectedDomains: [String: String] = [:] // containerId -> domain
     
     @State private var containerWorkingDir: String?
     
@@ -78,8 +90,8 @@ struct DockerContainersTab: View {
                     .padding(.horizontal, 4)
                 
                 // Creation Buttons
-                Button(action: { showQuickCreate = true }) {
-                    Label("Quick Create", systemImage: "plus")
+                Button(action: { showContainerWizard = true }) {
+                    Label("New Container", systemImage: "plus")
                         .font(AXTypography.caption)
                         .fontWeight(.semibold)
                 }
@@ -120,22 +132,57 @@ struct DockerContainersTab: View {
                 .background(Color.axSurface.opacity(0.3))
                 .cornerRadius(AXCornerRadius.md)
             } else {
-                ScrollView {
-                    LazyVStack(spacing: AXSpacing.sm) {
-                        ForEach(filteredContainers) { container in
-                            ContainerRow(
-                                container: container,
-                                isActionInProgress: actionInProgress == container.id,
-                                onAction: { action in
-                                    if action == "logs" {
-                                        selectedContainerForLogs = container
-                                    } else if action == "terminal" {
-                                        selectedContainerForTerminal = container
-                                    } else {
-                                        handleContainerAction(id: container.id, action: action)
+                VStack(spacing: 0) {
+                    // Bulk Actions Bar
+                    if !selectedContainerIds.isEmpty {
+                        DockerBulkActionsBar(
+                            selectedContainers: selectedContainerIds,
+                            serverId: serverId,
+                            onComplete: {
+                                selectedContainerIds.removeAll()
+                                refreshData()
+                            }
+                        )
+                        .padding(.horizontal, AXSpacing.sm)
+                        .padding(.bottom, AXSpacing.xs)
+                    }
+                    
+                    ScrollView {
+                        LazyVStack(spacing: AXSpacing.sm) {
+                            ForEach(filteredContainers) { container in
+                                VStack(spacing: 0) {
+                                    HStack(spacing: 8) {
+                                        // Selection checkbox
+                                        Button(action: {
+                                            if selectedContainerIds.contains(container.id) {
+                                                selectedContainerIds.remove(container.id)
+                                            } else {
+                                                selectedContainerIds.insert(container.id)
+                                            }
+                                        }) {
+                                            Image(systemName: selectedContainerIds.contains(container.id) ? "checkmark.square.fill" : "square")
+                                                .font(.system(size: 14))
+                                                .foregroundColor(selectedContainerIds.contains(container.id) ? .axAccentBlue : .axTextMuted)
+                                        }
+                                        .buttonStyle(.plain)
+                                        
+                                        ContainerRow(
+                                            container: container,
+                                            isActionInProgress: actionInProgress == container.id,
+                                            connectedDomain: connectedDomains[container.id],
+                                            onAction: { action in
+                                                handleContainerAction(id: container.id, action: action)
+                                            }
+                                        )
+                                    }
+                                    
+                                    // Inline stats for running containers
+                                    if container.isRunning {
+                                        DockerContainerStats(container: container, serverId: serverId)
+                                            .padding(.leading, 30)
                                     }
                                 }
-                            )
+                            }
                         }
                     }
                 }
@@ -166,8 +213,8 @@ struct DockerContainersTab: View {
                 )
             )
         }
-        .sheet(isPresented: $showQuickCreate) {
-            DockerQuickCreateView(serverId: serverId) {
+        .sheet(isPresented: $showContainerWizard) {
+            DockerContainerWizard(serverId: serverId) {
                 refreshData()
             }
         }
@@ -175,6 +222,63 @@ struct DockerContainersTab: View {
             DockerTemplateDeployView(serverId: serverId) {
                 refreshData()
             }
+        }
+        .sheet(item: $selectedContainerForInspector) { container in
+            DockerContainerInspector(
+                container: container,
+                serverId: serverId
+            )
+        }
+        .sheet(item: $selectedContainerForAILog) { container in
+            DockerAILogAnalyzer(
+                container: container,
+                serverId: serverId
+            )
+        }
+        .sheet(item: $selectedContainerForLimits) { container in
+            DockerResourceLimitsEditor(
+                container: container,
+                serverId: serverId
+            )
+        }
+        .sheet(item: $selectedContainerForRestart) { container in
+            DockerRestartPolicyEditor(
+                container: container,
+                serverId: serverId
+            )
+        }
+        .sheet(item: $selectedContainerForDiff) { container in
+            DockerContainerDiff(
+                container: container,
+                serverId: serverId
+            )
+        }
+        .sheet(item: $selectedContainerForDomain) { container in
+            DockerConnectDomainSheet(
+                container: container,
+                serverId: serverId
+            )
+        }
+        .alert("Rename Container", isPresented: $showRenameAlert) {
+            TextField("New name", text: $newContainerName)
+            Button("Rename") {
+                guard !newContainerName.isEmpty else { return }
+                Task {
+                    do {
+                        try await DockerManager.shared.renameContainer(
+                            id: renameContainerId,
+                            newName: newContainerName,
+                            serverId: serverId
+                        )
+                        refreshData()
+                    } catch {
+                        errorMessage = error.localizedDescription
+                    }
+                }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Enter a new name for this container")
         }
     }
     
@@ -187,6 +291,9 @@ struct DockerContainersTab: View {
         Task {
             do {
                 containers = try await DockerManager.shared.getContainers(serverId: serverId, all: showAll)
+                
+                // Load connected domains for running containers
+                await loadConnectedDomains()
             } catch {
                 errorMessage = "Failed to fetch containers: \(error.localizedDescription)"
             }
@@ -194,7 +301,55 @@ struct DockerContainersTab: View {
         }
     }
     
+    private func loadConnectedDomains() async {
+        var domains: [String: String] = [:]
+        for container in containers where container.isRunning {
+            if let ports = try? await DockerManager.shared.getContainerPorts(id: container.id, serverId: serverId),
+               !ports.isEmpty,
+               let connected = try? await DockerManager.shared.getConnectedDomains(containerPorts: ports, serverId: serverId),
+               let first = connected.first {
+                domains[container.id] = first.domain
+            }
+        }
+        await MainActor.run {
+            connectedDomains = domains
+        }
+    }
+    
     private func handleContainerAction(id: String, action: String) {
+        // Sheet-based actions (no progress indicator)
+        if let container = containers.first(where: { $0.id == id }) {
+            switch action {
+            case "logs":
+                selectedContainerForLogs = container
+                return
+            case "inspect":
+                selectedContainerForInspector = container
+                return
+            case "ai_log":
+                selectedContainerForAILog = container
+                return
+            case "rename":
+                renameContainerId = id
+                newContainerName = container.names
+                showRenameAlert = true
+                return
+            case "limits":
+                selectedContainerForLimits = container
+                return
+            case "restart_policy":
+                selectedContainerForRestart = container
+                return
+            case "diff":
+                selectedContainerForDiff = container
+                return
+            case "connect_domain":
+                selectedContainerForDomain = container
+                return
+            default: break
+            }
+        }
+        
         guard actionInProgress == nil else { return }
         actionInProgress = id
         
@@ -236,6 +391,7 @@ struct DockerContainersTab: View {
 private struct ContainerRow: View {
     let container: DockerContainer
     let isActionInProgress: Bool
+    let connectedDomain: String?
     let onAction: (String) -> Void
     
     var body: some View {
@@ -312,6 +468,49 @@ private struct ContainerRow: View {
                                 onAction("terminal")
                             }
                             .help("Open Terminal")
+                            
+                            ContainerActionButton(icon: "doc.text.magnifyingglass", color: .axTextSecondary, hoverColor: .purple) {
+                                onAction("inspect")
+                            }
+                            .help("Inspect")
+                            
+                            ContainerActionButton(icon: "sparkles", color: .axTextSecondary, hoverColor: .purple) {
+                                onAction("ai_log")
+                            }
+                            .help("AI Log Analyzer")
+                            
+                            ContainerActionButton(icon: "pencil", color: .axTextSecondary, hoverColor: .orange) {
+                                onAction("rename")
+                            }
+                            .help("Rename")
+                            
+                            ContainerActionButton(icon: "gauge.with.dots.needle.33percent", color: .axTextSecondary, hoverColor: .orange) {
+                                onAction("limits")
+                            }
+                            .help("Resource Limits")
+                            
+                            ContainerActionButton(icon: "arrow.clockwise.circle", color: .axTextSecondary, hoverColor: .cyan) {
+                                onAction("restart_policy")
+                            }
+                            .help("Restart Policy")
+                            
+                            ContainerActionButton(icon: "doc.badge.plus", color: .axTextSecondary, hoverColor: .mint) {
+                                onAction("diff")
+                            }
+                            .help("Filesystem Changes")
+                            
+                            if let domain = connectedDomain {
+                                // Domain connected — show green globe with domain name
+                                ContainerActionButton(icon: "globe", color: .axSuccess, hoverColor: .axSuccess) {
+                                    onAction("connect_domain")
+                                }
+                                .help("Domain: \(domain)")
+                            } else {
+                                ContainerActionButton(icon: "globe", color: .axTextSecondary, hoverColor: .axAccentBlue) {
+                                    onAction("connect_domain")
+                                }
+                                .help("Connect Domain")
+                            }
                         } else {
                             ContainerActionButton(icon: "play.fill", color: .axSuccess, hoverColor: .axSuccess) {
                                 onAction("start")

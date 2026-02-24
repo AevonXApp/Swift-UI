@@ -689,10 +689,8 @@ struct FilesTab: View {
         .padding(.vertical, AXSpacing.xs)
         .background(isSelected ? Color.axAccentBlue.opacity(0.12) : Color.clear)
         .contentShape(Rectangle())
-        .onTapGesture { viewModel.selectSingleFile(file) }
-        .simultaneousGesture(
-            TapGesture(count: 2).onEnded { viewModel.handleFileDoubleTap(file) }
-        )
+        .onTapGesture(count: 2) { viewModel.handleFileDoubleTap(file) }
+        .onTapGesture(count: 1) { viewModel.selectSingleFile(file) }
         .overlay(
             RightClickHandler { position in
                 customMenuFile = file
@@ -1552,6 +1550,15 @@ struct RightClickHandler: NSViewRepresentable {
     
     class RightClickNSView: NSView {
         var onRightClick: ((CGPoint) -> Void)?
+        
+        // Allow left-click events to pass through to SwiftUI gestures underneath
+        override func hitTest(_ point: NSPoint) -> NSView? {
+            // Only intercept right-click events — let left-clicks pass through
+            guard let event = NSApp.currentEvent, event.type == .rightMouseDown else {
+                return nil
+            }
+            return super.hitTest(point)
+        }
         
         override func rightMouseDown(with event: NSEvent) {
             // Convert to window coordinates then to SwiftUI coordinate space

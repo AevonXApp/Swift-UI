@@ -13,6 +13,7 @@ struct DockerOverviewTab: View {
     @State private var memoryUsage: Double = 0
     @State private var isLoading: Bool = false
     @State private var errorMessage: String?
+    @State private var recentEvents: [(time: String, type: String, action: String, actor: String)] = []
     
     var body: some View {
         VStack(spacing: AXSpacing.xl) {
@@ -154,6 +155,72 @@ struct DockerOverviewTab: View {
                 }
             }
             
+            // Recent Activity
+            AXCard {
+                VStack(alignment: .leading, spacing: AXSpacing.sm) {
+                    HStack {
+                        Image(systemName: "bolt.fill")
+                            .foregroundColor(.yellow)
+                            .font(.system(size: 14))
+                        Text("Recent Activity")
+                            .font(AXTypography.headline)
+                            .foregroundColor(.axTextPrimary)
+                        Spacer()
+                        Text("\(recentEvents.count) events")
+                            .font(AXTypography.caption2)
+                            .foregroundColor(.axTextMuted)
+                    }
+                    
+                    Divider()
+                    
+                    if recentEvents.isEmpty {
+                        HStack {
+                            Spacer()
+                            Text("No recent events")
+                                .font(AXTypography.caption)
+                                .foregroundColor(.axTextMuted)
+                                .padding(.vertical, AXSpacing.md)
+                            Spacer()
+                        }
+                    } else {
+                        ForEach(recentEvents.indices, id: \.self) { i in
+                            let event = recentEvents[i]
+                            HStack(spacing: AXSpacing.sm) {
+                                Text(event.type)
+                                    .font(.system(size: 9, weight: .bold))
+                                    .foregroundColor(eventColor(event.type))
+                                    .padding(.horizontal, 6)
+                                    .padding(.vertical, 2)
+                                    .background(eventColor(event.type).opacity(0.1))
+                                    .cornerRadius(4)
+                                    .frame(width: 75)
+                                
+                                Text(event.action)
+                                    .font(.system(size: 11, weight: .medium))
+                                    .foregroundColor(actionColor(event.action))
+                                    .frame(width: 70, alignment: .leading)
+                                
+                                Text(event.actor)
+                                    .font(.system(size: 11, design: .monospaced))
+                                    .foregroundColor(.axTextSecondary)
+                                    .lineLimit(1)
+                                
+                                Spacer()
+                                
+                                Text(event.time)
+                                    .font(.system(size: 9, design: .monospaced))
+                                    .foregroundColor(.axTextMuted)
+                            }
+                            .padding(.vertical, 2)
+                            
+                            if i < recentEvents.count - 1 {
+                                Divider().opacity(0.3)
+                            }
+                        }
+                    }
+                }
+            }
+            
             Spacer()
         }
         .padding()
@@ -182,6 +249,26 @@ struct DockerOverviewTab: View {
         }
     }
     
+    private func eventColor(_ type: String) -> Color {
+        switch type {
+        case "container": return .axAccentBlue
+        case "image": return .purple
+        case "volume": return .orange
+        case "network": return .green
+        default: return .axTextPrimary
+        }
+    }
+    
+    private func actionColor(_ action: String) -> Color {
+        switch action {
+        case "start", "create": return .green
+        case "stop", "kill", "die": return .red
+        case "restart": return .orange
+        case "pull", "push": return .axAccentBlue
+        default: return .axTextSecondary
+        }
+    }
+    
     // MARK: - Actions
     
     private func refreshData() {
@@ -191,16 +278,21 @@ struct DockerOverviewTab: View {
             
         Task {
             do {
-                // Fetch basic service status
                 serviceStatus = try await DockerManager.shared.getServiceStatus(serverId: serverId)
                 
                 if serviceStatus == .active {
-                    // Fetch Docker Info
-                    dockerInfo = try await DockerManager.shared.getDockerInfo(serverId: serverId)
+                    // Sequential but fault-tolerant — each call independent
+                    dockerInfo = try? await DockerManager.shared.getDockerInfo(serverId: serverId)
+                    cpuUsage = (try? await DockerManager.shared.getCPUUsage(serverId: serverId)) ?? 0
+                    memoryUsage = (try? await DockerManager.shared.getMemoryUsage(serverId: serverId)) ?? 0
                     
-                    // Fetch Resource Usage
-                    cpuUsage = try await DockerManager.shared.getCPUUsage(serverId: serverId) ?? 0
-                    memoryUsage = try await DockerManager.shared.getMemoryUsage(serverId: serverId) ?? 0
+                    // Fetch recent events (single call, no polling)
+                    let since = Int(Date().timeIntervalSince1970) - 300
+                    let until = Int(Date().timeIntervalSince1970)
+                    let events = (try? await DockerManager.shared.getRecentEvents(since: since, until: until, serverId: serverId)) ?? []
+                    recentEvents = events.prefix(10).map { e in
+                        (time: String(e.timestamp.suffix(8)), type: e.type, action: e.action, actor: e.actor)
+                    }
                 }
             } catch {
                 errorMessage = "Failed to fetch Docker data: \(error.localizedDescription)"

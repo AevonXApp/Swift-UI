@@ -11,6 +11,7 @@ struct DockerNetworksTab: View {
     @State private var errorMessage: String?
     @State private var actionInProgress: String?
     @State private var showCreateSheet: Bool = false
+    @State private var selectedNetworkForInspector: DockerNetwork?
     
     // Filtered networks
     var filteredNetworks: [DockerNetwork] {
@@ -121,6 +122,9 @@ struct DockerNetworksTab: View {
                                 isActionInProgress: actionInProgress == network.networkId,
                                 onRemove: {
                                     handleRemoveNetwork(id: network.networkId)
+                                },
+                                onInspect: {
+                                    selectedNetworkForInspector = network
                                 }
                             )
                         }
@@ -135,6 +139,9 @@ struct DockerNetworksTab: View {
             CreateNetworkSheet(isOpen: $showCreateSheet) { name, driver in
                 handleCreateNetwork(name: name, driver: driver)
             }
+        }
+        .sheet(item: $selectedNetworkForInspector) { network in
+            DockerNetworkInspector(network: network, serverId: serverId)
         }
     }
     
@@ -195,6 +202,7 @@ private struct NetworkRow: View {
     let network: DockerNetwork
     let isActionInProgress: Bool
     let onRemove: () -> Void
+    let onInspect: () -> Void
     
     @State private var isHovered = false
     
@@ -241,19 +249,32 @@ private struct NetworkRow: View {
                         .scaleEffect(0.6)
                         .frame(width: 32)
                 } else {
-                    Button(action: onRemove) {
-                        Image(systemName: "trash")
-                            .font(.system(size: 14))
-                            .foregroundColor(isHovered ? .axError : .axTextSecondary)
-                            .frame(width: 32, height: 32)
-                            .background(Color.axSurface.opacity(0.5))
-                            .cornerRadius(AXCornerRadius.sm)
+                    HStack(spacing: 6) {
+                        Button(action: onInspect) {
+                            Image(systemName: "info.circle")
+                                .font(.system(size: 14))
+                                .foregroundColor(.axAccentBlue)
+                                .frame(width: 32, height: 32)
+                                .background(Color.axSurface.opacity(0.5))
+                                .cornerRadius(AXCornerRadius.sm)
+                        }
+                        .buttonStyle(.plain)
+                        .help("Inspect Network")
+                        
+                        Button(action: onRemove) {
+                            Image(systemName: "trash")
+                                .font(.system(size: 14))
+                                .foregroundColor(isHovered ? .axError : .axTextSecondary)
+                                .frame(width: 32, height: 32)
+                                .background(Color.axSurface.opacity(0.5))
+                                .cornerRadius(AXCornerRadius.sm)
+                        }
+                        .buttonStyle(.plain)
+                        .onHover { hover in isHovered = hover }
+                        .help("Remove Network")
+                        .disabled(isSystemNetwork(network.name))
+                        .opacity(isSystemNetwork(network.name) ? 0.3 : 1.0)
                     }
-                    .buttonStyle(.plain)
-                    .onHover { hover in isHovered = hover }
-                    .help("Remove Network")
-                    .disabled(isSystemNetwork(network.name))
-                    .opacity(isSystemNetwork(network.name) ? 0.3 : 1.0)
                 }
             }
         }
