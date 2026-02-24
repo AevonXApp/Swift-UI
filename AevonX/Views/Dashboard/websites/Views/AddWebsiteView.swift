@@ -197,7 +197,7 @@ struct AddWebsiteView: View {
                             )
                     )
                     .cornerRadius(AXCornerRadius.md)
-                    .onChange(of: viewModel.documentRoot) { _ in
+                    .onChange(of: viewModel.documentRoot) { _, _ in
                         viewModel.userEditedDocumentRoot = true
                     }
 

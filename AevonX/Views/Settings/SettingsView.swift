@@ -6,6 +6,8 @@
 //
 
 import SwiftUI
+import AevonXCore
+
 
 struct SettingsView: View {
     @State private var selectedTab = 0
@@ -441,10 +443,10 @@ struct AboutSettings: View {
             }
             
             SettingsSection(title: "Links", icon: "link") {
-                LinkRow(title: "Website", url: "https://aevonx.io")
-                LinkRow(title: "Documentation", url: "https://docs.aevonx.io")
-                LinkRow(title: "GitHub", url: "https://github.com/aevonx")
-                LinkRow(title: "Twitter", url: "https://twitter.com/aevonx")
+                LinkRow(title: "Website",       url: AppURLs.website.absoluteString)
+                LinkRow(title: "Documentation",  url: AppURLs.docs.absoluteString)
+                LinkRow(title: "GitHub", url: "https://github.com/aevonxapp")
+                LinkRow(title: "Twitter", url: "https://twitter.com/aevonxapp")
             }
             
             SettingsSection(title: "Legal", icon: "doc.text") {

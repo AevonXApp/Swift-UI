@@ -10,42 +10,6 @@ import SwiftUI
 import AevonXCore
 import Combine
 
-/// Decryption error types for better error handling
-enum DecryptionErrorType: Equatable {
-    case authenticationFailure  // CryptoKit error 3 - wrong key or corrupted data
-    case missingDeviceKey       // Device key not found in Keychain
-    case missingRecoveryKey     // Recovery key needed but not available
-    case keyDerivationFailed    // Failed to derive encryption keys
-    case corruptedData          // Data format is invalid
-    case unknown(String)        // Other errors
-    
-    var localizedDescription: String {
-        switch self {
-        case .authenticationFailure:
-            return "Authentication failed - incorrect key or corrupted data"
-        case .missingDeviceKey:
-            return "Device key not found - please re-setup encryption"
-        case .missingRecoveryKey:
-            return "Recovery key required to decrypt data"
-        case .keyDerivationFailed:
-            return "Failed to derive encryption keys"
-        case .corruptedData:
-            return "Encrypted data is corrupted"
-        case .unknown(let message):
-            return "Unknown error: \(message)"
-        }
-    }
-    
-    var requiresRecoveryKey: Bool {
-        switch self {
-        case .authenticationFailure, .missingDeviceKey, .missingRecoveryKey:
-            return true
-        default:
-            return false
-        }
-    }
-}
-
 /// View model for server list management with real-time status updates
 @MainActor
 class ServerListViewModel: ObservableObject {
@@ -66,47 +30,18 @@ class ServerListViewModel: ObservableObject {
     @Published var connectionProgress: [String: ConnectionProgress] = [:]
     @Published var connectionResults: [String: ConnectionTestResult] = [:]
     
-    // MARK: - Decryption Error Handling
+    // MARK: - Encryption Error Handling
     
-    @Published var decryptionError: DecryptionErrorType?
-    @Published var showDecryptionError = false
-    @Published var showRecoveryKeyInput = false
+    @Published var showEncryptionKeyInput = false
+    @Published var encryptionError: String?
     @Published var failedServerIds: Set<String> = []
     
     // MARK: - Properties
     
     private var isInitialized = false
     private var statusPollingTask: Task<Void, Never>?
-    private let statusPollInterval: TimeInterval = 60 // Poll every 60 seconds (was 30)
-    private var hasPerformedBiometricAuthThisSession = false
+    private let statusPollInterval: TimeInterval = 60
     private var isInForeground = true
-    
-    // MARK: - Helper Functions
-    
-    /// Helper function to add timeout to async operations
-    private func withTimeout<T>(seconds: TimeInterval, operation: @escaping () async throws -> T) async throws -> T {
-        return try await withThrowingTaskGroup(of: T.self) { group in
-            // Add the operation task
-            group.addTask {
-                return try await operation()
-            }
-            
-            // Add a timeout task
-            group.addTask {
-                try await Task.sleep(nanoseconds: UInt64(seconds * 1_000_000_000))
-                throw TimeoutError()
-            }
-            
-            // Wait for the first task to complete
-            let result = try await group.next()!
-            group.cancelAll()
-            return result
-        }
-    }
-    
-    private struct TimeoutError: Error {
-        var localizedDescription: String = "Operation timed out"
-    }
     
     // MARK: - Initialization
     
@@ -114,71 +49,34 @@ class ServerListViewModel: ObservableObject {
         CoreLogger.shared.info("🔵 initialize() called - isInitialized: \(isInitialized)", module: "ServerList")
 
         guard !isInitialized else {
-            CoreLogger.shared.warning("⚠️ initialize() called but already initialized - SKIPPING", module: "ServerList")
+            CoreLogger.shared.warning("⚠️ Already initialized — skipping", module: "ServerList")
             return
         }
 
         CoreLogger.shared.info("🟢 Starting initialization...", module: "ServerList")
-
-        // Mark as initialized early to prevent race conditions
         isInitialized = true
 
-        do {
-            CoreLogger.shared.info("Step 1: Setting up encryption...", module: "ServerList")
-            
-            // Setup encryption synchronously to ensure it completes before continuing
-            await setupEncryption()
-
-            CoreLogger.shared.info("Step 2: Encryption setup complete, refreshing data...", module: "ServerList")
-            await refresh()
-
-            CoreLogger.shared.info("Step 3: Starting status polling...", module: "ServerList")
-            // Start polling for real-time status updates
-            startStatusPolling()
-
-            CoreLogger.shared.info("✅ Initialization complete", module: "ServerList")
-        }
+        await setupEncryption()
+        await refresh()
+        startStatusPolling()
+        
+        CoreLogger.shared.info("✅ Initialization complete", module: "ServerList")
     }
 
     private func setupEncryption() async {
+        let hasKey = EncryptionKeyStore.shared.hasKey()
+        
+        if !hasKey {
+            CoreLogger.shared.warning("⚠️ No encryption key — user needs to set up", module: "ServerList")
+            return
+        }
+        
+        // Load key into memory cache (instant file read, no prompts)
         do {
-            CoreLogger.shared.info("🔐 Starting encryption setup...", module: "ServerList")
-
-            // Check if keys are already preloaded
-            CoreLogger.shared.info("🔐 Step 1: Checking if keys are already preloaded...", module: "ServerList")
-            let alreadyReady = await SplitKeyEncryptionService.shared.isReady
-
-            if alreadyReady {
-                CoreLogger.shared.info("✓ Encryption keys already preloaded", module: "ServerList")
-                return
-            }
-
-            CoreLogger.shared.info("🔐 Step 2: Setting up device key...", module: "ServerList")
-            // Add timeout for device key setup to prevent hanging
-            let keyCreated = try await withTimeout(seconds: 30) {
-                try await SplitKeyEncryptionService.shared.setupDeviceKey()
-            }
-
-            if keyCreated {
-                CoreLogger.shared.info("✓ New device key created", module: "ServerList")
-            } else {
-                CoreLogger.shared.info("✓ Device key already exists", module: "ServerList")
-            }
-
-            CoreLogger.shared.info("🔐 Step 3: Preloading keys...", module: "ServerList")
-            let preloaded = try await SplitKeyEncryptionService.shared.preloadKeys()
-
-            if preloaded {
-                CoreLogger.shared.info("✓ Keys preloaded successfully", module: "ServerList")
-            } else {
-                CoreLogger.shared.warning("⚠️ Keys not preloaded", module: "ServerList")
-            }
-            
-            CoreLogger.shared.info("✅ Encryption setup completed successfully", module: "ServerList")
+            _ = try await EncryptionKeyStore.shared.getKey()
+            CoreLogger.shared.info("✅ Encryption key ready", module: "ServerList")
         } catch {
-            CoreLogger.shared.error("❌ Encryption setup failed: \(error.localizedDescription)", module: "ServerList")
-            // Don't show error to user - just log and continue without encryption
-            // The app can still function with limited features
+            CoreLogger.shared.error("Failed to load encryption key: \(error.localizedDescription)", module: "ServerList")
         }
     }
     
@@ -213,14 +111,12 @@ class ServerListViewModel: ObservableObject {
             let serverResponses = try await ServerAPIService.shared.fetchServers()
             self.servers = await SubscriptionManager.shared.getAccessibleServers(from: serverResponses)
 
-            // Only decrypt if we have encryption keys ready
-            // This prevents additional biometric prompts during refresh
-            let keysReady = await SplitKeyEncryptionService.shared.isReady
-            if keysReady {
-                // Decrypt servers for display
+            // Only decrypt if we have encryption key (simple file check, no actor hops)
+            let hasKey = EncryptionKeyStore.shared.hasKey()
+            if hasKey {
                 await decryptServersForDisplay()
             } else {
-                CoreLogger.shared.warning("Encryption keys not ready, skipping server decryption", module: "ServerList")
+                CoreLogger.shared.warning("Encryption key not available, skipping server decryption", module: "ServerList")
                 self.decryptedServers = []
             }
             
@@ -244,103 +140,48 @@ class ServerListViewModel: ObservableObject {
         statusPollingTask = Task { [weak self] in
             while !Task.isCancelled {
                 do {
-                    try await Task.sleep(nanoseconds: UInt64(60 * 1_000_000_000)) // 60 seconds
+                    try await Task.sleep(nanoseconds: UInt64(60 * 1_000_000_000))
                     
-                    // Use weak self to avoid strong reference cycle
-                    guard let self = self else {
-                        // ViewModel was deallocated, stop polling
-                        break
-                    }
-                    
-                    // Only refresh if we have servers AND app is in foreground
-                    guard self.isInForeground, !self.servers.isEmpty else {
-                        continue
-                    }
+                    guard let self = self else { break }
+                    guard self.isInForeground, !self.servers.isEmpty else { continue }
                     
                     await self.refreshServerStatuses()
                 } catch {
-                    // Task was cancelled
                     break
                 }
             }
         }
     }
     
-    /// Call this when app enters foreground
-    func onEnterForeground() {
-        isInForeground = true
-    }
-    
-    /// Call this when app enters background
-    func onEnterBackground() {
-        isInForeground = false
-    }
+    func onEnterForeground() { isInForeground = true }
+    func onEnterBackground() { isInForeground = false }
     
     private func refreshServerStatuses() async {
         do {
-            // Fetch just the subscription status to update server accessibility
             let status = try await SubscriptionManager.shared.getSubscriptionStatus(forceRefresh: true)
             self.subscriptionStatus = status
             self.canAddServer = await SubscriptionManager.shared.canAddServer()
             self.remainingSlots = await SubscriptionManager.shared.remainingServerSlots()
             
-            // Update server access levels based on new subscription status
             let serverResponses = try await ServerAPIService.shared.fetchServers()
             self.servers = await SubscriptionManager.shared.getAccessibleServers(from: serverResponses)
             
         } catch {
-            // Silent failure for polling - don't show error
             CoreLogger.shared.warning("Status poll failed: \(error.localizedDescription)", module: "ServerList")
         }
     }
     
     // MARK: - Decryption
     
-    /// Analyzes a decryption error and returns the appropriate error type
-    private func analyzeDecryptionError(_ error: Error) -> DecryptionErrorType {
-        let errorDescription = error.localizedDescription.lowercased()
-        let errorString = String(describing: error)
-        
-        // CryptoKit error 3 = authenticationFailure
-        if errorString.contains("error 3") || errorDescription.contains("authentication") {
-            return .authenticationFailure
-        }
-        
-        // Check for missing key errors
-        if errorDescription.contains("key not found") || errorDescription.contains("missing key") {
-            if errorDescription.contains("device") {
-                return .missingDeviceKey
-            }
-            if errorDescription.contains("recovery") {
-                return .missingRecoveryKey
-            }
-        }
-        
-        // Check for derivation errors
-        if errorDescription.contains("derivation") || errorDescription.contains("derive") {
-            return .keyDerivationFailed
-        }
-        
-        // Check for data corruption
-        if errorDescription.contains("corrupt") || errorDescription.contains("invalid") || errorDescription.contains("format") {
-            return .corruptedData
-        }
-        
-        return .unknown(error.localizedDescription)
-    }
-    
     /// Decrypts all accessible servers for display
     private func decryptServersForDisplay() async {
         var decrypted: [ServerViewModel] = []
         var hasDecryptionErrors = false
-        var firstError: DecryptionErrorType?
         
-        // Reset failed servers tracking
         failedServerIds.removeAll()
         
         for accessibleServer in servers {
             do {
-                // Build the encrypted payload from server response
                 let payload = EncryptedServerPayload(
                     encryptedData: accessibleServer.server.encryptedPayload,
                     nonce: accessibleServer.server.payloadNonce,
@@ -348,13 +189,12 @@ class ServerListViewModel: ObservableObject {
                     metadata: accessibleServer.server.encryptionMetadata
                 )
                 
-                // Decrypt
-                let serverData = try await SplitKeyEncryptionService.shared.decryptServer(
+                // Decrypt using new ServerEncryptionService
+                let serverData = try await ServerEncryptionService.shared.decryptServer(
                     EncryptedServerData.self,
                     from: payload
                 )
                 
-                // Create view model
                 let viewModel = ServerViewModel(
                     id: accessibleServer.id,
                     name: serverData.serverIdentity.name,
@@ -375,21 +215,14 @@ class ServerListViewModel: ObservableObject {
                 CoreLogger.shared.info("Decrypted server: \(serverData.serverIdentity.name)", module: "ServerList")
                 
             } catch {
-                let errorType = analyzeDecryptionError(error)
-                CoreLogger.shared.error("Failed to decrypt server \(accessibleServer.id): \(errorType.localizedDescription)", module: "ServerList")
-                
-                // Track the first error for user notification
-                if firstError == nil {
-                    firstError = errorType
-                }
+                CoreLogger.shared.error("Failed to decrypt server \(accessibleServer.id): \(error.localizedDescription)", module: "ServerList")
                 hasDecryptionErrors = true
                 failedServerIds.insert(accessibleServer.id)
                 
-                // Create placeholder for failed decryption with error info
                 let placeholder = ServerViewModel(
                     id: accessibleServer.id,
                     name: "🔒 Decryption Failed",
-                    host: errorType.localizedDescription,
+                    host: error.localizedDescription,
                     port: 22,
                     username: "---",
                     createdAt: accessibleServer.server.createdAt,
@@ -402,45 +235,32 @@ class ServerListViewModel: ObservableObject {
         
         self.decryptedServers = decrypted
         
-        // Show error dialog if there were decryption failures
-        if hasDecryptionErrors, let error = firstError {
-            self.decryptionError = error
-            self.showDecryptionError = true
-            
-            // If the error requires recovery key, show the input dialog
-            if error.requiresRecoveryKey {
-                self.showRecoveryKeyInput = true
-            }
+        if hasDecryptionErrors {
+            self.encryptionError = "Some servers could not be decrypted. Your encryption key may have changed."
+            self.showEncryptionKeyInput = true
         }
     }
     
-    /// Retry decryption with recovery key
-    func retryDecryptionWithRecoveryKey(_ recoveryKey: String) async {
-        CoreLogger.shared.info("Attempting to restore encryption with recovery key...", module: "ServerList")
+    /// Retry decryption after entering encryption key
+    func retryDecryptionWithKey(_ key: String) async {
+        CoreLogger.shared.info("Retrying decryption with provided key...", module: "ServerList")
         
         do {
-            // Try to restore the encryption keys using recovery key
-            let restored = try await SplitKeyEncryptionService.shared.restoreWithRecoveryKey(recoveryKey)
+            try await EncryptionKeyStore.shared.saveKey(key)
+            showEncryptionKeyInput = false
+            encryptionError = nil
             
-            if restored {
-                CoreLogger.shared.info("Recovery key accepted, retrying decryption...", module: "ServerList")
-                showRecoveryKeyInput = false
-                showDecryptionError = false
-                decryptionError = nil
-                CoreLogger.shared.error("Recovery key was not accepted", module: "ServerList")
-                decryptionError = .unknown("Invalid recovery key")
-            }
+            // Retry decryption
+            await decryptServersForDisplay()
         } catch {
-            CoreLogger.shared.error("Failed to restore with recovery key: \(error.localizedDescription)", module: "ServerList")
-            decryptionError = .unknown("Failed to restore keys: \(error.localizedDescription)")
+            CoreLogger.shared.error("Failed to save key: \(error.localizedDescription)", module: "ServerList")
+            encryptionError = "Failed to save encryption key: \(error.localizedDescription)"
         }
     }
     
-    /// Dismiss decryption error
-    func dismissDecryptionError() {
-        showDecryptionError = false
-        showRecoveryKeyInput = false
-        decryptionError = nil
+    func dismissEncryptionError() {
+        showEncryptionKeyInput = false
+        encryptionError = nil
     }
     
     // MARK: - Server Management
@@ -453,25 +273,18 @@ class ServerListViewModel: ObservableObject {
             // 1. Convert to encrypted data structure
             let serverData = request.toEncryptedServerData()
             
-            // 2. Require biometric authentication (with session caching)
-            try await BiometricAuthManager.shared.authenticateIfNeeded(
-                reason: "Encrypt and save server credentials"
-            )
+            // 2. Encrypt server data using new ServerEncryptionService
+            //    (biometric is handled by EncryptionKeyStore on first access)
+            let encryptedPayload = try await ServerEncryptionService.shared.encryptServer(serverData)
             
-            // 3. Encrypt server data using Core encryption
-            let encryptedPayload = try await SplitKeyEncryptionService.shared.encryptServer(serverData)
+            // 3. Send encrypted payload to backend (with plaintext server_name for tracking)
+            _ = try await ServerAPIService.shared.createServer(payload: encryptedPayload, serverName: request.name)
             
-            // 4. Send encrypted payload to backend
-            _ = try await ServerAPIService.shared.createServer(payload: encryptedPayload)
-            
-            // 5. Refresh list immediately to show new server
+            // 4. Refresh list immediately to show new server
             await refresh()
             
         } catch ServerAPIError.serverLimitReached {
             errorMessage = "Server limit reached. Upgrade your plan to add more servers."
-            showError = true
-        } catch let error as EphemeralDecryptionError where error == .biometricAuthFailed {
-            errorMessage = "Authentication failed. Please try again."
             showError = true
         } catch {
             errorMessage = "Failed to add server: \(error.localizedDescription)"
@@ -499,7 +312,6 @@ class ServerListViewModel: ObservableObject {
             return
         }
         
-        // Set up progress tracking for UI
         await SSHService.shared.setProgressHandler(for: serverId) { [weak self] stage, progress in
             Task { @MainActor [weak self] in
                 self?.connectionProgress[serverId] = ConnectionProgress(
@@ -510,7 +322,6 @@ class ServerListViewModel: ObservableObject {
             }
         }
         
-        // Get server details from encrypted payload
         do {
             let details = try await EphemeralDecryptionService.shared.decryptServerDetails(
                 from: accessibleServer.server.toEncryptedPayload()
@@ -522,7 +333,6 @@ class ServerListViewModel: ObservableObject {
                 throw SSHConnectionError.invalidCredentials
             }
             
-            // Test SSH connection via Core service
             let result = await SSHService.shared.testConnection(
                 to: accessibleServer.server.toEncryptedPayload(),
                 host: host,

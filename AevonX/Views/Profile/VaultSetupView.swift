@@ -13,18 +13,30 @@ struct VaultSetupView: View {
     @Environment(\.dismiss) private var dismiss
     @StateObject private var viewModel = VaultSetupViewModel()
     
+    /// When used as a blocking gate, these replace dismiss behavior
+    var onComplete: (() -> Void)? = nil
+    var onSignOut: (() -> Void)? = nil
+    
     var body: some View {
         VStack(spacing: AXSpacing.xxl) {
             if viewModel.isComplete || viewModel.mode == .success {
-                SuccessView(dismiss: { dismiss() })
+                SuccessView(dismiss: { handleComplete() })
             } else if viewModel.mode == .recover {
-                RecoveryEntryView(viewModel: viewModel, dismiss: { dismiss() })
+                RecoveryEntryView(viewModel: viewModel, dismiss: { handleDismiss() }, signOut: onSignOut)
             } else {
-                SetupGenerationView(viewModel: viewModel, dismiss: { dismiss() })
+                SetupGenerationView(viewModel: viewModel, dismiss: { handleDismiss() }, signOut: onSignOut)
             }
         }
         .padding(AXSpacing.xl)
         .background(Color.axBackground)
+    }
+    
+    private func handleComplete() {
+        if let onComplete { onComplete() } else { dismiss() }
+    }
+    
+    private func handleDismiss() {
+        if let onSignOut { onSignOut() } else { dismiss() }
     }
 }
 
@@ -32,6 +44,7 @@ struct VaultSetupView: View {
 struct SetupGenerationView: View {
     @ObservedObject var viewModel: VaultSetupViewModel
     var dismiss: (() -> Void)
+    var signOut: (() -> Void)? = nil
     
     var body: some View {
         VStack(spacing: AXSpacing.xxl) {
@@ -170,9 +183,14 @@ struct SetupGenerationView: View {
                 .disabled(!viewModel.canCreateVault || viewModel.isLoading)
                 
                 Button(action: { dismiss() }) {
-                    Text("Cancel")
-                        .font(AXTypography.subheadline)
-                        .foregroundColor(.axTextSecondary)
+                    HStack(spacing: AXSpacing.xs) {
+                        if signOut != nil {
+                            Image(systemName: "rectangle.portrait.and.arrow.right")
+                        }
+                        Text(signOut != nil ? "Sign Out" : "Cancel")
+                    }
+                    .font(AXTypography.subheadline)
+                    .foregroundColor(signOut != nil ? .axError : .axTextSecondary)
                 }
                 .buttonStyle(PlainButtonStyle())
                 .disabled(viewModel.isLoading)
@@ -188,6 +206,7 @@ struct SetupGenerationView: View {
 struct RecoveryEntryView: View {
     @ObservedObject var viewModel: VaultSetupViewModel
     var dismiss: (() -> Void)
+    var signOut: (() -> Void)? = nil
     
     var body: some View {
         VStack(spacing: AXSpacing.xxl) {
@@ -285,9 +304,14 @@ struct RecoveryEntryView: View {
                 .disabled(!viewModel.canCreateVault || viewModel.isLoading)
                 
                 Button(action: { dismiss() }) {
-                    Text("Cancel")
-                        .font(AXTypography.subheadline)
-                        .foregroundColor(.axTextSecondary)
+                    HStack(spacing: AXSpacing.xs) {
+                        if signOut != nil {
+                            Image(systemName: "rectangle.portrait.and.arrow.right")
+                        }
+                        Text(signOut != nil ? "Sign Out" : "Cancel")
+                    }
+                    .font(AXTypography.subheadline)
+                    .foregroundColor(signOut != nil ? .axError : .axTextSecondary)
                 }
                 .buttonStyle(PlainButtonStyle())
                 .disabled(viewModel.isLoading)
@@ -302,55 +326,213 @@ struct RecoveryEntryView: View {
 // MARK: - Success View
 struct SuccessView: View {
     var dismiss: (() -> Void)
-    
+
+    @State private var shieldScale: CGFloat = 0.5
+    @State private var shieldOpacity: Double = 0
+    @State private var ringScale: CGFloat = 0.6
+    @State private var ringOpacity: Double = 0
+    @State private var contentOpacity: Double = 0
+    @State private var contentOffset: CGFloat = 20
+    @State private var pulse: Bool = false
+    @State private var orb1Offset: CGSize = .init(width: -60, height: -80)
+    @State private var orb2Offset: CGSize = .init(width: 80, height: 60)
+
     var body: some View {
-        VStack(spacing: AXSpacing.xl) {
-            Spacer()
-            
+        ZStack {
+            // Ambient gradient orbs
             ZStack {
                 Circle()
-                    .fill(Color.axSuccess.opacity(0.1))
-                    .frame(width: 80, height: 80)
-                
-                Image(systemName: "checkmark.shield.fill")
-                    .font(.system(size: 40))
-                    .foregroundColor(.axSuccess)
+                    .fill(
+                        RadialGradient(
+                            colors: [Color.green.opacity(0.25), Color.clear],
+                            center: .center, startRadius: 0, endRadius: 120
+                        )
+                    )
+                    .frame(width: 240, height: 240)
+                    .offset(orb1Offset)
+                    .blur(radius: 30)
+
+                Circle()
+                    .fill(
+                        RadialGradient(
+                            colors: [Color.axAccentBlue.opacity(0.2), Color.clear],
+                            center: .center, startRadius: 0, endRadius: 100
+                        )
+                    )
+                    .frame(width: 200, height: 200)
+                    .offset(orb2Offset)
+                    .blur(radius: 25)
             }
-            
-            Text("Vault Secured")
-                .font(.system(size: 28, weight: .bold, design: .rounded))
-                .foregroundColor(.axTextPrimary)
-            
-            VStack(spacing: AXSpacing.md) {
-                Text("Your Recovery Key is now securely stored in your device's Keychain.")
-                    .font(AXTypography.body)
-                    .foregroundColor(.axTextSecondary)
-                    .multilineTextAlignment(.center)
-                
-                Text("Every time you open the app, it will use this key to unlock your server data automatically.")
-                    .font(AXTypography.body)
-                    .foregroundColor(.axTextSecondary)
-                    .multilineTextAlignment(.center)
+            .animation(
+                .easeInOut(duration: 4).repeatForever(autoreverses: true),
+                value: orb1Offset
+            )
+
+            VStack(spacing: 0) {
+                Spacer()
+
+                // Shield icon with pulse rings
+                ZStack {
+                    // Outer pulse ring
+                    Circle()
+                        .stroke(Color.green.opacity(pulse ? 0 : 0.3), lineWidth: 2)
+                        .frame(width: pulse ? 160 : 110, height: pulse ? 160 : 110)
+                        .animation(.easeOut(duration: 1.5).repeatForever(autoreverses: false), value: pulse)
+
+                    // Middle ring
+                    Circle()
+                        .stroke(Color.green.opacity(0.15), lineWidth: 1)
+                        .frame(width: 100, height: 100)
+                        .scaleEffect(ringScale)
+                        .opacity(ringOpacity)
+
+                    // Main icon background
+                    ZStack {
+                        Circle()
+                            .fill(
+                                LinearGradient(
+                                    colors: [
+                                        Color.green.opacity(0.25),
+                                        Color.green.opacity(0.08)
+                                    ],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
+                            .frame(width: 86, height: 86)
+                            .overlay(
+                                Circle()
+                                    .stroke(Color.green.opacity(0.35), lineWidth: 1)
+                            )
+
+                        Image(systemName: "checkmark.shield.fill")
+                            .font(.system(size: 38, weight: .medium))
+                            .foregroundStyle(
+                                LinearGradient(
+                                    colors: [Color(hex: "#4ade80"), Color(hex: "#22c55e")],
+                                    startPoint: .top,
+                                    endPoint: .bottom
+                                )
+                            )
+                            .shadow(color: Color.green.opacity(0.5), radius: 12, x: 0, y: 4)
+                    }
+                    .scaleEffect(shieldScale)
+                    .opacity(shieldOpacity)
+                }
+                .padding(.bottom, 36)
+
+                // Text content
+                VStack(spacing: 12) {
+                    Text("Vault Secured")
+                        .font(.system(size: 30, weight: .bold, design: .rounded))
+                        .foregroundStyle(
+                            LinearGradient(
+                                colors: [.white, Color(hex: "#e2e8f0")],
+                                startPoint: .top, endPoint: .bottom
+                            )
+                        )
+
+                    Text("Your encryption key is safely locked in your device's secure storage. Your server credentials are protected by zero-knowledge encryption.")
+                        .font(.system(size: 14, weight: .regular))
+                        .foregroundColor(Color.white.opacity(0.55))
+                        .multilineTextAlignment(.center)
+                        .lineSpacing(4)
+                        .frame(maxWidth: 340)
+                }
+                .padding(.bottom, 32)
+                .opacity(contentOpacity)
+                .offset(y: contentOffset)
+
+                // Feature chips
+                HStack(spacing: 10) {
+                    SuccessChip(icon: "lock.fill", label: "End-to-End", color: .green)
+                    SuccessChip(icon: "eye.slash.fill", label: "Zero-Knowledge", color: .axAccentBlue)
+                    SuccessChip(icon: "icloud.slash.fill", label: "Local Key", color: Color(hex: "#a78bfa"))
+                }
+                .opacity(contentOpacity)
+                .offset(y: contentOffset)
+                .padding(.bottom, 40)
+
+                // CTA Button
+                Button(action: { dismiss() }) {
+                    HStack(spacing: 10) {
+                        Text("Enter AevonX")
+                            .font(.system(size: 15, weight: .semibold))
+                        Image(systemName: "arrow.right")
+                            .font(.system(size: 13, weight: .bold))
+                    }
+                    .foregroundColor(.black)
+                    .frame(maxWidth: 300)
+                    .padding(.vertical, 15)
+                    .background(
+                        LinearGradient(
+                            colors: [Color(hex: "#4ade80"), Color(hex: "#22d3ee")],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                    )
+                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    .shadow(color: Color.green.opacity(0.35), radius: 16, x: 0, y: 6)
+                }
+                .buttonStyle(PlainButtonStyle())
+                .opacity(contentOpacity)
+                .offset(y: contentOffset)
+
+                Spacer()
             }
-            .frame(maxWidth: 400)
-            
-            Spacer()
-            
-            Button(action: { dismiss() }) {
-                Text("Great, let's go!")
-                    .font(AXTypography.body)
-                    .fontWeight(.semibold)
-                    .foregroundColor(.axBackground)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, AXSpacing.md)
-                    .background(Color.axAccentBlue)
-                    .cornerRadius(AXCornerRadius.md)
-            }
-            .buttonStyle(PlainButtonStyle())
-            .frame(maxWidth: 300)
-            
-            Spacer()
         }
+        .onAppear {
+            // Orb animation
+            withAnimation(.easeInOut(duration: 4).repeatForever(autoreverses: true)) {
+                orb1Offset = CGSize(width: -40, height: -50)
+                orb2Offset = CGSize(width: 50, height: 40)
+            }
+            // Shield entrance
+            withAnimation(.spring(response: 0.6, dampingFraction: 0.65).delay(0.1)) {
+                shieldScale = 1.0
+                shieldOpacity = 1.0
+            }
+            // Ring fade
+            withAnimation(.easeOut(duration: 0.8).delay(0.4)) {
+                ringScale = 1.0
+                ringOpacity = 1.0
+            }
+            // Content slide up
+            withAnimation(.easeOut(duration: 0.6).delay(0.5)) {
+                contentOpacity = 1.0
+                contentOffset = 0
+            }
+            // Pulse start
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) {
+                pulse = true
+            }
+        }
+    }
+}
+
+// MARK: - Success Chip
+private struct SuccessChip: View {
+    let icon: String
+    let label: String
+    let color: Color
+
+    var body: some View {
+        HStack(spacing: 5) {
+            Image(systemName: icon)
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundColor(color)
+            Text(label)
+                .font(.system(size: 11, weight: .medium))
+                .foregroundColor(Color.white.opacity(0.7))
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
+        .background(color.opacity(0.1))
+        .overlay(
+            RoundedRectangle(cornerRadius: 20)
+                .stroke(color.opacity(0.25), lineWidth: 1)
+        )
+        .clipShape(Capsule())
     }
 }
 
@@ -480,108 +662,68 @@ class VaultSetupViewModel: ObservableObject {
     func determineMode() async {
         isLoading = true
         
-        // 1. Check local Keychain first
-        if await RecoveryKeyManager.shared.hasRecoveryKey() {
-            if let existingKey = await RecoveryKeyManager.shared.getRecoveryKey() {
-                self.recoveryKey = existingKey
-                self.mode = .success
-                self.isComplete = true
-                isLoading = false
-                return
-            }
+        // 1. Check if key already exists locally
+        let hasKey = EncryptionKeyStore.shared.hasKey()
+        
+        if hasKey {
+            self.mode = .success
+            self.isComplete = true
+            isLoading = false
+            return
         }
         
-        // 2. Local is empty, check server
+        // 2. No local key — check server for key hash
         do {
             let status = try await VaultAPIService.shared.checkRecoveryKeyStatus()
             if status.hasRecoveryKey {
-                // Server has a key, but local Keychain is empty -> Recovery Mode
+                // Server has key hash → existing account, needs key entry
                 self.mode = .recover
             } else {
-                // New user -> Generation Mode
+                // No key anywhere → new account, generate
                 self.mode = .generate
                 await generateKey()
             }
         } catch {
-            // Fallback to generate if server check fails
-            self.mode = .generate
-            await generateKey()
+            // Fallback to recover — safer to ask for existing key than generate a new one
+            // that would make old encrypted data unrecoverable
+            self.mode = .recover
         }
         isLoading = false
     }
     
     func generateKey() async {
-        if let key = await RecoveryKeyManager.shared.generateRecoveryKey() {
-            recoveryKey = key
-        }
+        recoveryKey = await EncryptionKeyStore.shared.generateKey()
     }
     
     func verifyAndRestore() async {
         isLoading = true
         errorMessage = nil
         
-        print("[VaultSetup] Starting Recovery Key verification and restoration")
+        let normalizedKey = enteredKey.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+        
+        guard !normalizedKey.isEmpty else {
+            errorMessage = "Please enter your encryption key."
+            isLoading = false
+            return
+        }
         
         do {
-            // 1. Fetch security parameters from server
-            _ = try await VaultAPIService.shared.checkRecoveryKeyStatus()
+            // Compute hash of entered key
+            let keyHash = await EncryptionKeyStore.shared.hashKey(normalizedKey)
             
-            // 2. Derive verifier hash from entered key
-            // Normalize: uppercase and remove leading/trailing whitespace
-            let normalizedKey = enteredKey.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
-            
-            guard let keyData = normalizedKey.data(using: .utf8) else {
-                errorMessage = "Invalid key format. Please check your Recovery Key."
-                isLoading = false
-                return
-            }
-            
-            // Fetch salt from server (needed for derivation)
-            let keyStatus = try await VaultAPIService.shared.checkRecoveryKeyStatus()
-            
-            guard let saltString = keyStatus.salt, let salt = Data(base64Encoded: saltString) else {
-                errorMessage = "Could not retrieve security parameters from server."
-                isLoading = false
-                return
-            }
-            
-            // Derive verifier locally
-            guard let verifierKey = await HKDFKeyDerivation.shared.deriveKey(
-                from: keyData,
-                salt: salt,
-                info: "AevonX-Verifier-Key".data(using: .utf8)!,
-                keyLength: 32
-            ) else {
-                errorMessage = "Failed to process key."
-                isLoading = false
-                return
-            }
-            
-            guard let verifierHashData = await Argon2KeyDerivation.shared.deriveKey(
-                from: verifierKey,
-                salt: salt
-            ) else {
-                errorMessage = "Failed to generate security hash."
-                isLoading = false
-                return
-            }
-            
-            let verifierHash = verifierHashData.base64EncodedString()
-            
-            // 3. Verify with server
-            let verification = try await VaultAPIService.shared.verifyRecoveryKey(verifierHash: verifierHash)
+            // Verify against server hash
+            let verification = try await VaultAPIService.shared.verifyRecoveryKey(verifierHash: keyHash)
             
             if verification.verified {
-                // 4. If correct, save to Keychain
-                _ = await RecoveryKeyManager.shared.saveExistingRecoveryKey(keyData, salt: salt)
+                // Save to Keychain
+                try await EncryptionKeyStore.shared.saveKey(normalizedKey)
                 
                 self.mode = .success
                 self.isComplete = true
-                print("[VaultSetup] SUCCESS - Recovery Key verified and restored to Keychain")
+                print("[VaultSetup] SUCCESS - Key verified and saved to Keychain")
             } else {
-                errorMessage = "Recovery Key is incorrect. Please try again."
+                errorMessage = "Encryption key is incorrect. Please try again."
             }
-            
         } catch {
             errorMessage = "Verification failed: \(error.localizedDescription)"
             print("[VaultSetup] FAILED - \(error.localizedDescription)")
@@ -599,9 +741,6 @@ class VaultSetupViewModel: ObservableObject {
             return
         }
         
-        print("[VaultSetup] Starting Recovery Key registration")
-        
-        // Validate acknowledgment
         guard hasAcknowledgedWarning else {
             errorMessage = "You must acknowledge the warning to continue"
             isLoading = false
@@ -609,39 +748,28 @@ class VaultSetupViewModel: ObservableObject {
         }
         
         guard hasCopiedKey else {
-            errorMessage = "Please copy your Recovery Key before proceeding"
+            errorMessage = "Please copy your encryption key before proceeding"
             isLoading = false
             return
         }
         
         do {
-            // Get verifier hash for server
-            guard let verifierHash = await RecoveryKeyManager.shared.getVerifierHash() else {
-                errorMessage = "Failed to generate verifier hash"
-                isLoading = false
-                return
-            }
+            // 1. Save key to Keychain
+            try await EncryptionKeyStore.shared.saveKey(recoveryKey)
             
-            guard let keys = await RecoveryKeyManager.shared.deriveEncryptionKeys() else {
-                errorMessage = "Failed to derive encryption keys"
-                isLoading = false
-                return
-            }
-            
-            let saltBase64 = keys.salt.base64EncodedString()
-            
-            // Register with server
+            // 2. Register key hash with server (for future verification)
+            let keyHash = await EncryptionKeyStore.shared.hashKey(recoveryKey)
             _ = try await VaultAPIService.shared.registerRecoveryKey(
-                verifierHash: verifierHash,
-                salt: saltBase64
+                verifierHash: keyHash,
+                salt: "" // Not needed in new system
             )
             
             self.mode = .success
             isComplete = true
-            print("[VaultSetup] SUCCESS - Recovery Key registered with server")
+            print("[VaultSetup] SUCCESS - Key saved and registered")
             
         } catch {
-            errorMessage = "Failed to register vault: \(error.localizedDescription)"
+            errorMessage = "Failed to setup encryption: \(error.localizedDescription)"
             print("[VaultSetup] FAILED - \(error.localizedDescription)")
         }
         

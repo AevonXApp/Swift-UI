@@ -2,14 +2,14 @@
 //  DecryptionErrorView.swift
 //  AevonX
 //
-//  View for handling decryption errors and recovery key input
+//  View for handling decryption errors and encryption key input
 //
 
 import SwiftUI
 
 struct DecryptionErrorView: View {
     @ObservedObject var viewModel: ServerListViewModel
-    @State private var recoveryKeyInput = ""
+    @State private var keyInput = ""
     @State private var isProcessing = false
     @FocusState private var isInputFocused: Bool
     
@@ -28,7 +28,7 @@ struct DecryptionErrorView: View {
                 Spacer()
                 
                 Button {
-                    viewModel.dismissDecryptionError()
+                    viewModel.dismissEncryptionError()
                 } label: {
                     Image(systemName: "xmark.circle.fill")
                         .font(.title3)
@@ -45,14 +45,14 @@ struct DecryptionErrorView: View {
             // Content
             VStack(alignment: .leading, spacing: AXSpacing.lg) {
                 // Error description
-                if let error = viewModel.decryptionError {
+                if let error = viewModel.encryptionError {
                     VStack(alignment: .leading, spacing: AXSpacing.sm) {
                         Text("Error Details:")
                             .font(.subheadline)
                             .fontWeight(.semibold)
                             .foregroundColor(.axTextSecondary)
                         
-                        Text(error.localizedDescription)
+                        Text(error)
                             .font(.body)
                             .foregroundColor(.axTextPrimary)
                             .padding()
@@ -67,10 +67,8 @@ struct DecryptionErrorView: View {
                             )
                     }
                     
-                    // Show recovery key input if needed
-                    if error.requiresRecoveryKey {
-                        recoveryKeyInputSection
-                    }
+                    // Show key input
+                    keyInputSection
                 }
                 
                 // Failed servers count
@@ -93,7 +91,7 @@ struct DecryptionErrorView: View {
                         .foregroundColor(.axTextSecondary)
                     
                     VStack(alignment: .leading, spacing: AXSpacing.xs) {
-                        helpItem(icon: "key.fill", text: "Enter your Recovery Key if you have one")
+                        helpItem(icon: "key.fill", text: "Enter your Encryption Key if you have one")
                         helpItem(icon: "arrow.clockwise", text: "Try logging out and logging back in")
                         helpItem(icon: "trash", text: "Delete affected servers and re-add them")
                     }
@@ -107,31 +105,29 @@ struct DecryptionErrorView: View {
             // Actions
             HStack(spacing: AXSpacing.md) {
                 Button {
-                    viewModel.dismissDecryptionError()
+                    viewModel.dismissEncryptionError()
                 } label: {
                     Text("Close")
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.bordered)
                 
-                if viewModel.decryptionError?.requiresRecoveryKey == true {
-                    Button {
-                        Task {
-                            await submitRecoveryKey()
-                        }
-                    } label: {
-                        HStack {
-                            if isProcessing {
-                                ProgressView()
-                                    .scaleEffect(0.8)
-                            }
-                            Text("Restore Keys")
-                        }
-                        .frame(maxWidth: .infinity)
+                Button {
+                    Task {
+                        await submitKey()
                     }
-                    .buttonStyle(.borderedProminent)
-                    .disabled(recoveryKeyInput.isEmpty || isProcessing)
+                } label: {
+                    HStack {
+                        if isProcessing {
+                            ProgressView()
+                                .scaleEffect(0.8)
+                        }
+                        Text("Restore Keys")
+                    }
+                    .frame(maxWidth: .infinity)
                 }
+                .buttonStyle(.borderedProminent)
+                .disabled(keyInput.isEmpty || isProcessing)
             }
             .padding()
             .background(Color.axSurface)
@@ -142,9 +138,9 @@ struct DecryptionErrorView: View {
         .shadow(color: .black.opacity(0.3), radius: 20, y: 10)
     }
     
-    private var recoveryKeyInputSection: some View {
+    private var keyInputSection: some View {
         VStack(alignment: .leading, spacing: AXSpacing.sm) {
-            Text("Enter Recovery Key:")
+            Text("Enter Encryption Key:")
                 .font(.subheadline)
                 .fontWeight(.semibold)
                 .foregroundColor(.axTextSecondary)
@@ -153,13 +149,13 @@ struct DecryptionErrorView: View {
                 Image(systemName: "key.fill")
                     .foregroundColor(.axAccentBlue)
                 
-                SecureField("XXXX-XXXX-XXXX-XXXX-XXXX-XXXX", text: $recoveryKeyInput)
+                SecureField("XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX", text: $keyInput)
                     .textFieldStyle(.plain)
                     .font(.system(.body, design: .monospaced))
                     .focused($isInputFocused)
                     .onSubmit {
                         Task {
-                            await submitRecoveryKey()
+                            await submitKey()
                         }
                     }
             }
@@ -173,7 +169,7 @@ struct DecryptionErrorView: View {
                     .stroke(isInputFocused ? Color.axAccentBlue : Color.axBorder, lineWidth: 1)
             )
             
-            Text("The recovery key was provided when you set up encryption")
+            Text("The encryption key was provided when you set up your account")
                 .font(.caption)
                 .foregroundColor(.axTextMuted)
         }
@@ -192,11 +188,11 @@ struct DecryptionErrorView: View {
         }
     }
     
-    private func submitRecoveryKey() async {
-        guard !recoveryKeyInput.isEmpty else { return }
+    private func submitKey() async {
+        guard !keyInput.isEmpty else { return }
         
         isProcessing = true
-        await viewModel.retryDecryptionWithRecoveryKey(recoveryKeyInput)
+        await viewModel.retryDecryptionWithKey(keyInput)
         isProcessing = false
     }
 }
@@ -209,8 +205,8 @@ struct DecryptionErrorView: View {
         
         DecryptionErrorView(viewModel: {
             let vm = ServerListViewModel()
-            vm.decryptionError = .authenticationFailure
-            vm.showDecryptionError = true
+            vm.encryptionError = "Some servers could not be decrypted."
+            vm.showEncryptionKeyInput = true
             vm.failedServerIds = ["server1", "server2"]
             return vm
         }())

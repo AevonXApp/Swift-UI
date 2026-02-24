@@ -5,6 +5,7 @@
 
 import SwiftUI
 import AevonXCore
+import UniformTypeIdentifiers
 
 // MARK: - Identity Step
 struct AddServerIdentityStep: View {
@@ -169,6 +170,27 @@ struct AddServerAuthStep: View {
                             Text("Private Key")
                                 .font(AXTypography.caption)
                                 .foregroundColor(.axTextMuted)
+                            
+                            Spacer()
+                            
+                            // File import button
+                            Button {
+                                viewModel.showSSHKeyFilePicker = true
+                            } label: {
+                                HStack(spacing: AXSpacing.xs) {
+                                    Image(systemName: "folder.badge.plus")
+                                        .font(.system(size: 11))
+                                    Text(viewModel.sshKeyFileName ?? "Import File")
+                                        .font(AXTypography.caption)
+                                        .lineLimit(1)
+                                }
+                                .foregroundColor(.axAccentBlue)
+                                .padding(.horizontal, AXSpacing.sm)
+                                .padding(.vertical, AXSpacing.xxs)
+                                .background(Color.axAccentBlue.opacity(0.1))
+                                .cornerRadius(AXCornerRadius.sm)
+                            }
+                            .buttonStyle(.plain)
                         }
                         
                         TextEditor(text: $viewModel.privateKey)
@@ -188,7 +210,7 @@ struct AddServerAuthStep: View {
                                     if viewModel.privateKey.isEmpty {
                                         VStack {
                                             HStack {
-                                                Text("Paste your private key here...")
+                                                Text("Paste your private key or import a file...")
                                                     .font(.system(size: 12, design: .monospaced))
                                                     .foregroundColor(.axTextMuted)
                                                     .padding(.top, AXSpacing.md)
@@ -201,6 +223,21 @@ struct AddServerAuthStep: View {
                                 }
                                 .allowsHitTesting(false)
                             )
+                    }
+                    .fileImporter(
+                        isPresented: $viewModel.showSSHKeyFilePicker,
+                        allowedContentTypes: [.item],
+                        allowsMultipleSelection: false
+                    ) { result in
+                        switch result {
+                        case .success(let urls):
+                            if let url = urls.first {
+                                viewModel.importSSHKeyFile(from: url)
+                            }
+                        case .failure(let error):
+                            viewModel.errorMessage = "Failed to import key file: \(error.localizedDescription)"
+                            viewModel.showError = true
+                        }
                     }
                     
                     PremiumSecureField(

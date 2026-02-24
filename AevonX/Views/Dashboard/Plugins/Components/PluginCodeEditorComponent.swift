@@ -137,8 +137,8 @@ public struct PluginCodeEditorComponent: View {
                         .font(.system(size: 12, design: .monospaced))
                         .scrollContentBackground(.hidden)
                         .padding(8)
-                        .onChange(of: content) { _ in
-                            lineCount = content.components(separatedBy: "\n").count
+                        .onChange(of: content) { _, newValue in
+                            lineCount = newValue.components(separatedBy: "\n").count
                         }
                 }
                 .background(Color.axBackground)

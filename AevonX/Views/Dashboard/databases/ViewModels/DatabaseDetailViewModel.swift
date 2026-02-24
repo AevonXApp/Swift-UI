@@ -79,7 +79,7 @@ public struct QueryHistoryEntry: Identifiable {
 
 // MARK: - Activity Log Entry
 
-public struct ActivityLogEntry: Identifiable {
+public struct DBActivityLogEntry: Identifiable {
     public let id = UUID()
     public let action: String
     public let detail: String
@@ -173,10 +173,10 @@ public final class DatabaseDetailViewModel: ObservableObject {
 
     // MARK: - Activity Log
 
-    @Published public var activityLog: [ActivityLogEntry] = []
+    @Published public var activityLog: [DBActivityLogEntry] = []
 
     private func log(action: String, detail: String, success: Bool, error: String? = nil) {
-        activityLog.insert(ActivityLogEntry(action: action, detail: detail, success: success, errorMessage: error), at: 0)
+        activityLog.insert(DBActivityLogEntry(action: action, detail: detail, success: success, errorMessage: error), at: 0)
     }
 
     // MARK: - State

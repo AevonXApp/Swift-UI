@@ -123,7 +123,7 @@ public struct PluginLogViewerComponent: View {
                         }
                     }
                 }
-                .onChange(of: logLines.count) { _ in
+                .onChange(of: logLines.count) { _, _ in
                     if autoScroll, let last = filteredLines.last {
                         withAnimation { proxy.scrollTo(last.id, anchor: .bottom) }
                     }

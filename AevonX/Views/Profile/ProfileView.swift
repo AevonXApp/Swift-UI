@@ -41,9 +41,17 @@ enum SubscriptionTier: String {
 struct ProfileView: View {
     @EnvironmentObject private var authViewModel: AuthViewModel
     @StateObject private var vaultViewModel = VaultStatusViewModel()
-    @State private var subscription: SubscriptionTier = .pro
     @State private var selectedTab = 0
     @State private var showVaultSetup = false
+    
+    // Derived from real user data
+    private var currentPlan: SubscriptionTier {
+        switch authViewModel.currentUser?.plan?.lowercased() {
+        case "pro":        return .pro
+        case "enterprise": return .enterprise
+        default:           return .free
+        }
+    }
     
     var body: some View {
         VStack(spacing: 0) {
@@ -63,7 +71,7 @@ struct ProfileView: View {
             if authViewModel.isAuthenticated {
                 LoggedInView(
                     vaultViewModel: vaultViewModel,
-                    subscription: $subscription,
+                    subscription: currentPlan,
                     selectedTab: $selectedTab,
                     showVaultSetup: $showVaultSetup
                 )
@@ -94,7 +102,7 @@ struct ProfileView: View {
 struct LoggedInView: View {
     @EnvironmentObject var authViewModel: AuthViewModel
     @ObservedObject var vaultViewModel: VaultStatusViewModel
-    @Binding var subscription: SubscriptionTier
+    let subscription: SubscriptionTier   // read-only, derived from real user plan
     @Binding var selectedTab: Int
     @Binding var showVaultSetup: Bool
     
@@ -107,6 +115,24 @@ struct LoggedInView: View {
         authViewModel.currentUser?.email ?? ""
     }
     
+    private var avatarFallback: some View {
+        ZStack {
+            Circle()
+                .fill(
+                    LinearGradient(
+                        colors: [.axAccentBlue.opacity(0.3), .axAccentGreen.opacity(0.3)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .frame(width: 80, height: 80)
+            
+            Text(String(userName.prefix(1)))
+                .font(.system(size: 32, weight: .bold))
+                .foregroundColor(.axTextPrimary)
+        }
+    }
+    
     var body: some View {
         HStack(spacing: 0) {
             // Profile Sidebar
@@ -114,19 +140,25 @@ struct LoggedInView: View {
                 // Avatar & Info
                 VStack(spacing: AXSpacing.md) {
                     ZStack {
-                        Circle()
-                            .fill(
-                                LinearGradient(
-                                    colors: [.axAccentBlue.opacity(0.3), .axAccentGreen.opacity(0.3)],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                )
-                            )
-                            .frame(width: 80, height: 80)
-                        
-                        Text(String(userName.prefix(1)))
-                            .font(.system(size: 32, weight: .bold))
-                            .foregroundColor(.axTextPrimary)
+                        if let urlString = authViewModel.currentUser?.avatarUrl,
+                           let url = URL(string: urlString) {
+                            AsyncImage(url: url) { phase in
+                                switch phase {
+                                case .success(let image):
+                                    image
+                                        .resizable()
+                                        .scaledToFill()
+                                        .frame(width: 80, height: 80)
+                                        .clipShape(Circle())
+                                case .failure, .empty:
+                                    avatarFallback
+                                @unknown default:
+                                    avatarFallback
+                                }
+                            }
+                        } else {
+                            avatarFallback
+                        }
                     }
                     
                     VStack(spacing: AXSpacing.xxs) {
@@ -152,6 +184,26 @@ struct LoggedInView: View {
                                 .background(subscription.color.opacity(0.15))
                                 .cornerRadius(AXCornerRadius.sm)
                         }
+                        
+                        // Upgrade button — visible only on Free plan
+                        if subscription == .free {
+                            Button(action: { NSWorkspace.shared.open(AppURLs.pricing) }) {
+                                Text("Upgrade")
+                                    .font(AXTypography.caption)
+                                    .fontWeight(.semibold)
+                                    .foregroundColor(.white)
+                                    .padding(.horizontal, AXSpacing.md)
+                                    .padding(.vertical, AXSpacing.xxs)
+                                    .background(
+                                        LinearGradient(
+                                            colors: [.axAccentBlue, .axAccentGreen],
+                                            startPoint: .leading, endPoint: .trailing
+                                        )
+                                    )
+                                    .cornerRadius(AXCornerRadius.sm)
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                        }
                     }
                 }
                 .padding(.top, AXSpacing.xl)
@@ -169,36 +221,21 @@ struct LoggedInView: View {
                     )
                     
                     ProfileTabButton(
-                        icon: "creditcard",
-                        title: "Subscription",
+                        icon: "clock.arrow.circlepath",
+                        title: "Activity",
                         isSelected: selectedTab == 1,
                         action: { selectedTab = 1 }
                     )
                     
                     ProfileTabButton(
-                        icon: "key",
-                        title: "API Keys",
-                        isSelected: selectedTab == 2,
-                        action: { selectedTab = 2 }
-                    )
-                    
-                    ProfileTabButton(
-                        icon: "clock.arrow.circlepath",
-                        title: "Activity",
-                        isSelected: selectedTab == 3,
-                        action: { selectedTab = 3 }
-                    )
-                    
-                    // Encryption Vault Button
-                    ProfileTabButton(
                         icon: vaultViewModel.isVaultInitialized ? "lock.shield.fill" : "lock.shield",
                         title: "Encryption",
-                        isSelected: selectedTab == 4,
+                        isSelected: selectedTab == 2,
                         action: { 
                             if !vaultViewModel.isVaultInitialized {
                                 showVaultSetup = true
                             } else {
-                                selectedTab = 4
+                                selectedTab = 2
                             }
                         }
                     )
@@ -225,16 +262,25 @@ struct LoggedInView: View {
                 }) {
                     HStack(spacing: AXSpacing.sm) {
                         Image(systemName: "arrow.right.square")
-                            .font(.system(size: 16))
+                            .font(.system(size: 15, weight: .semibold))
                         
                         Text("Sign Out")
                             .font(AXTypography.body)
+                            .fontWeight(.semibold)
                     }
-                    .foregroundColor(.axError)
+                    .foregroundColor(.white)
                     .padding(.horizontal, AXSpacing.lg)
                     .padding(.vertical, AXSpacing.sm)
+                    .frame(maxWidth: .infinity)
+                    .background(Color.axError)
+                    .cornerRadius(AXCornerRadius.md)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: AXCornerRadius.md)
+                            .stroke(Color.axError.opacity(0.6), lineWidth: 1)
+                    )
                 }
                 .buttonStyle(PlainButtonStyle())
+                .padding(.horizontal, AXSpacing.lg)
                 .padding(.bottom, AXSpacing.lg)
             }
             .frame(width: 240)
@@ -250,13 +296,8 @@ struct LoggedInView: View {
                     case 0:
                         AccountTab()
                     case 1:
-                        SubscriptionTab(subscription: $subscription)
-                            .environmentObject(authViewModel)
-                    case 2:
-                        APIKeysTab()
-                    case 3:
                         ActivityTab()
-                    case 4:
+                    case 2:
                         EncryptionTab(vaultViewModel: vaultViewModel, showVaultSetup: $showVaultSetup)
                     default:
                         AccountTab()
@@ -265,6 +306,7 @@ struct LoggedInView: View {
                 .padding(AXSpacing.xl)
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
+            .id(selectedTab)          // Reset scroll to top on every tab switch
             .background(Color.axBackground)
         }
     }
@@ -302,37 +344,52 @@ struct ProfileTabButton: View {
     }
 }
 
-// MARK: - Profile Tabs
+// MARK: - Account Tab (Real Data)
 
 struct AccountTab: View {
     @EnvironmentObject var authViewModel: AuthViewModel
-    @State private var userName = ""
-    @State private var userEmail = ""
-    @State private var isEditing = false
+    @StateObject private var profileAPI = ProfileAPIService.shared
     
-    init() {
-        // Initial values will be set in onAppear to match current user
-    }
+    // Profile edit state
+    @State private var editName = ""
+    @State private var isEditing = false
+    @State private var isSavingProfile = false
+    @State private var profileError: String?
+    
+    // Password state
+    @State private var showChangePassword = false
+    @State private var currentPassword = ""
+    @State private var newPassword = ""
+    @State private var confirmPassword = ""
+    @State private var isChangingPassword = false
+    @State private var passwordError: String?
+    @State private var passwordSuccess = false
+    
+    // Sessions state
+    @State private var sessions: [UserSession] = []
+    @State private var isLoadingSessions = false
+    @State private var sessionError: String?
+    @State private var isDeletingSession = false
     
     var body: some View {
         VStack(alignment: .leading, spacing: AXSpacing.xl) {
+            
+            // ── Profile Information ──────────────────────────────────────────
             SettingsSection(title: "Profile Information", icon: "person") {
                 VStack(spacing: AXSpacing.md) {
                     HStack {
                         Text("Full Name")
                             .font(AXTypography.body)
                             .foregroundColor(.axTextPrimary)
-                        
                         Spacer()
-                        
                         if isEditing {
-                            TextField("", text: $userName)
+                            TextField("Your name", text: $editName)
                                 .font(AXTypography.body)
                                 .foregroundColor(.axTextPrimary)
                                 .frame(width: 200)
                                 .textFieldStyle(PlainTextFieldStyle())
                         } else {
-                            Text(userName)
+                            Text(authViewModel.currentUser?.name ?? "—")
                                 .font(AXTypography.body)
                                 .foregroundColor(.axTextSecondary)
                         }
@@ -342,59 +399,59 @@ struct AccountTab: View {
                         Text("Email")
                             .font(AXTypography.body)
                             .foregroundColor(.axTextPrimary)
-                        
                         Spacer()
-                        
-                        if isEditing {
-                            TextField("", text: $userEmail)
-                                .font(AXTypography.body)
-                                .foregroundColor(.axTextPrimary)
-                                .frame(width: 200)
-                                .textFieldStyle(PlainTextFieldStyle())
-                        } else {
-                            Text(userEmail)
-                                .font(AXTypography.body)
-                                .foregroundColor(.axTextSecondary)
-                        }
+                        Text(authViewModel.currentUser?.email ?? "—")
+                            .font(AXTypography.body)
+                            .foregroundColor(.axTextSecondary)
                     }
                     
-                    Divider()
-                        .background(Color.axBorder)
+                    if let err = profileError {
+                        Text(err)
+                            .font(AXTypography.caption)
+                            .foregroundColor(.axError)
+                    }
+                    
+                    Divider().background(Color.axBorder)
                     
                     HStack {
                         Spacer()
-                        
                         if isEditing {
-                            Button(action: { isEditing = false }) {
-                                Text("Cancel")
-                                    .font(AXTypography.subheadline)
-                                    .foregroundColor(.axTextSecondary)
+                            Button("Cancel") {
+                                isEditing = false
+                                profileError = nil
+                                editName = authViewModel.currentUser?.name ?? ""
                             }
                             .buttonStyle(PlainButtonStyle())
+                            .foregroundColor(.axTextSecondary)
+                            .font(AXTypography.subheadline)
                             
-                            Button(action: { isEditing = false }) {                                
-                                Text("Save")
-                                    .font(AXTypography.subheadline)
-                                    .fontWeight(.medium)
-                                    .foregroundColor(.axBackground)
-                                    .padding(.horizontal, AXSpacing.md)
-                                    .padding(.vertical, AXSpacing.sm)
-                                    .background(Color.axAccentBlue)
-                                    .cornerRadius(AXCornerRadius.md)
+                            Button(action: saveProfile) {
+                                if isSavingProfile {
+                                    ProgressView().scaleEffect(0.7)
+                                } else {
+                                    Text("Save")
+                                        .font(AXTypography.subheadline)
+                                        .fontWeight(.medium)
+                                        .foregroundColor(.axBackground)
+                                        .padding(.horizontal, AXSpacing.md)
+                                        .padding(.vertical, AXSpacing.sm)
+                                        .background(Color.axAccentBlue)
+                                        .cornerRadius(AXCornerRadius.md)
+                                }
                             }
                             .buttonStyle(PlainButtonStyle())
+                            .disabled(isSavingProfile || editName.trimmingCharacters(in: .whitespaces).isEmpty)
                         } else {
-                            Button(action: { isEditing = true }) {
-                                Text("Edit Profile")
-                                    .font(AXTypography.subheadline)
-                                    .foregroundColor(.axAccentBlue)
-                            }
-                            .buttonStyle(PlainButtonStyle())
+                            Button("Edit Profile") { isEditing = true }
+                                .buttonStyle(PlainButtonStyle())
+                                .foregroundColor(.axAccentBlue)
+                                .font(AXTypography.subheadline)
                         }
                     }
                 }
             }
             
+            // ── Security ────────────────────────────────────────────────────
             SettingsSection(title: "Security", icon: "lock.shield") {
                 VStack(spacing: AXSpacing.md) {
                     HStack {
@@ -402,88 +459,166 @@ struct AccountTab: View {
                             Text("Password")
                                 .font(AXTypography.body)
                                 .foregroundColor(.axTextPrimary)
-                            
-                            Text("Last changed 3 months ago")
+                            Text("Change your account password")
                                 .font(AXTypography.caption)
                                 .foregroundColor(.axTextTertiary)
                         }
-                        
                         Spacer()
-                        
-                        Button(action: {}) {
-                            Text("Change")
-                                .font(AXTypography.subheadline)
-                                .foregroundColor(.axAccentBlue)
-                        }
-                        .buttonStyle(PlainButtonStyle())
-                    }
-                    
-                    HStack {
-                        VStack(alignment: .leading, spacing: AXSpacing.xxs) {
-                            Text("Two-Factor Authentication")
-                                .font(AXTypography.body)
-                                .foregroundColor(.axTextPrimary)
-                            
-                            Text("Enabled via Authenticator app")
-                                .font(AXTypography.caption)
-                                .foregroundColor(.axSuccess)
-                        }
-                        
-                        Spacer()
-                        
-                        Button(action: {}) {
-                            Text("Manage")
-                                .font(AXTypography.subheadline)
-                                .foregroundColor(.axAccentBlue)
-                        }
-                        .buttonStyle(PlainButtonStyle())
+                        Button("Change") { showChangePassword = true }
+                            .font(AXTypography.subheadline)
+                            .foregroundColor(.axAccentBlue)
+                            .buttonStyle(PlainButtonStyle())
                     }
                 }
             }
+            .sheet(isPresented: $showChangePassword) {
+                ChangePasswordSheet(
+                    currentPassword: $currentPassword,
+                    newPassword: $newPassword,
+                    confirmPassword: $confirmPassword,
+                    isLoading: $isChangingPassword,
+                    errorMessage: $passwordError,
+                    onSave: changePassword,
+                    onCancel: { showChangePassword = false }
+                )
+            }
             
-            SettingsSection(title: "Sessions", icon: "desktopcomputer") {
+            // ── Sessions ────────────────────────────────────────────────────
+            SettingsSection(title: "Active Sessions", icon: "desktopcomputer") {
                 VStack(spacing: AXSpacing.md) {
-                    SessionRow(device: "MacBook Pro", location: "Current Session", isCurrent: true)
-                    SessionRow(device: "iPhone 15 Pro", location: "San Francisco, CA", isCurrent: false)
-                    
-                    Divider()
-                        .background(Color.axBorder)
-                    
-                    Button(action: {}) {
-                        Text("Sign Out All Devices")
-                            .font(AXTypography.subheadline)
-                            .foregroundColor(.axError)
+                    if isLoadingSessions {
+                        HStack { Spacer(); ProgressView(); Spacer() }
+                    } else if let err = sessionError {
+                        Text(err).font(AXTypography.caption).foregroundColor(.axError)
+                    } else if sessions.isEmpty {
+                        Text("No sessions found")
+                            .font(AXTypography.caption)
+                            .foregroundColor(.axTextMuted)
+                    } else {
+                        ForEach(sessions) { session in
+                            SessionRow(
+                                session: session,
+                                onDelete: { deleteSession(id: session.id) }
+                            )
+                        }
                     }
-                    .buttonStyle(PlainButtonStyle())
+                    
+                    if !sessions.isEmpty {
+                        Divider().background(Color.axBorder)
+                        Button(action: signOutAllDevices) {
+                            Text("Sign Out All Devices")
+                                .font(AXTypography.subheadline)
+                                .foregroundColor(.axError)
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                        .disabled(isDeletingSession)
+                    }
                 }
             }
         }
         .onAppear {
-            userName = authViewModel.currentUser?.name ?? ""
-            userEmail = authViewModel.currentUser?.email ?? ""
+            editName = authViewModel.currentUser?.name ?? ""
+            loadSessions()
+        }
+    }
+    
+    // MARK: - Actions
+    
+    private func saveProfile() {
+        guard !editName.trimmingCharacters(in: .whitespaces).isEmpty else { return }
+        isSavingProfile = true
+        profileError = nil
+        Task {
+            do {
+                try await profileAPI.updateProfile(name: editName)
+                await authViewModel.checkAuthStatus()
+                isEditing = false
+            } catch {
+                profileError = error.localizedDescription
+            }
+            isSavingProfile = false
+        }
+    }
+    
+    private func changePassword() {
+        guard newPassword == confirmPassword else {
+            passwordError = "Passwords do not match"
+            return
+        }
+        isChangingPassword = true
+        passwordError = nil
+        Task {
+            do {
+                try await profileAPI.changePassword(current: currentPassword, new: newPassword)
+                passwordSuccess = true
+                showChangePassword = false
+                currentPassword = ""; newPassword = ""; confirmPassword = ""
+            } catch {
+                passwordError = error.localizedDescription
+            }
+            isChangingPassword = false
+        }
+    }
+    
+    private func loadSessions() {
+        isLoadingSessions = true
+        Task {
+            do {
+                sessions = try await profileAPI.fetchSessions()
+            } catch {
+                sessionError = "Failed to load sessions"
+            }
+            isLoadingSessions = false
+        }
+    }
+    
+    private func deleteSession(id: Int) {
+        isDeletingSession = true
+        Task {
+            do {
+                try await profileAPI.deleteSession(id: id)
+                sessions.removeAll { $0.id == id }
+            } catch {
+                sessionError = error.localizedDescription
+            }
+            isDeletingSession = false
+        }
+    }
+    
+    private func signOutAllDevices() {
+        isDeletingSession = true
+        Task {
+            do {
+                try await profileAPI.deleteAllSessions()
+                sessions = sessions.filter { $0.isCurrent }
+            } catch {
+                sessionError = error.localizedDescription
+            }
+            isDeletingSession = false
         }
     }
 }
 
+// MARK: - Session Row (Real Data)
+
 struct SessionRow: View {
-    let device: String
-    let location: String
-    let isCurrent: Bool
+    let session: UserSession
+    let onDelete: () -> Void
     
     var body: some View {
         HStack {
-            Image(systemName: device.contains("iPhone") ? "iphone" : "laptopcomputer")
+            Image(systemName: session.deviceIcon)
                 .font(.system(size: 20))
                 .foregroundColor(.axTextSecondary)
                 .frame(width: 32)
             
             VStack(alignment: .leading, spacing: AXSpacing.xxs) {
                 HStack(spacing: AXSpacing.xs) {
-                    Text(device)
+                    Text(session.name)
                         .font(AXTypography.body)
                         .foregroundColor(.axTextPrimary)
                     
-                    if isCurrent {
+                    if session.isCurrent {
                         Text("Current")
                             .font(AXTypography.caption2)
                             .fontWeight(.bold)
@@ -495,15 +630,15 @@ struct SessionRow: View {
                     }
                 }
                 
-                Text(location)
+                Text("Last active \(session.lastUsedLabel)")
                     .font(AXTypography.caption)
                     .foregroundColor(.axTextTertiary)
             }
             
             Spacer()
             
-            if !isCurrent {
-                Button(action: {}) {
+            if !session.isCurrent {
+                Button(action: onDelete) {
                     Image(systemName: "xmark")
                         .font(.system(size: 12))
                         .foregroundColor(.axTextMuted)
@@ -516,7 +651,7 @@ struct SessionRow: View {
 
 struct SubscriptionTab: View {
     @EnvironmentObject var authViewModel: AuthViewModel
-    @Binding var subscription: SubscriptionTier
+    let subscription: SubscriptionTier   // Driven from real user.plan
     
     var body: some View {
         VStack(alignment: .leading, spacing: AXSpacing.xl) {
@@ -558,7 +693,7 @@ struct SubscriptionTab: View {
                         Spacer()
                         
                         if subscription != .enterprise {
-                            Button(action: {}) {
+                            Button(action: openUpgradePage) {
                                 Text("Upgrade")
                                     .font(AXTypography.subheadline)
                                     .fontWeight(.medium)
@@ -591,13 +726,8 @@ struct SubscriptionTab: View {
                     
                     if subscription != .free {
                         HStack {
-                            Text("Renews on January 15, 2025")
-                                .font(AXTypography.caption)
-                                .foregroundColor(.axTextTertiary)
-                            
                             Spacer()
-                            
-                            Button(action: {}) {
+                            Button(action: openManageSubscription) {
                                 Text("Manage Subscription")
                                     .font(AXTypography.caption)
                                     .foregroundColor(.axAccentBlue)
@@ -607,25 +737,91 @@ struct SubscriptionTab: View {
                     }
                 }
             }
-            
-            // Available Plans
-            Text("Available Plans")
-                .font(AXTypography.headline)
-                .foregroundColor(.axTextPrimary)
-            
-            LazyVGrid(columns: [
-                GridItem(.flexible(), spacing: AXSpacing.lg),
-                GridItem(.flexible(), spacing: AXSpacing.lg)
-            ], spacing: AXSpacing.lg) {
-                ForEach([SubscriptionTier.free, .pro, .team, .enterprise], id: \.self) { tier in
-                    if tier != subscription {
-                        PlanCard(tier: tier)
-                    }
-                }
-            }
         }
     }
+    
+    private func openUpgradePage() {
+        NSWorkspace.shared.open(AppURLs.pricing)
+    }
+    
+    private func openManageSubscription() {
+        NSWorkspace.shared.open(AppURLs.subscription)
+    }
 }
+
+// MARK: - Change Password Sheet
+
+struct ChangePasswordSheet: View {
+    @Binding var currentPassword: String
+    @Binding var newPassword: String
+    @Binding var confirmPassword: String
+    @Binding var isLoading: Bool
+    @Binding var errorMessage: String?
+    let onSave: () -> Void
+    let onCancel: () -> Void
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: AXSpacing.xl) {
+            Text("Change Password")
+                .font(AXTypography.title2)
+                .foregroundColor(.axTextPrimary)
+            
+            VStack(alignment: .leading, spacing: AXSpacing.md) {
+                SecureField("Current Password", text: $currentPassword)
+                    .textFieldStyle(PlainTextFieldStyle())
+                    .padding(AXSpacing.sm)
+                    .background(Color.axSurface)
+                    .cornerRadius(AXCornerRadius.md)
+                
+                SecureField("New Password", text: $newPassword)
+                    .textFieldStyle(PlainTextFieldStyle())
+                    .padding(AXSpacing.sm)
+                    .background(Color.axSurface)
+                    .cornerRadius(AXCornerRadius.md)
+                
+                SecureField("Confirm New Password", text: $confirmPassword)
+                    .textFieldStyle(PlainTextFieldStyle())
+                    .padding(AXSpacing.sm)
+                    .background(Color.axSurface)
+                    .cornerRadius(AXCornerRadius.md)
+            }
+            
+            if let err = errorMessage {
+                Text(err)
+                    .font(AXTypography.caption)
+                    .foregroundColor(.axError)
+            }
+            
+            HStack {
+                Spacer()
+                Button("Cancel", action: onCancel)
+                    .buttonStyle(PlainButtonStyle())
+                    .foregroundColor(.axTextSecondary)
+                
+                Button(action: onSave) {
+                    if isLoading {
+                        ProgressView().scaleEffect(0.7)
+                    } else {
+                        Text("Save")
+                            .fontWeight(.medium)
+                            .foregroundColor(.axBackground)
+                            .padding(.horizontal, AXSpacing.md)
+                            .padding(.vertical, AXSpacing.sm)
+                            .background(Color.axAccentBlue)
+                            .cornerRadius(AXCornerRadius.md)
+                    }
+                }
+                .buttonStyle(PlainButtonStyle())
+                .disabled(isLoading || currentPassword.isEmpty || newPassword.isEmpty || confirmPassword.isEmpty)
+            }
+        }
+        .padding(AXSpacing.xl)
+        .frame(width: 400)
+        .background(Color.axBackground)
+    }
+}
+
+// MARK: - Trial Banner
 
 struct TrialBanner: View {
     let remainingDays: Int?
@@ -748,128 +944,31 @@ struct PlanCard: View {
     }
 }
 
+// MARK: - API Keys Tab (Stub — no developer API)
+
 struct APIKeysTab: View {
-    @State private var apiKeys: [(name: String, key: String, created: Date)] = [
-        ("Development", "ax_dev_••••••••••••••••", Date().addingTimeInterval(-86400 * 30)),
-        ("CI/CD", "ax_ci_••••••••••••••••", Date().addingTimeInterval(-86400 * 7))
-    ]
-    
     var body: some View {
         VStack(alignment: .leading, spacing: AXSpacing.xl) {
-            HStack {
-                Text("API Keys")
-                    .font(AXTypography.headline)
-                    .foregroundColor(.axTextPrimary)
-                
-                Spacer()
-                
-                Button(action: {}) {
-                    HStack(spacing: AXSpacing.sm) {
-                        Image(systemName: "plus")
-                        Text("New Key")
-                    }
-                    .font(AXTypography.subheadline)
-                    .fontWeight(.medium)
-                    .foregroundColor(.axBackground)
-                    .padding(.horizontal, AXSpacing.md)
-                    .padding(.vertical, AXSpacing.sm)
-                    .background(Color.axAccentBlue)
-                    .cornerRadius(AXCornerRadius.md)
-                }
-                .buttonStyle(PlainButtonStyle())
-            }
-            
-            AXCard(padding: 0) {
-                VStack(spacing: 0) {
-                    ForEach(apiKeys.indices, id: \.self) { index in
-                        let key = apiKeys[index]
-                        HStack {
-                            VStack(alignment: .leading, spacing: AXSpacing.xxs) {
-                                Text(key.name)
-                                    .font(AXTypography.body)
-                                    .fontWeight(.medium)
-                                    .foregroundColor(.axTextPrimary)
-                                
-                                Text(key.key)
-                                    .font(AXTypography.caption)
-                                    .foregroundColor(.axTextTertiary)
-                                    .monospaced()
-                            }
-                            
-                            Spacer()
-                            
-                            Text("Created \(timeAgo(key.created))")
-                                .font(AXTypography.caption)
-                                .foregroundColor(.axTextMuted)
-                            
-                            Button(action: {}) {
-                                Image(systemName: "doc.on.doc")
-                                    .font(.system(size: 12))
-                                    .foregroundColor(.axTextSecondary)
-                                    .frame(width: 28, height: 28)
-                                    .background(Color.axSurface)
-                                    .cornerRadius(AXCornerRadius.sm)
-                            }
-                            .buttonStyle(PlainButtonStyle())
-                            
-                            Button(action: {}) {
-                                Image(systemName: "trash")
-                                    .font(.system(size: 12))
-                                    .foregroundColor(.axError)
-                                    .frame(width: 28, height: 28)
-                                    .background(Color.axError.opacity(0.1))
-                                    .cornerRadius(AXCornerRadius.sm)
-                            }
-                            .buttonStyle(PlainButtonStyle())
-                        }
-                        .padding(AXSpacing.lg)
-                        
-                        if index < apiKeys.count - 1 {
-                            Divider()
-                                .background(Color.axBorder)
-                                .padding(.leading, AXSpacing.lg)
-                        }
-                    }
+            AXCard {
+                HStack(spacing: AXSpacing.md) {
+                    Image(systemName: "info.circle.fill")
+                        .foregroundColor(.axInfo)
+                    Text("API Keys are not available. AevonX does not offer a public developer API at this time.")
+                        .font(AXTypography.body)
+                        .foregroundColor(.axTextSecondary)
                 }
             }
-            
-            HStack {
-                Image(systemName: "info.circle")
-                    .font(.system(size: 12))
-                    .foregroundColor(.axInfo)
-                
-                Text("Keep your API keys secure. Never share them in public repositories.")
-                    .font(AXTypography.caption)
-                    .foregroundColor(.axTextTertiary)
-                
-                Spacer()
-            }
-            .padding(.top, AXSpacing.sm)
-        }
-    }
-    
-    private func timeAgo(_ date: Date) -> String {
-        let interval = Date().timeIntervalSince(date)
-        if interval < 86400 {
-            return "today"
-        } else if interval < 86400 * 7 {
-            return "\(Int(interval / 86400)) days ago"
-        } else if interval < 86400 * 30 {
-            return "\(Int(interval / (86400 * 7))) weeks ago"
-        } else {
-            return "\(Int(interval / (86400 * 30))) months ago"
         }
     }
 }
 
+// MARK: - Activity Tab (Real Data)
+
 struct ActivityTab: View {
-    let activities = [
-        (icon: "server.rack", color: Color.axAccentBlue, title: "Connected to Production Web", time: "5 minutes ago"),
-        (icon: "arrow.up.doc", color: Color.axSuccess, title: "Deployed api.aevonx.io", time: "1 hour ago"),
-        (icon: "key", color: Color.axWarning, title: "Rotated SSH keys", time: "3 hours ago"),
-        (icon: "gearshape", color: Color.axTextSecondary, title: "Updated Nginx configuration", time: "Yesterday"),
-        (icon: "person.badge.plus", color: Color.axAccentGreen, title: "Added team member", time: "2 days ago"),
-    ]
+    @StateObject private var profileAPI = ProfileAPIService.shared
+    @State private var activities: [ActivityLogEntry] = []
+    @State private var isLoading = true
+    @State private var loadError: String?
     
     var body: some View {
         VStack(alignment: .leading, spacing: AXSpacing.xl) {
@@ -877,43 +976,94 @@ struct ActivityTab: View {
                 .font(AXTypography.headline)
                 .foregroundColor(.axTextPrimary)
             
-            AXCard(padding: 0) {
-                VStack(spacing: 0) {
-                    ForEach(activities.indices, id: \.self) { index in
-                        let activity = activities[index]
-                        HStack(spacing: AXSpacing.md) {
-                            ZStack {
-                                Circle()
-                                    .fill(activity.color.opacity(0.15))
-                                    .frame(width: 36, height: 36)
+            if isLoading {
+                HStack { Spacer(); ProgressView(); Spacer() }
+            } else if let err = loadError {
+                Text(err).font(AXTypography.caption).foregroundColor(.axError)
+            } else if activities.isEmpty {
+                Text("No activity recorded yet.")
+                    .font(AXTypography.body)
+                    .foregroundColor(.axTextMuted)
+            } else {
+                AXCard(padding: 0) {
+                    VStack(spacing: 0) {
+                        ForEach(Array(activities.enumerated()), id: \.element.id) { index, activity in
+                            HStack(spacing: AXSpacing.md) {
+                                ZStack {
+                                    Circle()
+                                        .fill(activityColor(activity.color).opacity(0.15))
+                                        .frame(width: 36, height: 36)
+                                    
+                                    Image(systemName: activity.icon)
+                                        .font(.system(size: 14))
+                                        .foregroundColor(activityColor(activity.color))
+                                }
                                 
-                                Image(systemName: activity.icon)
-                                    .font(.system(size: 14))
-                                    .foregroundColor(activity.color)
-                            }
-                            
-                            VStack(alignment: .leading, spacing: AXSpacing.xxs) {
-                                Text(activity.title)
-                                    .font(AXTypography.body)
-                                    .foregroundColor(.axTextPrimary)
+                                VStack(alignment: .leading, spacing: AXSpacing.xxs) {
+                                    Text(activity.description)
+                                        .font(AXTypography.body)
+                                        .foregroundColor(.axTextPrimary)
+                                    
+                                    if let context = activity.context {
+                                        Text(context)
+                                            .font(AXTypography.caption)
+                                            .foregroundColor(.axTextSecondary)
+                                    }
+                                }
                                 
-                                Text(activity.time)
+                                Spacer()
+                                
+                                Text(timeAgo(activity.createdAt))
                                     .font(AXTypography.caption)
                                     .foregroundColor(.axTextTertiary)
                             }
+                            .padding(AXSpacing.lg)
                             
-                            Spacer()
-                        }
-                        .padding(AXSpacing.lg)
-                        
-                        if index < activities.count - 1 {
-                            Divider()
-                                .background(Color.axBorder)
-                                .padding(.leading, AXSpacing.lg + 36 + 12)
+                            if index < activities.count - 1 {
+                                Divider()
+                                    .background(Color.axBorder)
+                                    .padding(.leading, AXSpacing.lg + 36 + 12)
+                            }
                         }
                     }
                 }
             }
+        }
+        .onAppear { loadActivity() }
+    }
+    
+    private func loadActivity() {
+        isLoading = true
+        Task {
+            do {
+                activities = try await profileAPI.fetchActivity(limit: 30)
+            } catch {
+                loadError = "Failed to load activity"
+            }
+            isLoading = false
+        }
+    }
+    
+    private func activityColor(_ colorName: String) -> Color {
+        switch colorName {
+        case "green":  return .axSuccess
+        case "blue":   return .axAccentBlue
+        case "purple": return .axAccentBlue
+        case "red":    return .axError
+        case "orange": return .axWarning
+        case "yellow": return .axWarning
+        default:       return .axTextMuted
+        }
+    }
+    
+    private func timeAgo(_ date: Date) -> String {
+        let diff = Date().timeIntervalSince(date)
+        switch diff {
+        case ..<60.0:      return "Just now"
+        case ..<3600.0:    return "\(Int(diff / 60))m ago"
+        case ..<86400.0:   return "\(Int(diff / 3600))h ago"
+        case ..<604800.0:  return "\(Int(diff / 86400))d ago"
+        default:           return "\(Int(diff / 604800))w ago"
         }
     }
 }
@@ -1022,79 +1172,13 @@ struct LegacyLoginView: View {
 struct EncryptionTab: View {
     @ObservedObject var vaultViewModel: VaultStatusViewModel
     @Binding var showVaultSetup: Bool
+    @State private var showBackupKey = false
     
     var body: some View {
         VStack(alignment: .leading, spacing: AXSpacing.xl) {
-            // Recovery Key Management Section
+            // Encryption Key Status Section
             HStack {
-                Text("Recovery Key")
-                    .font(AXTypography.headline)
-                    .foregroundColor(.axTextPrimary)
-                
-                Spacer()
-                
-                if vaultViewModel.isVaultInitialized {
-                    Button(action: { showVaultSetup = true }) {
-                        HStack(spacing: AXSpacing.xs) {
-                            Image(systemName: "key.viewfinder")
-                            Text("View Recovery Key")
-                        }
-                        .font(AXTypography.subheadline)
-                        .foregroundColor(.axAccentBlue)
-                    }
-                    .buttonStyle(PlainButtonStyle())
-                }
-            }
-            
-            // Recovery Key Status Card
-            AXCard {
-                VStack(alignment: .leading, spacing: AXSpacing.md) {
-                    HStack(spacing: AXSpacing.md) {
-                        Image(systemName: vaultViewModel.isVaultInitialized ? "key.fill" : "key.slash")
-                            .font(.system(size: 24))
-                            .foregroundColor(vaultViewModel.isVaultInitialized ? .axSuccess : .axWarning)
-                        
-                        VStack(alignment: .leading, spacing: AXSpacing.xxs) {
-                            Text(vaultViewModel.isVaultInitialized ? "Recovery Key Configured" : "Recovery Key Not Set Up")
-                                .font(AXTypography.body)
-                                .foregroundColor(.axTextPrimary)
-                            
-                            Text(vaultViewModel.isVaultInitialized ? 
-                                 "Your zero-knowledge encryption is active. Your data is secured with your Recovery Key." :
-                                 "Set up your Recovery Key to enable zero-knowledge encryption for your server data.")
-                                .font(AXTypography.caption)
-                                .foregroundColor(.axTextSecondary)
-                                .fixedSize(horizontal: false, vertical: true)
-                        }
-                    }
-                    
-                    if !vaultViewModel.isVaultInitialized {
-                        Button(action: { showVaultSetup = true }) {
-                            HStack(spacing: AXSpacing.sm) {
-                                Image(systemName: "shield.lefthalf.filled")
-                                Text("Set Up Recovery Key")
-                            }
-                            .font(AXTypography.subheadline)
-                            .fontWeight(.medium)
-                            .foregroundColor(.axBackground)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, AXSpacing.sm)
-                            .background(Color.axAccentBlue)
-                            .cornerRadius(AXCornerRadius.md)
-                        }
-                        .buttonStyle(PlainButtonStyle())
-                        .padding(.top, AXSpacing.sm)
-                    }
-                }
-                .frame(maxWidth: .infinity)
-            }
-            
-            Divider()
-                .background(Color.axBorder)
-            
-            // Encryption Vault Section
-            HStack {
-                Text("Encryption Vault")
+                Text("Encryption Key")
                     .font(AXTypography.headline)
                     .foregroundColor(.axTextPrimary)
                 
@@ -1126,7 +1210,7 @@ struct EncryptionTab: View {
                 }
                 .padding(AXSpacing.xl)
             } else if vaultViewModel.isVaultInitialized {
-                // Vault is initialized - show status
+                // Active encryption - show status and actions
                 AXCard {
                     VStack(alignment: .leading, spacing: AXSpacing.lg) {
                         HStack(spacing: AXSpacing.md) {
@@ -1140,7 +1224,7 @@ struct EncryptionTab: View {
                                     .fontWeight(.semibold)
                                     .foregroundColor(.axTextPrimary)
                                 
-                                Text("Your server credentials are encrypted and can only be accessed by you.")
+                                Text("Your server credentials are encrypted with your personal encryption key. Only you can access them.")
                                     .font(AXTypography.callout)
                                     .foregroundColor(.axTextSecondary)
                             }
@@ -1154,8 +1238,8 @@ struct EncryptionTab: View {
                         VStack(alignment: .leading, spacing: AXSpacing.md) {
                             EncryptionFeatureRow(
                                 icon: "key.fill",
-                                title: "Master Encryption Key",
-                                description: "Stored securely in your Mac's Keychain"
+                                title: "Encryption Key",
+                                description: "Stored securely in your Mac's Keychain with biometric protection"
                             )
                             
                             EncryptionFeatureRow(
@@ -1165,26 +1249,48 @@ struct EncryptionTab: View {
                             )
                             
                             EncryptionFeatureRow(
-                                icon: "arrow.left.arrow.right",
-                                title: "Secure Communication",
-                                description: "ECDH perfect forward secrecy for all sessions"
+                                icon: "eye.slash.fill",
+                                title: "Zero-Knowledge Architecture",
+                                description: "The server never sees your encryption key or decrypted data"
                             )
                         }
                         
                         Divider()
                             .background(Color.axBorder)
                         
-                        HStack {
-                            Spacer()
-                            
-                            Button(action: {
-                                // Show warning about irreversible action
-                            }) {
-                                Text("Delete Vault")
-                                    .font(AXTypography.subheadline)
-                                    .foregroundColor(.axError)
+                        // Action rows
+                        VStack(spacing: AXSpacing.sm) {
+                            Button(action: { showBackupKey = true }) {
+                                HStack(spacing: AXSpacing.md) {
+                                    Image(systemName: "key.viewfinder")
+                                        .font(.system(size: 18))
+                                        .foregroundColor(.axAccentBlue)
+                                        .frame(width: 28)
+                                    
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text("Backup Key")
+                                            .font(AXTypography.subheadline)
+                                            .fontWeight(.medium)
+                                            .foregroundColor(.axTextPrimary)
+                                        
+                                        Text("View and copy your encryption key (requires biometric)")
+                                            .font(AXTypography.caption)
+                                            .foregroundColor(.axTextTertiary)
+                                    }
+                                    
+                                    Spacer()
+                                    
+                                    Image(systemName: "chevron.right")
+                                        .font(.system(size: 12, weight: .semibold))
+                                        .foregroundColor(.axTextMuted)
+                                }
+                                .padding(AXSpacing.md)
+                                .background(Color.axBackgroundSecondary)
+                                .cornerRadius(AXCornerRadius.md)
                             }
                             .buttonStyle(PlainButtonStyle())
+                            
+
                         }
                     }
                 }
@@ -1195,14 +1301,14 @@ struct EncryptionTab: View {
                         .font(.system(size: 12))
                         .foregroundColor(.axWarning)
                     
-                    Text("Remember: If you lose your Privacy Password or this Mac, your encrypted data cannot be recovered.")
+                    Text("If you lose your Encryption Key, your encrypted server data cannot be recovered. Make sure to back it up securely.")
                         .font(AXTypography.caption)
                         .foregroundColor(.axTextTertiary)
                     
                     Spacer()
                 }
             } else {
-                // Vault not initialized or Recovery Required
+                // Not initialized or recovery required
                 AXCard {
                     VStack(alignment: .leading, spacing: AXSpacing.lg) {
                         HStack(spacing: AXSpacing.md) {
@@ -1211,12 +1317,12 @@ struct EncryptionTab: View {
                                 .foregroundColor(vaultViewModel.state == .recoveryRequired ? .axAccentBlue : .axWarning)
                             
                             VStack(alignment: .leading, spacing: AXSpacing.xxs) {
-                                Text(vaultViewModel.state == .recoveryRequired ? "Recovery Key Required" : "Encryption Not Set Up")
+                                Text(vaultViewModel.state == .recoveryRequired ? "Encryption Key Required" : "Encryption Not Set Up")
                                     .font(AXTypography.title3)
                                     .fontWeight(.semibold)
                                     .foregroundColor(.axTextPrimary)
                                 
-                                Text(vaultViewModel.state == .recoveryRequired ? "Your account has encryption enabled, but this Mac needs your Recovery Key to access your data." : "Your server credentials are not encrypted. Set up zero-knowledge encryption to secure your data.")
+                                Text(vaultViewModel.state == .recoveryRequired ? "Your account has encryption enabled, but this device needs your Encryption Key to access your data." : "Set up encryption to secure your server credentials with zero-knowledge architecture.")
                                     .font(AXTypography.callout)
                                     .foregroundColor(.axTextSecondary)
                             }
@@ -1230,7 +1336,7 @@ struct EncryptionTab: View {
                         Button(action: { showVaultSetup = true }) {
                             HStack(spacing: AXSpacing.sm) {
                                 Image(systemName: vaultViewModel.state == .recoveryRequired ? "key.fill" : "lock.shield")
-                                Text(vaultViewModel.state == .recoveryRequired ? "Unlock with Recovery Key" : "Set Up Encryption")
+                                Text(vaultViewModel.state == .recoveryRequired ? "Enter Encryption Key" : "Set Up Encryption")
                             }
                             .font(AXTypography.body)
                             .fontWeight(.semibold)
@@ -1243,7 +1349,7 @@ struct EncryptionTab: View {
                         .buttonStyle(PlainButtonStyle())
                         
                         if vaultViewModel.state == .recoveryRequired {
-                            Text("This is required once per device. AevonX uses zero-knowledge architecture to ensure only you can access your keys.")
+                            Text("Enter the Encryption Key you saved when first setting up your account. AevonX uses zero-knowledge architecture \u{2014} only you have this key.")
                                 .font(AXTypography.caption)
                                 .foregroundColor(.axTextTertiary)
                                 .multilineTextAlignment(.center)
@@ -1253,6 +1359,11 @@ struct EncryptionTab: View {
                 }
             }
         }
+        .sheet(isPresented: $showBackupKey) {
+            EncryptionKeyDisplayView()
+                .frame(minWidth: 500, minHeight: 400)
+        }
+
     }
 }
 
@@ -1262,7 +1373,7 @@ struct EncryptionFeatureRow: View {
     let description: String
     
     var body: some View {
-        HStack(spacing: AXSpacing.md) {
+        HStack(spacing: AXSpacing.md) { 
             Image(systemName: icon)
                 .font(.system(size: 18))
                 .foregroundColor(.axAccentBlue)

@@ -9,13 +9,57 @@ import SwiftUI
 import AevonXCore
 
 struct ContentView: View {
+    @EnvironmentObject var authViewModel: AuthViewModel
     @State private var selectedNavigation: NavigationItem = .remoteFleet
     @StateObject private var serverListViewModel = ServerListViewModel()
     @State private var selectedServer: Server? = nil
     @State private var showServerDashboard = false
     @State private var showAddServer = false
     
+    /// Encryption key gate state
+    @State private var hasEncryptionKey = false
+    @State private var isCheckingKey = true
+    
     var body: some View {
+        Group {
+            if isCheckingKey {
+                // Brief loading while checking Keychain
+                Color.axBackground
+                    .overlay(ProgressView())
+            } else if !hasEncryptionKey {
+                // BLOCKING: No encryption key — force setup or sign out
+                EncryptionGateView(
+                    onComplete: {
+                        // Delay transition to let VaultSetupView finish cleanup
+                        DispatchQueue.main.async {
+                            hasEncryptionKey = true
+                        }
+                    },
+                    onSignOut: {
+                        Task { await authViewModel.logout() }
+                    }
+                )
+            } else {
+                // Normal app content
+                mainContentView
+            }
+        }
+        .task {
+            await checkEncryptionKey()
+        }
+    }
+    
+    // MARK: - Encryption Key Check
+    
+    private func checkEncryptionKey() async {
+        isCheckingKey = true
+        hasEncryptionKey = EncryptionKeyStore.shared.hasKey()
+        isCheckingKey = false
+    }
+    
+    // MARK: - Main Content
+    
+    private var mainContentView: some View {
         NavigationStack {
             HStack(spacing: 0) {
                 // Glassmorphism Sidebar
@@ -88,7 +132,28 @@ struct ContentView: View {
     }
 }
 
+// MARK: - Encryption Gate View
+
+/// Full-screen blocking view shown when no encryption key exists.
+/// Cannot be dismissed — user must set up key or sign out.
+struct EncryptionGateView: View {
+    var onComplete: () -> Void
+    var onSignOut: () -> Void
+    
+    var body: some View {
+        VaultSetupView(
+            onComplete: onComplete,
+            onSignOut: onSignOut
+        )
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color.axBackground)
+        .preferredColorScheme(.dark)
+    }
+}
+
 #Preview {
     ContentView()
+        .environmentObject(AuthViewModel())
         .frame(width: 1400, height: 900)
 }
+

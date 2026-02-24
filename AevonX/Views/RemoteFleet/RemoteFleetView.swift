@@ -111,7 +111,7 @@ struct RemoteFleetView: View {
             }
             .frame(minWidth: 600, minHeight: 700)
         }
-        .sheet(isPresented: $viewModel.showDecryptionError) {
+        .sheet(isPresented: $viewModel.showEncryptionKeyInput) {
             DecryptionErrorView(viewModel: viewModel)
                 .presentationDetents([.medium, .large])
         }

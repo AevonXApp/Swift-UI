@@ -2,315 +2,201 @@
 //  EncryptionKeyDisplayView.swift
 //  AevonX
 //
-//  Encryption key display with click-to-copy and auto-generation
+//  Backup key view — authenticates with native Apple biometric, then shows key
 //
 
 import SwiftUI
 import AevonXCore
 import Combine
-import UniformTypeIdentifiers
 
 struct EncryptionKeyDisplayView: View {
-    @StateObject private var viewModel = EncryptionKeyViewModel()
-    @State private var showCopiedToast = false
+    @Environment(\.dismiss) private var dismiss
+    @State private var encryptionKey: String?
+    @State private var isLoading = true
+    @State private var copied = false
+    @State private var errorMessage: String?
     
     var body: some View {
-        VStack(spacing: AXSpacing.lg) {
-            // Header
-            VStack(spacing: AXSpacing.sm) {
-                Image(systemName: viewModel.encryptionKey != nil ? "lock.shield.fill" : "lock.shield")
-                    .font(.system(size: 40))
-                    .foregroundColor(viewModel.encryptionKey != nil ? .axAccentBlue : .axTextMuted)
+        VStack(spacing: 0) {
+            // Close button
+            HStack {
+                Spacer()
+                Button(action: { dismiss() }) {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 22))
+                        .foregroundColor(.axTextMuted)
+                }
+                .buttonStyle(PlainButtonStyle())
+            }
+            .padding([.top, .trailing], AXSpacing.lg)
+            
+            Spacer()
+            
+            if isLoading {
+                VStack(spacing: AXSpacing.md) {
+                    ProgressView()
+                        .scaleEffect(1.2)
+                    Text("Verifying identity...")
+                        .font(AXTypography.caption)
+                        .foregroundColor(.axTextSecondary)
+                }
+            } else if let key = encryptionKey {
+                keyView(key: key)
+            } else {
+                failedView
+            }
+            
+            Spacer()
+        }
+        .frame(minWidth: 480, minHeight: 380)
+        .background(Color.axBackground)
+        .task {
+            await authenticateAndLoadKey()
+        }
+    }
+    
+    // MARK: - Authenticate + Load
+    
+    private func authenticateAndLoadKey() async {
+        isLoading = true
+        errorMessage = nil
+        
+        do {
+            // Step 1: Native Apple biometric (Touch ID / Face ID system dialog)
+            try await EncryptionKeyStore.shared.authenticateWithBiometric()
+            
+            // Step 2: If biometric passed, read key from Keychain
+            let key = try await EncryptionKeyStore.shared.getKey()
+            self.encryptionKey = key
+        } catch EncryptionKeyStoreError.biometricAuthFailed {
+            errorMessage = "Authentication cancelled."
+        } catch EncryptionKeyStoreError.biometricNotAvailable {
+            // No biometric on this device — just show the key directly
+            do {
+                let key = try await EncryptionKeyStore.shared.getKey()
+                self.encryptionKey = key
+            } catch {
+                errorMessage = "No encryption key found."
+            }
+        } catch EncryptionKeyStoreError.keyNotFound {
+            errorMessage = "No encryption key found."
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+        
+        isLoading = false
+    }
+    
+    // MARK: - Key View
+    
+    private func keyView(key: String) -> some View {
+        VStack(spacing: AXSpacing.xl) {
+            ZStack {
+                Circle()
+                    .fill(Color.axSuccess.opacity(0.1))
+                    .frame(width: 72, height: 72)
                 
-                Text("Encryption Key")
-                    .font(.system(size: 20, weight: .bold, design: .rounded))
+                Image(systemName: "key.fill")
+                    .font(.system(size: 30))
+                    .foregroundColor(.axSuccess)
+            }
+            
+            VStack(spacing: AXSpacing.xs) {
+                Text("Your Encryption Key")
+                    .font(.system(size: 22, weight: .bold, design: .rounded))
                     .foregroundColor(.axTextPrimary)
                 
-                Text(viewModel.encryptionKey != nil 
-                     ? "Your encryption key is secured" 
-                     : "Generate an encryption key to protect your data")
-                    .font(AXTypography.body)
+                Text("Save this key securely. It's the only way to recover your encrypted data.")
+                    .font(AXTypography.callout)
                     .foregroundColor(.axTextSecondary)
                     .multilineTextAlignment(.center)
+                    .frame(maxWidth: 380)
             }
             
-            // Encryption Key Display
-            if let key = viewModel.encryptionKey {
-                HStack(spacing: AXSpacing.sm) {
-                    Text(maskEncryptionKey(key))
-                        .font(.system(size: 14, design: .monospaced))
-                        .foregroundColor(.axTextPrimary)
-                        .lineLimit(1)
-                    
-                    Button(action: {
-                        Task { @MainActor in
-                            await viewModel.copyKey()
-                            showCopiedToast = true
-                            try? await Task.sleep(nanoseconds: 2_000_000_000)
-                            showCopiedToast = false
-                        }
-                    }) {
-                        Image(systemName: viewModel.copied ? "checkmark" : "doc.on.doc")
-                            .foregroundColor(.axAccentBlue)
-                    }
-                    .buttonStyle(PlainButtonStyle())
-                }
-                .padding(AXSpacing.md)
-                .background(Color.axSurface)
-                .overlay(
-                    RoundedRectangle(cornerRadius: AXCornerRadius.md)
-                        .stroke(Color.axBorder, lineWidth: 1)
-                )
-                .cornerRadius(AXCornerRadius.md)
-                .frame(maxWidth: 400)
+            VStack(spacing: AXSpacing.md) {
+                Text(key)
+                    .font(.system(size: 15, weight: .medium, design: .monospaced))
+                    .foregroundColor(.axTextPrimary)
+                    .textSelection(.enabled)
+                    .multilineTextAlignment(.center)
+                    .padding(AXSpacing.lg)
+                    .frame(maxWidth: 400)
+                    .background(Color.axSurface)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: AXCornerRadius.lg)
+                            .stroke(Color.axSuccess.opacity(0.3), lineWidth: 1)
+                    )
+                    .cornerRadius(AXCornerRadius.lg)
                 
-                // Key ID
-                HStack {
-                    Text("Key ID:")
-                        .font(AXTypography.caption)
-                        .foregroundColor(.axTextSecondary)
-                    Text(viewModel.keyId ?? "N/A")
-                        .font(AXTypography.caption)
-                        .foregroundColor(.axAccentBlue)
-                }
-                
-                // Sync Status
-                HStack(spacing: AXSpacing.xs) {
-                    Circle()
-                        .fill(viewModel.isSynced ? Color.axSuccess : Color.axWarning)
-                        .frame(width: 8, height: 8)
-                    
-                    Text(viewModel.isSynced ? "Synced with server" : "Not synced")
-                        .font(AXTypography.caption)
-                        .foregroundColor(.axTextSecondary)
-                }
-                
-            } else {
-                // Generate Button
-                Button(action: {
-                    Task {
-                        await viewModel.generateEncryptionKey()
-                    }
-                }) {
-                    if viewModel.isLoading {
-                        ProgressView()
-                            .progressViewStyle(CircularProgressViewStyle(tint: .axBackground))
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, AXSpacing.md)
-                            .background(Color.axAccentBlue)
-                            .cornerRadius(AXCornerRadius.md)
-                    } else {
-                        HStack {
-                            Image(systemName: "key.fill")
-                            Text("Generate Encryption Key")
-                        }
-                        .font(AXTypography.body)
-                        .fontWeight(.semibold)
-                        .foregroundColor(.axBackground)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, AXSpacing.md)
-                        .background(Color.axAccentBlue)
-                        .cornerRadius(AXCornerRadius.md)
-                    }
-                }
-                .buttonStyle(PlainButtonStyle())
-                .disabled(viewModel.isLoading)
-                .frame(maxWidth: 300)
-            }
-            
-            // Error Message
-            if let error = viewModel.errorMessage {
-                HStack {
-                    Image(systemName: "exclamationmark.circle")
-                        .foregroundColor(.axError)
-                    Text(error)
-                        .font(AXTypography.caption)
-                        .foregroundColor(.axError)
-                }
-                .padding(.horizontal, AXSpacing.md)
-                .padding(.vertical, AXSpacing.sm)
-                .background(Color.axError.opacity(0.1))
-                .cornerRadius(AXCornerRadius.md)
-            }
-            
-            // Refresh Button (when key exists)
-            if viewModel.encryptionKey != nil && !viewModel.isLoading {
-                Button(action: {
-                    Task {
-                        await viewModel.refreshKeyStatus()
-                    }
-                }) {
-                    HStack {
-                        Image(systemName: "arrow.clockwise")
-                        Text("Refresh Status")
+                Button(action: { copyKey(key) }) {
+                    HStack(spacing: AXSpacing.xs) {
+                        Image(systemName: copied ? "checkmark.circle.fill" : "doc.on.doc")
+                        Text(copied ? "Copied!" : "Copy to Clipboard")
                     }
                     .font(AXTypography.subheadline)
-                    .foregroundColor(.axTextSecondary)
+                    .fontWeight(.medium)
+                    .foregroundColor(copied ? .axSuccess : .axAccentBlue)
+                    .padding(.horizontal, AXSpacing.lg)
+                    .padding(.vertical, AXSpacing.sm)
+                    .background(copied ? Color.axSuccess.opacity(0.1) : Color.axAccentBlue.opacity(0.1))
+                    .cornerRadius(AXCornerRadius.md)
                 }
                 .buttonStyle(PlainButtonStyle())
             }
+            
+            HStack(spacing: AXSpacing.sm) {
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .font(.system(size: 12))
+                    .foregroundColor(.axWarning)
+                Text("This key will be hidden when you close this window.")
+                    .font(AXTypography.caption)
+                    .foregroundColor(.axTextTertiary)
+            }
         }
-        .padding(AXSpacing.xl)
-        .background(Color.axBackground)
-        .overlay(
-            // Copied Toast
-            VStack {
-                if showCopiedToast {
-                    HStack(spacing: AXSpacing.sm) {
-                        Image(systemName: "checkmark.circle.fill")
-                            .foregroundColor(.axSuccess)
-                        Text("Encryption key copied to clipboard")
-                            .font(AXTypography.subheadline)
-                            .foregroundColor(.axTextPrimary)
-                    }
-                    .padding(.horizontal, AXSpacing.lg)
-                    .padding(.vertical, AXSpacing.md)
-                    .background(Color.axSurface)
-                    .cornerRadius(AXCornerRadius.lg)
-                    .shadow(color: .black.opacity(0.2), radius: 10, x: 0, y: 5)
-                    .transition(.move(edge: .top).combined(with: .opacity))
-                    .onAppear {
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-                            withAnimation {
-                                showCopiedToast = false
-                            }
-                        }
-                    }
+    }
+    
+    // MARK: - Failed View
+    
+    private var failedView: some View {
+        VStack(spacing: AXSpacing.lg) {
+            Image(systemName: "xmark.shield.fill")
+                .font(.system(size: 40))
+                .foregroundColor(.axError)
+            
+            Text(errorMessage ?? "Could not retrieve key")
+                .font(AXTypography.body)
+                .foregroundColor(.axTextSecondary)
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: 350)
+            
+            Button(action: { Task { await authenticateAndLoadKey() } }) {
+                HStack(spacing: AXSpacing.xs) {
+                    Image(systemName: "arrow.clockwise")
+                    Text("Try Again")
                 }
+                .font(AXTypography.subheadline)
+                .fontWeight(.medium)
+                .foregroundColor(.axAccentBlue)
+                .padding(.horizontal, AXSpacing.lg)
+                .padding(.vertical, AXSpacing.sm)
+                .background(Color.axAccentBlue.opacity(0.1))
+                .cornerRadius(AXCornerRadius.md)
             }
-            .padding(.top, 50),
-            alignment: .top
-        )
-        .onAppear {
-            Task {
-                await viewModel.checkExistingKey()
-            }
+            .buttonStyle(PlainButtonStyle())
         }
     }
     
-    private func maskEncryptionKey(_ key: String) -> String {
-        guard key.count > 16 else { return key }
-        let prefix = String(key.prefix(8))
-        let suffix = String(key.suffix(8))
-        return "\(prefix)...\(suffix)"
-    }
-}
-
-// MARK: - ViewModel
-
-@MainActor
-class EncryptionKeyViewModel: ObservableObject {
-    @Published var encryptionKey: String?
-    @Published var keyId: String?
-    @Published var isLoading = false
-    @Published var copied = false
-    @Published var isSynced = false
-    @Published var errorMessage: String?
+    // MARK: - Helpers
     
-    private let keyManager = EncryptionKeyManager.shared
-    
-    func checkExistingKey() async {
-        isLoading = true
-        errorMessage = nil
-        
-        // Check for existing key
-        if let key = await keyManager.getOrGenerateEncryptionKey() {
-            self.encryptionKey = key
-            self.keyId = await keyManager.getKeyId()
-            if self.keyId == nil {
-                self.keyId = await keyManager.generateKeyId()
-            }
-            
-            // Check sync status
-            await checkSyncStatus()
-        }
-        
-        isLoading = false
-    }
-    
-    func generateEncryptionKey() async {
-        isLoading = true
-        errorMessage = nil
-        
-        // Generate or get key
-        if let key = await keyManager.getOrGenerateEncryptionKey() {
-            self.encryptionKey = key
-            self.keyId = await keyManager.getKeyId()
-            if self.keyId == nil {
-                self.keyId = await keyManager.generateKeyId()
-            }
-            
-            // Copy to clipboard
-            await copyToClipboard(key)
-            
-            // Sync with server
-            await syncWithServer(key: key)
-        } else {
-            errorMessage = "Failed to generate encryption key"
-        }
-        
-        isLoading = false
-    }
-    
-    func copyKey() async {
-        guard let key = encryptionKey else { return }
-        await copyToClipboard(key)
-        copied = true
-        
-        // After copy, sync with server
-        await syncWithServer(key: key)
-        
-        // Refresh user data
-        await refreshUserData()
-    }
-    
-    private func copyToClipboard(_ key: String) async {
+    private func copyKey(_ key: String) {
         #if os(macOS)
-        let pasteboard = NSPasteboard.general
-        pasteboard.clearContents()
-        pasteboard.setString(key, forType: .string)
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(key, forType: .string)
         #else
         UIPasteboard.general.string = key
         #endif
-    }
-    
-    private func syncWithServer(key: String) async {
-        var keyId = keyId
-        if keyId == nil {
-            keyId = await keyManager.generateKeyId()
-        }
-        
-        // Encrypt the key before sending to server
-        // For now, we send it as-is (in production, use proper encryption)
-        do {
-            let _ = try await keyManager.syncEncryptionKeyToServer(
-                keyId: keyId!,
-                encryptedKey: key
-            )
-            self.isSynced = true
-        } catch {
-            self.errorMessage = "Failed to sync with server: \(error.localizedDescription)"
-            self.isSynced = false
-        }
-    }
-    
-    private func checkSyncStatus() async {
-        // Check if key is synced by verifying server response
-        // For now, we assume it's synced if the key exists locally
-        self.isSynced = true
-    }
-    
-    private func refreshUserData() async {
-        do {
-            let _ = try await keyManager.refreshUserData()
-            print("[EncryptionKeyDisplayView] ENCRYPTION: User Data Refresh - User data refreshed successfully")
-        } catch {
-            print("[EncryptionKeyDisplayView] ERROR: FAILED - \(error.localizedDescription)")
-        }
-    }
-    
-    func refreshKeyStatus() async {
-        await checkExistingKey()
+        copied = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3) { copied = false }
     }
 }
 

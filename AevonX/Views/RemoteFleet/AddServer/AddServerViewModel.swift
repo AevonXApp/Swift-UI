@@ -48,6 +48,10 @@ class AddServerViewModel: ObservableObject {
     @Published var showError = false
     @Published var errorMessage: String?
     
+    // SSH key file import
+    @Published var showSSHKeyFilePicker = false
+    @Published var sshKeyFileName: String?
+    
     var isFirstStep: Bool { currentStep == .identity }
     var isLastStep: Bool { currentStep == .verify }
     
@@ -132,11 +136,9 @@ class AddServerViewModel: ObservableObject {
         do {
             let serverData = request.toEncryptedServerData()
             
-            try await BiometricAuthManager.shared.authenticateIfNeeded(
-                reason: "Test connection to \(request.host)"
-            )
-            
-            let encryptedPayload = try await SplitKeyEncryptionService.shared.encryptServer(serverData)
+            // Encrypt server data using new ServerEncryptionService
+            // (biometric is handled by EncryptionKeyStore internally on first access)
+            let encryptedPayload = try await ServerEncryptionService.shared.encryptServer(serverData)
             
             let serverId = "test-\(UUID().uuidString)"
             await SSHService.shared.setProgressHandler(for: serverId) { [weak self] stage, progress in
@@ -161,6 +163,22 @@ class AddServerViewModel: ObservableObject {
             
         } catch {
             errorMessage = "Connection test failed: \(error.localizedDescription)"
+            showError = true
+        }
+    }
+    
+    func importSSHKeyFile(from url: URL) {
+        let accessing = url.startAccessingSecurityScopedResource()
+        defer {
+            if accessing { url.stopAccessingSecurityScopedResource() }
+        }
+        
+        do {
+            let keyContent = try String(contentsOf: url, encoding: .utf8)
+            privateKey = keyContent
+            sshKeyFileName = url.lastPathComponent
+        } catch {
+            errorMessage = "Failed to read key file: \(error.localizedDescription)"
             showError = true
         }
     }

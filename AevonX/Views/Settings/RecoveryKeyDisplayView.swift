@@ -250,11 +250,10 @@ class RecoveryKeyDisplayViewModel: ObservableObject {
     @Published var acknowledged = false
     @Published var errorMessage: String?
     
-    private let recoveryKeyManager = RecoveryKeyManager.shared
-    
     func checkExistingKey() async {
-        if let key = await recoveryKeyManager.getRecoveryKey() {
-            self.recoveryKey = key
+        let hasKey = EncryptionKeyStore.shared.hasKey()
+        if hasKey {
+            // Key exists but we don't show it in plaintext after setup
             self.acknowledged = true
         }
     }
@@ -263,17 +262,9 @@ class RecoveryKeyDisplayViewModel: ObservableObject {
         isLoading = true
         errorMessage = nil
         
-        print("[RecoveryKeyDisplayView] ENCRYPTION: Generating new Recovery Key")
-        
-        guard let key = await recoveryKeyManager.generateRecoveryKey() else {
-            errorMessage = "Failed to generate Recovery Key"
-            print("[RecoveryKeyDisplayView] ERROR: FAILED - \(errorMessage!)")
-            isLoading = false
-            return
-        }
-        
+        let key = await EncryptionKeyStore.shared.generateKey()
         self.recoveryKey = key
-        print("[RecoveryKeyDisplayView] ENCRYPTION: SUCCESS - Recovery Key generated")
+        print("[RecoveryKeyDisplayView] ENCRYPTION: SUCCESS - Encryption key generated")
         
         isLoading = false
     }
@@ -290,16 +281,14 @@ class RecoveryKeyDisplayViewModel: ObservableObject {
         #endif
         
         copied = true
-        print("[RecoveryKeyDisplayView] INFO: Recovery Key copied to clipboard")
+        print("[RecoveryKeyDisplayView] INFO: Encryption key copied to clipboard")
         
-        // Auto-dismiss after 2 seconds
         try? await Task.sleep(nanoseconds: 2_000_000_000)
         copied = false
     }
     
     func markKeyAsAcknowledged() {
         acknowledged = true
-        // Could store this in UserDefaults or Keychain to prevent showing again
     }
 }
 

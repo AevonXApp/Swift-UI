@@ -97,7 +97,7 @@ struct DBActivityLogSection: View {
         }
     }
 
-    private func logRow(_ entry: ActivityLogEntry) -> some View {
+    private func logRow(_ entry: DBActivityLogEntry) -> some View {
         HStack(alignment: .top, spacing: AXSpacing.md) {
             // Status icon
             Image(systemName: entry.success ? "checkmark.circle.fill" : "xmark.circle.fill")
