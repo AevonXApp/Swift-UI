@@ -17,10 +17,10 @@ struct WebsiteDetailView: View {
         self._viewModel = StateObject(wrappedValue: WebsiteDetailViewModel(website: website, serverId: serverId))
         self.onBack = onBack
 
-        // Map legacy Int tab index to ModernSidebarItem
-        let allItems = Array(ModernSidebarItem.allCases)
-        if initialTab >= 0, initialTab < allItems.count {
-            self.initialItem = allItems[initialTab]
+        // Map legacy Int tab index to ModernSidebarItem using runtime-aware items
+        let runtimeItems = ModernSidebarItem.items(for: website.runtime)
+        if initialTab >= 0, initialTab < runtimeItems.count {
+            self.initialItem = runtimeItems[initialTab]
         } else {
             self.initialItem = .overview
         }

@@ -17,7 +17,9 @@ enum ModernSidebarItem: String, CaseIterable, Identifiable {
     case siteDirectory = "Site Directory"
     case urlRewrites = "URL Rewrites"
     case sslTls = "SSL/TLS"
-    case phpSettings = "PHP Config"
+    case runtimeConfig = "Runtime Config"
+    case processManager = "Process Manager"
+    case envVariables = "Environment"
     case trafficControl = "Traffic Analytics"
     case logs = "Logs"
 
@@ -30,23 +32,81 @@ enum ModernSidebarItem: String, CaseIterable, Identifiable {
         case .siteDirectory: return "folder.fill"
         case .urlRewrites: return "arrow.triangle.branch"
         case .sslTls: return "lock.shield.fill"
-        case .phpSettings: return "chevron.left.forwardslash.chevron.right"
+        case .runtimeConfig: return "chevron.left.forwardslash.chevron.right"
+        case .processManager: return "gearshape.2.fill"
+        case .envVariables: return "key.fill"
         case .trafficControl: return "chart.xyaxis.line"
         case .logs: return "text.alignleft"
         }
     }
 
-    var description: String {
+    func displayName(for runtime: RuntimeType) -> String {
+        switch self {
+        case .runtimeConfig:
+            switch runtime {
+            case .php: return "PHP Config"
+            case .nodejs: return "Node.js Config"
+            case .python: return "Python Config"
+            case .ruby: return "Ruby Config"
+            case .docker: return "Docker Config"
+            case .static: return "Site Config"
+            }
+        case .processManager:
+            return "Process Manager"
+        case .envVariables:
+            return "Environment"
+        default:
+            return self.rawValue
+        }
+    }
+
+    func icon(for runtime: RuntimeType) -> String {
+        switch self {
+        case .runtimeConfig:
+            return runtime.icon
+        default:
+            return self.icon
+        }
+    }
+
+    func description(for runtime: RuntimeType) -> String {
         switch self {
         case .overview: return "Quick status and metrics"
         case .domainManager: return "Configure domains and ports"
         case .siteDirectory: return "Browse and manage files"
         case .urlRewrites: return "Manage redirect rules"
         case .sslTls: return "SSL certificates & security"
-        case .phpSettings: return "PHP version & extensions"
+        case .runtimeConfig:
+            switch runtime {
+            case .php: return "PHP version & extensions"
+            case .nodejs: return "Node.js version & packages"
+            case .python: return "Python version & packages"
+            default: return "Runtime configuration"
+            }
+        case .processManager: return "PM2/Supervisor process control"
+        case .envVariables: return "Environment variables (.env)"
         case .trafficControl: return "Visitor stats & analytics"
         case .logs: return "Access & error logs"
         }
+    }
+
+    /// Returns sidebar items appropriate for the given runtime
+    static func items(for runtime: RuntimeType) -> [Self] {
+        var result: [Self] = [.overview, .domainManager, .siteDirectory]
+
+        switch runtime {
+        case .php:
+            result += [.urlRewrites, .sslTls, .runtimeConfig]
+        case .nodejs, .python:
+            result += [.sslTls, .runtimeConfig, .processManager, .envVariables]
+        case .ruby, .docker:
+            result += [.sslTls, .runtimeConfig, .processManager, .envVariables]
+        case .static:
+            result += [.urlRewrites, .sslTls]
+        }
+
+        result += [.trafficControl, .logs]
+        return result
     }
 }
 
@@ -161,9 +221,10 @@ struct ModernWebsitePanel: View {
             // Navigation Items
             ScrollView(showsIndicators: false) {
                 VStack(spacing: AXSpacing.xs) {
-                    ForEach(ModernSidebarItem.allCases) { item in
+                    ForEach(ModernSidebarItem.items(for: viewModel.website.runtime)) { item in
                         PremiumSidebarButton(
                             item: item,
+                            runtime: viewModel.website.runtime,
                             isSelected: selectedItem == item,
                             action: {
                                 withAnimation(.easeInOut(duration: 0.2)) {
@@ -243,9 +304,10 @@ struct ModernWebsitePanel: View {
                     .foregroundColor(.axAccentBlue.opacity(0.7))
 
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Server: \(viewModel.serverId ?? "Unknown")")
+                    Text(viewModel.website.domain)
                         .font(.system(size: 10, weight: .medium))
                         .foregroundColor(.axTextSecondary)
+                        .lineLimit(1)
                     Text("Runtime: \(viewModel.website.runtime.rawValue)")
                         .font(.system(size: 9))
                         .foregroundColor(.axTextTertiary)
@@ -264,11 +326,11 @@ struct ModernWebsitePanel: View {
         HStack(spacing: AXSpacing.lg) {
             // Section Title
             VStack(alignment: .leading, spacing: 4) {
-                Text(selectedItem.rawValue)
+                Text(selectedItem.displayName(for: viewModel.website.runtime))
                     .font(.system(size: 24, weight: .bold))
                     .foregroundColor(.axTextPrimary)
 
-                Text(selectedItem.description)
+                Text(selectedItem.description(for: viewModel.website.runtime))
                     .font(AXTypography.caption)
                     .foregroundColor(.axTextSecondary)
             }
@@ -307,6 +369,59 @@ struct ModernWebsitePanel: View {
                         .cornerRadius(AXCornerRadius.sm)
                 }
                 .buttonStyle(PlainButtonStyle())
+                
+                // Action Menu (premium popover)
+                AXActionMenu(sections: [
+                    AXMenuSection("Server", items: [
+                        AXMenuItem("Edit Nginx Config", icon: "doc.text", color: .axAccentBlue) {
+                            selectedItem = .logs
+                        },
+                        AXMenuItem(
+                            viewModel.website.runtime == .php ? "Restart PHP-FPM" : (viewModel.website.runtime == .nodejs ? "Restart PM2" : "Restart Service"),
+                            icon: "arrow.clockwise",
+                            color: .orange
+                        ) {
+                            Task {
+                                guard let serverId = viewModel.serverId else { return }
+                                let sshService = SSHService.shared
+                                if viewModel.website.runtime == .php {
+                                    let version = viewModel.phpVersion
+                                    _ = try? await sshService.execute("sudo systemctl restart php\(version)-fpm", serverId: serverId)
+                                    GlobalToastManager.shared.showSuccess("PHP-FPM \(version) restarted")
+                                } else if viewModel.website.runtime == .nodejs {
+                                    _ = try? await sshService.execute("pm2 restart all", serverId: serverId)
+                                    GlobalToastManager.shared.showSuccess("PM2 processes restarted")
+                                }
+                            }
+                        },
+                    ]),
+                    AXMenuSection("Management", items: [
+                        AXMenuItem("Backup Site", icon: "archivebox", color: .axAccentGreen) {
+                            Task {
+                                guard let serverId = viewModel.serverId else { return }
+                                let sshService = SSHService.shared
+                                let docRoot = viewModel.website.documentRoot ?? "/var/www/\(viewModel.website.domain)"
+                                let timestamp = ISO8601DateFormatter().string(from: Date()).replacingOccurrences(of: ":", with: "-")
+                                let backupFile = "/var/backups/aevonx/\(viewModel.website.domain)_\(timestamp).tar.gz"
+                                _ = try? await sshService.execute("sudo mkdir -p /var/backups/aevonx", serverId: serverId)
+                                _ = try? await sshService.execute("sudo tar -czf \(backupFile) -C \(docRoot) .", serverId: serverId)
+                                GlobalToastManager.shared.showSuccess("Backup saved: \(backupFile)")
+                            }
+                        },
+                    ]),
+                    AXMenuSection(items: [
+                        AXMenuItem("Delete Website", icon: "trash", isDestructive: true) {
+                            Task {
+                                guard let serverId = viewModel.serverId else { return }
+                                try? await WebsiteLifecycleService.shared.deleteWebsite(
+                                    websiteId: viewModel.website.domain,
+                                    serverId: serverId
+                                )
+                                onBack()
+                            }
+                        },
+                    ]),
+                ])
             }
         }
         .padding(.horizontal, AXSpacing.xl)
@@ -332,8 +447,12 @@ struct ModernWebsitePanel: View {
             urlRewritesView
         case .sslTls:
             sslTlsView
-        case .phpSettings:
-            phpSettingsView
+        case .runtimeConfig:
+            runtimeConfigView
+        case .processManager:
+            processManagerView
+        case .envVariables:
+            envVariablesView
         case .trafficControl:
             trafficControlView
         case .logs:
@@ -685,97 +804,56 @@ struct ModernWebsitePanel: View {
     private var phpSettingsView: some View {
         ScrollView(showsIndicators: false) {
             VStack(alignment: .leading, spacing: AXSpacing.xl) {
+                // Current PHP Version
                 ConfigCard(
                     icon: "chevron.left.forwardslash.chevron.right",
                     title: "PHP Version",
-                    description: "Select PHP-FPM version for this website"
+                    description: "Active PHP-FPM version for this website"
                 ) {
-                    VStack(alignment: .leading, spacing: AXSpacing.md) {
-                        if viewModel.isLoadingPHPVersions {
-                            HStack {
-                                ProgressView()
-                                    .scaleEffect(0.7)
-                                Text("Loading PHP versions...")
-                                    .font(.system(size: 12))
-                                    .foregroundColor(.axTextSecondary)
-                            }
-                            .padding()
-                        } else if viewModel.installedPHPVersions.isEmpty {
-                            // Empty state
-                            VStack(spacing: AXSpacing.sm) {
-                                Image(systemName: "exclamationmark.triangle")
-                                    .font(.system(size: 24))
-                                    .foregroundColor(.axWarning)
-                                Text("No PHP versions found")
-                                    .font(.system(size: 13, weight: .medium))
-                                    .foregroundColor(.axTextPrimary)
-                                Text("PHP may not be installed on this server")
-                                    .font(.system(size: 11))
-                                    .foregroundColor(.axTextSecondary)
-                            }
-                            .padding(AXSpacing.lg)
-                            .frame(maxWidth: .infinity)
-                            .background(Color.axWarning.opacity(0.05))
-                            .cornerRadius(AXCornerRadius.sm)
-                        } else {
-                            VStack(alignment: .leading, spacing: AXSpacing.sm) {
-                                Text("Current Version")
-                                    .font(.system(size: 11, weight: .medium))
-                                    .foregroundColor(.axTextSecondary)
-
-                                Picker("PHP Version", selection: $viewModel.phpVersion) {
-                                    ForEach(viewModel.installedPHPVersions, id: \.self) { version in
-                                        Text("PHP \(version)")
-                                            .tag(version)
-                                    }
-                                }
-                                .pickerStyle(.menu)
-                                .labelsHidden()
-                                .onChange(of: viewModel.phpVersion) { oldValue, newValue in
-                                    print("🔄 PHP Version changed from \(oldValue) to \(newValue)")
-                                }
-                                .padding(.horizontal, AXSpacing.sm)
-                                .padding(.vertical, 6)
-                                .background(Color.axBackground)
-                                .cornerRadius(AXCornerRadius.sm)
-                            }
+                    if viewModel.isLoadingPHPVersions {
+                        HStack {
+                            ProgressView().scaleEffect(0.7)
+                            Text("Loading PHP versions...")
+                                .font(.system(size: 12))
+                                .foregroundColor(.axTextSecondary)
                         }
-
-                        if !viewModel.installedPHPVersions.isEmpty {
-                            Divider()
-                                .padding(.vertical, AXSpacing.xs)
-
-                            Button(action: { Task { await viewModel.saveConfiguration() } }) {
-                                HStack(spacing: 6) {
-                                    if viewModel.isSavingConfig {
-                                        ProgressView()
-                                            .scaleEffect(0.6)
-                                    } else {
-                                        Image(systemName: "checkmark.circle.fill")
-                                            .font(.system(size: 11))
-                                    }
-                                    Text("Save PHP Configuration")
-                                        .font(AXTypography.caption)
-                                        .fontWeight(.semibold)
-                                }
-                                .foregroundColor(.white)
-                                .padding(.horizontal, AXSpacing.lg)
-                                .padding(.vertical, AXSpacing.sm)
-                                .background(viewModel.isSavingConfig ? Color.axTextMuted : Color.axSuccess)
-                                .cornerRadius(AXCornerRadius.sm)
-                            }
-                            .buttonStyle(PlainButtonStyle())
-                            .disabled(viewModel.isSavingConfig)
+                        .padding()
+                    } else if viewModel.installedPHPVersions.isEmpty {
+                        VStack(spacing: AXSpacing.sm) {
+                            Image(systemName: "exclamationmark.triangle")
+                                .font(.system(size: 24))
+                                .foregroundColor(.axWarning)
+                            Text("No PHP versions found")
+                                .font(.system(size: 13, weight: .medium))
+                                .foregroundColor(.axTextPrimary)
+                            Text("PHP may not be installed on this server")
+                                .font(.system(size: 11))
+                                .foregroundColor(.axTextSecondary)
                         }
+                        .padding(AXSpacing.lg)
+                        .frame(maxWidth: .infinity)
+                        .background(Color.axWarning.opacity(0.05))
+                        .cornerRadius(AXCornerRadius.sm)
+                    } else {
+                        // Current active version display
+                        HStack {
+                            Text("Current:")
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundColor(.axTextSecondary)
+                            Text("PHP \(viewModel.phpVersion)")
+                                .font(.system(size: 16, weight: .bold, design: .monospaced))
+                                .foregroundColor(.axSuccess)
+                        }
+                        .padding(.bottom, AXSpacing.sm)
                     }
                 }
 
-                // PHP Info Card
+                // Version list with one-click switching
                 if !viewModel.installedPHPVersions.isEmpty {
                     ConfigCard(
-                        icon: "info.circle.fill",
-                        title: "Available Versions",
-                        description: "All PHP versions installed on this server"
+                        icon: "list.bullet",
+                        title: "Switch PHP Version",
+                        description: "Click 'Switch' to change PHP-FPM for this website only"
                     ) {
                         VStack(spacing: AXSpacing.xs) {
                             ForEach(viewModel.installedPHPVersions, id: \.self) { version in
@@ -785,7 +863,7 @@ struct ModernWebsitePanel: View {
                                         .foregroundColor(.axAccentBlue)
 
                                     Text("PHP \(version)")
-                                        .font(.system(size: 12, design: .monospaced))
+                                        .font(.system(size: 12, weight: .semibold, design: .monospaced))
                                         .foregroundColor(.axTextPrimary)
 
                                     Spacer()
@@ -794,15 +872,37 @@ struct ModernWebsitePanel: View {
                                         Text("Active")
                                             .font(.system(size: 10, weight: .semibold))
                                             .foregroundColor(.axSuccess)
-                                            .padding(.horizontal, 6)
-                                            .padding(.vertical, 2)
+                                            .padding(.horizontal, 8)
+                                            .padding(.vertical, 3)
                                             .background(Color.axSuccess.opacity(0.1))
                                             .cornerRadius(4)
+                                    } else {
+                                        Button(action: {
+                                            Task { await viewModel.switchWebsitePHPVersion(to: version) }
+                                        }) {
+                                            HStack(spacing: 4) {
+                                                if viewModel.isSavingConfig {
+                                                    ProgressView().scaleEffect(0.5)
+                                                } else {
+                                                    Image(systemName: "arrow.right.circle.fill")
+                                                        .font(.system(size: 10))
+                                                }
+                                                Text("Switch")
+                                                    .font(.system(size: 10, weight: .semibold))
+                                            }
+                                            .foregroundColor(.white)
+                                            .padding(.horizontal, 10)
+                                            .padding(.vertical, 4)
+                                            .background(Color.axAccentBlue)
+                                            .cornerRadius(4)
+                                        }
+                                        .buttonStyle(.plain)
+                                        .disabled(viewModel.isSavingConfig)
                                     }
                                 }
                                 .padding(.horizontal, AXSpacing.md)
                                 .padding(.vertical, AXSpacing.sm)
-                                .background(version == viewModel.phpVersion ? Color.axAccentBlue.opacity(0.05) : Color.axBackground)
+                                .background(version == viewModel.phpVersion ? Color.axSuccess.opacity(0.03) : Color.axBackground.opacity(0.5))
                                 .cornerRadius(AXCornerRadius.sm)
                             }
                         }
@@ -812,7 +912,6 @@ struct ModernWebsitePanel: View {
             .padding(AXSpacing.xl)
         }
         .onAppear {
-            // Load PHP versions when the view appears
             if viewModel.installedPHPVersions.isEmpty && !viewModel.isLoadingPHPVersions {
                 Task {
                     await viewModel.fetchInstalledPHPVersions()
@@ -820,6 +919,7 @@ struct ModernWebsitePanel: View {
             }
         }
     }
+
 
     private var trafficControlView: some View {
         ScrollView(showsIndicators: false) {
@@ -873,6 +973,88 @@ struct ModernWebsitePanel: View {
         )
     }
 
+    // MARK: - Runtime Config View (Dynamic)
+
+    @ViewBuilder
+    private var runtimeConfigView: some View {
+        switch viewModel.website.runtime {
+        case .php:
+            phpSettingsView
+        case .nodejs:
+            NodeJSConfigTab(
+                serverId: viewModel.serverId,
+                appPath: viewModel.website.documentRoot ?? "/var/www/\(viewModel.website.domain)"
+            )
+        case .python:
+            pythonConfigView
+        default:
+            genericRuntimeView
+        }
+    }
+
+
+    // MARK: - Python Config View
+
+    private var pythonConfigView: some View {
+        ScrollView(showsIndicators: false) {
+            VStack(alignment: .leading, spacing: AXSpacing.xl) {
+                ConfigCard(
+                    icon: "chevron.left.forwardslash.chevron.right",
+                    title: "Python Runtime",
+                    description: "Python version and WSGI/ASGI configuration"
+                ) {
+                    VStack(alignment: .leading, spacing: AXSpacing.md) {
+                        HStack {
+                            Image(systemName: "chevron.left.forwardslash.chevron.right")
+                                .foregroundColor(.axWarning)
+                            Text("Python")
+                                .font(.system(size: 14, weight: .bold))
+                                .foregroundColor(.axTextPrimary)
+                            Text("(detection pending)")
+                                .font(.system(size: 12))
+                                .foregroundColor(.axTextTertiary)
+                        }
+                        Text("Full Python version management coming soon.")
+                            .font(.system(size: 11))
+                            .foregroundColor(.axTextSecondary)
+                    }
+                }
+            }
+            .padding(AXSpacing.xl)
+        }
+    }
+
+    // MARK: - Generic Runtime View
+
+    private var genericRuntimeView: some View {
+        VStack(spacing: AXSpacing.xl) {
+            AXEmptyState(
+                icon: "gearshape",
+                title: "Runtime Configuration",
+                description: "Configuration for \(viewModel.website.runtime.rawValue) is not yet available."
+            )
+        }
+    }
+
+    // MARK: - Process Manager View
+
+    private var processManagerView: some View {
+        ProcessManagerTab(
+            serverId: viewModel.serverId,
+            appName: viewModel.website.name,
+            appPath: viewModel.website.documentRoot ?? "/var/www/\(viewModel.website.domain)"
+        )
+    }
+
+    // MARK: - Environment Variables View
+
+    private var envVariablesView: some View {
+        EnvVariablesTab(
+            serverId: viewModel.serverId,
+            appPath: viewModel.website.documentRoot ?? "/var/www/\(viewModel.website.domain)"
+        )
+    }
+
     // MARK: - Helper Functions
 
     private func refreshCurrentSection() async {
@@ -893,6 +1075,7 @@ struct ModernWebsitePanel: View {
 
 struct PremiumSidebarButton: View {
     let item: ModernSidebarItem
+    var runtime: RuntimeType = .php
     let isSelected: Bool
     let action: () -> Void
 
@@ -907,13 +1090,13 @@ struct PremiumSidebarButton: View {
                         .fill(isSelected ? Color.axAccentBlue.opacity(0.15) : Color.axBackground.opacity(isHovered ? 0.5 : 0))
                         .frame(width: 32, height: 32)
 
-                    Image(systemName: item.icon)
+                    Image(systemName: item.icon(for: runtime))
                         .font(.system(size: 14, weight: isSelected ? .semibold : .regular))
                         .foregroundColor(isSelected ? .axAccentBlue : .axTextSecondary)
                 }
 
                 // Title
-                Text(item.rawValue)
+                Text(item.displayName(for: runtime))
                     .font(.system(size: 13, weight: isSelected ? .semibold : .regular))
                     .foregroundColor(isSelected ? .axTextPrimary : .axTextSecondary)
 

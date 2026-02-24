@@ -75,7 +75,8 @@ struct PHPDetailView: View {
                 application: application,
                 phpConfig: $phpConfig,
                 onReload: { Task { await reloadService() } },
-                onTest: { Task { await testConfiguration() } }
+                onTest: { Task { await testConfiguration() } },
+                serverId: serverId
             )
         case .extensions:
             PHPExtensionsTab(application: application, phpConfig: $phpConfig, serverId: serverId)
@@ -93,7 +94,9 @@ struct PHPDetailView: View {
                 onError: { msg in showError(msg) }
             )
         case .versions:
-            PHPVersionsTab(application: application, serverId: serverId)
+            PHPVersionsTab(application: application, serverId: serverId, onRefreshAll: {
+                Task { await loadPHPData() }
+            })
         }
     }
 
@@ -118,15 +121,28 @@ struct PHPDetailView: View {
             let pools = (try? await ApplicationManager.shared.getPHPFPMPools(serverId: serverId)) ?? []
             
             // Get config path
-            let configPath = (try? await ApplicationManager.shared.getConfigPath(type: .phpFpm, serverId: serverId)) ?? "/etc/php/php.ini"
+            let configPath = (try? await ApplicationManager.shared.getConfigPath(type: .phpFpm, serverId: serverId)) ?? "Not detected"
+            
+            // Get log path dynamically from Core
+            let logPaths = (try? await ApplicationManager.shared.getLogPaths(type: .phpFpm, serverId: serverId)) ?? []
+            let logPath = logPaths.first ?? "Not detected"
+            
+            // Get PHP-FPM process status
+            let fpmStatus = (try? await ApplicationManager.shared.getPHPFPMStatus(serverId: serverId)) ?? PHPFPMStatus()
+            
+            // Get OPcache status
+            let opcacheStatus = (try? await ApplicationManager.shared.getPHPOPcacheStatus(serverId: serverId)) ?? PHPOPcacheStatus()
 
             self.phpConfig = PHPConfigData(
                 rawConfig: configContent,
                 iniPath: configPath,
+                logPath: logPath,
                 installedExtensions: installedExts,
                 availableExtensions: availableExts,
                 disabledFunctions: disabledFuncs,
-                fpmPools: pools
+                fpmPools: pools,
+                fpmStatus: fpmStatus,
+                opcacheStatus: opcacheStatus
             )
             self.isLoading = false
         } catch {

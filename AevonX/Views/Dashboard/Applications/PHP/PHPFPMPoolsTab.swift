@@ -80,6 +80,7 @@ struct PHPFPMPoolsTab: View {
 
                 PoolEditorSheet(
                     pool: editingPool,
+                    serverId: serverId,
                     onSave: { pool in
                         Task { await savePool(pool) }
                         isCreating = false
@@ -244,25 +245,28 @@ private struct PoolInfo: View {
 
 private struct PoolEditorSheet: View {
     let pool: PHPFPMPool?
+    let serverId: String
     let onSave: (PHPFPMPool) -> Void
     let onCancel: () -> Void
     
     @State private var name = ""
     @State private var user = "www-data"
     @State private var group = "www-data"
-    @State private var listenAddress = "/var/run/php/php-fpm.sock"
+    @State private var listenAddress = ""
     @State private var pmMode = PHPFPMPool.PMMode.dynamic
     @State private var maxChildren = "50"
+    @State private var hasResolvedSocket = false
 
-    init(pool: PHPFPMPool?, onSave: @escaping (PHPFPMPool) -> Void, onCancel: @escaping () -> Void) {
+    init(pool: PHPFPMPool?, serverId: String, onSave: @escaping (PHPFPMPool) -> Void, onCancel: @escaping () -> Void) {
         self.pool = pool
+        self.serverId = serverId
         self.onSave = onSave
         self.onCancel = onCancel
 
         _name = State(initialValue: pool?.name ?? "")
         _user = State(initialValue: pool?.user ?? "www-data")
         _group = State(initialValue: pool?.group ?? "www-data")
-        _listenAddress = State(initialValue: pool?.listenAddress ?? "/var/run/php/php-fpm.sock")
+        _listenAddress = State(initialValue: pool?.listenAddress ?? "")
         _pmMode = State(initialValue: pool?.pm ?? .dynamic)
         _maxChildren = State(initialValue: String(pool?.pmMaxChildren ?? 50))
     }
@@ -308,5 +312,16 @@ private struct PoolEditorSheet: View {
         .padding()
         .frame(width: 500)
         .fixedSize(horizontal: false, vertical: true)
+        .onAppear {
+            // Dynamically resolve socket path for new pools
+            if pool == nil && listenAddress.isEmpty {
+                Task {
+                    let resolved = try? await ServerPathResolver.shared.phpFpmSocketPath(serverId: serverId)
+                    if let resolved = resolved, !resolved.isEmpty {
+                        await MainActor.run { listenAddress = resolved }
+                    }
+                }
+            }
+        }
     }
 }

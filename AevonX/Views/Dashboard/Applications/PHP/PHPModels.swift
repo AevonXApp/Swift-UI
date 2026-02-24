@@ -38,8 +38,8 @@ enum PHPSection: String, CaseIterable, Identifiable {
 
 struct PHPConfigData {
     var rawConfig: String = ""
-    var iniPath: String = "/etc/php/php.ini"
-    var logPath: String = "/var/log/php-fpm/error.log"
+    var iniPath: String = ""
+    var logPath: String = ""
     var installedExtensions: [PHPExtension] = []
     var availableExtensions: [PHPExtension] = []
     var disabledFunctions: [String] = []
@@ -47,4 +47,6 @@ struct PHPConfigData {
     var currentVersion: String = ""
     var availableVersions: [String] = []
     var phpConfiguration: PHPConfiguration = PHPConfiguration()
+    var fpmStatus: PHPFPMStatus = PHPFPMStatus()
+    var opcacheStatus: PHPOPcacheStatus = PHPOPcacheStatus()
 }

@@ -18,6 +18,9 @@ struct ModernWebsitesTab: View {
     @State private var initialDetailTab: Int = 0
     @State private var websiteToDelete: WebsiteInfo?
     @State private var showDeleteConfirmation = false
+    @State private var websiteToClone: WebsiteInfo?
+    @State private var showCloneDialog = false
+    @State private var cloneDomain = ""
 
     init(server: Server? = nil, serverId: String? = nil, connectionViewModel: ServerConnectionViewModel? = nil) {
         _viewModel = StateObject(wrappedValue: WebsiteManagementViewModel(
@@ -89,6 +92,23 @@ struct ModernWebsitesTab: View {
         } message: { website in
             Text("Are you sure you want to delete \(website.name)? This action cannot be undone.")
         }
+        .alert("Clone Website", isPresented: $showCloneDialog) {
+            TextField("New domain", text: $cloneDomain)
+            Button("Cancel", role: .cancel) {}
+            Button("Clone") {
+                if let website = websiteToClone {
+                    Task {
+                        do {
+                            try await viewModel.cloneWebsite(website, newDomain: cloneDomain)
+                        } catch {
+                            viewModel.errorMessage = error.localizedDescription
+                        }
+                    }
+                }
+            }
+        } message: {
+            Text("Enter a new domain name for the cloned website.")
+        }
     }
 
     @ViewBuilder
@@ -137,8 +157,22 @@ struct ModernWebsitesTab: View {
                     websiteForDetail = website
                 },
                 onSSL: { website in
-                    initialDetailTab = 4 // SSL/TLS tab
+                    initialDetailTab = 4
                     websiteForDetail = website
+                },
+                onClone: { website in
+                    websiteToClone = website
+                    cloneDomain = "clone-\(website.domain)"
+                    showCloneDialog = true
+                },
+                onBackup: { website in
+                    Task {
+                        do {
+                            try await viewModel.backupWebsite(website)
+                        } catch {
+                            viewModel.errorMessage = error.localizedDescription
+                        }
+                    }
                 }
             )
         }

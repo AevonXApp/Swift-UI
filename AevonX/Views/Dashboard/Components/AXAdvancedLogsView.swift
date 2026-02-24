@@ -1098,6 +1098,7 @@ public final class AXLogsViewModel: ObservableObject {
         }
 
         isLoading = false
+        updateFilteredLogs()
     }
 
     func blockIP(_ ip: String, reason: String) async {
@@ -1116,23 +1117,24 @@ public final class AXLogsViewModel: ObservableObject {
 
         do {
             let sshService = SSHService.shared
+            let logDir = (try? await ServerPathResolver.shared.nginxLogDir(serverId: serverId)) ?? "/var/log/nginx"
 
             switch source {
             case .website(let domain):
                 // Truncate access and error log files for this website
                 let clearCommand = """
-                sudo truncate -s 0 /var/log/nginx/\(domain)-access.log 2>/dev/null; \
-                sudo truncate -s 0 /var/log/nginx/\(domain)-error.log 2>/dev/null; \
-                sudo truncate -s 0 /var/log/nginx/\(domain)-ssl-access.log 2>/dev/null; \
-                sudo truncate -s 0 /var/log/nginx/\(domain)-ssl-error.log 2>/dev/null; \
+                sudo truncate -s 0 \(logDir)/\(domain)-access.log 2>/dev/null; \
+                sudo truncate -s 0 \(logDir)/\(domain)-error.log 2>/dev/null; \
+                sudo truncate -s 0 \(logDir)/\(domain)-ssl-access.log 2>/dev/null; \
+                sudo truncate -s 0 \(logDir)/\(domain)-ssl-error.log 2>/dev/null; \
                 echo 'OK'
                 """
                 _ = try await sshService.execute(clearCommand, serverId: serverId)
 
             case .nginxService:
                 let clearCommand = """
-                sudo truncate -s 0 /var/log/nginx/access.log 2>/dev/null; \
-                sudo truncate -s 0 /var/log/nginx/error.log 2>/dev/null; \
+                sudo truncate -s 0 \(logDir)/access.log 2>/dev/null; \
+                sudo truncate -s 0 \(logDir)/error.log 2>/dev/null; \
                 echo 'OK'
                 """
                 _ = try await sshService.execute(clearCommand, serverId: serverId)

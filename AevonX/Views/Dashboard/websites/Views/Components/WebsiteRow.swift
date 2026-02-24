@@ -2,14 +2,14 @@
 //  WebsiteRow.swift
 //  AevonX
 //
-//  Individual website row component with actions
+//  Premium website card component with site logo, status, and quick actions
 //
 
 import SwiftUI
 
-// MARK: - Website Row
+// MARK: - Website Card
 
-struct WebsiteRow: View {
+struct WebsiteCard: View {
     let website: WebsiteInfo
     let onToggle: () -> Void
     let onDeploy: () -> Void
@@ -17,199 +17,215 @@ struct WebsiteRow: View {
     let onLogs: () -> Void
     let onConfig: () -> Void
     let onSSL: () -> Void
+    let onClone: () -> Void
+    let onBackup: () -> Void
+    let onSelect: () -> Void
 
     @State private var isHovered = false
+    
+    private func openInBrowser() {
+        let scheme = website.sslEnabled ? "https" : "http"
+        if let url = URL(string: "\(scheme)://\(website.domain)") {
+            NSWorkspace.shared.open(url)
+        }
+    }
 
     var body: some View {
-        HStack(spacing: AXSpacing.md) {
-            // Status Indicator & Toggle
+        VStack(alignment: .leading, spacing: 0) {
+            // Top: Logo + Domain + Status
             HStack(spacing: AXSpacing.sm) {
-                Circle()
-                    .fill(website.status == .online ? Color.axSuccess : Color.axError)
-                    .frame(width: 8, height: 8)
-                    .shadow(color: (website.status == .online ? Color.axSuccess : Color.axError).opacity(0.4), radius: 3)
+                ZStack(alignment: .bottomTrailing) {
+                    SiteLogo(domain: website.domain)
+                    
+                    Circle()
+                        .fill(website.status == .online ? Color.axSuccess : Color.axError)
+                        .frame(width: 10, height: 10)
+                        .overlay(Circle().stroke(Color.axSurface, lineWidth: 2))
+                        .shadow(color: (website.status == .online ? Color.axSuccess : Color.axError).opacity(0.5), radius: 3)
+                        .offset(x: 2, y: 2)
+                }
                 
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(website.name)
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(.axTextPrimary)
+                        .lineLimit(1)
+                    
+                    Text(website.domain)
+                        .font(.system(size: 10, weight: .medium, design: .monospaced))
+                        .foregroundColor(.axTextTertiary)
+                        .lineLimit(1)
+                }
+                
+                Spacer()
+                
+                // Toggle
                 Toggle("", isOn: Binding(
                     get: { website.status == .online },
                     set: { _ in onToggle() }
                 ))
                 .toggleStyle(SwitchToggleStyle(tint: .axSuccess))
-                .scaleEffect(0.8)
-                .frame(width: 44)
+                .scaleEffect(0.7)
+                .frame(width: 36)
             }
-            .frame(width: 70, alignment: .leading)
+            .padding(AXSpacing.md)
+            
+            // Divider
+            Rectangle()
+                .fill(Color.axBorder.opacity(0.3))
+                .frame(height: 1)
+            
+            // Middle: Chips
+            HStack(spacing: 6) {
+                ChipBadge(
+                    icon: website.sslEnabled ? "lock.fill" : "lock.open.fill",
+                    text: website.sslEnabled ? "SSL" : "HTTP",
+                    color: website.sslEnabled ? .axSuccess : .axWarning
+                )
 
-            // Website Info with Premium Typography
-            VStack(alignment: .leading, spacing: AXSpacing.xxs) {
-                Text(website.name)
-                    .font(AXTypography.headline)
-                    .foregroundColor(.axTextPrimary)
-                    .lineLimit(1)
+                ChipBadge(
+                    icon: website.runtime.icon,
+                    text: website.phpVersion != nil ? "PHP \(website.phpVersion!)" : website.runtime.rawValue,
+                    color: .axAccentBlue
+                )
 
-                Text(website.domain)
-                    .font(AXTypography.footnote)
-                    .foregroundColor(.axTextTertiary)
-                    .lineLimit(1)
-            }
-            .frame(width: 200, alignment: .leading)
-
-            // SSL Badge - Premium Look
-            HStack(spacing: AXSpacing.xs) {
-                Image(systemName: website.sslEnabled ? "shield.fill" : "shield.slash")
-                    .font(.system(size: 12, weight: .bold))
-                    .foregroundColor(website.sslEnabled ? .axSuccess : .axWarning)
-
-                Text(website.sslEnabled ? "SECURED" : "INSECURE")
-                    .font(AXTypography.caption)
-                    .fontWeight(.bold)
-                    .foregroundColor(website.sslEnabled ? .axSuccess : .axWarning)
-            }
-            .padding(.horizontal, AXSpacing.sm)
-            .padding(.vertical, 4)
-            .background((website.sslEnabled ? Color.axSuccess : Color.axWarning).opacity(0.1))
-            .cornerRadius(AXCornerRadius.sm)
-            .frame(width: 100, alignment: .center)
-
-            // Runtime Integrated Chip
-            HStack(spacing: AXSpacing.xs) {
-                Image(systemName: website.runtime.icon)
-                    .font(.system(size: 10))
+                ChipBadge(
+                    icon: "internaldrive",
+                    text: website.formattedDiskUsage,
+                    color: .axTextSecondary
+                )
                 
-                Text(website.phpVersion ?? website.runtime.rawValue)
-                    .font(AXTypography.caption)
-                    .fontWeight(.semibold)
+                Spacer()
             }
-            .foregroundColor(.axAccentBlue)
-            .padding(.horizontal, AXSpacing.sm)
-            .padding(.vertical, 4)
-            .background(Color.axAccentBlue.opacity(0.1))
-            .cornerRadius(AXCornerRadius.sm)
-            .frame(width: 90, alignment: .center)
-
-            // Total Requests
-            HStack(spacing: AXSpacing.xs) {
-                Image(systemName: "chart.bar.fill")
-                    .font(.system(size: 8))
-                Text(formattedRequests(website.dailyRequests))
-                    .font(AXTypography.caption)
-                    .fontWeight(.bold)
-            }
-            .foregroundColor(.axAccentPurple)
-            .padding(.horizontal, AXSpacing.sm)
-            .padding(.vertical, 4)
-            .background(Color.axAccentPurple.opacity(0.1))
-            .cornerRadius(AXCornerRadius.sm)
-            .frame(width: 70, alignment: .center)
-
-            // Resource Metrics
-            HStack(spacing: AXSpacing.md) {
-                VStack(alignment: .trailing, spacing: 2) {
-                    Text(website.formattedDiskUsage)
-                        .font(AXTypography.caption)
-                        .foregroundColor(.axTextSecondary)
-                        .monospaced()
-                    
-                    Text("Disk")
-                        .font(AXTypography.caption2)
-                        .foregroundColor(.axTextMuted)
+            .padding(.horizontal, AXSpacing.md)
+            .padding(.vertical, AXSpacing.sm)
+            
+            // Divider
+            Rectangle()
+                .fill(Color.axBorder.opacity(0.3))
+                .frame(height: 1)
+            
+            // Bottom: Actions
+            HStack(spacing: 6) {
+                // Open in browser
+                Button(action: openInBrowser) {
+                    HStack(spacing: 4) {
+                        Image(systemName: "safari")
+                            .font(.system(size: 9, weight: .bold))
+                        Text("Visit")
+                            .font(.system(size: 10, weight: .semibold))
+                    }
+                    .foregroundColor(.axAccentBlue)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 5)
+                    .background(Color.axAccentBlue.opacity(0.08))
+                    .cornerRadius(6)
                 }
-                .frame(width: 60)
-
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(timeAgo(from: website.lastDeployed))
-                        .font(AXTypography.caption)
-                        .foregroundColor(.axTextSecondary)
-                    
-                    Text("Deployed")
-                        .font(AXTypography.caption2)
-                        .foregroundColor(.axTextMuted)
-                }
-                .frame(width: 80)
-            }
-
-            Spacer()
-
-            // Quick Actions & More Menu
-            HStack(spacing: AXSpacing.sm) {
-                // Quick Deploy
-                ActionButton(icon: "arrow.clockwise", color: .axAccentBlue, tooltip: "Deploy Now", action: onDeploy)
+                .buttonStyle(.plain)
                 
-                // Quick Logs
-                ActionButton(icon: "doc.text.fill", color: .axTextSecondary, tooltip: "View Logs", action: onLogs)
-
-                // More Actions
-                Menu {
-                    Section("Configuration") {
-                        Button(action: onConfig) {
-                            Label("Edit Config", systemImage: "slider.horizontal.3")
-                        }
-                        Button(action: onSSL) {
-                            Label("SSL Settings", systemImage: "lock.shield")
-                        }
-                    }
-                    
-                    Section("Management") {
-                        Button(action: {}) {
-                            Label("Clone Site", systemImage: "doc.on.doc")
-                        }
-                        Button(action: {}) {
-                            Label("Backup", systemImage: "archivebox")
-                        }
-                    }
-                    
-                    Divider()
-                    
-                    Button(role: .destructive, action: onDelete) {
-                        Label("Delete Website", systemImage: "trash")
-                    }
-                } label: {
-                    Image(systemName: "ellipsis.circle.fill")
-                        .font(.system(size: 20))
-                        .foregroundColor(.axTextMuted)
-                        .symbolRenderingMode(.hierarchical)
-                }
-                .menuStyle(BorderlessButtonMenuStyle())
-                .frame(width: 32, height: 32)
+                ActionButton(icon: "arrow.clockwise", color: .axAccentBlue, tooltip: "Reload", action: onDeploy)
+                ActionButton(icon: "doc.text.fill", color: .axTextSecondary, tooltip: "Logs", action: onLogs)
+                
+                Spacer()
+                
+                AXActionMenu.websiteActions(
+                    onConfig: onConfig,
+                    onSSL: onSSL,
+                    onClone: onClone,
+                    onBackup: onBackup,
+                    onDelete: onDelete
+                )
             }
-            .frame(width: 120, alignment: .trailing)
+            .padding(.horizontal, AXSpacing.md)
+            .padding(.vertical, AXSpacing.sm)
         }
-        .padding(.horizontal, AXSpacing.lg)
-        .padding(.vertical, AXSpacing.md)
-        .background(isHovered ? Color.axSurfaceHover : Color.axSurface)
-        .cornerRadius(AXCornerRadius.md)
-        .overlay(
-            RoundedRectangle(cornerRadius: AXCornerRadius.md)
-                .stroke(isHovered ? Color.axAccentBlue.opacity(0.3) : Color.axBorder, lineWidth: 1)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(isHovered ? Color.axSurfaceHover : Color.axSurface)
         )
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(isHovered ? Color.axAccentBlue.opacity(0.3) : Color.axBorder.opacity(0.4), lineWidth: 1)
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .contentShape(RoundedRectangle(cornerRadius: 12))
+        .shadow(color: .black.opacity(isHovered ? 0.15 : 0.05), radius: isHovered ? 12 : 4, y: isHovered ? 6 : 2)
+        .scaleEffect(isHovered ? 1.01 : 1.0)
+        .onTapGesture {
+            onSelect()
+        }
         .onHover { hovering in
-            withAnimation(.easeInOut(duration: 0.2)) {
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
                 isHovered = hovering
             }
         }
     }
+}
 
-    private func timeAgo(from date: Date?) -> String {
-        guard let date = date else { return "Never" }
-        let interval = Date().timeIntervalSince(date)
+// MARK: - Site Logo
 
-        if interval < 60 { return "Just now" }
-        else if interval < 3600 { return "\(Int(interval / 60))m ago" }
-        else if interval < 86400 { return "\(Int(interval / 3600))h ago" }
-        else { return "\(Int(interval / 86400))d ago" }
+struct SiteLogo: View {
+    let domain: String
+    var size: CGFloat = 36
+    
+    var logoURL: URL? {
+        URL(string: "https://\(domain)/logo.png")
     }
-
-    private func formattedRequests(_ count: Int?) -> String {
-        guard let count = count, count > 0 else { return "0" }
-        if count >= 1_000_000 {
-            return String(format: "%.1fM", Double(count) / 1_000_000)
-        } else if count >= 1_000 {
-            return String(format: "%.1fK", Double(count) / 1_000)
+    
+    var body: some View {
+        AsyncImage(url: logoURL) { phase in
+            switch phase {
+            case .success(let image):
+                image
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .frame(width: size, height: size)
+                    .clipShape(RoundedRectangle(cornerRadius: size * 0.25))
+            case .failure, .empty:
+                fallbackIcon
+            @unknown default:
+                fallbackIcon
+            }
         }
-        return "\(count)"
+        .frame(width: size, height: size)
+    }
+    
+    private var fallbackIcon: some View {
+        Image(nsImage: NSApp.applicationIconImage)
+            .resizable()
+            .aspectRatio(contentMode: .fit)
+            .frame(width: size, height: size)
+            .clipShape(RoundedRectangle(cornerRadius: size * 0.25))
+            .overlay(
+                RoundedRectangle(cornerRadius: size * 0.25)
+                    .stroke(Color.axBorder.opacity(0.3), lineWidth: 1)
+            )
     }
 }
 
-// MARK: - Helper UI Components
+// MARK: - Chip Badge
+
+struct ChipBadge: View {
+    let icon: String
+    let text: String
+    let color: Color
+    
+    var body: some View {
+        HStack(spacing: 4) {
+            Image(systemName: icon)
+                .font(.system(size: 8, weight: .bold))
+            Text(text)
+                .font(.system(size: 10, weight: .semibold))
+        }
+        .foregroundColor(color)
+        .padding(.horizontal, 7)
+        .padding(.vertical, 3)
+        .background(color.opacity(0.08))
+        .cornerRadius(5)
+    }
+}
+
+// MARK: - Action Button
 
 struct ActionButton: View {
     let icon: String
@@ -222,16 +238,16 @@ struct ActionButton: View {
     var body: some View {
         Button(action: action) {
             Image(systemName: icon)
-                .font(.system(size: 11, weight: .bold))
+                .font(.system(size: 10, weight: .bold))
                 .foregroundColor(isHovered ? .white : color)
-                .frame(width: 30, height: 30)
-                .background(isHovered ? color : color.opacity(0.1))
-                .cornerRadius(AXCornerRadius.md)
+                .frame(width: 26, height: 26)
+                .background(isHovered ? color : color.opacity(0.08))
+                .cornerRadius(7)
         }
         .buttonStyle(PlainButtonStyle())
         .help(tooltip)
         .onHover { hovering in
-            withAnimation(.spring(response: 0.3)) {
+            withAnimation(.spring(response: 0.25)) {
                 isHovered = hovering
             }
         }

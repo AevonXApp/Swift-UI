@@ -24,6 +24,14 @@ struct EditServerView: View {
     @State private var selectedColor: ServerColor = .blue
     @State private var hasChanges: Bool = false
     
+    // Original credentials loaded from encrypted payload
+    @State private var originalPassword: String?
+    @State private var originalPrivateKey: String?
+    @State private var originalPassphrase: String?
+    @State private var hasExistingPassword: Bool = false
+    @State private var hasExistingPrivateKey: Bool = false
+    @State private var isLoadingCredentials: Bool = true
+    
     var body: some View {
         ScrollView {
             VStack(spacing: AXSpacing.lg) {
@@ -331,10 +339,17 @@ struct EditServerView: View {
                         // Auth Fields
                         if authType == .password {
                             VStack(alignment: .leading, spacing: AXSpacing.xs) {
-                                Text("Password")
-                                    .font(AXTypography.caption)
-                                    .foregroundColor(.axTextMuted)
-                                SecureField("Enter SSH password", text: $password)
+                                HStack {
+                                    Text("Password")
+                                        .font(AXTypography.caption)
+                                        .foregroundColor(.axTextMuted)
+                                    if hasExistingPassword && password.isEmpty {
+                                        Text("• current password kept")
+                                            .font(AXTypography.caption2)
+                                            .foregroundColor(.axAccentGreen)
+                                    }
+                                }
+                                SecureField(hasExistingPassword ? "Leave empty to keep current" : "Enter SSH password", text: $password)
                                     .font(AXTypography.body)
                                     .foregroundColor(.axTextPrimary)
                                     .padding(AXSpacing.md)
@@ -347,9 +362,16 @@ struct EditServerView: View {
                             }
                         } else {
                             VStack(alignment: .leading, spacing: AXSpacing.sm) {
-                                Text("Private Key")
-                                    .font(AXTypography.caption)
-                                    .foregroundColor(.axTextMuted)
+                                HStack {
+                                    Text("Private Key")
+                                        .font(AXTypography.caption)
+                                        .foregroundColor(.axTextMuted)
+                                    if hasExistingPrivateKey && privateKey.isEmpty {
+                                        Text("• current key kept")
+                                            .font(AXTypography.caption2)
+                                            .foregroundColor(.axAccentGreen)
+                                    }
+                                }
                                 TextEditor(text: $privateKey)
                                     .font(.system(size: 12, design: .monospaced))
                                     .foregroundColor(.axTextPrimary)
@@ -428,9 +450,9 @@ struct EditServerView: View {
                                 port: Int(port) ?? 22,
                                 username: username,
                                 authType: authType,
-                                password: password.isEmpty ? nil : password,
-                                privateKey: privateKey.isEmpty ? nil : privateKey,
-                                keyPassphrase: keyPassphrase.isEmpty ? nil : keyPassphrase,
+                                password: password.isEmpty ? originalPassword : password,
+                                privateKey: privateKey.isEmpty ? originalPrivateKey : privateKey,
+                                keyPassphrase: keyPassphrase.isEmpty ? originalPassphrase : keyPassphrase,
                                 tags: tagsText.isEmpty ? [] : tagsText.components(separatedBy: ",").map { $0.trimmingCharacters(in: .whitespaces) },
                                 notes: nil,
                                 iconName: selectedIcon.rawValue,
@@ -487,6 +509,33 @@ struct EditServerView: View {
             selectedIcon = ServerIcon(rawValue: server.iconName) ?? .serverRack
             if let hex = server.customColor {
                 selectedColor = ServerColor(rawValue: hex) ?? .blue
+            }
+            
+            // Load existing credentials from encrypted payload
+            Task {
+                do {
+                    let serverResponse = try await ServerAPIService.shared.fetchServer(id: server.id)
+                    let payload = serverResponse.toEncryptedPayload()
+                    let serverData = try await ServerEncryptionService.shared.decryptServer(
+                        EncryptedServerData.self,
+                        from: payload
+                    )
+                    
+                    await MainActor.run {
+                        // Store original credentials for preservation
+                        originalPassword = serverData.authentication.password
+                        originalPrivateKey = serverData.authentication.privateKey
+                        originalPassphrase = serverData.authentication.keyPassphrase
+                        authType = serverData.authentication.authType
+                        hasExistingPassword = !(serverData.authentication.password ?? "").isEmpty
+                        hasExistingPrivateKey = !(serverData.authentication.privateKey ?? "").isEmpty
+                        isLoadingCredentials = false
+                    }
+                } catch {
+                    await MainActor.run {
+                        isLoadingCredentials = false
+                    }
+                }
             }
         }
     }

@@ -167,18 +167,112 @@ struct PHPConfigurationTab: View {
     }
     
     private func loadConfig() {
-        // Parse config from phpConfig.rawConfig
-        // For now, use defaults
+        let config = phpConfig.rawConfig
+        guard !config.isEmpty else { return }
+        
+        // Parse size directive (e.g. "50M" → ("50", "MB"))
+        func parseSizeValue(_ raw: String) -> (String, String) {
+            let trimmed = raw.trimmingCharacters(in: .whitespaces)
+            if trimmed.hasSuffix("G") || trimmed.hasSuffix("g") {
+                return (String(trimmed.dropLast()), "GB")
+            } else if trimmed.hasSuffix("K") || trimmed.hasSuffix("k") {
+                return (String(trimmed.dropLast()), "KB")
+            } else if trimmed.hasSuffix("M") || trimmed.hasSuffix("m") {
+                return (String(trimmed.dropLast()), "MB")
+            }
+            return (trimmed, "MB")
+        }
+        
+        // Extract a directive value from php.ini text
+        func directive(_ name: String) -> String? {
+            let pattern = "(?m)^\\s*\(NSRegularExpression.escapedPattern(for: name))\\s*=\\s*(.+?)\\s*$"
+            guard let regex = try? NSRegularExpression(pattern: pattern),
+                  let match = regex.firstMatch(in: config, range: NSRange(config.startIndex..., in: config)),
+                  let range = Range(match.range(at: 1), in: config) else { return nil }
+            return String(config[range])
+        }
+        
+        // File Upload Settings
+        if let val = directive("upload_max_filesize") {
+            let (num, unit) = parseSizeValue(val)
+            uploadMaxFilesize = num
+            uploadUnit = unit
+        }
+        if let val = directive("post_max_size") {
+            let (num, unit) = parseSizeValue(val)
+            postMaxSize = num
+            postUnit = unit
+        }
+        if let val = directive("max_file_uploads") {
+            maxFileUploads = val.trimmingCharacters(in: .whitespaces)
+        }
+        if let val = directive("file_uploads") {
+            fileUploads = val.trimmingCharacters(in: .whitespaces).lowercased() != "off"
+                && val.trimmingCharacters(in: .whitespaces) != "0"
+        }
+        
+        // Execution Settings
+        if let val = directive("max_execution_time"), let num = Double(val.trimmingCharacters(in: .whitespaces)) {
+            maxExecutionTime = min(max(num, 30), 600)
+        }
+        if let val = directive("max_input_time"), let num = Double(val.trimmingCharacters(in: .whitespaces)) {
+            maxInputTime = min(max(num, 30), 300)
+        }
+        if let val = directive("memory_limit") {
+            let (num, unit) = parseSizeValue(val)
+            memoryLimit = num
+            memoryUnit = unit
+        }
+        
+        // Error Handling
+        if let val = directive("display_errors") {
+            let v = val.trimmingCharacters(in: .whitespaces).lowercased()
+            displayErrors = (v == "on" || v == "1")
+        }
+        if let val = directive("error_reporting") {
+            errorReporting = val.trimmingCharacters(in: .whitespaces)
+        }
     }
     
     private func saveConfig() async {
         isSaving = true
-        let updatedConfig = phpConfig.rawConfig
+        var config = phpConfig.rawConfig
         
-        // Update config string with new values
-        // (simplified - in real implementation would parse and update php.ini properly)
+        // Maps php.ini unit suffixes
+        func unitSuffix(_ unit: String) -> String {
+            switch unit {
+            case "GB": return "G"
+            case "KB": return "K"
+            default: return "M"
+            }
+        }
         
-        await onSave(updatedConfig)
+        // Replace or append a directive
+        func setDirective(_ name: String, _ value: String) {
+            let pattern = "(?m)^(\\s*;?\\s*)\(NSRegularExpression.escapedPattern(for: name))\\s*=.*$"
+            if let regex = try? NSRegularExpression(pattern: pattern),
+               regex.firstMatch(in: config, range: NSRange(config.startIndex..., in: config)) != nil {
+                config = regex.stringByReplacingMatches(
+                    in: config, range: NSRange(config.startIndex..., in: config),
+                    withTemplate: "\(name) = \(value)"
+                )
+            } else {
+                config += "\n\(name) = \(value)"
+            }
+        }
+        
+        // Apply all form values
+        setDirective("upload_max_filesize", "\(uploadMaxFilesize)\(unitSuffix(uploadUnit))")
+        setDirective("post_max_size", "\(postMaxSize)\(unitSuffix(postUnit))")
+        setDirective("max_file_uploads", maxFileUploads)
+        setDirective("file_uploads", fileUploads ? "On" : "Off")
+        setDirective("max_execution_time", "\(Int(maxExecutionTime))")
+        setDirective("max_input_time", "\(Int(maxInputTime))")
+        setDirective("memory_limit", "\(memoryLimit)\(unitSuffix(memoryUnit))")
+        setDirective("display_errors", displayErrors ? "On" : "Off")
+        setDirective("error_reporting", errorReporting)
+        
+        await onSave(config)
         isSaving = false
     }
 }

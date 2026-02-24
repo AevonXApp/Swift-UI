@@ -8,6 +8,30 @@
 import SwiftUI
 import AevonXCore
 
+enum FTPUserFilter: String, CaseIterable, Identifiable {
+    case all = "All"
+    case active = "Active"
+    case inactive = "Inactive"
+    
+    var id: String { rawValue }
+    
+    var icon: String {
+        switch self {
+        case .all: return "person.2"
+        case .active: return "checkmark.circle.fill"
+        case .inactive: return "pause.circle.fill"
+        }
+    }
+    
+    var color: Color {
+        switch self {
+        case .all: return .axAccentBlue
+        case .active: return .axSuccess
+        case .inactive: return .axTextMuted
+        }
+    }
+}
+
 struct FTPTab: View {
     let serverId: String
     @ObservedObject var connectionViewModel: ServerConnectionViewModel
@@ -16,6 +40,7 @@ struct FTPTab: View {
     @State private var selectedSubTab = 0
     @State private var showDeleteAlert = false
     @State private var userToDelete: FTPUser?
+    @State private var userFilter: FTPUserFilter = .all
     
     init(serverId: String, connectionViewModel: ServerConnectionViewModel) {
         self.serverId = serverId
@@ -281,17 +306,56 @@ struct FTPTab: View {
     
     private var usersContent: some View {
         VStack(spacing: AXSpacing.md) {
-            if vm.filteredUsers.isEmpty {
+            // Filter chips
+            HStack(spacing: 6) {
+                ForEach(FTPUserFilter.allCases) { filter in
+                    let count = countForFilter(filter)
+                    let isActive = userFilter == filter
+                    
+                    Button(action: {
+                        withAnimation(.spring(response: 0.3)) { userFilter = filter }
+                    }) {
+                        HStack(spacing: 4) {
+                            Image(systemName: filter.icon)
+                                .font(.system(size: 9, weight: .bold))
+                            Text(filter.rawValue)
+                                .font(.system(size: 11, weight: .semibold))
+                            Text("\(count)")
+                                .font(.system(size: 9, weight: .heavy, design: .rounded))
+                                .padding(.horizontal, 5)
+                                .padding(.vertical, 1)
+                                .background(
+                                    Capsule().fill(isActive ? Color.white.opacity(0.2) : filter.color.opacity(0.1))
+                                )
+                        }
+                        .foregroundColor(isActive ? .white : .axTextSecondary)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(
+                            Capsule().fill(isActive ? filter.color : Color.axSurface)
+                        )
+                        .overlay(
+                            Capsule().stroke(isActive ? Color.clear : Color.axBorder.opacity(0.4), lineWidth: 1)
+                        )
+                    }
+                    .buttonStyle(.plain)
+                }
+                Spacer()
+            }
+            
+            if filteredFTPUsers.isEmpty {
                 emptyUsersState
             } else {
                 // Table header
-                HStack(spacing: AXSpacing.md) {
+                HStack(spacing: 0) {
                     Text("User")
                         .frame(maxWidth: .infinity, alignment: .leading)
+                    Text("Quota")
+                        .frame(width: 80, alignment: .center)
                     Text("Status")
-                        .frame(width: 80)
+                        .frame(width: 80, alignment: .center)
                     Text("Password")
-                        .frame(width: 90, alignment: .trailing)
+                        .frame(width: 80, alignment: .center)
                     Text("Actions")
                         .frame(width: 130, alignment: .trailing)
                 }
@@ -301,7 +365,7 @@ struct FTPTab: View {
                 .tracking(0.5)
                 .padding(.horizontal, AXSpacing.md)
                 
-                ForEach(vm.filteredUsers) { user in
+                ForEach(filteredFTPUsers) { user in
                     FTPUserRow(
                         user: user,
                         onEdit: { vm.editingUser = user; vm.showAddSheet = true },
@@ -316,6 +380,22 @@ struct FTPTab: View {
                     )
                 }
             }
+        }
+    }
+    
+    private var filteredFTPUsers: [FTPUser] {
+        switch userFilter {
+        case .all: return vm.filteredUsers
+        case .active: return vm.filteredUsers.filter { $0.status == .active }
+        case .inactive: return vm.filteredUsers.filter { $0.status == .inactive }
+        }
+    }
+    
+    private func countForFilter(_ filter: FTPUserFilter) -> Int {
+        switch filter {
+        case .all: return vm.filteredUsers.count
+        case .active: return vm.filteredUsers.filter { $0.status == .active }.count
+        case .inactive: return vm.filteredUsers.filter { $0.status == .inactive }.count
         }
     }
     

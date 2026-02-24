@@ -130,6 +130,7 @@ public final class WebsiteDetailViewModel: ObservableObject {
             self.website.activeConnections = updatedCore.activeConnections
             self.website.phpVersion = updatedCore.phpVersion
             self.website.documentRoot = updatedCore.documentRoot
+            self.website.runtime = mapFromCoreRuntime(updatedCore.runtime)
             self.customPort = updatedCore.port ?? 80
             self.phpVersion = updatedCore.phpVersion ?? "8.2"
             self.documentRoot = updatedCore.documentRoot ?? ""
@@ -346,7 +347,7 @@ public final class WebsiteDetailViewModel: ObservableObject {
         isLoadingPHPVersions = true
         
         do {
-            installedPHPVersions = try await websiteManager.getInstalledPHPVersions(serverId: serverId)
+            installedPHPVersions = try await PHPVersionService().getInstalledVersions(serverId: serverId)
         } catch {
             CoreLogger.shared.debug("Failed to fetch PHP versions: \(error)", module: "WebsiteDetail")
         }
@@ -358,10 +359,16 @@ public final class WebsiteDetailViewModel: ObservableObject {
     public func startBrowsing(initialPath: String? = nil) {
         currentBrowsingPath = initialPath ?? documentRoot
         if currentBrowsingPath.isEmpty {
+            // Will be resolved dynamically when fetching items
             currentBrowsingPath = "/var/www"
         }
         isBrowsingPath = true
-        Task { await fetchBrowsingItems(path: currentBrowsingPath) }
+        Task {
+            if let serverId = serverId, currentBrowsingPath == "/var/www" {
+                currentBrowsingPath = (try? await ServerPathResolver.shared.webRoot(serverId: serverId)) ?? "/var/www"
+            }
+            await fetchBrowsingItems(path: currentBrowsingPath)
+        }
     }
     
     /// Fetches subdirectories for the current browsing path
@@ -438,5 +445,53 @@ public final class WebsiteDetailViewModel: ObservableObject {
         case .`static`: return .`static`
         case .docker: return .docker
         }
+    }
+    
+    private func mapFromCoreRuntime(_ type: CoreRuntimeType) -> RuntimeType {
+        switch type {
+        case .php: return .php
+        case .nodejs: return .nodejs
+        case .python: return .python
+        case .ruby: return .ruby
+        case .`static`: return .`static`
+        case .docker: return .docker
+        }
+    }
+    
+    // MARK: - Per-Site PHP Version Switching
+    
+    /// Switches the PHP version for this specific website by updating the nginx config.
+    public func switchWebsitePHPVersion(to newVersion: String) async {
+        guard let serverId = serverId else { return }
+        isSavingConfig = true
+        
+        do {
+            let updatedCoreInfo = CoreWebsiteInfo(
+                id: website.id,
+                name: website.name,
+                domain: website.domain,
+                status: website.status == .online ? .online : .offline,
+                sslEnabled: website.sslEnabled,
+                phpVersion: newVersion,
+                runtime: mapToCoreRuntime(website.runtime),
+                documentRoot: documentRoot,
+                configPath: website.configPath
+            )
+            
+            try await websiteManager.updateWebsiteConfiguration(
+                websiteId: website.domain,
+                configuration: updatedCoreInfo,
+                serverId: serverId
+            )
+            
+            // Update local state
+            self.phpVersion = newVersion
+            self.website.phpVersion = newVersion
+            toastManager.showSuccess("PHP version switched to \(newVersion)")
+        } catch {
+            toastManager.showError("Failed to switch PHP version: \(error.localizedDescription)")
+        }
+        
+        isSavingConfig = false
     }
 }

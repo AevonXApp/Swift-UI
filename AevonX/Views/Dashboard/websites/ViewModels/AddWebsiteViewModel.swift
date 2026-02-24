@@ -112,7 +112,7 @@ public final class AddWebsiteViewModel: ObservableObject {
         do {
             switch runtime {
             case .php:
-                phpVersions = try await configService.getInstalledPHPVersions(serverId: serverId)
+                phpVersions = try await PHPVersionService().getInstalledVersions(serverId: serverId)
                 selectedVersion = phpVersions.first ?? ""
             case .nodejs:
                 nodeVersions = try await configService.getInstalledNodeVersions(serverId: serverId)

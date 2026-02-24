@@ -408,7 +408,86 @@ public final class WebsiteManagementViewModel: ObservableObject {
             return String(format: "%.0f MB", total)
         }
     }
+    
+    // MARK: - Clone & Backup
+    
+    /// Clone a website (copy nginx config + document root)
+    @Published public var isCloning = false
+    
+    public func cloneWebsite(_ website: WebsiteInfo, newDomain: String) async throws {
+        guard let serverId = serverId else {
+            throw WebsiteOperationError.serverNotConfigured
+        }
+        
+        isCloning = true
+        defer { isCloning = false }
+        
+        let sshService = SSHService.shared
+        let sitesAvailable = try await ServerPathResolver.shared.nginxSitesAvailable(serverId: serverId)
+        let sitesEnabled = try await ServerPathResolver.shared.nginxSitesEnabled(serverId: serverId)
+        
+        // 1. Copy nginx config
+        let srcConfig = "\(sitesAvailable)/\(website.domain)"
+        let dstConfig = "\(sitesAvailable)/\(newDomain)"
+        _ = try await sshService.execute("sudo cp \(srcConfig) \(dstConfig)", serverId: serverId)
+        
+        // 2. Update domain in new config
+        _ = try await sshService.execute("sudo sed -i 's/\(website.domain)/\(newDomain)/g' \(dstConfig)", serverId: serverId)
+        
+        // 3. Copy document root
+        if let docRoot = website.documentRoot {
+            let parentDir = (docRoot as NSString).deletingLastPathComponent
+            let newRoot = "\(parentDir)/\(newDomain)"
+            _ = try await sshService.execute("sudo cp -r \(docRoot) \(newRoot)", serverId: serverId)
+            _ = try await sshService.execute("sudo sed -i 's|root \\(docRoot)|root \\(newRoot)|g' \(dstConfig)", serverId: serverId)
+        }
+        
+        // 4. Enable site
+        _ = try await sshService.execute("sudo ln -sf \(dstConfig) \(sitesEnabled)/\(newDomain)", serverId: serverId)
+        
+        // 5. Test & reload nginx
+        let testResult = try await sshService.execute("sudo nginx -t", serverId: serverId)
+        if testResult.exitCode == 0 {
+            _ = try await sshService.execute("sudo systemctl reload nginx", serverId: serverId)
+        }
+        
+        GlobalToastManager.shared.showSuccess("Site cloned to \(newDomain)")
+        await loadData()
+    }
+    
+    /// Backup a website (tar document root)
+    @Published public var isBackingUp = false
+    @Published public var lastBackupPath: String?
+    
+    public func backupWebsite(_ website: WebsiteInfo) async throws {
+        guard let serverId = serverId else {
+            throw WebsiteOperationError.serverNotConfigured
+        }
+        
+        isBackingUp = true
+        defer { isBackingUp = false }
+        
+        let sshService = SSHService.shared
+        let docRoot = website.documentRoot ?? "/var/www/\(website.domain)"
+        let timestamp = ISO8601DateFormatter().string(from: Date()).replacingOccurrences(of: ":", with: "-")
+        let backupDir = "/var/backups/aevonx"
+        let backupFile = "\(backupDir)/\(website.domain)_\(timestamp).tar.gz"
+        
+        // Create backup directory
+        _ = try await sshService.execute("sudo mkdir -p \(backupDir)", serverId: serverId)
+        
+        // Create tar backup
+        _ = try await sshService.execute("sudo tar -czf \(backupFile) -C \(docRoot) .", serverId: serverId)
+        
+        // Also backup nginx config
+        let sitesAvailable = try await ServerPathResolver.shared.nginxSitesAvailable(serverId: serverId)
+        _ = try await sshService.execute("sudo cp \(sitesAvailable)/\(website.domain) \(backupDir)/\(website.domain)_\(timestamp).nginx.conf", serverId: serverId)
+        
+        lastBackupPath = backupFile
+        GlobalToastManager.shared.showSuccess("Backup saved to \(backupFile)")
+    }
 }
+
 
 // MARK: - Website Operation Errors
 
