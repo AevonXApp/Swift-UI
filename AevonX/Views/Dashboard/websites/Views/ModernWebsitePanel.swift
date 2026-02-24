@@ -15,6 +15,7 @@ enum ModernSidebarItem: String, CaseIterable, Identifiable {
     case overview = "Overview"
     case domainManager = "Domain & Port"
     case siteDirectory = "Site Directory"
+    case gitSource = "Git Source"
     case urlRewrites = "URL Rewrites"
     case sslTls = "SSL/TLS"
     case runtimeConfig = "Runtime Config"
@@ -30,7 +31,8 @@ enum ModernSidebarItem: String, CaseIterable, Identifiable {
         case .overview: return "house.fill"
         case .domainManager: return "globe"
         case .siteDirectory: return "folder.fill"
-        case .urlRewrites: return "arrow.triangle.branch"
+        case .gitSource: return "arrow.triangle.branch"
+        case .urlRewrites: return "arrow.uturn.right"
         case .sslTls: return "lock.shield.fill"
         case .runtimeConfig: return "chevron.left.forwardslash.chevron.right"
         case .processManager: return "gearshape.2.fill"
@@ -55,6 +57,8 @@ enum ModernSidebarItem: String, CaseIterable, Identifiable {
             return "Process Manager"
         case .envVariables:
             return "Environment"
+        case .gitSource:
+            return "Git Source"
         default:
             return self.rawValue
         }
@@ -64,6 +68,8 @@ enum ModernSidebarItem: String, CaseIterable, Identifiable {
         switch self {
         case .runtimeConfig:
             return runtime.icon
+        case .gitSource:
+            return "arrow.triangle.branch"
         default:
             return self.icon
         }
@@ -74,6 +80,7 @@ enum ModernSidebarItem: String, CaseIterable, Identifiable {
         case .overview: return "Quick status and metrics"
         case .domainManager: return "Configure domains and ports"
         case .siteDirectory: return "Browse and manage files"
+        case .gitSource: return "Git clone, pull, branches & more"
         case .urlRewrites: return "Manage redirect rules"
         case .sslTls: return "SSL certificates & security"
         case .runtimeConfig:
@@ -92,7 +99,7 @@ enum ModernSidebarItem: String, CaseIterable, Identifiable {
 
     /// Returns sidebar items appropriate for the given runtime
     static func items(for runtime: RuntimeType) -> [Self] {
-        var result: [Self] = [.overview, .domainManager, .siteDirectory]
+        var result: [Self] = [.overview, .domainManager, .siteDirectory, .gitSource]
 
         switch runtime {
         case .php:
@@ -120,6 +127,7 @@ struct ModernWebsitePanel: View {
     @State private var selectedItem: ModernSidebarItem = .overview
     @State private var isHoveringBack = false
     @State private var showingDirectoryBrowser = false
+    @State private var gitVM: GitViewModel?
 
     var body: some View {
         HStack(spacing: 0) {
@@ -374,7 +382,7 @@ struct ModernWebsitePanel: View {
                 AXActionMenu(sections: [
                     AXMenuSection("Server", items: [
                         AXMenuItem("Edit Nginx Config", icon: "doc.text", color: .axAccentBlue) {
-                            selectedItem = .logs
+                            selectedItem = .urlRewrites
                         },
                         AXMenuItem(
                             viewModel.website.runtime == .php ? "Restart PHP-FPM" : (viewModel.website.runtime == .nodejs ? "Restart PM2" : "Restart Service"),
@@ -443,6 +451,8 @@ struct ModernWebsitePanel: View {
             domainManagerView
         case .siteDirectory:
             siteDirectoryView
+        case .gitSource:
+            gitSourceView
         case .urlRewrites:
             urlRewritesView
         case .sslTls:
@@ -971,6 +981,32 @@ struct ModernWebsitePanel: View {
             source: .website(domain: viewModel.website.domain),
             serverId: viewModel.serverId
         )
+    }
+
+    // MARK: - Git Source View
+
+    private var gitSourceView: some View {
+        Group {
+            if let serverId = viewModel.serverId {
+                let docRoot = viewModel.website.documentRoot ?? "/var/www/\(viewModel.website.domain)"
+                let vm = gitVM ?? {
+                    let newVM = GitViewModel(serverId: serverId, documentRoot: docRoot)
+                    DispatchQueue.main.async { self.gitVM = newVM }
+                    return newVM
+                }()
+                GitTab(vm: vm)
+            } else {
+                VStack(spacing: AXSpacing.md) {
+                    Image(systemName: "exclamationmark.triangle")
+                        .font(.system(size: 28))
+                        .foregroundColor(.axWarning)
+                    Text("Server not connected")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(.axTextSecondary)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
+        }
     }
 
     // MARK: - Runtime Config View (Dynamic)
