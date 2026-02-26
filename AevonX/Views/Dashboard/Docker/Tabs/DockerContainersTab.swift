@@ -34,6 +34,12 @@ struct DockerContainersTab: View {
     
     @State private var containerWorkingDir: String?
     
+    // New Feature States
+    @State private var selectedContainerForRollback: DockerContainer?
+    @State private var selectedContainerForClone: DockerContainer?
+    @State private var selectedContainerForSecurity: DockerContainer?
+    @State private var selectedContainerForBackup: DockerContainer?
+    
     // Filtered containers
     var filteredContainers: [DockerContainer] {
         var result = containers
@@ -175,6 +181,63 @@ struct DockerContainersTab: View {
                                             }
                                         )
                                     }
+                                    .contextMenu {
+                                        // Quick Actions Context Menu
+                                        if container.isRunning {
+                                            Button { handleContainerAction(id: container.id, action: "stop") } label: {
+                                                Label("Stop", systemImage: "stop.fill")
+                                            }
+                                            Button { handleContainerAction(id: container.id, action: "restart") } label: {
+                                                Label("Restart", systemImage: "arrow.clockwise")
+                                            }
+                                            Divider()
+                                            Button { handleContainerAction(id: container.id, action: "logs") } label: {
+                                                Label("View Logs", systemImage: "text.alignleft")
+                                            }
+                                            Button { handleContainerAction(id: container.id, action: "terminal") } label: {
+                                                Label("Open Terminal", systemImage: "terminal.fill")
+                                            }
+                                            Button { handleContainerAction(id: container.id, action: "inspect") } label: {
+                                                Label("Inspect", systemImage: "doc.text.magnifyingglass")
+                                            }
+                                        } else {
+                                            Button { handleContainerAction(id: container.id, action: "start") } label: {
+                                                Label("Start", systemImage: "play.fill")
+                                            }
+                                        }
+                                        Divider()
+                                        Button { handleContainerAction(id: container.id, action: "rollback") } label: {
+                                            Label("Rollback", systemImage: "arrow.uturn.backward.circle")
+                                        }
+                                        Button { handleContainerAction(id: container.id, action: "clone") } label: {
+                                            Label("Clone", systemImage: "doc.on.doc")
+                                        }
+                                        Button { handleContainerAction(id: container.id, action: "backup") } label: {
+                                            Label("Backup", systemImage: "externaldrive.badge.plus")
+                                        }
+                                        Button { handleContainerAction(id: container.id, action: "security") } label: {
+                                            Label("Security Audit", systemImage: "shield.checkered")
+                                        }
+                                        Button { handleContainerAction(id: container.id, action: "auto_update") } label: {
+                                            Label("Auto Update", systemImage: "arrow.triangle.2.circlepath")
+                                        }
+                                        Divider()
+                                        Button { handleContainerAction(id: container.id, action: "rename") } label: {
+                                            Label("Rename", systemImage: "pencil")
+                                        }
+                                        Button { handleContainerAction(id: container.id, action: "diff") } label: {
+                                            Label("Filesystem Changes", systemImage: "doc.badge.plus")
+                                        }
+                                        Button { handleContainerAction(id: container.id, action: "connect_domain") } label: {
+                                            Label("Connect Domain", systemImage: "globe")
+                                        }
+                                        if !container.isRunning {
+                                            Divider()
+                                            Button(role: .destructive) { handleContainerAction(id: container.id, action: "remove") } label: {
+                                                Label("Remove", systemImage: "trash")
+                                            }
+                                        }
+                                    }
                                     
                                     // Inline stats for running containers
                                     if container.isRunning {
@@ -256,7 +319,8 @@ struct DockerContainersTab: View {
         .sheet(item: $selectedContainerForDomain) { container in
             DockerConnectDomainSheet(
                 container: container,
-                serverId: serverId
+                serverId: serverId,
+                existingDomain: connectedDomains[container.id]
             )
         }
         .alert("Rename Container", isPresented: $showRenameAlert) {
@@ -279,6 +343,22 @@ struct DockerContainersTab: View {
             Button("Cancel", role: .cancel) {}
         } message: {
             Text("Enter a new name for this container")
+        }
+        .sheet(item: $selectedContainerForRollback) { container in
+            DockerRollbackSheet(container: container, serverId: serverId) {
+                refreshData()
+            }
+        }
+        .sheet(item: $selectedContainerForClone) { container in
+            DockerCloneSheet(container: container, serverId: serverId) {
+                refreshData()
+            }
+        }
+        .sheet(item: $selectedContainerForSecurity) { container in
+            DockerSecurityAuditView(container: container, serverId: serverId)
+        }
+        .sheet(item: $selectedContainerForBackup) { container in
+            DockerBackupSheet(container: container, serverId: serverId)
         }
     }
     
@@ -345,6 +425,18 @@ struct DockerContainersTab: View {
                 return
             case "connect_domain":
                 selectedContainerForDomain = container
+                return
+            case "rollback":
+                selectedContainerForRollback = container
+                return
+            case "clone":
+                selectedContainerForClone = container
+                return
+            case "security":
+                selectedContainerForSecurity = container
+                return
+            case "backup":
+                selectedContainerForBackup = container
                 return
             default: break
             }
@@ -449,6 +541,7 @@ private struct ContainerRow: View {
                             .frame(width: 32)
                     } else {
                         if container.isRunning {
+                            // 4 primary actions
                             ContainerActionButton(icon: "stop.fill", color: .axTextSecondary, hoverColor: .axError) {
                                 onAction("stop")
                             }
@@ -469,49 +562,33 @@ private struct ContainerRow: View {
                             }
                             .help("Open Terminal")
                             
-                            ContainerActionButton(icon: "doc.text.magnifyingglass", color: .axTextSecondary, hoverColor: .purple) {
-                                onAction("inspect")
-                            }
-                            .help("Inspect")
-                            
-                            ContainerActionButton(icon: "sparkles", color: .axTextSecondary, hoverColor: .purple) {
-                                onAction("ai_log")
-                            }
-                            .help("AI Log Analyzer")
-                            
-                            ContainerActionButton(icon: "pencil", color: .axTextSecondary, hoverColor: .orange) {
-                                onAction("rename")
-                            }
-                            .help("Rename")
-                            
-                            ContainerActionButton(icon: "gauge.with.dots.needle.33percent", color: .axTextSecondary, hoverColor: .orange) {
-                                onAction("limits")
-                            }
-                            .help("Resource Limits")
-                            
-                            ContainerActionButton(icon: "arrow.clockwise.circle", color: .axTextSecondary, hoverColor: .cyan) {
-                                onAction("restart_policy")
-                            }
-                            .help("Restart Policy")
-                            
-                            ContainerActionButton(icon: "doc.badge.plus", color: .axTextSecondary, hoverColor: .mint) {
-                                onAction("diff")
-                            }
-                            .help("Filesystem Changes")
-                            
+                            // Domain indicator
                             if let domain = connectedDomain {
-                                // Domain connected — show green globe with domain name
                                 ContainerActionButton(icon: "globe", color: .axSuccess, hoverColor: .axSuccess) {
                                     onAction("connect_domain")
                                 }
                                 .help("Domain: \(domain)")
-                            } else {
-                                ContainerActionButton(icon: "globe", color: .axTextSecondary, hoverColor: .axAccentBlue) {
-                                    onAction("connect_domain")
-                                }
-                                .help("Connect Domain")
                             }
+                            
+                            // More menu (AXActionMenu popover)
+                            AXActionMenu.dockerContainerActions(
+                                isRunning: container.isRunning,
+                                hasDomain: connectedDomain != nil,
+                                onInspect: { onAction("inspect") },
+                                onAILog: { onAction("ai_log") },
+                                onRename: { onAction("rename") },
+                                onLimits: { onAction("limits") },
+                                onRestartPolicy: { onAction("restart_policy") },
+                                onDiff: { onAction("diff") },
+                                onDomain: { onAction("connect_domain") },
+                                onRollback: { onAction("rollback") },
+                                onClone: { onAction("clone") },
+                                onBackup: { onAction("backup") },
+                                onRemove: container.isRunning ? nil : { onAction("remove") }
+                            )
+                            .frame(width: 32)
                         } else {
+                            // Stopped container: Start + Logs + More
                             ContainerActionButton(icon: "play.fill", color: .axSuccess, hoverColor: .axSuccess) {
                                 onAction("start")
                             }
@@ -522,10 +599,37 @@ private struct ContainerRow: View {
                             }
                             .help("View Logs")
                             
-                            ContainerActionButton(icon: "trash", color: .axTextSecondary, hoverColor: .axError) {
-                                onAction("remove")
+                            Menu {
+                                Button { onAction("inspect") } label: {
+                                    Label("Inspect", systemImage: "doc.text.magnifyingglass")
+                                }
+                                Button { onAction("rename") } label: {
+                                    Label("Rename", systemImage: "pencil")
+                                }
+                                Button { onAction("rollback") } label: {
+                                    Label("Rollback", systemImage: "arrow.uturn.backward")
+                                }
+                                Button { onAction("clone") } label: {
+                                    Label("Clone", systemImage: "doc.on.doc")
+                                }
+                                Divider()
+                                Button(role: .destructive) { onAction("remove") } label: {
+                                    Label("Remove", systemImage: "trash")
+                                }
+                            } label: {
+                                Image(systemName: "ellipsis")
+                                    .font(.system(size: 14))
+                                    .foregroundColor(.axTextSecondary)
+                                    .frame(width: 32, height: 32)
+                                    .background(Color.axSurface.opacity(0.5))
+                                    .cornerRadius(AXCornerRadius.sm)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: AXCornerRadius.sm)
+                                            .stroke(Color.axBorder.opacity(0.5), lineWidth: 1)
+                                    )
                             }
-                            .help("Remove")
+                            .menuStyle(.borderlessButton)
+                            .frame(width: 32)
                         }
                     }
                 }

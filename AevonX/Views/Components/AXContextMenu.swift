@@ -216,4 +216,48 @@ extension AXActionMenu {
             ]),
         ])
     }
+    
+    /// Docker container row action menu
+    static func dockerContainerActions(
+        isRunning: Bool,
+        hasDomain: Bool,
+        onInspect: @escaping () -> Void,
+        onAILog: @escaping () -> Void,
+        onRename: @escaping () -> Void,
+        onLimits: @escaping () -> Void,
+        onRestartPolicy: @escaping () -> Void,
+        onDiff: @escaping () -> Void,
+        onDomain: @escaping () -> Void,
+        onRollback: @escaping () -> Void,
+        onClone: @escaping () -> Void,
+        onBackup: @escaping () -> Void,
+        onRemove: (() -> Void)? = nil
+    ) -> AXActionMenu {
+        var sections: [AXMenuSection] = [
+            AXMenuSection("Inspect", items: [
+                AXMenuItem("Inspect", icon: "doc.text.magnifyingglass", color: .axAccentBlue, action: onInspect),
+                AXMenuItem("AI Log Analyzer", icon: "sparkles", color: .purple, action: onAILog),
+            ]),
+            AXMenuSection("Configuration", items: [
+                AXMenuItem("Rename", icon: "pencil", color: .axAccentBlue, action: onRename),
+                AXMenuItem("Resource Limits", icon: "gauge.with.dots.needle.33percent", color: .orange, action: onLimits),
+                AXMenuItem("Restart Policy", icon: "arrow.clockwise.circle", color: .cyan, action: onRestartPolicy),
+                AXMenuItem("Filesystem Changes", icon: "doc.badge.plus", color: .mint, action: onDiff),
+                AXMenuItem(hasDomain ? "Change Domain" : "Connect Domain", icon: "globe", color: .axSuccess, action: onDomain),
+            ]),
+            AXMenuSection("Management", items: [
+                AXMenuItem("Rollback", icon: "arrow.uturn.backward", color: .indigo, action: onRollback),
+                AXMenuItem("Clone", icon: "doc.on.doc", color: .axAccentPurple, action: onClone),
+                AXMenuItem("Backup", icon: "externaldrive", color: .orange, action: onBackup),
+            ]),
+        ]
+        
+        if let onRemove = onRemove {
+            sections.append(AXMenuSection(items: [
+                AXMenuItem("Remove", icon: "trash", isDestructive: true, action: onRemove),
+            ]))
+        }
+        
+        return AXActionMenu(sections: sections, triggerIcon: "ellipsis", triggerSize: 32)
+    }
 }

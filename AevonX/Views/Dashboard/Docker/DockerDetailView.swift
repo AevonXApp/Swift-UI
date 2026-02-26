@@ -29,6 +29,9 @@ struct DockerDetailView: View {
         case networks = "Networks"
         case compose = "Compose"
         case health = "Health"
+        case security = "Security"
+        case logs = "Logs"
+        case tools = "Tools"
         
         var id: String { rawValue }
         
@@ -41,6 +44,9 @@ struct DockerDetailView: View {
             case .networks: return "network"
             case .compose: return "square.stack.3d.up.fill"
             case .health: return "heart.fill"
+            case .security: return "shield.lefthalf.filled"
+            case .logs: return "text.line.first.and.arrowtriangle.forward"
+            case .tools: return "wrench.and.screwdriver.fill"
             }
         }
     }
@@ -154,22 +160,38 @@ struct DockerDetailView: View {
                         checkInstallation()
                     }
                 } else {
-                    ScrollView {
-                        switch selectedTab {
-                        case .overview:
-                            DockerOverviewTab(server: server, serverId: serverId, connectionViewModel: connectionViewModel) 
-                        case .containers:
-                            DockerContainersTab(server: server, serverId: serverId, connectionViewModel: connectionViewModel)
-                        case .images:
-                            DockerImagesTab(server: server, serverId: serverId, connectionViewModel: connectionViewModel)
-                        case .volumes:
-                            DockerVolumesTab(server: server, serverId: serverId, connectionViewModel: connectionViewModel)
-                        case .networks:
-                            DockerNetworksTab(serverId: serverId)
-                        case .compose:
-                            DockerComposeTab(serverId: serverId)
-                        case .health:
-                            DockerHealthTab(serverId: serverId)
+                    // Tabs that manage their own scrolling render directly
+                    switch selectedTab {
+                    case .logs:
+                        DockerLogsTab(serverId: serverId)
+                    case .tools:
+                        DockerToolsTab(serverId: serverId)
+                    case .security:
+                        ScrollView {
+                            DockerSecurityTab(serverId: serverId)
+                                .padding(.horizontal, AXSpacing.lg)
+                                .padding(.bottom, AXSpacing.xl)
+                        }
+                    default:
+                        ScrollView {
+                            switch selectedTab {
+                            case .overview:
+                                DockerOverviewTab(server: server, serverId: serverId, connectionViewModel: connectionViewModel) 
+                            case .containers:
+                                DockerContainersTab(server: server, serverId: serverId, connectionViewModel: connectionViewModel)
+                            case .images:
+                                DockerImagesTab(server: server, serverId: serverId, connectionViewModel: connectionViewModel)
+                            case .volumes:
+                                DockerVolumesTab(server: server, serverId: serverId, connectionViewModel: connectionViewModel)
+                            case .networks:
+                                DockerNetworksTab(serverId: serverId)
+                            case .compose:
+                                DockerComposeTab(serverId: serverId)
+                            case .health:
+                                DockerHealthTab(serverId: serverId)
+                            default:
+                                EmptyView()
+                            }
                         }
                     }
                 }
