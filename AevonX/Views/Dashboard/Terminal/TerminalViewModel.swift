@@ -199,6 +199,11 @@ class TerminalViewModel: ObservableObject {
         addToHistory(command)
         if preferences.showCommandTimer { commandStartTime = Date() }
 
+        // Invalidate directory cache if cd command
+        if command.hasPrefix("cd ") || command == "cd" {
+            invalidateDirectoryCache()
+        }
+
         // Send to shell
         guard let session = interactiveSession else { return }
         Task {
@@ -353,32 +358,173 @@ class TerminalViewModel: ObservableObject {
         }
     }
 
-    // MARK: - Suggestions
+    // MARK: - Smart Suggestions
+
+    private var suggestionsTask: Task<Void, Never>?
+    private var cachedDirContents: [String: (entries: [String], timestamp: Date)] = [:]
+    private let cacheTTL: TimeInterval = 10 // Cache for 10 seconds
 
     func updateSuggestions() {
         let input = inputCommand.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !input.isEmpty else { commandSuggestions = []; return }
 
-        var suggestions: [String] = []
+        // Cancel previous async fetch
+        suggestionsTask?.cancel()
 
-        // Static suggestions from Core
-        let staticSuggestions = terminalService.getStaticSuggestions(for: input)
-        suggestions.append(contentsOf: staticSuggestions)
+        // Determine if we need live SSH suggestions
+        let parts = input.split(separator: " ", maxSplits: 1).map(String.init)
+        let baseCmd = parts.first?.lowercased() ?? ""
+        let argument = parts.count > 1 ? parts[1] : ""
 
-        // History suggestions
-        let inputLower = input.lowercased()
-        let historySuggestions = commandHistory.filter { $0.lowercased().starts(with: inputLower) }.suffix(3)
-        for hist in historySuggestions {
-            if !suggestions.contains(where: { $0.lowercased() == hist.lowercased() }) {
-                suggestions.append(hist)
+        let needsPathSuggestions = ["cd", "ls", "cat", "less", "more", "head", "tail",
+                                     "vim", "vi", "nano", "cp", "mv", "rm", "chmod",
+                                     "chown", "stat", "file", "source", "bash", "sh"].contains(baseCmd)
+        let needsDirOnly = ["cd"].contains(baseCmd)
+
+        if needsPathSuggestions && parts.count >= 1 {
+            // Async: fetch real paths from server
+            suggestionsTask = Task { [weak self] in
+                guard let self = self else { return }
+
+                // Show static suggestions immediately while fetching
+                let quick = self.getQuickSuggestions(input: input, baseCmd: baseCmd)
+                if !quick.isEmpty {
+                    self.commandSuggestions = quick
+                }
+
+                // Determine which directory to list
+                let dirToList: String
+                let partialName: String
+
+                if argument.isEmpty {
+                    dirToList = "."
+                    partialName = ""
+                } else if argument.hasSuffix("/") {
+                    dirToList = argument
+                    partialName = ""
+                } else {
+                    // e.g. "cd /var/ww" → list "/var/" and filter "ww"
+                    let lastSlash = argument.lastIndex(of: "/")
+                    if let idx = lastSlash {
+                        dirToList = String(argument[...idx])
+                        partialName = String(argument[argument.index(after: idx)...])
+                    } else {
+                        dirToList = "."
+                        partialName = argument
+                    }
+                }
+
+                guard !Task.isCancelled else { return }
+
+                // Check cache
+                let entries: [String]
+                if let cached = self.cachedDirContents[dirToList],
+                   Date().timeIntervalSince(cached.timestamp) < self.cacheTTL {
+                    entries = cached.entries
+                } else {
+                    // Fetch from server
+                    let fetched = await self.terminalService.fetchDirectoryContents(
+                        path: dirToList, serverId: self.serverId
+                    )
+                    guard !Task.isCancelled else { return }
+                    self.cachedDirContents[dirToList] = (entries: fetched, timestamp: Date())
+                    entries = fetched
+                }
+
+                guard !Task.isCancelled else { return }
+
+                // Filter entries
+                var filtered = entries.filter { entry in
+                    if needsDirOnly && !entry.hasSuffix("/") { return false }
+                    if partialName.isEmpty { return true }
+                    let name = entry.replacingOccurrences(of: "/", with: "")
+                                    .replacingOccurrences(of: "*", with: "")
+                                    .replacingOccurrences(of: "@", with: "")
+                    return name.lowercased().hasPrefix(partialName.lowercased())
+                }
+
+                // Build full suggestion strings
+                let prefix: String
+                if dirToList == "." {
+                    prefix = baseCmd + " "
+                } else {
+                    prefix = baseCmd + " " + dirToList
+                }
+
+                var suggestions = filtered.prefix(8).map { entry -> String in
+                    let cleanEntry = entry.replacingOccurrences(of: "*", with: "")
+                                         .replacingOccurrences(of: "@", with: "")
+                    return prefix + cleanEntry
+                }
+
+                // Add history matches
+                let inputLower = input.lowercased()
+                let histMatches = self.commandHistory.filter {
+                    $0.lowercased().starts(with: inputLower)
+                }.suffix(2)
+                for hist in histMatches {
+                    if !suggestions.contains(where: { $0.lowercased() == hist.lowercased() }) {
+                        suggestions.append(hist)
+                    }
+                }
+
+                guard !Task.isCancelled else { return }
+                self.commandSuggestions = Array(suggestions.prefix(8))
             }
+        } else {
+            // Synchronous: static + history suggestions
+            var suggestions: [String] = []
+
+            let staticSuggestions = terminalService.getStaticSuggestions(for: input)
+            suggestions.append(contentsOf: staticSuggestions)
+
+            let inputLower = input.lowercased()
+            let historySuggestions = commandHistory.filter {
+                $0.lowercased().starts(with: inputLower)
+            }.suffix(3)
+            for hist in historySuggestions {
+                if !suggestions.contains(where: { $0.lowercased() == hist.lowercased() }) {
+                    suggestions.append(hist)
+                }
+            }
+
+            commandSuggestions = Array(suggestions.prefix(8))
+        }
+    }
+
+    /// Quick suggestions shown instantly while SSH fetch is in progress
+    private func getQuickSuggestions(input: String, baseCmd: String) -> [String] {
+        let inputLower = input.lowercased()
+
+        // History-based
+        var quick = commandHistory.filter {
+            $0.lowercased().starts(with: inputLower)
+        }.suffix(3).map { $0 }
+
+        // Common shortcuts for the base command
+        switch baseCmd {
+        case "cd":
+            let cdQuick = ["cd ..", "cd ~", "cd -", "cd /"]
+                .filter { $0.starts(with: input) }
+            quick.insert(contentsOf: cdQuick, at: 0)
+        case "ls":
+            let lsQuick = ["ls -la", "ls -lh", "ls -lt"]
+                .filter { $0.starts(with: input) }
+            quick.insert(contentsOf: lsQuick, at: 0)
+        default:
+            break
         }
 
-        commandSuggestions = Array(suggestions.prefix(5))
+        return Array(quick.prefix(3))
     }
 
     func acceptSuggestion(_ suggestion: String) {
         inputCommand = suggestion
         commandSuggestions = []
+    }
+
+    /// Invalidate cache when directory changes (cd command)
+    func invalidateDirectoryCache() {
+        cachedDirContents.removeAll()
     }
 }
