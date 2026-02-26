@@ -5,6 +5,7 @@
 
 import SwiftUI
 import AevonXCore
+import UniformTypeIdentifiers
 
 struct PluginsTab: View {
     let server: Server?
@@ -13,6 +14,9 @@ struct PluginsTab: View {
     
     @State private var selectedTab: PluginViewType = .marketplace
     @State private var pluginForConfiguration: Plugin?
+    
+    // Dev build sheet
+    @State private var showDevBuildSheet: Bool = false
     
     enum PluginViewType: String, CaseIterable, Identifiable {
         case marketplace = "Marketplace"
@@ -36,13 +40,56 @@ struct PluginsTab: View {
                 }
             } else {
                 VStack(spacing: 0) {
-                    // Header with Segmented Control
-                    HStack {
+                    // Header with Segmented Control + Developer Buttons
+                    HStack(spacing: AXSpacing.md) {
                         Text("Plugins")
                             .font(AXTypography.headline)
                             .foregroundColor(.axTextPrimary)
                         
                         Spacer()
+                        
+                        // Upload Build Button → opens terminal sheet
+                        Button(action: { showDevBuildSheet = true }) {
+                            HStack(spacing: 6) {
+                                Image(systemName: "arrow.up.doc.fill")
+                                    .font(.system(size: 11, weight: .semibold))
+                                Text("Upload Build")
+                                    .font(.system(size: 12, weight: .semibold))
+                            }
+                            .foregroundColor(.white)
+                            .padding(.horizontal, AXSpacing.md)
+                            .padding(.vertical, 7)
+                            .background(
+                                RoundedRectangle(cornerRadius: AXCornerRadius.md)
+                                    .fill(Color.axAccentBlue)
+                            )
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                        .disabled(serverId == nil)
+                        .help("Upload a dev plugin build (.zip) to test on this server")
+                        
+                        // Join Developers Button
+                        Button(action: { openDeveloperPage() }) {
+                            HStack(spacing: 6) {
+                                Image(systemName: "person.badge.plus")
+                                    .font(.system(size: 11, weight: .semibold))
+                                Text("Join Developers")
+                                    .font(.system(size: 12, weight: .semibold))
+                            }
+                            .foregroundColor(.axAccentBlue)
+                            .padding(.horizontal, AXSpacing.md)
+                            .padding(.vertical, 7)
+                            .background(
+                                RoundedRectangle(cornerRadius: AXCornerRadius.md)
+                                    .fill(Color.axAccentBlue.opacity(0.1))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: AXCornerRadius.md)
+                                            .stroke(Color.axAccentBlue.opacity(0.3), lineWidth: 1)
+                                    )
+                            )
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                        .help("Apply to become an AevonX plugin developer")
                         
                         Picker("", selection: $selectedTab) {
                             ForEach(PluginViewType.allCases) { type in
@@ -88,6 +135,21 @@ struct PluginsTab: View {
                 }
                 .transition(.move(edge: .leading).combined(with: .opacity))
             }
+        }
+        .sheet(isPresented: $showDevBuildSheet) {
+            if let sid = serverId {
+                DevBuildLogSheet(serverId: sid)
+            }
+        }
+    }
+    
+    // MARK: - Developer Page
+    
+    private func openDeveloperPage() {
+        let baseURL = ConfigurationManager.shared.currentConfiguration.fullBaseURL
+        let urlString = "\(baseURL)/apply-developer"
+        if let url = URL(string: urlString) {
+            NSWorkspace.shared.open(url)
         }
     }
 }

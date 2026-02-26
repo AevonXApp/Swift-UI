@@ -173,10 +173,10 @@ struct DashboardSidebar: View {
         .onChange(of: viewModel.isConnected) {
             if viewModel.isConnected {
                 Task {
-                    await PluginLoader.shared.load(serverId: server.id.uuidString)
+                    await HookLoader.shared.load(serverId: server.id.uuidString)
                 }
             } else {
-                PluginLoader.shared.unload()
+                HookLoader.shared.unload()
             }
         }
     }

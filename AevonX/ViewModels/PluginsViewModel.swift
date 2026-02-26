@@ -97,7 +97,7 @@ class PluginsViewModel: ObservableObject {
             await loadInstalledPlugins(on: serverId)
             
             // Reload hooks so plugin UI (dashboard, tabs, actions) appears immediately
-            await PluginLoader.shared.load(serverId: serverId, force: true)
+            await HookLoader.shared.load(serverId: serverId, force: true)
             
             // Clear progress after short delay
             try? await Task.sleep(nanoseconds: 3_000_000_000)
@@ -172,7 +172,7 @@ class PluginsViewModel: ObservableObject {
             await loadInstalledPlugins(on: serverId)
             
             // Reload hooks to remove plugin UI elements
-            await PluginLoader.shared.load(serverId: serverId, force: true)
+            await HookLoader.shared.load(serverId: serverId, force: true)
             
             // Clear progress after short delay
             try? await Task.sleep(nanoseconds: 2_000_000_000)
