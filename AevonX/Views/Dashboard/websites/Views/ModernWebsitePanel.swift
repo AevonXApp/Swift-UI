@@ -9,35 +9,86 @@
 import SwiftUI
 import AevonXCore
 
+// MARK: - Sidebar Category
+
+enum SidebarCategory: String, CaseIterable, Identifiable {
+    case core = "Core"
+    case security = "Security"
+    case performance = "Performance"
+    case tools = "Tools"
+
+    var id: String { rawValue }
+
+    var icon: String {
+        switch self {
+        case .core: return "pin.fill"
+        case .security: return "lock.fill"
+        case .performance: return "bolt.fill"
+        case .tools: return "wrench.fill"
+        }
+    }
+}
+
 // MARK: - Sidebar Items
 
 enum ModernSidebarItem: String, CaseIterable, Identifiable {
+    // Core
     case overview = "Overview"
-    case domainManager = "Domain & Port"
+    case domainManager = "Domain"
     case siteDirectory = "Site Directory"
-    case gitSource = "Git Source"
-    case urlRewrites = "URL Rewrites"
-    case sslTls = "SSL/TLS"
+    case serverConfig = "Server Config"
     case runtimeConfig = "Runtime Config"
-    case processManager = "Process Manager"
+    // Security
+    case sslTls = "SSL/TLS"
+    case siteSecurity = "Site Security"
+    case httpHeaders = "HTTP Headers"
+    // Performance
+    case cacheManager = "Cache Manager"
+    case performance = "Performance"
+    case monitoring = "Monitoring"
+    // Tools
+    case quickActions = "Quick Actions"
+    case gitSource = "Git & Deploy"
+    case urlRewrites = "URL Rewrites"
+    case backupRestore = "Backups"
+    case cloneMigrate = "Clone & Migrate"
+    case databaseLink = "Database Link"
     case envVariables = "Environment"
-    case trafficControl = "Traffic Analytics"
+    case processManager = "Process Manager"
     case logs = "Logs"
 
     var id: String { self.rawValue }
 
+    var category: SidebarCategory {
+        switch self {
+        case .overview, .domainManager, .siteDirectory, .serverConfig, .runtimeConfig: return .core
+        case .sslTls, .siteSecurity, .httpHeaders: return .security
+        case .cacheManager, .performance, .monitoring: return .performance
+        case .quickActions, .gitSource, .urlRewrites, .backupRestore, .cloneMigrate, .databaseLink, .envVariables, .processManager, .logs: return .tools
+        }
+    }
+
     var icon: String {
         switch self {
         case .overview: return "house.fill"
-        case .domainManager: return "globe"
+        case .domainManager: return "globe.americas.fill"
         case .siteDirectory: return "folder.fill"
+        case .serverConfig: return "doc.badge.gearshape.fill"
+        case .runtimeConfig: return "chevron.left.forwardslash.chevron.right"
+        case .sslTls: return "lock.shield.fill"
+        case .siteSecurity: return "shield.lefthalf.filled"
+        case .httpHeaders: return "text.badge.plus"
+        case .cacheManager: return "bolt.circle.fill"
+        case .performance: return "gauge.with.dots.needle.67percent"
+        case .monitoring: return "chart.xyaxis.line"
+        case .quickActions: return "bolt.fill"
         case .gitSource: return "arrow.triangle.branch"
         case .urlRewrites: return "arrow.uturn.right"
-        case .sslTls: return "lock.shield.fill"
-        case .runtimeConfig: return "chevron.left.forwardslash.chevron.right"
-        case .processManager: return "gearshape.2.fill"
+        case .backupRestore: return "archivebox.fill"
+        case .cloneMigrate: return "doc.on.doc.fill"
+        case .databaseLink: return "cylinder.fill"
         case .envVariables: return "key.fill"
-        case .trafficControl: return "chart.xyaxis.line"
+        case .processManager: return "gearshape.2.fill"
         case .logs: return "text.alignleft"
         }
     }
@@ -53,12 +104,6 @@ enum ModernSidebarItem: String, CaseIterable, Identifiable {
             case .docker: return "Docker Config"
             case .static: return "Site Config"
             }
-        case .processManager:
-            return "Process Manager"
-        case .envVariables:
-            return "Environment"
-        case .gitSource:
-            return "Git Source"
         default:
             return self.rawValue
         }
@@ -66,23 +111,17 @@ enum ModernSidebarItem: String, CaseIterable, Identifiable {
 
     func icon(for runtime: RuntimeType) -> String {
         switch self {
-        case .runtimeConfig:
-            return runtime.icon
-        case .gitSource:
-            return "arrow.triangle.branch"
-        default:
-            return self.icon
+        case .runtimeConfig: return runtime.icon
+        default: return self.icon
         }
     }
 
     func description(for runtime: RuntimeType) -> String {
         switch self {
-        case .overview: return "Quick status and metrics"
-        case .domainManager: return "Configure domains and ports"
+        case .overview: return "Quick status & health score"
+        case .domainManager: return "Domains, aliases, subdomains & DNS"
         case .siteDirectory: return "Browse and manage files"
-        case .gitSource: return "Git clone, pull, branches & more"
-        case .urlRewrites: return "Manage redirect rules"
-        case .sslTls: return "SSL certificates & security"
+        case .serverConfig: return "Nginx/Apache site config editor"
         case .runtimeConfig:
             switch runtime {
             case .php: return "PHP version & extensions"
@@ -90,30 +129,54 @@ enum ModernSidebarItem: String, CaseIterable, Identifiable {
             case .python: return "Python version & packages"
             default: return "Runtime configuration"
             }
-        case .processManager: return "PM2/Supervisor process control"
+        case .sslTls: return "SSL certificates & HTTPS"
+        case .siteSecurity: return "Hotlink, rate-limit, bot block"
+        case .httpHeaders: return "CORS, CSP, security headers"
+        case .cacheManager: return "FastCGI, Redis, browser cache"
+        case .performance: return "Speed analysis & nginx tuning"
+        case .monitoring: return "Uptime, traffic & analytics"
+        case .gitSource: return "Git, build & deploy pipeline"
+        case .urlRewrites: return "Redirect & rewrite rules"
+        case .quickActions: return "Quick one-click server actions"
+        case .backupRestore: return "Manual & scheduled backups"
+        case .cloneMigrate: return "Clone, staging & migration"
+        case .databaseLink: return "Link DB & connection strings"
         case .envVariables: return "Environment variables (.env)"
-        case .trafficControl: return "Visitor stats & analytics"
-        case .logs: return "Access & error logs"
+        case .processManager: return "PM2/Supervisor process control"
+        case .logs: return "Log viewer, search & filtering"
         }
     }
 
-    /// Returns sidebar items appropriate for the given runtime
-    static func items(for runtime: RuntimeType) -> [Self] {
-        var result: [Self] = [.overview, .domainManager, .siteDirectory, .gitSource]
+    /// Returns sidebar items organized by category for the given runtime
+    static func categorizedItems(for runtime: RuntimeType) -> [(SidebarCategory, [Self])] {
+        var core: [Self] = [.overview, .domainManager, .siteDirectory, .serverConfig]
+        var security: [Self] = [.sslTls, .siteSecurity, .httpHeaders]
+        var perf: [Self] = [.cacheManager, .performance, .monitoring]
+        var tools: [Self] = [.quickActions, .gitSource, .urlRewrites, .backupRestore, .cloneMigrate, .databaseLink]
 
         switch runtime {
         case .php:
-            result += [.urlRewrites, .sslTls, .runtimeConfig]
-        case .nodejs, .python:
-            result += [.sslTls, .runtimeConfig, .processManager, .envVariables]
-        case .ruby, .docker:
-            result += [.sslTls, .runtimeConfig, .processManager, .envVariables]
+            core.append(.runtimeConfig)
+        case .nodejs, .python, .ruby, .docker:
+            core.append(.runtimeConfig)
+            tools.append(contentsOf: [.processManager, .envVariables])
         case .static:
-            result += [.urlRewrites, .sslTls]
+            break
         }
 
-        result += [.trafficControl, .logs]
-        return result
+        tools.append(contentsOf: [.logs])
+
+        return [
+            (.core, core),
+            (.security, security),
+            (.performance, perf),
+            (.tools, tools),
+        ]
+    }
+
+    /// Flat list for compatibility
+    static func items(for runtime: RuntimeType) -> [Self] {
+        categorizedItems(for: runtime).flatMap { $0.1 }
     }
 }
 
@@ -128,6 +191,22 @@ struct ModernWebsitePanel: View {
     @State private var isHoveringBack = false
     @State private var showingDirectoryBrowser = false
     @State private var gitVM: GitViewModel?
+    @State private var sectionFactory: WebsiteSectionFactory?
+
+    /// Lazy factory for ViewModel caching across sidebar navigation
+    private func getFactory() -> WebsiteSectionFactory {
+        if let factory = sectionFactory {
+            return factory
+        }
+        let factory = WebsiteSectionFactory(
+            serverId: viewModel.serverId ?? "",
+            domain: viewModel.website.domain,
+            docRoot: viewModel.website.documentRoot ?? "/var/www/\(viewModel.website.domain)",
+            runtime: viewModel.website.runtime
+        )
+        DispatchQueue.main.async { self.sectionFactory = factory }
+        return factory
+    }
 
     var body: some View {
         HStack(spacing: 0) {
@@ -228,18 +307,21 @@ struct ModernWebsitePanel: View {
 
             // Navigation Items
             ScrollView(showsIndicators: false) {
-                VStack(spacing: AXSpacing.xs) {
-                    ForEach(ModernSidebarItem.items(for: viewModel.website.runtime)) { item in
-                        PremiumSidebarButton(
-                            item: item,
-                            runtime: viewModel.website.runtime,
-                            isSelected: selectedItem == item,
-                            action: {
-                                withAnimation(.easeInOut(duration: 0.2)) {
-                                    selectedItem = item
+                VStack(spacing: AXSpacing.xxs) {
+                    ForEach(ModernSidebarItem.categorizedItems(for: viewModel.website.runtime), id: \.0) { category, items in
+                        SidebarCategoryHeader(title: category.rawValue, icon: category.icon)
+                        ForEach(items) { item in
+                            PremiumSidebarButton(
+                                item: item,
+                                runtime: viewModel.website.runtime,
+                                isSelected: selectedItem == item,
+                                action: {
+                                    withAnimation(.easeInOut(duration: 0.2)) {
+                                        selectedItem = item
+                                    }
                                 }
-                            }
-                        )
+                            )
+                        }
                     }
                 }
                 .padding(.horizontal, AXSpacing.md)
@@ -382,7 +464,7 @@ struct ModernWebsitePanel: View {
                 AXActionMenu(sections: [
                     AXMenuSection("Server", items: [
                         AXMenuItem("Edit Nginx Config", icon: "doc.text", color: .axAccentBlue) {
-                            selectedItem = .urlRewrites
+                            selectedItem = .serverConfig
                         },
                         AXMenuItem(
                             viewModel.website.runtime == .php ? "Restart PHP-FPM" : (viewModel.website.runtime == .nodejs ? "Restart PM2" : "Restart Service"),
@@ -391,30 +473,23 @@ struct ModernWebsitePanel: View {
                         ) {
                             Task {
                                 guard let serverId = viewModel.serverId else { return }
-                                let sshService = SSHService.shared
+                                let service = SiteQuickActionsService.shared
                                 if viewModel.website.runtime == .php {
-                                    let version = viewModel.phpVersion
-                                    _ = try? await sshService.execute("sudo systemctl restart php\(version)-fpm", serverId: serverId)
-                                    GlobalToastManager.shared.showSuccess("PHP-FPM \(version) restarted")
+                                    try? await service.restartPHPFPM(version: viewModel.phpVersion, serverId: serverId)
+                                    GlobalToastManager.shared.showSuccess("PHP-FPM restarted")
                                 } else if viewModel.website.runtime == .nodejs {
-                                    _ = try? await sshService.execute("pm2 restart all", serverId: serverId)
-                                    GlobalToastManager.shared.showSuccess("PM2 processes restarted")
+                                    try? await service.restartPM2(serverId: serverId)
+                                    GlobalToastManager.shared.showSuccess("PM2 restarted")
                                 }
                             }
                         },
                     ]),
                     AXMenuSection("Management", items: [
+                        AXMenuItem("Quick Actions", icon: "bolt.fill", color: .axAccentBlue) {
+                            selectedItem = .quickActions
+                        },
                         AXMenuItem("Backup Site", icon: "archivebox", color: .axAccentGreen) {
-                            Task {
-                                guard let serverId = viewModel.serverId else { return }
-                                let sshService = SSHService.shared
-                                let docRoot = viewModel.website.documentRoot ?? "/var/www/\(viewModel.website.domain)"
-                                let timestamp = ISO8601DateFormatter().string(from: Date()).replacingOccurrences(of: ":", with: "-")
-                                let backupFile = "/var/backups/aevonx/\(viewModel.website.domain)_\(timestamp).tar.gz"
-                                _ = try? await sshService.execute("sudo mkdir -p /var/backups/aevonx", serverId: serverId)
-                                _ = try? await sshService.execute("sudo tar -czf \(backupFile) -C \(docRoot) .", serverId: serverId)
-                                GlobalToastManager.shared.showSuccess("Backup saved: \(backupFile)")
-                            }
+                            selectedItem = .backupRestore
                         },
                     ]),
                     AXMenuSection(items: [
@@ -448,25 +523,88 @@ struct ModernWebsitePanel: View {
         case .overview:
             overviewView
         case .domainManager:
-            domainManagerView
+            DomainSection(
+                viewModel: getFactory().advancedDomainVM
+            )
         case .siteDirectory:
             siteDirectoryView
+        case .serverConfig:
+            SiteConfigSection(
+                viewModel: SiteConfigViewModel(
+                    serverId: viewModel.serverId ?? "",
+                    domain: viewModel.website.domain
+                )
+            )
         case .gitSource:
             gitSourceView
         case .urlRewrites:
             urlRewritesView
         case .sslTls:
             sslTlsView
+        case .siteSecurity:
+            SiteSecuritySection(
+                viewModel: SiteSecurityViewModel(
+                    serverId: viewModel.serverId ?? "",
+                    domain: viewModel.website.domain,
+                    docRoot: viewModel.website.documentRoot ?? "/var/www/\(viewModel.website.domain)"
+                )
+            )
+        case .httpHeaders:
+            HeadersSection(
+                viewModel: HeadersViewModel(
+                    serverId: viewModel.serverId ?? "",
+                    domain: viewModel.website.domain
+                )
+            )
+        case .cacheManager:
+            CacheSection(
+                viewModel: CacheViewModel(
+                    serverId: viewModel.serverId ?? "",
+                    domain: viewModel.website.domain
+                )
+            )
+        case .performance:
+            UnifiedPerformanceSection(
+                serverId: viewModel.serverId ?? "",
+                domain: viewModel.website.domain,
+                docRoot: viewModel.website.documentRoot ?? "/var/www/\(viewModel.website.domain)",
+                tuningVM: getFactory().performanceTuningVM
+            )
+        case .monitoring:
+            MonitoringSection(
+                viewModel: MonitoringViewModel(
+                    serverId: viewModel.serverId ?? "",
+                    domain: viewModel.website.domain
+                )
+            )
+        case .backupRestore:
+            UnifiedBackupSection(
+                backupVM: getFactory().backupVM,
+                scheduledVM: getFactory().scheduledBackupVM
+            )
+        case .databaseLink:
+            DatabaseLinkSection(
+                serverId: viewModel.serverId ?? "",
+                domain: viewModel.website.domain
+            )
+        case .cloneMigrate:
+            SiteCloningSection(
+                viewModel: getFactory().siteCloningVM
+            )
         case .runtimeConfig:
             runtimeConfigView
+        case .quickActions:
+            QuickActionsSection(
+                viewModel: getFactory().quickActionsVM
+            )
         case .processManager:
             processManagerView
         case .envVariables:
             envVariablesView
-        case .trafficControl:
-            trafficControlView
         case .logs:
-            logsView
+            EnhancedLogsSection(
+                viewModel: getFactory().logsVM
+            )
         }
     }
 
@@ -1099,7 +1237,7 @@ struct ModernWebsitePanel: View {
             await viewModel.loadWebsiteDetails()
         case .logs:
             await viewModel.fetchLogs()
-        case .trafficControl:
+        case .monitoring:
             await viewModel.fetchRealTimeStats()
         default:
             await viewModel.loadWebsiteDetails()
@@ -1107,425 +1245,4 @@ struct ModernWebsitePanel: View {
     }
 }
 
-// MARK: - Premium Components
-
-struct PremiumSidebarButton: View {
-    let item: ModernSidebarItem
-    var runtime: RuntimeType = .php
-    let isSelected: Bool
-    let action: () -> Void
-
-    @State private var isHovered = false
-
-    var body: some View {
-        Button(action: action) {
-            HStack(spacing: AXSpacing.md) {
-                // Icon with background
-                ZStack {
-                    RoundedRectangle(cornerRadius: AXCornerRadius.sm)
-                        .fill(isSelected ? Color.axAccentBlue.opacity(0.15) : Color.axBackground.opacity(isHovered ? 0.5 : 0))
-                        .frame(width: 32, height: 32)
-
-                    Image(systemName: item.icon(for: runtime))
-                        .font(.system(size: 14, weight: isSelected ? .semibold : .regular))
-                        .foregroundColor(isSelected ? .axAccentBlue : .axTextSecondary)
-                }
-
-                // Title
-                Text(item.displayName(for: runtime))
-                    .font(.system(size: 13, weight: isSelected ? .semibold : .regular))
-                    .foregroundColor(isSelected ? .axTextPrimary : .axTextSecondary)
-
-                Spacer()
-
-                // Selection Indicator
-                if isSelected {
-                    RoundedRectangle(cornerRadius: 2)
-                        .fill(Color.axAccentBlue)
-                        .frame(width: 3, height: 16)
-                }
-            }
-            .padding(.horizontal, AXSpacing.sm)
-            .padding(.vertical, AXSpacing.xs)
-            .background(
-                RoundedRectangle(cornerRadius: AXCornerRadius.md)
-                    .fill(isSelected ? Color.axAccentBlue.opacity(0.05) : (isHovered ? Color.axBackground.opacity(0.5) : Color.clear))
-            )
-        }
-        .buttonStyle(PlainButtonStyle())
-        .onHover { hovering in
-            isHovered = hovering
-        }
-    }
-}
-
-struct MetricCard: View {
-    let icon: String
-    let title: String
-    let value: String
-    let color: Color
-    let trend: String?
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: AXSpacing.md) {
-            HStack {
-                Image(systemName: icon)
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(color)
-                Spacer()
-                if let trend = trend {
-                    Text(trend)
-                        .font(.system(size: 10, weight: .medium))
-                        .foregroundColor(color)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 3)
-                        .background(color.opacity(0.1))
-                        .cornerRadius(4)
-                }
-            }
-
-            VStack(alignment: .leading, spacing: 4) {
-                Text(value)
-                    .font(.system(size: 24, weight: .bold))
-                    .foregroundColor(.axTextPrimary)
-
-                Text(title)
-                    .font(.system(size: 12))
-                    .foregroundColor(.axTextSecondary)
-            }
-        }
-        .padding(AXSpacing.lg)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.axSurface)
-        .cornerRadius(AXCornerRadius.lg)
-        .overlay(
-            RoundedRectangle(cornerRadius: AXCornerRadius.lg)
-                .stroke(Color.axBorder.opacity(0.5), lineWidth: 1)
-        )
-    }
-}
-
-struct SectionHeader: View {
-    let title: String
-    let icon: String
-
-    var body: some View {
-        HStack(spacing: AXSpacing.sm) {
-            Image(systemName: icon)
-                .font(.system(size: 14, weight: .semibold))
-                .foregroundColor(.axAccentBlue)
-
-            Text(title)
-                .font(.system(size: 18, weight: .bold))
-                .foregroundColor(.axTextPrimary)
-        }
-    }
-}
-
-struct ConfigCard<Content: View>: View {
-    let icon: String
-    let title: String
-    let description: String
-    let content: () -> Content
-
-    init(icon: String, title: String, description: String, @ViewBuilder content: @escaping () -> Content) {
-        self.icon = icon
-        self.title = title
-        self.description = description
-        self.content = content
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: AXSpacing.lg) {
-            HStack(spacing: AXSpacing.sm) {
-                Image(systemName: icon)
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(.axAccentBlue)
-
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(title)
-                        .font(AXTypography.headline)
-                        .foregroundColor(.axTextPrimary)
-
-                    Text(description)
-                        .font(.system(size: 11))
-                        .foregroundColor(.axTextTertiary)
-                }
-            }
-
-            content()
-        }
-        .padding(AXSpacing.lg)
-        .background(Color.axSurface)
-        .cornerRadius(AXCornerRadius.lg)
-        .overlay(
-            RoundedRectangle(cornerRadius: AXCornerRadius.lg)
-                .stroke(Color.axBorder.opacity(0.5), lineWidth: 1)
-        )
-    }
-}
-
-struct InfoGrid: View {
-    let website: WebsiteInfo
-
-    var body: some View {
-        VStack(spacing: AXSpacing.xs) {
-            InfoRow(label: "Document Root", value: website.documentRoot ?? "N/A")
-            InfoRow(label: "Runtime", value: website.runtime.rawValue)
-            if let phpVersion = website.phpVersion {
-                InfoRow(label: "PHP Version", value: phpVersion)
-            }
-            if let port = website.port {
-                InfoRow(label: "Port", value: "\(port)")
-            }
-            InfoRow(label: "Disk Usage", value: website.formattedDiskUsage)
-            InfoRow(label: "Bandwidth", value: website.formattedBandwidth)
-            if let created = website.createdAt {
-                InfoRow(label: "Created", value: created.formatted())
-            }
-            if let deployed = website.lastDeployed {
-                InfoRow(label: "Last Deployed", value: deployed.formatted())
-            }
-        }
-        .padding(AXSpacing.lg)
-        .background(Color.axSurface)
-        .cornerRadius(AXCornerRadius.lg)
-        .overlay(
-            RoundedRectangle(cornerRadius: AXCornerRadius.lg)
-                .stroke(Color.axBorder.opacity(0.5), lineWidth: 1)
-        )
-    }
-}
-
-struct InfoRow: View {
-    let label: String
-    let value: String
-
-    var body: some View {
-        HStack {
-            Text(label)
-                .font(.system(size: 12))
-                .foregroundColor(.axTextSecondary)
-            Spacer()
-            Text(value)
-                .font(.system(size: 12, weight: .medium))
-                .foregroundColor(.axTextPrimary)
-        }
-        .padding(.vertical, 4)
-    }
-}
-
-struct SSLOverviewCard: View {
-    let ssl: SSLInfo
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: AXSpacing.md) {
-            HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Provider")
-                        .font(.system(size: 11))
-                        .foregroundColor(.axTextSecondary)
-                    Text(ssl.provider.rawValue)
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundColor(.axTextPrimary)
-                }
-
-                Spacer()
-
-                VStack(alignment: .trailing, spacing: 4) {
-                    Text("Status")
-                        .font(.system(size: 11))
-                        .foregroundColor(.axTextSecondary)
-                    Text(ssl.status.rawValue.capitalized)
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundColor(ssl.status == .active ? .axSuccess : .axWarning)
-                }
-            }
-
-            if ssl.isExpiringSoon, let days = ssl.daysUntilExpiry {
-                HStack(spacing: AXSpacing.sm) {
-                    Image(systemName: "exclamationmark.triangle.fill")
-                        .font(.system(size: 12))
-                        .foregroundColor(.axWarning)
-                    Text("Certificate expires in \(days) days")
-                        .font(.system(size: 12))
-                        .foregroundColor(.axWarning)
-                }
-                .padding(AXSpacing.sm)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(Color.axWarning.opacity(0.1))
-                .cornerRadius(AXCornerRadius.sm)
-            }
-        }
-        .padding(AXSpacing.lg)
-        .background(Color.axSurface)
-        .cornerRadius(AXCornerRadius.lg)
-        .overlay(
-            RoundedRectangle(cornerRadius: AXCornerRadius.lg)
-                .stroke(Color.axBorder.opacity(0.5), lineWidth: 1)
-        )
-    }
-}
-
-struct HealthIssueRow: View {
-    let issue: WebsiteHealthIssue
-
-    var body: some View {
-        HStack(alignment: .top, spacing: AXSpacing.md) {
-            Image(systemName: severityIcon)
-                .font(.system(size: 16))
-                .foregroundColor(severityColor)
-
-            VStack(alignment: .leading, spacing: 4) {
-                Text(issue.title)
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(.axTextPrimary)
-
-                Text(issue.description)
-                    .font(.system(size: 12))
-                    .foregroundColor(.axTextSecondary)
-
-                if let recommendation = issue.recommendation {
-                    Text(recommendation)
-                        .font(.system(size: 11))
-                        .foregroundColor(.axTextTertiary)
-                        .italic()
-                }
-            }
-
-            Spacer()
-        }
-        .padding(AXSpacing.md)
-        .background(severityColor.opacity(0.05))
-        .cornerRadius(AXCornerRadius.md)
-        .overlay(
-            RoundedRectangle(cornerRadius: AXCornerRadius.md)
-                .stroke(severityColor.opacity(0.2), lineWidth: 1)
-        )
-    }
-
-    private var severityIcon: String {
-        switch issue.severity {
-        case .critical: return "exclamationmark.octagon.fill"
-        case .warning: return "exclamationmark.triangle.fill"
-        case .info: return "info.circle.fill"
-        }
-    }
-
-    private var severityColor: Color {
-        switch issue.severity {
-        case .critical: return .axError
-        case .warning: return .axWarning
-        case .info: return .axAccentBlue
-        }
-    }
-}
-
-struct AliasRow: View {
-    let alias: String
-
-    var body: some View {
-        HStack {
-            Image(systemName: "link")
-                .font(.system(size: 11))
-                .foregroundColor(.axAccentBlue)
-
-            Text(alias)
-                .font(.system(size: 13, design: .monospaced))
-                .foregroundColor(.axTextPrimary)
-
-            Spacer()
-        }
-        .padding(.horizontal, AXSpacing.md)
-        .padding(.vertical, AXSpacing.sm)
-        .background(Color.axBackground)
-        .cornerRadius(AXCornerRadius.sm)
-    }
-}
-
-struct ConnectionRow: View {
-    let connection: DetailedConnection
-
-    var body: some View {
-        HStack {
-            Image(systemName: "wifi")
-                .font(.system(size: 12))
-                .foregroundColor(.axAccentBlue)
-
-            Text(connection.ip)
-                .font(.system(.body, design: .monospaced))
-                .foregroundColor(.axTextPrimary)
-
-            Spacer()
-
-            Text("\(connection.count)")
-                .font(.system(size: 13, weight: .bold))
-                .foregroundColor(.white)
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
-                .background(Color.axAccentBlue)
-                .cornerRadius(6)
-        }
-        .padding(AXSpacing.md)
-        .background(Color.axSurface)
-        .cornerRadius(AXCornerRadius.md)
-        .overlay(
-            RoundedRectangle(cornerRadius: AXCornerRadius.md)
-                .stroke(Color.axBorder.opacity(0.5), lineWidth: 1)
-        )
-    }
-}
-
-struct EmptyStateMessage: View {
-    let icon: String
-    let message: String
-
-    var body: some View {
-        HStack(spacing: AXSpacing.sm) {
-            Image(systemName: icon)
-                .font(.system(size: 14))
-                .foregroundColor(.axTextTertiary)
-
-            Text(message)
-                .font(.system(size: 12))
-                .foregroundColor(.axTextSecondary)
-        }
-        .padding(AXSpacing.md)
-        .frame(maxWidth: .infinity)
-        .background(Color.axBackground)
-        .cornerRadius(AXCornerRadius.sm)
-    }
-}
-
-struct EmptyStateCard: View {
-    let icon: String
-    let title: String
-    let message: String
-
-    var body: some View {
-        VStack(spacing: AXSpacing.md) {
-            Image(systemName: icon)
-                .font(.system(size: 48))
-                .foregroundColor(.axTextTertiary.opacity(0.5))
-
-            VStack(spacing: 4) {
-                Text(title)
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(.axTextPrimary)
-
-                Text(message)
-                    .font(.system(size: 12))
-                    .foregroundColor(.axTextSecondary)
-                    .multilineTextAlignment(.center)
-            }
-        }
-        .padding(AXSpacing.xxl)
-        .frame(maxWidth: .infinity)
-        .background(Color.axSurface)
-        .cornerRadius(AXCornerRadius.lg)
-        .overlay(
-            RoundedRectangle(cornerRadius: AXCornerRadius.lg)
-                .stroke(Color.axBorder.opacity(0.5), lineWidth: 1)
-        )
-    }
-}
+// Components moved to Views/Components/WebsitePanelComponents.swift
