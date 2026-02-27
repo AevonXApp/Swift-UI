@@ -10,6 +10,7 @@
 //
 
 import Foundation
+import AevonXCore
 
 // MARK: - Command Template
 
@@ -608,13 +609,18 @@ public enum SecurityCommand {
             """
 
         case .addFirewallRule(let proto, let port, let strategy, let direction, let sourceIP):
-            let chain = direction == "INPUT" ? "INPUT" : "OUTPUT"
-            let src = sourceIP == "0.0.0.0/0" ? "" : "-s \(sourceIP)"
-            return "iptables -A \(chain) -p \(proto) --dport \(port) \(src) -j \(strategy) 2>&1 && echo 'OK' || echo 'FAILED'"
+            let safeChain = direction == "INPUT" ? "INPUT" : "OUTPUT"
+            let safeProto = ShellSanitizer.quote(proto)
+            let safePort = ShellSanitizer.quote(port)
+            let safeStrategy = ShellSanitizer.quote(strategy)
+            let src = sourceIP == "0.0.0.0/0" ? "" : "-s \(ShellSanitizer.quote(sourceIP))"
+            return "iptables -A \(safeChain) -p \(safeProto) --dport \(safePort) \(src) -j \(safeStrategy) 2>&1 && echo 'OK' || echo 'FAILED'"
 
         case .deleteFirewallRule(let proto, let port, let direction):
-            let chain = direction == "INPUT" ? "INPUT" : "OUTPUT"
-            return "iptables -D \(chain) -p \(proto) --dport \(port) -j ACCEPT 2>/dev/null; iptables -D \(chain) -p \(proto) --dport \(port) -j DROP 2>/dev/null; echo 'OK'"
+            let safeChain = direction == "INPUT" ? "INPUT" : "OUTPUT"
+            let safeProto = ShellSanitizer.quote(proto)
+            let safePort = ShellSanitizer.quote(port)
+            return "iptables -D \(safeChain) -p \(safeProto) --dport \(safePort) -j ACCEPT 2>/dev/null; iptables -D \(safeChain) -p \(safeProto) --dport \(safePort) -j DROP 2>/dev/null; echo 'OK'"
 
         case .setFirewall(let enabled):
             if enabled {
@@ -638,7 +644,8 @@ public enum SecurityCommand {
             return "grep -E '^(Port|PermitRootLogin|PasswordAuthentication|PubkeyAuthentication)' /etc/ssh/sshd_config 2>/dev/null || echo 'no-config'"
 
         case .setSSHPort(let port):
-            return "sed -i 's/^#\\?Port .*/Port \(port)/' /etc/ssh/sshd_config && systemctl restart sshd 2>/dev/null || systemctl restart ssh 2>/dev/null; echo 'OK'"
+            let safePort = ShellSanitizer.quote(String(port))
+            return "sed -i 's/^#\\?Port .*/Port '\(safePort)'/' /etc/ssh/sshd_config && systemctl restart sshd 2>/dev/null || systemctl restart ssh 2>/dev/null; echo 'OK'"
 
         case .setSSHPasswordAuth(let enabled):
             let val = enabled ? "yes" : "no"
@@ -649,10 +656,12 @@ public enum SecurityCommand {
             return "sed -i 's/^#\\?PubkeyAuthentication .*/PubkeyAuthentication \(val)/' /etc/ssh/sshd_config && systemctl restart sshd 2>/dev/null || systemctl restart ssh 2>/dev/null; echo 'OK'"
 
         case .setSSHRootLogin(let mode):
-            return "sed -i 's/^#\\?PermitRootLogin .*/PermitRootLogin \(mode)/' /etc/ssh/sshd_config && systemctl restart sshd 2>/dev/null || systemctl restart ssh 2>/dev/null; echo 'OK'"
+            let safeMode = ShellSanitizer.quote(mode)
+            return "sed -i 's/^#\\?PermitRootLogin .*/PermitRootLogin '\(safeMode)'/' /etc/ssh/sshd_config && systemctl restart sshd 2>/dev/null || systemctl restart ssh 2>/dev/null; echo 'OK'"
 
         case .sshLoginLogs(let count):
-            return "grep 'sshd' /var/log/auth.log 2>/dev/null | grep -E '(Accepted|Failed)' | tail -\(count) || journalctl -u sshd --no-pager -n \(count) 2>/dev/null | grep -E '(Accepted|Failed)' || echo 'no-logs'"
+            let safeCount = ShellSanitizer.quote(String(count))
+            return "grep 'sshd' /var/log/auth.log 2>/dev/null | grep -E '(Accepted|Failed)' | tail -\(safeCount) || journalctl -u sshd --no-pager -n \(safeCount) 2>/dev/null | grep -E '(Accepted|Failed)' || echo 'no-logs'"
 
         case .sshLoginStats:
             return """
@@ -678,16 +687,21 @@ public enum SecurityCommand {
             return "fail2ban-client status sshd 2>/dev/null | grep -A 100 'Banned IP' || echo 'none'"
 
         case .fail2banUnban(let ip, let jail):
-            return "fail2ban-client set \(jail) unbanip \(ip) 2>&1 && echo 'OK' || echo 'FAILED'"
+            let safeJail = ShellSanitizer.quote(jail)
+            let safeIP = ShellSanitizer.quote(ip)
+            return "fail2ban-client set \(safeJail) unbanip \(safeIP) 2>&1 && echo 'OK' || echo 'FAILED'"
 
         case .fail2banSetMaxRetry(let count):
-            return "sed -i 's/^maxretry = .*/maxretry = \(count)/' /etc/fail2ban/jail.local 2>/dev/null && fail2ban-client reload 2>&1 && echo 'OK' || echo 'FAILED'"
+            let safeCount = ShellSanitizer.quote(String(count))
+            return "sed -i 's/^maxretry = .*/maxretry = '\(safeCount)'/' /etc/fail2ban/jail.local 2>/dev/null && fail2ban-client reload 2>&1 && echo 'OK' || echo 'FAILED'"
 
         case .fail2banSetBanTime(let seconds):
-            return "sed -i 's/^bantime = .*/bantime = \(seconds)/' /etc/fail2ban/jail.local 2>/dev/null && fail2ban-client reload 2>&1 && echo 'OK' || echo 'FAILED'"
+            let safeSeconds = ShellSanitizer.quote(String(seconds))
+            return "sed -i 's/^bantime = .*/bantime = '\(safeSeconds)'/' /etc/fail2ban/jail.local 2>/dev/null && fail2ban-client reload 2>&1 && echo 'OK' || echo 'FAILED'"
 
         case .fail2banJailStatus(let jail):
-            return "fail2ban-client status \(jail) 2>/dev/null || echo 'not-found'"
+            let safeJail = ShellSanitizer.quote(jail)
+            return "fail2ban-client status \(safeJail) 2>/dev/null || echo 'not-found'"
 
         // Hardening
         case .systemHardeningCheck:

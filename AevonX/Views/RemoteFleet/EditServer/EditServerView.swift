@@ -107,6 +107,16 @@ struct EditServerView: View {
                                     RoundedRectangle(cornerRadius: AXCornerRadius.md)
                                         .stroke(Color.axBorder, lineWidth: 1)
                                 )
+                            
+                            // Encryption notice for server name
+                            HStack(spacing: AXSpacing.xs) {
+                                Image(systemName: "info.circle")
+                                    .font(.system(size: 10))
+                                    .foregroundColor(.axAccentBlue)
+                                Text("Server name is not encrypted, to allow easy identification in web purchases.")
+                                    .font(AXTypography.caption2)
+                                    .foregroundColor(.axTextMuted)
+                            }
                         }
                         
                         // Icon Picker

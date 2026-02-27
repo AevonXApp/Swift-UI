@@ -434,7 +434,7 @@ class TerminalViewModel: ObservableObject {
                 guard !Task.isCancelled else { return }
 
                 // Filter entries
-                var filtered = entries.filter { entry in
+                let filtered = entries.filter { entry in
                     if needsDirOnly && !entry.hasSuffix("/") { return false }
                     if partialName.isEmpty { return true }
                     let name = entry.replacingOccurrences(of: "/", with: "")
