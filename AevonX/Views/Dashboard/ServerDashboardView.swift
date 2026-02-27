@@ -147,6 +147,11 @@ struct ServerDashboardView: View {
             Text(viewModel.connectionError ?? "Unknown error")
         }
         .overlay {
+            // Reconnection overlay (banner or full overlay)
+            if viewModel.isReconnecting || viewModel.reconnectionFailed {
+                ReconnectionOverlayView(viewModel: viewModel)
+            }
+            
             if viewModel.isRestartConfirming {
                 AXConfirmationDialog(
                     title: "Restart Server?",
@@ -240,6 +245,8 @@ struct ConnectionStatusIndicator: View {
     private var connectionStatusColor: Color {
         if viewModel.isConnected {
             return .axSuccess
+        } else if viewModel.isReconnecting {
+            return .axWarning
         } else if viewModel.isConnecting {
             return .axWarning
         } else if viewModel.connectionError != nil {
@@ -252,6 +259,8 @@ struct ConnectionStatusIndicator: View {
     private var connectionStatusText: String {
         if viewModel.isConnected {
             return "Connected"
+        } else if viewModel.isReconnecting {
+            return "Reconnecting..."
         } else if viewModel.isConnecting {
             return viewModel.connectionStage.rawValue
         } else if viewModel.connectionError != nil {

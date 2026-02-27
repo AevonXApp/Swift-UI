@@ -10,6 +10,18 @@ import SwiftUI
 import AevonXCore
 import Combine
 
+// MARK: - Reconnection Tier
+
+/// Visual tier for reconnection UI
+enum ReconnectionTier {
+    /// Reconnecting silently, no UI shown (0-2s)
+    case silent
+    /// Floating banner at top (2-8s)
+    case banner
+    /// Full semi-transparent overlay (8s+)
+    case overlay
+}
+
 // MARK: - Connection Stage
 
 /// Stages of the connection process for UI display
@@ -106,6 +118,32 @@ public class ServerConnectionViewModel: ObservableObject {
     
     /// Connection progress (0.0 to 1.0)
     @Published private(set) var connectionProgress: Double = 0.0
+    
+    // MARK: - Published Properties - Reconnection State
+    
+    /// Whether a reconnection is in progress
+    @Published private(set) var isReconnecting: Bool = false
+    
+    /// Current reconnection attempt number
+    @Published private(set) var reconnectionAttempt: Int = 0
+    
+    /// Maximum reconnection attempts
+    @Published private(set) var reconnectionMaxAttempts: Int = InternalConfiguration.reconnectionMaxAttempts
+    
+    /// Human-readable reason for disconnection
+    @Published private(set) var reconnectionReason: String?
+    
+    /// Seconds until next retry
+    @Published private(set) var reconnectionNextRetryIn: TimeInterval = 0
+    
+    /// Current UI tier (silent/banner/overlay)
+    @Published private(set) var reconnectionTier: ReconnectionTier = .silent
+    
+    /// Whether reconnection has permanently failed
+    @Published private(set) var reconnectionFailed: Bool = false
+    
+    /// Final error message when reconnection fails
+    @Published private(set) var reconnectionFinalError: String?
     
     // MARK: - Child ViewModels (Single Responsibility)
     
@@ -229,6 +267,15 @@ public class ServerConnectionViewModel: ObservableObject {
     /// Whether the app is currently in foreground
     private var isInForeground: Bool = true
     
+    /// Task for listening to health monitor events
+    private var healthMonitorTask: Task<Void, Never>?
+    
+    /// Task for tracking reconnection tier escalation
+    private var tierEscalationTask: Task<Void, Never>?
+    
+    /// Timestamp when reconnection started (for tier calculation)
+    private var reconnectionStartTime: Date?
+    
     /// Server list ViewModel for integration
     weak var serverListViewModel: ServerListViewModel?
     
@@ -277,10 +324,15 @@ public class ServerConnectionViewModel: ObservableObject {
             name: NSApplication.willBecomeActiveNotification,
             object: nil
         )
+        
+        // Subscribe to connection health events
+        setupHealthMonitoring()
     }
     
     deinit {
         // Child VMs handle their own cleanup in their own deinit
+        healthMonitorTask?.cancel()
+        tierEscalationTask?.cancel()
     }
     
     // MARK: - Connection Management
@@ -341,6 +393,9 @@ public class ServerConnectionViewModel: ObservableObject {
             
             CoreLogger.shared.info("Connected to server: \(server.name)", module: "ServerConnection")
             
+            // Start health monitoring for this server
+            await ConnectionHealthMonitor.shared.startMonitoring(serverId: serverId)
+            
             // Detect server capabilities (OS, init system, package manager)
             Task {
                 do {
@@ -396,11 +451,15 @@ public class ServerConnectionViewModel: ObservableObject {
         // Stop stats polling
         stopStatsPolling()
         
+        // Stop health monitoring
+        await ConnectionHealthMonitor.shared.stopMonitoring(serverId: serverId)
+        
         // Disconnect via Core SSH service
         await sshService.disconnect(serverId: serverId)
         
         isConnected = false
         isConnecting = false
+        isReconnecting = false
         connectionStage = .disconnected
         connectionProgress = 0.0
         
@@ -461,34 +520,15 @@ public class ServerConnectionViewModel: ObservableObject {
         Task { await CacheManager.shared.cleanup() }
         
         if isConnected {
-            // Check if connection is still alive after waking from sleep
-            Task {
-                await checkConnectionHealthAndReconnect()
-            }
-        }
-    }
-    
-    /// Check if SSH connection is still healthy, reconnect if not
-    private func checkConnectionHealthAndReconnect() async {
-        guard isConnected else { return }
-        
-        do {
-            // Test connection with a simple command
-            _ = try await executeCommand(.overview(.uptime))
-            // Connection still alive, resume polling
+            // The ConnectionHealthMonitor handles device wake detection
+            // and will trigger reconnection if the SSH channel died.
+            // We just resume polling here.
             startStatsPolling()
-            CoreLogger.shared.info("Connection health check passed after foreground", module: "ServerConnection")
-        } catch {
-            // Connection lost during sleep, attempt reconnect
-            CoreLogger.shared.warning("Connection lost after sleep, attempting reconnect: \(error.localizedDescription)", module: "ServerConnection")
             
-            // Reset connection state
-            isConnected = false
-            connectionStage = .disconnected
-            connectionError = nil
-            
-            // Auto-reconnect
-            await connect()
+            // Notify health monitor about wake
+            Task {
+                await ConnectionHealthMonitor.shared.deviceDidWake()
+            }
         }
     }
     
@@ -653,13 +693,219 @@ public class ServerConnectionViewModel: ObservableObject {
         stats.stopPolling()
     }
     
-    // Note: Connection pool monitoring is not available in current AevonXCore
-    // Connection state is managed directly through SSHConnectionService
-    
     /// Executes a predefined command via SSH wrapper
     private func executeCommand(_ command: CommandTemplate) async throws -> SSHCommandResult {
         let commandString = command.build()
         return try await sshService.execute(commandString, serverId: serverId)
+    }
+    
+    // MARK: - Health Monitoring
+    
+    /// Sets up the ConnectionHealthMonitor event subscription and reconnection handler
+    private func setupHealthMonitoring() {
+        // Provide the reconnection handler to Core
+        // This closure performs the actual connection — Core never holds credentials
+        Task {
+            await ConnectionHealthMonitor.shared.setReconnectionHandler { [weak self] serverId in
+                guard let self = self else { return false }
+                
+                return await MainActor.run {
+                    // Reset connection state for retry
+                    self.isConnected = false
+                    self.connectionStage = .disconnected
+                    self.connectionError = nil
+                    
+                    return true // Signal ready to connect
+                }
+            }
+        }
+        
+        // Set a handler that actually performs the connection
+        Task {
+            await ConnectionHealthMonitor.shared.setReconnectionHandler { [weak self] serverId in
+                guard let self = self else { return false }
+                
+                do {
+                    // Reset state on MainActor
+                    await MainActor.run {
+                        self.connectionError = nil
+                    }
+                    
+                    // Step 1: Request CAT
+                    let signedCATToken = try await self.requestCATFromBackend()
+                    
+                    // Step 2: Encrypt CAT
+                    let encryptedCAT = try await CATEncryption.shared.encrypt(
+                        signedToken: signedCATToken,
+                        serverId: serverId
+                    )
+                    
+                    // Step 3: Get server payload
+                    guard let serverPayload = try await self.getServerPayload() else {
+                        return false
+                    }
+                    
+                    // Step 4: Connect via SSH
+                    _ = try await self.sshService.connect(
+                        to: serverPayload,
+                        host: self.server.host,
+                        port: self.server.port,
+                        serverId: serverId,
+                        encryptedCAT: encryptedCAT
+                    )
+                    
+                    // Success — update UI state
+                    await MainActor.run {
+                        self.isConnected = true
+                        self.isConnecting = false
+                        self.connectionStage = .connected
+                        self.connectionProgress = 1.0
+                        self.startStatsPolling()
+                    }
+                    
+                    CoreLogger.shared.info("Reconnection succeeded for server: \(serverId)", module: "ServerConnection")
+                    return true
+                    
+                } catch {
+                    CoreLogger.shared.warning("Reconnection attempt failed: \(error.localizedDescription)", module: "ServerConnection")
+                    return false
+                }
+            }
+        }
+        
+        // Subscribe to health events
+        healthMonitorTask = Task { [weak self] in
+            for await event in await ConnectionHealthMonitor.shared.eventStream() {
+                guard let self = self else { break }
+                await MainActor.run {
+                    self.handleHealthEvent(event)
+                }
+            }
+        }
+    }
+    
+    /// Processes a health event from ConnectionHealthMonitor
+    private func handleHealthEvent(_ event: ConnectionHealthEvent) {
+        switch event {
+        case .connectionLost(let sid, let reason):
+            guard sid == serverId else { return }
+            
+            isConnected = false
+            isReconnecting = true
+            reconnectionReason = reason.rawValue
+            reconnectionAttempt = 0
+            reconnectionFailed = false
+            reconnectionFinalError = nil
+            reconnectionTier = .silent
+            reconnectionStartTime = Date()
+            
+            // Stop polling while disconnected
+            stopStatsPolling()
+            
+            // Start tier escalation timer
+            startTierEscalation()
+            
+        case .reconnecting(let sid, let attempt, let max, let nextRetry):
+            guard sid == serverId else { return }
+            
+            reconnectionAttempt = attempt
+            reconnectionMaxAttempts = max
+            reconnectionNextRetryIn = nextRetry
+            
+        case .reconnected(let sid):
+            guard sid == serverId else { return }
+            
+            isReconnecting = false
+            reconnectionAttempt = 0
+            reconnectionReason = nil
+            reconnectionTier = .silent
+            reconnectionFailed = false
+            reconnectionFinalError = nil
+            reconnectionStartTime = nil
+            tierEscalationTask?.cancel()
+            
+            // Resume polling
+            startStatsPolling()
+            
+            // Refresh stats after reconnection
+            Task {
+                await refreshStats()
+                await updateInventoryCounts()
+            }
+            
+        case .reconnectionFailed(let sid, let error):
+            guard sid == serverId else { return }
+            
+            isReconnecting = false
+            reconnectionFailed = true
+            reconnectionFinalError = error
+            reconnectionTier = .overlay // Always show overlay on final failure
+            tierEscalationTask?.cancel()
+            
+        case .networkStatusChanged:
+            // Informational — no special handling needed
+            break
+        }
+    }
+    
+    /// Starts a timer that escalates the reconnection UI tier based on elapsed time
+    private func startTierEscalation() {
+        tierEscalationTask?.cancel()
+        
+        tierEscalationTask = Task { [weak self] in
+            guard let self = self else { return }
+            
+            // Wait for silent threshold, then show banner
+            try? await Task.sleep(nanoseconds: UInt64(InternalConfiguration.reconnectionSilentThreshold * 1_000_000_000))
+            guard !Task.isCancelled else { return }
+            
+            await MainActor.run {
+                if self.isReconnecting {
+                    self.reconnectionTier = .banner
+                }
+            }
+            
+            // Wait for overlay threshold, then show full overlay
+            let overlayDelay = InternalConfiguration.reconnectionOverlayThreshold - InternalConfiguration.reconnectionSilentThreshold
+            try? await Task.sleep(nanoseconds: UInt64(overlayDelay * 1_000_000_000))
+            guard !Task.isCancelled else { return }
+            
+            await MainActor.run {
+                if self.isReconnecting {
+                    self.reconnectionTier = .overlay
+                }
+            }
+        }
+    }
+    
+    /// Cancels reconnection and returns to disconnected state
+    func cancelReconnection() {
+        Task {
+            await ConnectionHealthMonitor.shared.cancelReconnection(serverId: serverId)
+        }
+        
+        isReconnecting = false
+        reconnectionAttempt = 0
+        reconnectionReason = nil
+        reconnectionTier = .silent
+        reconnectionFailed = false
+        reconnectionFinalError = nil
+        reconnectionStartTime = nil
+        tierEscalationTask?.cancel()
+        connectionStage = .disconnected
+    }
+    
+    /// Manually retries reconnection after failure
+    func retryReconnection() {
+        reconnectionFailed = false
+        reconnectionFinalError = nil
+        
+        Task {
+            await ConnectionHealthMonitor.shared.attemptReconnection(
+                serverId: serverId,
+                reason: .unknown
+            )
+        }
     }
     
     /// Resets all stats to default values

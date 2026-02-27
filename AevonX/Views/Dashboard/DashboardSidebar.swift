@@ -282,28 +282,45 @@ private struct SidebarActionBtn: View {
 
 struct DashboardConnectionStatusIndicator: View {
     @ObservedObject var viewModel: ServerConnectionViewModel
+    @State private var isPulsing = false
 
     var body: some View {
         HStack(spacing: 6) {
             Circle()
                 .fill(statusColor)
                 .frame(width: 6, height: 6)
+                .scaleEffect(isPulsing ? 1.4 : 1.0)
+                .opacity(isPulsing ? 0.6 : 1.0)
 
             Text(statusText)
                 .font(AXTypography.caption2)
                 .foregroundColor(statusColor)
         }
+        .onChange(of: viewModel.isReconnecting) { _, isReconnecting in
+            if isReconnecting {
+                withAnimation(.easeInOut(duration: 0.8).repeatForever(autoreverses: true)) {
+                    isPulsing = true
+                }
+            } else {
+                withAnimation(.default) {
+                    isPulsing = false
+                }
+            }
+        }
     }
 
     private var statusColor: Color {
         if viewModel.isConnected { return .axSuccess }
+        if viewModel.isReconnecting { return .axWarning }
         if viewModel.isConnecting { return .axWarning }
         return .axTextMuted
     }
 
     private var statusText: String {
         if viewModel.isConnected { return "Connected" }
+        if viewModel.isReconnecting { return "Reconnecting..." }
         if viewModel.isConnecting { return "Connecting..." }
         return "Disconnected"
     }
 }
+
