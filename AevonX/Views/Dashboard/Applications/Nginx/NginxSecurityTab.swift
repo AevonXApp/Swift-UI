@@ -156,20 +156,8 @@ public struct NginxSecurityTab: View {
                     .controlSize(.small)
                     
                     // Compact Search Bar
-                    HStack(spacing: AXSpacing.xs) {
-                        Image(systemName: "magnifyingglass")
-                            .font(.system(size: 11))
-                            .foregroundColor(.axTextTertiary)
-                        TextField("Search...", text: $searchText)
-                            .textFieldStyle(.plain)
-                            .font(AXTypography.caption)
-                    }
-                    .padding(.horizontal, AXSpacing.sm)
-                    .padding(.vertical, 6)
-                    .frame(width: 160)
-                    .background(Color.axSurface)
-                    .cornerRadius(AXCornerRadius.md)
-                    .overlay(RoundedRectangle(cornerRadius: AXCornerRadius.md).stroke(Color.axBorder, lineWidth: 1))
+                    AXSearchBar(text: $searchText, placeholder: "Search...")
+                        .frame(width: 200)
                 }
                 .padding(.bottom, AXSpacing.md)
 

@@ -24,10 +24,10 @@ struct DatabaseLinkSection: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: AXSpacing.xl) {
-                SectionHeader(title: "Database Link", icon: "cylinder.fill")
+                AXSectionTitle(title: "Database Link", icon: "cylinder.fill")
 
                 // Link DB Form
-                ConfigCard(icon: "link.badge.plus", title: "Link Database", description: "Associate a database with this website") {
+                AXConfigCard(icon: "link.badge.plus", title: "Link Database", subtitle: "Associate a database with this website") {
                     VStack(spacing: AXSpacing.md) {
                         Picker("Database Type", selection: $dbType) {
                             ForEach(DatabaseLink.DatabaseType.allCases) { type in
@@ -68,7 +68,7 @@ struct DatabaseLinkSection: View {
 
                 // Linked DB Info
                 if let db = linkedDB {
-                    ConfigCard(icon: "cylinder.fill", title: "Linked: \(db.databaseName)", description: "\(db.databaseType.rawValue) on \(db.host):\(db.port)") {
+                    AXConfigCard(icon: "cylinder.fill", title: "Linked: \(db.databaseName)", subtitle: "\(db.databaseType.rawValue) on \(db.host):\(db.port)") {
                         VStack(spacing: AXSpacing.md) {
                             if let stats = dbStats {
                                 HStack(spacing: AXSpacing.xl) {
@@ -110,7 +110,7 @@ struct DatabaseLinkSection: View {
 
                 // Connection String — generated locally, no SSH needed
                 if showConnectionString, let db = linkedDB {
-                    ConfigCard(icon: "doc.on.clipboard", title: "Connection Strings", description: "Copy the connection string for your framework") {
+                    AXConfigCard(icon: "doc.on.clipboard", title: "Connection Strings", subtitle: "Copy the connection string for your framework") {
                         VStack(spacing: AXSpacing.md) {
                             Picker("Format", selection: $selectedFormat) {
                                 ForEach(ConnectionStringFormat.allCases) { fmt in

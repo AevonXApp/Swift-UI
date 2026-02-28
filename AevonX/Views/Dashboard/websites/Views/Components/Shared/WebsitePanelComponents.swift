@@ -9,117 +9,9 @@
 import SwiftUI
 import AevonXCore
 
-// MARK: - Metric Card
 
-struct MetricCard: View {
-    let icon: String
-    let title: String
-    let value: String
-    let color: Color
-    let trend: String?
 
-    var body: some View {
-        VStack(alignment: .leading, spacing: AXSpacing.md) {
-            HStack {
-                Image(systemName: icon)
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(color)
-                Spacer()
-                if let trend = trend {
-                    Text(trend)
-                        .font(.system(size: 10, weight: .medium))
-                        .foregroundColor(color)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 3)
-                        .background(color.opacity(0.1))
-                        .cornerRadius(4)
-                }
-            }
 
-            VStack(alignment: .leading, spacing: 4) {
-                Text(value)
-                    .font(.system(size: 24, weight: .bold))
-                    .foregroundColor(.axTextPrimary)
-
-                Text(title)
-                    .font(.system(size: 12))
-                    .foregroundColor(.axTextSecondary)
-            }
-        }
-        .padding(AXSpacing.lg)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.axSurface)
-        .cornerRadius(AXCornerRadius.lg)
-        .overlay(
-            RoundedRectangle(cornerRadius: AXCornerRadius.lg)
-                .stroke(Color.axBorder.opacity(0.5), lineWidth: 1)
-        )
-    }
-}
-
-// MARK: - Section Header
-
-struct SectionHeader: View {
-    let title: String
-    let icon: String
-
-    var body: some View {
-        HStack(spacing: AXSpacing.sm) {
-            Image(systemName: icon)
-                .font(.system(size: 14, weight: .semibold))
-                .foregroundColor(.axAccentBlue)
-
-            Text(title)
-                .font(.system(size: 18, weight: .bold))
-                .foregroundColor(.axTextPrimary)
-        }
-    }
-}
-
-// MARK: - Config Card
-
-struct ConfigCard<Content: View>: View {
-    let icon: String
-    let title: String
-    let description: String
-    let content: () -> Content
-
-    init(icon: String, title: String, description: String, @ViewBuilder content: @escaping () -> Content) {
-        self.icon = icon
-        self.title = title
-        self.description = description
-        self.content = content
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: AXSpacing.lg) {
-            HStack(spacing: AXSpacing.sm) {
-                Image(systemName: icon)
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(.axAccentBlue)
-
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(title)
-                        .font(AXTypography.headline)
-                        .foregroundColor(.axTextPrimary)
-
-                    Text(description)
-                        .font(.system(size: 11))
-                        .foregroundColor(.axTextTertiary)
-                }
-            }
-
-            content()
-        }
-        .padding(AXSpacing.lg)
-        .background(Color.axSurface)
-        .cornerRadius(AXCornerRadius.lg)
-        .overlay(
-            RoundedRectangle(cornerRadius: AXCornerRadius.lg)
-                .stroke(Color.axBorder.opacity(0.5), lineWidth: 1)
-        )
-    }
-}
 
 // MARK: - Info Grid
 
@@ -128,21 +20,21 @@ struct InfoGrid: View {
 
     var body: some View {
         VStack(spacing: AXSpacing.xs) {
-            InfoRow(label: "Document Root", value: website.documentRoot ?? "N/A")
-            InfoRow(label: "Runtime", value: website.runtime.rawValue)
+            AXInfoRow(label: "Document Root", value: website.documentRoot ?? "N/A")
+            AXInfoRow(label: "Runtime", value: website.runtime.rawValue)
             if let phpVersion = website.phpVersion {
-                InfoRow(label: "PHP Version", value: phpVersion)
+                AXInfoRow(label: "PHP Version", value: phpVersion)
             }
             if let port = website.port {
-                InfoRow(label: "Port", value: "\(port)")
+                AXInfoRow(label: "Port", value: "\(port)")
             }
-            InfoRow(label: "Disk Usage", value: website.formattedDiskUsage)
-            InfoRow(label: "Bandwidth", value: website.formattedBandwidth)
+            AXInfoRow(label: "Disk Usage", value: website.formattedDiskUsage)
+            AXInfoRow(label: "Bandwidth", value: website.formattedBandwidth)
             if let created = website.createdAt {
-                InfoRow(label: "Created", value: created.formatted())
+                AXInfoRow(label: "Created", value: created.formatted())
             }
             if let deployed = website.lastDeployed {
-                InfoRow(label: "Last Deployed", value: deployed.formatted())
+                AXInfoRow(label: "Last Deployed", value: deployed.formatted())
             }
         }
         .padding(AXSpacing.lg)
@@ -155,25 +47,7 @@ struct InfoGrid: View {
     }
 }
 
-// MARK: - Info Row
 
-struct InfoRow: View {
-    let label: String
-    let value: String
-
-    var body: some View {
-        HStack {
-            Text(label)
-                .font(.system(size: 12))
-                .foregroundColor(.axTextSecondary)
-            Spacer()
-            Text(value)
-                .font(.system(size: 12, weight: .medium))
-                .foregroundColor(.axTextPrimary)
-        }
-        .padding(.vertical, 4)
-    }
-}
 
 // MARK: - SSL Overview Card
 
@@ -344,28 +218,8 @@ struct ConnectionRow: View {
     }
 }
 
-// MARK: - Empty State Views
 
-struct EmptyStateMessage: View {
-    let icon: String
-    let message: String
 
-    var body: some View {
-        HStack(spacing: AXSpacing.sm) {
-            Image(systemName: icon)
-                .font(.system(size: 14))
-                .foregroundColor(.axTextTertiary)
-
-            Text(message)
-                .font(.system(size: 12))
-                .foregroundColor(.axTextSecondary)
-        }
-        .padding(AXSpacing.md)
-        .frame(maxWidth: .infinity)
-        .background(Color.axBackground)
-        .cornerRadius(AXCornerRadius.sm)
-    }
-}
 
 struct EmptyStateCard: View {
     let icon: String

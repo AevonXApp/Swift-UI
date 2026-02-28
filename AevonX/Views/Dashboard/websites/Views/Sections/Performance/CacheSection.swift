@@ -16,7 +16,7 @@ struct CacheSection: View {
             VStack(alignment: .leading, spacing: AXSpacing.xl) {
                 // Header
                 HStack {
-                    SectionHeader(title: "Cache Manager", icon: "bolt.circle.fill")
+                    AXSectionTitle(title: "Cache Manager", icon: "bolt.circle.fill")
                     Spacer()
                     Button(action: { Task { await viewModel.purgeAllCache() } }) {
                         HStack(spacing: 4) {
@@ -42,7 +42,7 @@ struct CacheSection: View {
                 }
 
                 // Browser Cache Rules
-                ConfigCard(icon: "clock.fill", title: "Browser Cache Rules", description: "Configure Cache-Control and Expires headers") {
+                AXConfigCard(icon: "clock.fill", title: "Browser Cache Rules", subtitle: "Configure Cache-Control and Expires headers") {
                     VStack(spacing: AXSpacing.sm) {
                         ForEach(viewModel.browserCacheRules) { rule in
                             HStack {

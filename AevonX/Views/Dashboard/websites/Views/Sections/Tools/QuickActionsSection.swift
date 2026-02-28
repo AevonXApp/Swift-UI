@@ -16,7 +16,7 @@ struct QuickActionsSection: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: AXSpacing.xl) {
-                SectionHeader(title: "Quick Actions", icon: "bolt.fill")
+                AXSectionTitle(title: "Quick Actions", icon: "bolt.fill")
 
                 // Running indicator
                 if viewModel.isRunning {
@@ -33,7 +33,7 @@ struct QuickActionsSection: View {
                 }
 
                 // Service Actions
-                ConfigCard(icon: "server.rack", title: "Service Control", description: "Restart or reload services") {
+                AXConfigCard(icon: "server.rack", title: "Service Control", subtitle: "Restart or reload services") {
                     LazyVGrid(columns: columns, spacing: AXSpacing.md) {
                         actionTile(icon: "arrow.clockwise", title: "Restart Runtime", subtitle: viewModel.runtime.rawValue, color: .orange) {
                             Task { await viewModel.restartRuntime() }
@@ -48,7 +48,7 @@ struct QuickActionsSection: View {
                 }
 
                 // Maintenance
-                ConfigCard(icon: "wrench.fill", title: "Maintenance", description: "Maintenance mode and cache management") {
+                AXConfigCard(icon: "wrench.fill", title: "Maintenance", subtitle: "Maintenance mode and cache management") {
                     LazyVGrid(columns: columns, spacing: AXSpacing.md) {
                         actionTile(
                             icon: viewModel.maintenanceMode ? "xmark.circle" : "wrench.and.screwdriver",
@@ -68,7 +68,7 @@ struct QuickActionsSection: View {
                 }
 
                 // Diagnostics
-                ConfigCard(icon: "stethoscope", title: "Diagnostics", description: "Test configuration and check disk usage") {
+                AXConfigCard(icon: "stethoscope", title: "Diagnostics", subtitle: "Test configuration and check disk usage") {
                     LazyVGrid(columns: columns, spacing: AXSpacing.md) {
                         actionTile(icon: "checkmark.seal", title: "Test Nginx", subtitle: "nginx -t", color: .cyan) {
                             Task { await viewModel.testNginx() }

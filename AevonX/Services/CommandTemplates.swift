@@ -40,10 +40,7 @@ public enum CommandTemplate {
 
     case system(SystemCommand)
 
-    // MARK: - Security Commands
 
-    case security(SecurityCommand)
-    
     // MARK: - Build Command
     
     /// Builds the actual command string for execution
@@ -59,8 +56,6 @@ public enum CommandTemplate {
         case .files(let cmd):
             return cmd.command
         case .system(let cmd):
-            return cmd.command
-        case .security(let cmd):
             return cmd.command
         }
     }
@@ -78,8 +73,6 @@ public enum CommandTemplate {
             return "files"
         case .system:
             return "system"
-        case .security:
-            return "security"
         }
     }
 
@@ -95,8 +88,6 @@ public enum CommandTemplate {
         case .files(let cmd):
             return cmd.description
         case .system(let cmd):
-            return cmd.description
-        case .security(let cmd):
             return cmd.description
         }
     }
@@ -510,244 +501,7 @@ public enum SystemCommand {
     }
 }
 
-// MARK: - Security Commands
 
-/// Security management commands for firewall, SSH, brute force, etc.
-public enum SecurityCommand {
-
-    // --- Firewall ---
-    /// Check if firewall (ufw/iptables) is enabled
-    case firewallStatus
-    /// List iptables rules in a parseable format
-    case listFirewallRules
-    /// Add a firewall port rule (protocol: tcp/udp, port, strategy: ACCEPT/DROP, direction: INPUT/OUTPUT, sourceIP: "0.0.0.0/0" for all)
-    case addFirewallRule(proto: String, port: String, strategy: String, direction: String, sourceIP: String)
-    /// Delete a firewall port rule
-    case deleteFirewallRule(proto: String, port: String, direction: String)
-    /// Enable/disable firewall
-    case setFirewall(enabled: Bool)
-    /// Enable/disable ICMP (ping) blocking
-    case setICMPBlock(enabled: Bool)
-
-    // --- SSH ---
-    /// Get SSH service status and login summary
-    case sshStatus
-    /// Get SSH config values (Port, PermitRootLogin, PasswordAuthentication, PubkeyAuthentication)
-    case sshConfig
-    /// Set SSH port
-    case setSSHPort(port: String)
-    /// Toggle password authentication
-    case setSSHPasswordAuth(enabled: Bool)
-    /// Toggle pubkey authentication
-    case setSSHKeyAuth(enabled: Bool)
-    /// Set root login mode (yes/no/without-password)
-    case setSSHRootLogin(mode: String)
-    /// Get SSH login logs (lastlog + auth.log)
-    case sshLoginLogs(count: Int)
-    /// Get SSH login stats (success/failure counts)
-    case sshLoginStats
-    /// Generate a new SSH key pair for root
-    case generateSSHKey
-    /// Read the public key
-    case readSSHPublicKey
-    /// Read authorized_keys
-    case readAuthorizedKeys
-
-    // --- Brute Force (fail2ban) ---
-    /// Check fail2ban status
-    case fail2banStatus
-    /// List fail2ban banned IPs
-    case fail2banBannedIPs
-    /// Unban an IP from fail2ban
-    case fail2banUnban(ip: String, jail: String)
-    /// Set fail2ban max retries
-    case fail2banSetMaxRetry(count: Int)
-    /// Set fail2ban ban time in seconds
-    case fail2banSetBanTime(seconds: Int)
-    /// Get fail2ban jail status (sshd)
-    case fail2banJailStatus(jail: String)
-
-    // --- System Hardening ---
-    /// Check various hardening settings
-    case systemHardeningCheck
-
-    public var command: String {
-        switch self {
-        // Firewall
-        case .firewallStatus:
-            return "ufw status 2>/dev/null || (iptables -L -n 2>/dev/null | head -5) || echo 'no-firewall'"
-
-        case .listFirewallRules:
-            // Two sections separated by ---LISTENING---
-            // Section 1: iptables rules  PROTO|PORT|TARGET|CHAIN|SOURCE
-            // Section 2: listening ports  PROTO|PORT|PROCESS|STATE
-            return """
-            echo '---IPTABLES---'
-            iptables -L -n --line-numbers 2>/dev/null | awk '
-            /^Chain/ { chain=$2 }
-            /^[0-9]/ {
-              target=$2; prot=$3; source=$5; dest=$6;
-              port="*";
-              for(i=7;i<=NF;i++) { if($i ~ /dpt:/) { split($i,a,":"); port=a[2] } if($i ~ /dpts:/) { split($i,a,":"); port=a[2] } }
-              print prot"|"port"|"target"|"chain"|"source
-            }' 2>/dev/null
-            echo '---LISTENING---'
-            ss -tlnp 2>/dev/null | awk 'NR>1 {
-              split($4, a, ":");
-              port=a[length(a)];
-              proc=$6;
-              gsub(/.*users:\\(\\("|".*/, "", proc);
-              print "tcp|"port"|"proc"|LISTEN"
-            }'
-            ss -ulnp 2>/dev/null | awk 'NR>1 {
-              split($4, a, ":");
-              port=a[length(a)];
-              proc=$6;
-              gsub(/.*users:\\(\\("|".*/, "", proc);
-              print "udp|"port"|"proc"|LISTEN"
-            }'
-            """
-
-        case .addFirewallRule(let proto, let port, let strategy, let direction, let sourceIP):
-            let safeChain = direction == "INPUT" ? "INPUT" : "OUTPUT"
-            let safeProto = ShellSanitizer.quote(proto)
-            let safePort = ShellSanitizer.quote(port)
-            let safeStrategy = ShellSanitizer.quote(strategy)
-            let src = sourceIP == "0.0.0.0/0" ? "" : "-s \(ShellSanitizer.quote(sourceIP))"
-            return "iptables -A \(safeChain) -p \(safeProto) --dport \(safePort) \(src) -j \(safeStrategy) 2>&1 && echo 'OK' || echo 'FAILED'"
-
-        case .deleteFirewallRule(let proto, let port, let direction):
-            let safeChain = direction == "INPUT" ? "INPUT" : "OUTPUT"
-            let safeProto = ShellSanitizer.quote(proto)
-            let safePort = ShellSanitizer.quote(port)
-            return "iptables -D \(safeChain) -p \(safeProto) --dport \(safePort) -j ACCEPT 2>/dev/null; iptables -D \(safeChain) -p \(safeProto) --dport \(safePort) -j DROP 2>/dev/null; echo 'OK'"
-
-        case .setFirewall(let enabled):
-            if enabled {
-                return "ufw --force enable 2>/dev/null || (iptables -P INPUT ACCEPT && echo 'OK') || echo 'FAILED'"
-            } else {
-                return "ufw --force disable 2>/dev/null || (iptables -F && echo 'OK') || echo 'FAILED'"
-            }
-
-        case .setICMPBlock(let enabled):
-            if enabled {
-                return "iptables -A INPUT -p icmp --icmp-type echo-request -j DROP 2>&1 && echo 'OK' || echo 'FAILED'"
-            } else {
-                return "iptables -D INPUT -p icmp --icmp-type echo-request -j DROP 2>/dev/null; echo 'OK'"
-            }
-
-        // SSH
-        case .sshStatus:
-            return "if systemctl is-active sshd >/dev/null 2>&1 || systemctl is-active ssh >/dev/null 2>&1; then echo active; else echo inactive; fi"
-
-        case .sshConfig:
-            return "grep -E '^(Port|PermitRootLogin|PasswordAuthentication|PubkeyAuthentication)' /etc/ssh/sshd_config 2>/dev/null || echo 'no-config'"
-
-        case .setSSHPort(let port):
-            let safePort = ShellSanitizer.quote(String(port))
-            return "sed -i 's/^#\\?Port .*/Port '\(safePort)'/' /etc/ssh/sshd_config && systemctl restart sshd 2>/dev/null || systemctl restart ssh 2>/dev/null; echo 'OK'"
-
-        case .setSSHPasswordAuth(let enabled):
-            let val = enabled ? "yes" : "no"
-            return "sed -i 's/^#\\?PasswordAuthentication .*/PasswordAuthentication \(val)/' /etc/ssh/sshd_config && systemctl restart sshd 2>/dev/null || systemctl restart ssh 2>/dev/null; echo 'OK'"
-
-        case .setSSHKeyAuth(let enabled):
-            let val = enabled ? "yes" : "no"
-            return "sed -i 's/^#\\?PubkeyAuthentication .*/PubkeyAuthentication \(val)/' /etc/ssh/sshd_config && systemctl restart sshd 2>/dev/null || systemctl restart ssh 2>/dev/null; echo 'OK'"
-
-        case .setSSHRootLogin(let mode):
-            let safeMode = ShellSanitizer.quote(mode)
-            return "sed -i 's/^#\\?PermitRootLogin .*/PermitRootLogin '\(safeMode)'/' /etc/ssh/sshd_config && systemctl restart sshd 2>/dev/null || systemctl restart ssh 2>/dev/null; echo 'OK'"
-
-        case .sshLoginLogs(let count):
-            let safeCount = ShellSanitizer.quote(String(count))
-            return "grep 'sshd' /var/log/auth.log 2>/dev/null | grep -E '(Accepted|Failed)' | tail -\(safeCount) || journalctl -u sshd --no-pager -n \(safeCount) 2>/dev/null | grep -E '(Accepted|Failed)' || echo 'no-logs'"
-
-        case .sshLoginStats:
-            return """
-            echo "success:$(grep 'sshd' /var/log/auth.log 2>/dev/null | grep -c 'Accepted' || journalctl -u sshd --no-pager 2>/dev/null | grep -c 'Accepted' || echo 0)";
-            echo "failed:$(grep 'sshd' /var/log/auth.log 2>/dev/null | grep -c 'Failed' || journalctl -u sshd --no-pager 2>/dev/null | grep -c 'Failed' || echo 0)";
-            echo "today_failed:$(grep 'sshd' /var/log/auth.log 2>/dev/null | grep 'Failed' | grep "$(date '+%b %e')" | wc -l || echo 0)"
-            """
-
-        case .generateSSHKey:
-            return "ssh-keygen -t ed25519 -f /root/.ssh/id_ed25519 -N '' -q 2>&1 && cat /root/.ssh/id_ed25519.pub || echo 'FAILED'"
-
-        case .readSSHPublicKey:
-            return "cat /root/.ssh/id_ed25519.pub 2>/dev/null || cat /root/.ssh/id_rsa.pub 2>/dev/null || echo 'no-key'"
-
-        case .readAuthorizedKeys:
-            return "cat /root/.ssh/authorized_keys 2>/dev/null || echo 'no-keys'"
-
-        // Brute Force
-        case .fail2banStatus:
-            return "fail2ban-client status 2>/dev/null || echo 'not-installed'"
-
-        case .fail2banBannedIPs:
-            return "fail2ban-client status sshd 2>/dev/null | grep -A 100 'Banned IP' || echo 'none'"
-
-        case .fail2banUnban(let ip, let jail):
-            let safeJail = ShellSanitizer.quote(jail)
-            let safeIP = ShellSanitizer.quote(ip)
-            return "fail2ban-client set \(safeJail) unbanip \(safeIP) 2>&1 && echo 'OK' || echo 'FAILED'"
-
-        case .fail2banSetMaxRetry(let count):
-            let safeCount = ShellSanitizer.quote(String(count))
-            return "sed -i 's/^maxretry = .*/maxretry = '\(safeCount)'/' /etc/fail2ban/jail.local 2>/dev/null && fail2ban-client reload 2>&1 && echo 'OK' || echo 'FAILED'"
-
-        case .fail2banSetBanTime(let seconds):
-            let safeSeconds = ShellSanitizer.quote(String(seconds))
-            return "sed -i 's/^bantime = .*/bantime = '\(safeSeconds)'/' /etc/fail2ban/jail.local 2>/dev/null && fail2ban-client reload 2>&1 && echo 'OK' || echo 'FAILED'"
-
-        case .fail2banJailStatus(let jail):
-            let safeJail = ShellSanitizer.quote(jail)
-            return "fail2ban-client status \(safeJail) 2>/dev/null || echo 'not-found'"
-
-        // Hardening
-        case .systemHardeningCheck:
-            return """
-            echo "ASLR:$(cat /proc/sys/kernel/randomize_va_space 2>/dev/null || echo N/A)";
-            echo "SYN_COOKIES:$(cat /proc/sys/net/ipv4/tcp_syncookies 2>/dev/null || echo N/A)";
-            echo "SOURCE_ROUTE:$(cat /proc/sys/net/ipv4/conf/all/accept_source_route 2>/dev/null || echo N/A)";
-            echo "CORE_DUMP:$(cat /proc/sys/fs/suid_dumpable 2>/dev/null || echo N/A)";
-            echo "ROOT_LOGIN:$(grep '^PermitRootLogin' /etc/ssh/sshd_config 2>/dev/null | awk '{print $2}' || echo N/A)";
-            echo "SSH_PORT:$(grep '^Port' /etc/ssh/sshd_config 2>/dev/null | awk '{print $2}' || echo 22)";
-            echo "PASSWORD_AUTH:$(grep '^PasswordAuthentication' /etc/ssh/sshd_config 2>/dev/null | awk '{print $2}' || echo N/A)";
-            echo "IPV6:$(cat /proc/sys/net/ipv6/conf/all/disable_ipv6 2>/dev/null || echo N/A)";
-            echo "FAIL2BAN:$(systemctl is-active fail2ban 2>/dev/null || echo inactive)"
-            """
-        }
-    }
-
-    public var description: String {
-        switch self {
-        case .firewallStatus: return "Check firewall status"
-        case .listFirewallRules: return "List firewall rules"
-        case .addFirewallRule: return "Add firewall rule"
-        case .deleteFirewallRule: return "Delete firewall rule"
-        case .setFirewall: return "Toggle firewall"
-        case .setICMPBlock: return "Toggle ICMP blocking"
-        case .sshStatus: return "Check SSH status"
-        case .sshConfig: return "Read SSH configuration"
-        case .setSSHPort: return "Set SSH port"
-        case .setSSHPasswordAuth: return "Toggle SSH password auth"
-        case .setSSHKeyAuth: return "Toggle SSH key auth"
-        case .setSSHRootLogin: return "Set root login policy"
-        case .sshLoginLogs: return "Get SSH login logs"
-        case .sshLoginStats: return "Get SSH login statistics"
-        case .generateSSHKey: return "Generate SSH key pair"
-        case .readSSHPublicKey: return "Read SSH public key"
-        case .readAuthorizedKeys: return "Read authorized keys"
-        case .fail2banStatus: return "Check fail2ban status"
-        case .fail2banBannedIPs: return "List fail2ban banned IPs"
-        case .fail2banUnban: return "Unban IP from fail2ban"
-        case .fail2banSetMaxRetry: return "Set fail2ban max retry"
-        case .fail2banSetBanTime: return "Set fail2ban ban time"
-        case .fail2banJailStatus: return "Check fail2ban jail status"
-        case .systemHardeningCheck: return "Check system hardening"
-        }
-    }
-}
 
 // MARK: - Path Sanitization
 

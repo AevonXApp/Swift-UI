@@ -2,7 +2,8 @@
 //  EnhancedLogsSection.swift
 //  AevonX
 //
-//  Log viewer with table, AI analysis sheet, block IP, clear confirmation
+//  Log viewer with parsed table, AI analysis sheet, block IP, clear confirmation.
+//  Models/parsers in EnhancedLogModels.swift, AI sheet in AIAnalysisSheet.swift.
 //
 
 import SwiftUI
@@ -252,7 +253,7 @@ struct EnhancedLogsSection: View {
 
     private var logTable: some View {
         VStack(spacing: 0) {
-            // thead
+            // Table header
             HStack(spacing: 0) {
                 Text("#")
                     .frame(width: 35, alignment: .center)
@@ -282,7 +283,7 @@ struct EnhancedLogsSection: View {
 
             Divider().background(Color.axBorder.opacity(0.3))
 
-            // tbody
+            // Table body
             ScrollView {
                 LazyVStack(spacing: 0) {
                     if viewModel.isLoading {
@@ -312,7 +313,7 @@ struct EnhancedLogsSection: View {
     // MARK: - Table Row
 
     private func tableRow(_ line: IndexedLogLine) -> some View {
-        let parsed = parseLine(line.content)
+        let parsed = EnhancedLogParser.parse(line.content)
         let isEven = line.index % 2 == 0
         let isExpanded = expandedRow == line.index
 
@@ -345,9 +346,7 @@ struct EnhancedLogsSection: View {
 
                     Text(parsed.method.isEmpty ? "—" : parsed.method)
                         .font(.system(size: 9, weight: .bold, design: .monospaced))
-                        .foregroundColor(parsed.method == "GET" ? .axAccentBlue :
-                                        parsed.method == "POST" ? .green :
-                                        parsed.method == "DELETE" ? .red : .axTextMuted)
+                        .foregroundColor(EnhancedLogParser.methodColor(parsed.method))
                         .frame(width: 55, alignment: .center)
                         .overlay(alignment: .leading) { Color.axBorder.opacity(0.06).frame(width: 1) }
 
@@ -391,7 +390,6 @@ struct EnhancedLogsSection: View {
 
                 Spacer()
 
-                // Block IP button
                 if !parsed.ip.isEmpty {
                     Button(action: { ipToBlock = parsed.ip }) {
                         HStack(spacing: 4) {
@@ -409,13 +407,8 @@ struct EnhancedLogsSection: View {
                 }
             }
 
-            if !parsed.url.isEmpty {
-                detailField("URL", parsed.url)
-            }
-
-            if !parsed.userAgent.isEmpty {
-                detailField("User Agent", parsed.userAgent)
-            }
+            if !parsed.url.isEmpty { detailField("URL", parsed.url) }
+            if !parsed.userAgent.isEmpty { detailField("User Agent", parsed.userAgent) }
 
             VStack(alignment: .leading, spacing: 2) {
                 Text("RAW")
@@ -453,37 +446,19 @@ struct EnhancedLogsSection: View {
     // MARK: - Badges
 
     private func levelBadge(_ level: String) -> some View {
-        let color: Color = {
-            switch level {
-            case "error", "fatal", "crit": return .red
-            case "warn", "notice": return .orange
-            case "info": return .green
-            default: return .axTextMuted
-            }
-        }()
-        return Text(level.uppercased())
+        Text(level.uppercased())
             .font(.system(size: 8, weight: .bold, design: .monospaced))
-            .foregroundColor(color)
+            .foregroundColor(EnhancedLogParser.levelColor(level))
             .padding(.horizontal, 5)
             .padding(.vertical, 2)
-            .background(color.opacity(0.12))
+            .background(EnhancedLogParser.levelColor(level).opacity(0.12))
             .cornerRadius(3)
     }
 
     private func statusBadge(_ code: String) -> some View {
-        let color: Color = {
-            guard let num = Int(code) else { return .axTextMuted }
-            switch num {
-            case 200..<300: return .green
-            case 300..<400: return .blue
-            case 400..<500: return .orange
-            case 500..<600: return .red
-            default: return .axTextMuted
-            }
-        }()
-        return Text(code.isEmpty ? "—" : code)
+        Text(code.isEmpty ? "—" : code)
             .font(.system(size: 10, weight: .bold, design: .monospaced))
-            .foregroundColor(code.isEmpty ? .axTextMuted : color)
+            .foregroundColor(code.isEmpty ? .axTextMuted : EnhancedLogParser.statusColor(code))
     }
 
     // MARK: - Status Bar
@@ -514,392 +489,4 @@ struct EnhancedLogsSection: View {
             }
         }
     }
-
-    // MARK: - Parser
-
-    private func parseLine(_ raw: String) -> ParsedLogLine {
-        var timestamp = ""
-        var level = "info"
-        var ip = ""
-        var method = ""
-        var url = ""
-        var statusCode = ""
-        var size = ""
-        var userAgent = ""
-
-        let parts = raw.split(separator: " ", maxSplits: 1)
-        if let first = parts.first {
-            let candidate = String(first)
-            if candidate.contains(".") || candidate.contains(":") { ip = candidate }
-        }
-
-        if let bracketMatch = raw.range(of: "\\[([^\\]]+)\\]", options: .regularExpression) {
-            let rawTS = String(raw[bracketMatch]).replacingOccurrences(of: "[", with: "").replacingOccurrences(of: "]", with: "")
-            timestamp = formatTimestamp(rawTS)
-        }
-
-        if let reqMatch = raw.range(of: "\"(GET|POST|PUT|DELETE|PATCH|HEAD|OPTIONS) ([^ ]+) HTTP[^\"]*\"", options: .regularExpression) {
-            let reqStr = String(raw[reqMatch]).replacingOccurrences(of: "\"", with: "")
-            let reqParts = reqStr.split(separator: " ")
-            if reqParts.count >= 2 { method = String(reqParts[0]); url = String(reqParts[1]) }
-        }
-
-        let statusPattern = try? NSRegularExpression(pattern: "\" (\\d{3}) (\\d+)", options: [])
-        if let match = statusPattern?.firstMatch(in: raw, options: [], range: NSRange(raw.startIndex..., in: raw)) {
-            if let r1 = Range(match.range(at: 1), in: raw) { statusCode = String(raw[r1]) }
-            if let r2 = Range(match.range(at: 2), in: raw) {
-                if let bytes = Int(raw[r2]) { size = formatBytes(bytes) }
-            }
-        }
-
-        let uaPattern = try? NSRegularExpression(pattern: "\"([^\"]{15,})\"\\s*$", options: [])
-        if let match = uaPattern?.firstMatch(in: raw, options: [], range: NSRange(raw.startIndex..., in: raw)),
-           let r = Range(match.range(at: 1), in: raw) { userAgent = String(raw[r]) }
-
-        if let code = Int(statusCode) {
-            switch code {
-            case 500...599: level = "error"
-            case 400...499: level = "warn"
-            case 200...399: level = "info"
-            default: break
-            }
-        }
-
-        let lower = raw.lowercased()
-        if lower.contains("[error]") || lower.contains("[crit]") || lower.contains("[emerg]") { level = "error" }
-        else if lower.contains("[warn") || lower.contains("[notice]") { level = "warn" }
-
-        return ParsedLogLine(
-            timestamp: timestamp.isEmpty ? "—" : timestamp,
-            level: level, ip: ip, method: method, url: url,
-            statusCode: statusCode, size: size, userAgent: userAgent,
-            message: raw, raw: raw
-        )
-    }
-
-    private func formatTimestamp(_ raw: String) -> String {
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "en_US_POSIX")
-        formatter.dateFormat = "dd/MMM/yyyy:HH:mm:ss Z"
-        if let date = formatter.date(from: raw) {
-            let out = DateFormatter(); out.dateFormat = "yyyy-MM-dd HH:mm"
-            return out.string(from: date)
-        }
-        formatter.dateFormat = "dd/MMM/yyyy:HH:mm:ss"
-        if let date = formatter.date(from: raw) {
-            let out = DateFormatter(); out.dateFormat = "yyyy-MM-dd HH:mm"
-            return out.string(from: date)
-        }
-        if raw.count > 16 { return String(raw.prefix(16)) }
-        return raw
-    }
-
-    private func formatBytes(_ bytes: Int) -> String {
-        if bytes < 1024 { return "\(bytes) B" }
-        if bytes < 1048576 { return String(format: "%.1f KB", Double(bytes) / 1024) }
-        return String(format: "%.1f MB", Double(bytes) / 1048576)
-    }
-}
-
-// MARK: - AI Analysis Sheet
-
-struct AIAnalysisSheet: View {
-    @ObservedObject var viewModel: EnhancedLogsViewModel
-    @Environment(\.dismiss) var dismiss
-    @State private var copied = false
-
-    var body: some View {
-        VStack(spacing: 0) {
-            // Sheet header
-            HStack {
-                HStack(spacing: 8) {
-                    Image(systemName: "brain")
-                        .font(.system(size: 18))
-                        .foregroundColor(.axAccentBlue)
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("AI Log Analysis")
-                            .font(.system(size: 16, weight: .bold))
-                            .foregroundColor(.axTextPrimary)
-                        Text(viewModel.domain)
-                            .font(.system(size: 11, design: .monospaced))
-                            .foregroundColor(.axTextMuted)
-                    }
-                }
-
-                Spacer()
-
-                if let analysis = viewModel.aiAnalysis {
-                    Button(action: copyReport) {
-                        HStack(spacing: 4) {
-                            Image(systemName: copied ? "checkmark" : "doc.on.doc")
-                            Text(copied ? "Copied!" : "Copy Report")
-                        }
-                        .font(.system(size: 11, weight: .semibold))
-                    }
-                    .buttonStyle(.bordered)
-                    .controlSize(.small)
-                    .tint(copied ? .green : .axAccentBlue)
-                }
-
-                Button(action: { dismiss() }) {
-                    Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: 18))
-                        .foregroundColor(.axTextMuted)
-                }
-                .buttonStyle(.plain)
-            }
-            .padding(AXSpacing.lg)
-            .background(Color.axSurface.opacity(0.4))
-
-            Divider().background(Color.axBorder.opacity(0.3))
-
-            // Content
-            if viewModel.isAnalyzing {
-                Spacer()
-                VStack(spacing: AXSpacing.lg) {
-                    ProgressView()
-                        .scaleEffect(1.5)
-                    Text("Analyzing log patterns...")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(.axTextSecondary)
-                    Text("\(viewModel.logLines.count) log entries")
-                        .font(.system(size: 12, design: .monospaced))
-                        .foregroundColor(.axTextMuted)
-                }
-                Spacer()
-            } else if let analysis = viewModel.aiAnalysis {
-                ScrollView {
-                    VStack(spacing: AXSpacing.lg) {
-                        // Health score card
-                        healthCard(analysis)
-
-                        // Stats grid
-                        statsGrid(analysis)
-
-                        // HTTP Status Distribution
-                        if !analysis.statusDistribution.isEmpty {
-                            statusSection(analysis.statusDistribution)
-                        }
-
-                        // Insights
-                        if !analysis.insights.isEmpty {
-                            insightsSection(analysis.insights)
-                        }
-                    }
-                    .padding(AXSpacing.lg)
-                }
-            } else {
-                Spacer()
-                VStack(spacing: AXSpacing.md) {
-                    Image(systemName: "waveform.path.ecg")
-                        .font(.system(size: 32))
-                        .foregroundColor(.axTextMuted.opacity(0.4))
-                    Text("No analysis data")
-                        .font(.system(size: 14))
-                        .foregroundColor(.axTextMuted)
-                    Button("Run Analysis") {
-                        Task { await viewModel.runSmartAnalysis() }
-                    }
-                    .buttonStyle(.borderedProminent)
-                }
-                Spacer()
-            }
-        }
-        .background(Color.axBackground)
-    }
-
-    // MARK: - Health Card
-
-    private func healthCard(_ analysis: LogAIAnalysis) -> some View {
-        HStack(spacing: AXSpacing.lg) {
-            // Score circle
-            ZStack {
-                Circle()
-                    .stroke(Color.axBorder.opacity(0.2), lineWidth: 6)
-                    .frame(width: 70, height: 70)
-                Circle()
-                    .trim(from: 0, to: Double(analysis.healthScore) / 100)
-                    .stroke(
-                        analysis.healthScore >= 80 ? Color.green :
-                        analysis.healthScore >= 50 ? Color.orange : Color.red,
-                        style: StrokeStyle(lineWidth: 6, lineCap: .round)
-                    )
-                    .frame(width: 70, height: 70)
-                    .rotationEffect(.degrees(-90))
-                VStack(spacing: 0) {
-                    Text("\(analysis.healthScore)")
-                        .font(.system(size: 22, weight: .bold, design: .monospaced))
-                        .foregroundColor(.axTextPrimary)
-                    Text("%")
-                        .font(.system(size: 10, weight: .medium))
-                        .foregroundColor(.axTextMuted)
-                }
-            }
-
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Health Score")
-                    .font(.system(size: 14, weight: .bold))
-                    .foregroundColor(.axTextPrimary)
-                Text("Based on \(analysis.totalRequests) requests — \(analysis.errorCount) errors, \(analysis.warningCount) warnings")
-                    .font(.system(size: 11))
-                    .foregroundColor(.axTextTertiary)
-            }
-
-            Spacer()
-        }
-        .padding(AXSpacing.lg)
-        .background(Color.axSurface.opacity(0.3))
-        .cornerRadius(AXCornerRadius.md)
-        .overlay(RoundedRectangle(cornerRadius: AXCornerRadius.md).stroke(Color.axBorder.opacity(0.15), lineWidth: 1))
-    }
-
-    // MARK: - Stats Grid
-
-    private func statsGrid(_ analysis: LogAIAnalysis) -> some View {
-        LazyVGrid(columns: [
-            GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())
-        ], spacing: AXSpacing.md) {
-            statCard(icon: "doc.text.fill", value: "\(analysis.totalRequests)", label: "Requests", color: .axAccentBlue)
-            statCard(icon: "person.2.fill", value: "\(analysis.uniqueIPs)", label: "Unique IPs", color: .purple)
-            statCard(icon: "xmark.circle.fill", value: "\(analysis.errorCount)", label: "Errors", color: .red)
-            statCard(icon: "exclamationmark.triangle.fill", value: "\(analysis.warningCount)", label: "Warnings", color: .orange)
-            statCard(icon: "ant.fill", value: "\(analysis.botCount)", label: "Bots", color: .axTextMuted)
-            statCard(icon: "checkmark.shield.fill", value: "\(analysis.healthScore)%", label: "Health", color: analysis.healthScore >= 80 ? .green : .orange)
-        }
-    }
-
-    private func statCard(icon: String, value: String, label: String, color: Color) -> some View {
-        VStack(spacing: 6) {
-            Image(systemName: icon)
-                .font(.system(size: 16))
-                .foregroundColor(color)
-            Text(value)
-                .font(.system(size: 20, weight: .bold, design: .monospaced))
-                .foregroundColor(.axTextPrimary)
-            Text(label)
-                .font(.system(size: 10, weight: .medium))
-                .foregroundColor(.axTextMuted)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, AXSpacing.md)
-        .background(color.opacity(0.05))
-        .cornerRadius(AXCornerRadius.sm)
-        .overlay(RoundedRectangle(cornerRadius: AXCornerRadius.sm).stroke(color.opacity(0.12), lineWidth: 1))
-    }
-
-    // MARK: - Status Distribution
-
-    private func statusSection(_ stats: [LogStatusStat]) -> some View {
-        VStack(alignment: .leading, spacing: AXSpacing.sm) {
-            Text("HTTP Status Distribution")
-                .font(.system(size: 13, weight: .bold))
-                .foregroundColor(.axTextPrimary)
-
-            HStack(spacing: AXSpacing.sm) {
-                ForEach(stats) { stat in
-                    VStack(spacing: 4) {
-                        Text("\(stat.count)")
-                            .font(.system(size: 18, weight: .bold, design: .monospaced))
-                            .foregroundColor(stat.color)
-                        Text(stat.code)
-                            .font(.system(size: 11, weight: .semibold, design: .monospaced))
-                            .foregroundColor(.axTextPrimary)
-                        Text(statusLabel(stat.code))
-                            .font(.system(size: 9))
-                            .foregroundColor(.axTextMuted)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, AXSpacing.sm)
-                    .background(stat.color.opacity(0.06))
-                    .cornerRadius(AXCornerRadius.sm)
-                }
-            }
-        }
-        .padding(AXSpacing.md)
-        .background(Color.axSurface.opacity(0.2))
-        .cornerRadius(AXCornerRadius.md)
-    }
-
-    private func statusLabel(_ code: String) -> String {
-        switch code {
-        case "200": return "OK"
-        case "301": return "Redirect"
-        case "302": return "Found"
-        case "304": return "Not Modified"
-        case "400": return "Bad Request"
-        case "401": return "Unauthorized"
-        case "403": return "Forbidden"
-        case "404": return "Not Found"
-        case "500": return "Server Error"
-        case "502": return "Bad Gateway"
-        case "503": return "Unavailable"
-        default: return ""
-        }
-    }
-
-    // MARK: - Insights
-
-    private func insightsSection(_ insights: [LogInsight]) -> some View {
-        VStack(alignment: .leading, spacing: AXSpacing.sm) {
-            Text("Insights")
-                .font(.system(size: 13, weight: .bold))
-                .foregroundColor(.axTextPrimary)
-
-            ForEach(insights) { insight in
-                HStack(spacing: AXSpacing.md) {
-                    Image(systemName: insight.icon)
-                        .font(.system(size: 16))
-                        .foregroundColor(insight.level.color)
-                        .frame(width: 30, height: 30)
-                        .background(insight.level.color.opacity(0.1))
-                        .cornerRadius(8)
-
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(insight.title)
-                            .font(.system(size: 12, weight: .semibold))
-                            .foregroundColor(.axTextPrimary)
-                        Text(insight.detail)
-                            .font(.system(size: 11))
-                            .foregroundColor(.axTextTertiary)
-                    }
-
-                    Spacer()
-                }
-                .padding(AXSpacing.sm)
-                .background(insight.level.color.opacity(0.03))
-                .cornerRadius(AXCornerRadius.sm)
-                .overlay(RoundedRectangle(cornerRadius: AXCornerRadius.sm)
-                    .stroke(insight.level.color.opacity(0.1), lineWidth: 1))
-            }
-        }
-    }
-
-    private func copyReport() {
-        let report = viewModel.generateReport()
-        NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(report, forType: .string)
-        copied = true
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2) { copied = false }
-    }
-}
-
-// MARK: - Models
-
-struct IndexedLogLine: Identifiable {
-    var id: Int { index }
-    let index: Int
-    let content: String
-}
-
-struct ParsedLogLine {
-    let timestamp: String
-    let level: String
-    let ip: String
-    let method: String
-    let url: String
-    let statusCode: String
-    let size: String
-    let userAgent: String
-    let message: String
-    let raw: String
 }

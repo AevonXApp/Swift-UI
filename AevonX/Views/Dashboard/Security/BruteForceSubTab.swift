@@ -3,6 +3,7 @@
 //  AevonX
 //
 //  Brute force protection (fail2ban) — real data
+//  Phase 2: Search, filter, sort, whitelist, improved UX
 //
 
 import SwiftUI
@@ -19,12 +20,35 @@ struct BruteForceSubTab: View {
     @State private var bannedIPs: [String] = []
     @State private var currentlyBanned = 0
     @State private var totalBanned = 0
-    @State private var whitelistIP = ""
     @State private var maxRetries = 5
     @State private var banDuration = 600
     @State private var isInstalling = false
 
-    private let sshService = SSHService.shared
+    // Phase 2: Search, filter, sort
+    @State private var banSearchText = ""
+    @State private var banSortAscending = true
+    @State private var showUnbanAllConfirm = false
+    @State private var ipToUnban: String? = nil
+
+    // Phase 2: Whitelist
+    @State private var whitelistIPs: [String] = []
+    @State private var newWhitelistIP = ""
+    @State private var isAddingWhitelist = false
+    @State private var ipToRemoveFromWhitelist: String? = nil
+
+    private let securityManager = SecurityManager.shared
+
+    // Filtered + sorted banned IPs
+    private var displayedBannedIPs: [String] {
+        var ips = bannedIPs
+        if !banSearchText.isEmpty {
+            ips = ips.filter { $0.localizedCaseInsensitiveContains(banSearchText) }
+        }
+        ips.sort { ip1, ip2 in
+            banSortAscending ? ip1 < ip2 : ip1 > ip2
+        }
+        return ips
+    }
 
     var body: some View {
         ScrollView {
@@ -44,11 +68,55 @@ struct BruteForceSubTab: View {
                     }
 
                     bannedIPsCard
+                    whitelistCard
                 }
             }
             .padding(AXSpacing.xxl)
         }
         .task { await loadData() }
+        .alert("Unban IP", isPresented: Binding(
+            get: { ipToUnban != nil },
+            set: { if !$0 { ipToUnban = nil } }
+        )) {
+            Button("Cancel", role: .cancel) { ipToUnban = nil }
+            Button("Unban", role: .destructive) {
+                if let ip = ipToUnban {
+                    Task {
+                        let _ = await securityManager.fail2banUnban(ip: ip, jail: "sshd", serverId: serverId)
+                        await loadData()
+                    }
+                }
+            }
+        } message: {
+            Text("Are you sure you want to unban \(ipToUnban ?? "")? This IP will be able to attempt logins again.")
+        }
+        .alert("Unban All IPs", isPresented: $showUnbanAllConfirm) {
+            Button("Cancel", role: .cancel) {}
+            Button("Unban All", role: .destructive) {
+                Task {
+                    let _ = await securityManager.fail2banUnbanAll(jail: "sshd", serverId: serverId)
+                    await loadData()
+                }
+            }
+        } message: {
+            Text("Are you sure you want to unban all \(bannedIPs.count) IP(s)? All blocked addresses will be able to attempt logins again.")
+        }
+        .alert("Remove from Whitelist", isPresented: Binding(
+            get: { ipToRemoveFromWhitelist != nil },
+            set: { if !$0 { ipToRemoveFromWhitelist = nil } }
+        )) {
+            Button("Cancel", role: .cancel) { ipToRemoveFromWhitelist = nil }
+            Button("Remove", role: .destructive) {
+                if let ip = ipToRemoveFromWhitelist {
+                    Task {
+                        let _ = await securityManager.fail2banRemoveFromWhitelist(ip: ip, serverId: serverId)
+                        await loadData()
+                    }
+                }
+            }
+        } message: {
+            Text("Remove \(ipToRemoveFromWhitelist ?? "") from the whitelist? This IP may get banned in the future.")
+        }
     }
 
     // MARK: - Load Data
@@ -57,25 +125,19 @@ struct BruteForceSubTab: View {
         isLoading = true
         defer { Task { @MainActor in isLoading = false } }
 
-        // Check fail2ban status
-        if let result = try? await sshService.execute(
-            CommandTemplate.security(.fail2banStatus).build(), serverId: serverId
-        ) {
-            await MainActor.run {
-                isInstalled = !result.stdout.contains("not-installed")
-            }
-        }
+        // Check fail2ban status (from Core)
+        let installed = await securityManager.fail2banStatus(serverId: serverId)
+        await MainActor.run { isInstalled = installed }
 
         guard isInstalled else { return }
 
-        // Get SSHD jail status
-        if let result = try? await sshService.execute(
-            CommandTemplate.security(.fail2banJailStatus(jail: "sshd")).build(), serverId: serverId
-        ) {
-            await MainActor.run {
-                parseJailStatus(result.stdout)
-            }
-        }
+        // Get SSHD jail status (from Core)
+        let status = await securityManager.fail2banJailStatus(jail: "sshd", serverId: serverId)
+        await MainActor.run { parseJailStatus(status) }
+
+        // Load whitelist (from Core)
+        let wl = await securityManager.fail2banWhitelist(serverId: serverId)
+        await MainActor.run { whitelistIPs = wl }
     }
 
     private func parseJailStatus(_ raw: String) {
@@ -155,14 +217,7 @@ struct BruteForceSubTab: View {
     }
 
     private var loadingView: some View {
-        VStack(spacing: AXSpacing.md) {
-            ProgressView()
-            Text("Loading fail2ban status…")
-                .font(AXTypography.body)
-                .foregroundColor(.axTextMuted)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, AXSpacing.xxxxl)
+        AXLoadingState(message: "Loading fail2ban status…")
     }
 
     private var notInstalledView: some View {
@@ -184,9 +239,7 @@ struct BruteForceSubTab: View {
                 Button(action: {
                     Task {
                         isInstalling = true
-                        _ = try? await sshService.execute(
-                            "sudo apt-get install fail2ban -y", serverId: serverId
-                        )
+                        let _ = await securityManager.installFail2ban(serverId: serverId)
                         isInstalling = false
                         await loadData()
                     }
@@ -223,14 +276,7 @@ struct BruteForceSubTab: View {
     private var configurationCard: some View {
         AXCard {
             VStack(alignment: .leading, spacing: AXSpacing.lg) {
-                HStack(spacing: AXSpacing.sm) {
-                    Image(systemName: "slider.horizontal.3")
-                        .font(.system(size: 16))
-                        .foregroundColor(.axAccentBlue)
-                    Text("Configuration")
-                        .font(AXTypography.title3)
-                        .foregroundColor(.axTextPrimary)
-                }
+                AXSectionTitle(title: "Configuration", icon: "slider.horizontal.3")
 
                 Divider().background(Color.axBorder)
 
@@ -248,8 +294,7 @@ struct BruteForceSubTab: View {
 
                         Button(action: {
                             Task {
-                                let cmd = CommandTemplate.security(.fail2banSetMaxRetry(count: maxRetries))
-                                _ = try? await sshService.execute(cmd.build(), serverId: serverId)
+                                let _ = await securityManager.fail2banSetMaxRetry(count: maxRetries, serverId: serverId)
                             }
                         }) {
                             Text("Apply")
@@ -290,8 +335,7 @@ struct BruteForceSubTab: View {
 
                         Button(action: {
                             Task {
-                                let cmd = CommandTemplate.security(.fail2banSetBanTime(seconds: banDuration))
-                                _ = try? await sshService.execute(cmd.build(), serverId: serverId)
+                                let _ = await securityManager.fail2banSetBanTime(seconds: banDuration, serverId: serverId)
                             }
                         }) {
                             Text("Apply")
@@ -316,14 +360,7 @@ struct BruteForceSubTab: View {
     private var statsCard: some View {
         AXCard {
             VStack(alignment: .leading, spacing: AXSpacing.lg) {
-                HStack(spacing: AXSpacing.sm) {
-                    Image(systemName: "chart.bar.fill")
-                        .font(.system(size: 16))
-                        .foregroundColor(.axAccentPurple)
-                    Text("Statistics")
-                        .font(AXTypography.title3)
-                        .foregroundColor(.axTextPrimary)
-                }
+                AXSectionTitle(title: "Statistics", icon: "chart.bar.fill", iconColor: .axAccentPurple)
 
                 Divider().background(Color.axBorder)
 
@@ -331,32 +368,14 @@ struct BruteForceSubTab: View {
                     statRow(label: "Currently Banned", value: "\(currentlyBanned)", color: .axError)
                     statRow(label: "Total Banned", value: "\(totalBanned)", color: .axWarning)
                     statRow(label: "Active Jail", value: "sshd", color: .axAccentGreen)
+                    statRow(label: "Whitelisted", value: "\(whitelistIPs.count)", color: .axAccentBlue)
                 }
 
                 Divider().background(Color.axBorder)
 
-                Button(action: {
-                    Task { await loadData() }
-                }) {
-                    HStack(spacing: AXSpacing.xs) {
-                        Image(systemName: "arrow.clockwise")
-                            .font(.system(size: 11))
-                        Text("Refresh")
-                            .font(AXTypography.headline)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, AXSpacing.sm)
-                    .background(
-                        RoundedRectangle(cornerRadius: AXCornerRadius.md)
-                            .fill(Color.axSurface)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: AXCornerRadius.md)
-                                    .stroke(Color.axBorder, lineWidth: 1)
-                            )
-                    )
-                    .foregroundColor(.axTextSecondary)
+                AXRefreshButton(isLoading: isLoading) {
+                    await loadData()
                 }
-                .buttonStyle(PlainButtonStyle())
             }
         }
     }
@@ -373,47 +392,112 @@ struct BruteForceSubTab: View {
         }
     }
 
-    // MARK: - Banned IPs
+    // MARK: - Banned IPs (Phase 2: search + filter + sort + improved unban)
 
     private var bannedIPsCard: some View {
         AXCard(padding: 0) {
             VStack(spacing: 0) {
-                HStack {
-                    HStack(spacing: AXSpacing.sm) {
-                        Image(systemName: "xmark.shield.fill")
-                            .font(.system(size: 14))
-                            .foregroundColor(.axError)
-                        Text("Currently Banned IPs")
-                            .font(AXTypography.title3)
-                            .foregroundColor(.axTextPrimary)
+                // Header with search and actions
+                VStack(spacing: AXSpacing.sm) {
+                        HStack {
+                            AXSectionTitle(title: "Banned IPs", icon: "xmark.shield.fill", iconColor: .axError)
+
+                            AXBadge(text: "\(bannedIPs.count) banned", color: bannedIPs.isEmpty ? .axSuccess : .axError, style: .filled)
+
+                        // Sort toggle
+                        Button(action: { banSortAscending.toggle() }) {
+                            Image(systemName: banSortAscending ? "arrow.up" : "arrow.down")
+                                .font(.system(size: 11, weight: .medium))
+                                .foregroundColor(.axTextMuted)
+                                .padding(AXSpacing.xs)
+                                .background(
+                                    RoundedRectangle(cornerRadius: AXCornerRadius.sm)
+                                        .fill(Color.axSurface)
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: AXCornerRadius.sm)
+                                                .stroke(Color.axBorder, lineWidth: 1)
+                                        )
+                                )
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                        .help(banSortAscending ? "Sort Z→A" : "Sort A→Z")
+
+                        // Unban All button
+                        if !bannedIPs.isEmpty {
+                            Button(action: { showUnbanAllConfirm = true }) {
+                                HStack(spacing: AXSpacing.xxs) {
+                                    Image(systemName: "xmark.circle")
+                                        .font(.system(size: 10))
+                                    Text("Unban All")
+                                        .font(.system(size: 11, weight: .medium))
+                                }
+                                .foregroundColor(.axError)
+                                .padding(.horizontal, AXSpacing.sm)
+                                .padding(.vertical, AXSpacing.xxs)
+                                .background(
+                                    RoundedRectangle(cornerRadius: AXCornerRadius.sm)
+                                        .fill(Color.axError.opacity(0.08))
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: AXCornerRadius.sm)
+                                                .stroke(Color.axError.opacity(0.2), lineWidth: 1)
+                                        )
+                                )
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                        }
                     }
 
-                    Spacer()
+                    // Search bar
+                    if !bannedIPs.isEmpty || !banSearchText.isEmpty {
+                        HStack(spacing: AXSpacing.sm) {
+                            Image(systemName: "magnifyingglass")
+                                .font(.system(size: 12))
+                                .foregroundColor(.axTextMuted)
+                            TextField("Search by IP address…", text: $banSearchText)
+                                .font(AXTypography.body)
+                                .textFieldStyle(.plain)
 
-                    Text("\(bannedIPs.count) banned")
-                        .font(AXTypography.caption)
-                        .foregroundColor(.axError)
+                            if !banSearchText.isEmpty {
+                                Button(action: { banSearchText = "" }) {
+                                    Image(systemName: "xmark.circle.fill")
+                                        .font(.system(size: 12))
+                                        .foregroundColor(.axTextMuted)
+                                }
+                                .buttonStyle(PlainButtonStyle())
+                            }
+                        }
+                        .padding(.horizontal, AXSpacing.md)
+                        .padding(.vertical, AXSpacing.sm)
+                        .background(
+                            RoundedRectangle(cornerRadius: AXCornerRadius.md)
+                                .fill(Color.axBackgroundTertiary.opacity(0.5))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: AXCornerRadius.md)
+                                        .stroke(Color.axBorder.opacity(0.5), lineWidth: 1)
+                                )
+                        )
+                    }
                 }
                 .padding(AXSpacing.lg)
 
                 Divider().background(Color.axBorder)
 
                 if bannedIPs.isEmpty {
-                    VStack(spacing: AXSpacing.md) {
-                        Image(systemName: "checkmark.shield.fill")
-                            .font(.system(size: 28))
-                            .foregroundColor(.axSuccess)
-                        Text("No IPs currently banned")
-                            .font(AXTypography.body)
-                            .foregroundColor(.axTextMuted)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, AXSpacing.xxxl)
+                    AXPlaceholder(
+                        icon: "checkmark.shield.fill",
+                        title: "No IPs currently banned",
+                        iconColor: .axSuccess
+                    )
+                } else if displayedBannedIPs.isEmpty {
+                    AXPlaceholder(
+                        icon: "magnifyingglass",
+                        title: "No IPs match \"\(banSearchText)\""
+                    )
                 } else {
-                    // Header
+                    // Table header
                     HStack(spacing: 0) {
                         Text("IP Address").frame(maxWidth: .infinity, alignment: .leading)
-                        Text("Action").frame(width: 100, alignment: .center)
+                        Text("Action").frame(width: 120, alignment: .center)
                     }
                     .font(AXTypography.caption)
                     .fontWeight(.semibold)
@@ -424,26 +508,154 @@ struct BruteForceSubTab: View {
 
                     Divider().background(Color.axBorder)
 
-                    ForEach(Array(bannedIPs.enumerated()), id: \.element) { index, ip in
+                    ForEach(Array(displayedBannedIPs.enumerated()), id: \.element) { index, ip in
                         HStack(spacing: 0) {
-                            Text(ip)
-                                .font(.system(size: 12, weight: .medium, design: .monospaced))
-                                .foregroundColor(.axError)
-                                .frame(maxWidth: .infinity, alignment: .leading)
+                            HStack(spacing: AXSpacing.sm) {
+                                Circle()
+                                    .fill(Color.axError)
+                                    .frame(width: 6, height: 6)
+                                Text(ip)
+                                    .font(.system(size: 12, weight: .medium, design: .monospaced))
+                                    .foregroundColor(.axError)
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
 
-                            Button(action: {
-                                Task {
-                                    let cmd = CommandTemplate.security(.fail2banUnban(ip: ip, jail: "sshd"))
-                                    _ = try? await sshService.execute(cmd.build(), serverId: serverId)
-                                    await loadData()
+                            Button(action: { ipToUnban = ip }) {
+                                HStack(spacing: AXSpacing.xxs) {
+                                    Image(systemName: "lock.open.fill")
+                                        .font(.system(size: 10))
+                                    Text("Unban")
+                                        .font(.system(size: 11, weight: .medium))
                                 }
-                            }) {
-                                Text("Unban")
-                                    .font(AXTypography.caption)
-                                    .foregroundColor(.axAccentBlue)
+                                .foregroundColor(.white)
+                                .padding(.horizontal, AXSpacing.md)
+                                .padding(.vertical, AXSpacing.xxxs)
+                                .background(
+                                    RoundedRectangle(cornerRadius: AXCornerRadius.sm)
+                                        .fill(Color.axError.opacity(0.85))
+                                )
                             }
                             .buttonStyle(PlainButtonStyle())
-                            .frame(width: 100, alignment: .center)
+                            .frame(width: 120, alignment: .center)
+                        }
+                        .padding(.horizontal, AXSpacing.lg)
+                        .padding(.vertical, AXSpacing.sm)
+                        .background(index % 2 == 0 ? Color.clear : Color.axSurface.opacity(0.3))
+                    }
+                }
+            }
+        }
+    }
+
+    // MARK: - Whitelist Management (Phase 2)
+
+    private var whitelistCard: some View {
+        AXCard(padding: 0) {
+            VStack(spacing: 0) {
+                // Header
+                    AXSectionTitle(title: "Whitelisted IPs", icon: "checkmark.shield.fill", iconColor: .axAccentGreen) {
+                        AXBadge(text: "Never banned", color: .axTextMuted, style: .soft)
+                    }
+                .padding(AXSpacing.lg)
+
+                Divider().background(Color.axBorder)
+
+                // Add IP row
+                HStack(spacing: AXSpacing.md) {
+                    HStack(spacing: AXSpacing.sm) {
+                        Image(systemName: "plus.circle")
+                            .font(.system(size: 12))
+                            .foregroundColor(.axAccentGreen)
+                        TextField("Enter IP address (e.g. 192.168.1.100)", text: $newWhitelistIP)
+                            .font(.system(size: 12, design: .monospaced))
+                            .textFieldStyle(.plain)
+                    }
+                    .padding(.horizontal, AXSpacing.md)
+                    .padding(.vertical, AXSpacing.sm)
+                    .background(
+                        RoundedRectangle(cornerRadius: AXCornerRadius.md)
+                            .fill(Color.axBackgroundTertiary.opacity(0.5))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: AXCornerRadius.md)
+                                    .stroke(Color.axBorder.opacity(0.5), lineWidth: 1)
+                            )
+                    )
+
+                    Button(action: {
+                        guard !newWhitelistIP.isEmpty else { return }
+                        Task {
+                            isAddingWhitelist = true
+                            let _ = await securityManager.fail2banAddToWhitelist(ip: newWhitelistIP, serverId: serverId)
+                            await MainActor.run { newWhitelistIP = "" }
+                            isAddingWhitelist = false
+                            await loadData()
+                        }
+                    }) {
+                        HStack(spacing: AXSpacing.xxs) {
+                            if isAddingWhitelist {
+                                ProgressView().scaleEffect(0.6)
+                            } else {
+                                Image(systemName: "plus")
+                                    .font(.system(size: 11, weight: .semibold))
+                            }
+                            Text("Add")
+                                .font(.system(size: 11, weight: .semibold))
+                        }
+                        .foregroundColor(.white)
+                        .padding(.horizontal, AXSpacing.lg)
+                        .padding(.vertical, AXSpacing.sm)
+                        .background(
+                            RoundedRectangle(cornerRadius: AXCornerRadius.md)
+                                .fill(newWhitelistIP.isEmpty ? Color.axTextMuted : Color.axAccentGreen)
+                        )
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    .disabled(newWhitelistIP.isEmpty || isAddingWhitelist)
+                }
+                .padding(.horizontal, AXSpacing.lg)
+                .padding(.vertical, AXSpacing.md)
+
+                Divider().background(Color.axBorder)
+
+                if whitelistIPs.isEmpty {
+                    AXPlaceholder(
+                        icon: "shield.slash",
+                        title: "No whitelisted IPs",
+                        subtitle: "Add IPs that should never be banned"
+                    )
+                } else {
+                    ForEach(Array(whitelistIPs.enumerated()), id: \.element) { index, ip in
+                        HStack(spacing: 0) {
+                            HStack(spacing: AXSpacing.sm) {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .font(.system(size: 12))
+                                    .foregroundColor(.axAccentGreen)
+                                Text(ip)
+                                    .font(.system(size: 12, weight: .medium, design: .monospaced))
+                                    .foregroundColor(.axTextPrimary)
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+
+                            Button(action: { ipToRemoveFromWhitelist = ip }) {
+                                HStack(spacing: AXSpacing.xxs) {
+                                    Image(systemName: "trash")
+                                        .font(.system(size: 10))
+                                    Text("Remove")
+                                        .font(.system(size: 11, weight: .medium))
+                                }
+                                .foregroundColor(.axError)
+                                .padding(.horizontal, AXSpacing.sm)
+                                .padding(.vertical, AXSpacing.xxxs)
+                                .background(
+                                    RoundedRectangle(cornerRadius: AXCornerRadius.sm)
+                                        .fill(Color.axError.opacity(0.08))
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: AXCornerRadius.sm)
+                                                .stroke(Color.axError.opacity(0.2), lineWidth: 1)
+                                        )
+                                )
+                            }
+                            .buttonStyle(PlainButtonStyle())
                         }
                         .padding(.horizontal, AXSpacing.lg)
                         .padding(.vertical, AXSpacing.sm)

@@ -66,15 +66,7 @@ struct DockerContainersTab: View {
             // Toolbar
             HStack(spacing: AXSpacing.md) {
                 // Search
-                HStack {
-                    Image(systemName: "magnifyingglass")
-                        .foregroundColor(.axTextMuted)
-                    TextField("Search containers...", text: $searchText)
-                        .textFieldStyle(.plain)
-                }
-                .padding(8)
-                .background(Color.axSurface)
-                .cornerRadius(AXCornerRadius.sm)
+                AXSearchBar(text: $searchText, placeholder: "Search containers...")
                 
                 Spacer()
                 
@@ -123,20 +115,12 @@ struct DockerContainersTab: View {
             
             // Containers List
             if isLoading && containers.isEmpty {
-                ProgressView("Loading containers...")
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                AXLoadingState(message: "Loading containers...")
             } else if filteredContainers.isEmpty {
-                VStack(spacing: AXSpacing.md) {
-                    Image(systemName: "shippingbox")
-                        .font(.system(size: 48))
-                        .foregroundColor(.axTextMuted)
-                    Text("No containers found")
-                        .font(AXTypography.headline)
-                        .foregroundColor(.axTextSecondary)
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(Color.axSurface.opacity(0.3))
-                .cornerRadius(AXCornerRadius.md)
+                AXPlaceholder(
+                    icon: "shippingbox",
+                    title: "No containers found"
+                )
             } else {
                 VStack(spacing: 0) {
                     // Bulk Actions Bar

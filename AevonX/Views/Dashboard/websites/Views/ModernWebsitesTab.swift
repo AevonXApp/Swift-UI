@@ -186,25 +186,28 @@ struct WebsiteStatsBar: View {
 
     var body: some View {
         HStack(spacing: AXSpacing.lg) {
-            WebsiteStatCard(
-                title: "Total Sites",
-                value: "\(viewModel.totalWebsiteCount)",
+            AXStatCard(
                 icon: "globe",
-                color: .axAccentBlue
+                label: "Total Sites",
+                value: "\(viewModel.totalWebsiteCount)",
+                color: .axAccentBlue,
+                layout: .horizontal
             )
 
-            WebsiteStatCard(
-                title: "Online",
-                value: "\(viewModel.onlineCount)",
+            AXStatCard(
                 icon: "checkmark.circle.fill",
-                color: .axSuccess
+                label: "Online",
+                value: "\(viewModel.onlineCount)",
+                color: .axSuccess,
+                layout: .horizontal
             )
 
-            WebsiteStatCard(
-                title: "SSL Secured",
-                value: "\(viewModel.sslSecuredCount)",
+            AXStatCard(
                 icon: "lock.shield.fill",
-                color: .axAccentGreen
+                label: "SSL Secured",
+                value: "\(viewModel.sslSecuredCount)",
+                color: .axAccentGreen,
+                layout: .horizontal
             )
 
             Spacer()
@@ -223,24 +226,8 @@ struct WebsiteToolbar: View {
     var body: some View {
         HStack(spacing: AXSpacing.md) {
             // Search field
-            HStack(spacing: AXSpacing.sm) {
-                Image(systemName: "magnifyingglass")
-                    .foregroundColor(.axTextMuted)
-
-                TextField("Search websites...", text: $viewModel.searchText)
-                    .font(AXTypography.body)
-                    .foregroundColor(.axTextPrimary)
-                    .textFieldStyle(PlainTextFieldStyle())
-            }
-            .padding(.horizontal, AXSpacing.md)
-            .padding(.vertical, AXSpacing.sm)
-            .background(Color.axSurface)
-            .overlay(
-                RoundedRectangle(cornerRadius: AXCornerRadius.md)
-                    .stroke(Color.axBorder, lineWidth: 1)
-            )
-            .cornerRadius(AXCornerRadius.md)
-            .frame(width: 280)
+            AXSearchBar(text: $viewModel.searchText, placeholder: "Search websites...")
+                .frame(width: 280)
 
             Spacer()
 
@@ -270,15 +257,7 @@ struct WebsiteToolbar: View {
 
 struct LoadingStateView: View {
     var body: some View {
-        VStack(spacing: AXSpacing.lg) {
-            ProgressView()
-                .scaleEffect(1.5)
-
-            Text("Loading websites...")
-                .font(AXTypography.body)
-                .foregroundColor(.axTextSecondary)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        AXLoadingState(message: "Loading websites...")
     }
 }
 
@@ -286,20 +265,11 @@ struct LoadingStateView: View {
 
 struct DisconnectedStateView: View {
     var body: some View {
-        VStack(spacing: AXSpacing.lg) {
-            Image(systemName: "network.slash")
-                .font(.system(size: 48))
-                .foregroundColor(.axTextMuted)
-
-            Text("Not Connected")
-                .font(AXTypography.title)
-                .foregroundColor(.axTextPrimary)
-
-            Text("Please connect to a server to manage websites")
-                .font(AXTypography.body)
-                .foregroundColor(.axTextSecondary)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        AXPlaceholder(
+            icon: "network.slash",
+            title: "Not Connected",
+            subtitle: "Please connect to a server to manage websites"
+        )
     }
 }
 

@@ -520,13 +520,23 @@ public class ServerConnectionViewModel: ObservableObject {
         Task { await CacheManager.shared.cleanup() }
         
         if isConnected {
-            // The ConnectionHealthMonitor handles device wake detection
-            // and will trigger reconnection if the SSH channel died.
-            // We just resume polling here.
+            // Resume polling immediately
             startStatsPolling()
             
-            // Notify health monitor about wake
+            // Verify the SSH session is still alive with a quick test command.
+            // If it survived sleep, no reconnection is needed.
             Task {
+                do {
+                    let result = try await SSHService.shared.execute("echo 1", serverId: serverId)
+                    if result.isSuccess {
+                        CoreLogger.shared.info("SSH session survived sleep — no reconnection needed", module: "ServerConnection")
+                        return
+                    }
+                } catch {
+                    CoreLogger.shared.warning("SSH session died during sleep: \(error.localizedDescription)", module: "ServerConnection")
+                }
+                
+                // Connection is dead — trigger reconnection
                 await ConnectionHealthMonitor.shared.deviceDidWake()
             }
         }
@@ -703,30 +713,15 @@ public class ServerConnectionViewModel: ObservableObject {
     
     /// Sets up the ConnectionHealthMonitor event subscription and reconnection handler
     private func setupHealthMonitoring() {
-        // Provide the reconnection handler to Core
-        // This closure performs the actual connection — Core never holds credentials
-        Task {
-            await ConnectionHealthMonitor.shared.setReconnectionHandler { [weak self] serverId in
-                guard let self = self else { return false }
-                
-                return await MainActor.run {
-                    // Reset connection state for retry
-                    self.isConnected = false
-                    self.connectionStage = .disconnected
-                    self.connectionError = nil
-                    
-                    return true // Signal ready to connect
-                }
-            }
-        }
-        
-        // Set a handler that actually performs the connection
+        // Provide the reconnection handler to Core.
+        // This closure performs the full CAT → encrypt → SSH connect flow.
+        // Core never holds credentials — it only calls this handler when reconnection is needed.
         Task {
             await ConnectionHealthMonitor.shared.setReconnectionHandler { [weak self] serverId in
                 guard let self = self else { return false }
                 
                 do {
-                    // Reset state on MainActor
+                    // Reset error state on MainActor
                     await MainActor.run {
                         self.connectionError = nil
                     }
@@ -758,8 +753,13 @@ public class ServerConnectionViewModel: ObservableObject {
                     await MainActor.run {
                         self.isConnected = true
                         self.isConnecting = false
+                        self.isReconnecting = false
                         self.connectionStage = .connected
                         self.connectionProgress = 1.0
+                        self.reconnectionTier = .silent
+                        self.reconnectionFailed = false
+                        self.reconnectionFinalError = nil
+                        self.reconnectionStartTime = nil
                         self.startStatsPolling()
                     }
                     

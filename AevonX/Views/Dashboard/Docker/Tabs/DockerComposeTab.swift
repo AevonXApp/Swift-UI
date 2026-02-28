@@ -27,14 +27,9 @@ struct DockerComposeTab: View {
                 
                 Spacer()
                 
-                Button(action: {
+                AXRefreshIconButton(isLoading: isLoading) {
                     refreshData()
-                }) {
-                    Image(systemName: "arrow.clockwise")
-                        .foregroundColor(.axTextSecondary)
                 }
-                .buttonStyle(PlainButtonStyle())
-                .help("Refresh Projects")
             }
             .padding(.horizontal, AXSpacing.md)
             .padding(.top, AXSpacing.md)
@@ -62,23 +57,13 @@ struct DockerComposeTab: View {
             
             // Content
             if isLoading && projects.isEmpty {
-                ProgressView("Loading projects...")
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                AXLoadingState(message: "Loading projects...")
             } else if projects.isEmpty {
-                VStack(spacing: AXSpacing.md) {
-                    Image(systemName: "square.stack.3d.up")
-                        .font(.system(size: 48))
-                        .foregroundColor(.axTextMuted)
-                    Text("No Compose projects found")
-                        .font(AXTypography.headline)
-                        .foregroundColor(.axTextSecondary)
-                    Text("Projects are detected via 'docker compose ls'")
-                        .font(AXTypography.caption)
-                        .foregroundColor(.axTextMuted)
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(Color.axSurface.opacity(0.3))
-                .cornerRadius(AXCornerRadius.md)
+                AXPlaceholder(
+                    icon: "square.stack.3d.up",
+                    title: "No Compose projects found",
+                    subtitle: "Projects are detected via 'docker compose ls'"
+                )
             } else {
                 ScrollView {
                     LazyVStack(spacing: AXSpacing.sm) {

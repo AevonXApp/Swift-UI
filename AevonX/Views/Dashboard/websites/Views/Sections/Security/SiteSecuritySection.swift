@@ -16,7 +16,7 @@ struct SiteSecuritySection: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: AXSpacing.xl) {
-                SectionHeader(title: "Site Security", icon: "shield.lefthalf.filled")
+                AXSectionTitle(title: "Site Security", icon: "shield.lefthalf.filled")
 
                 // Security Score
                 securityScoreCard
@@ -29,7 +29,7 @@ struct SiteSecuritySection: View {
                 }
 
                 // Quick Actions
-                ConfigCard(icon: "bolt.shield.fill", title: "Quick Actions", description: "Apply common security configurations") {
+                AXConfigCard(icon: "bolt.shield.fill", title: "Quick Actions", subtitle: "Apply common security configurations") {
                     VStack(spacing: AXSpacing.sm) {
                         quickActionRow(title: "Block Sensitive Files", description: "Block .env, .git, config files", icon: "eye.slash.fill", color: .purple) {
                             Task { await viewModel.toggleSensitiveFilesBlock(enable: true) }
@@ -71,7 +71,7 @@ struct SiteSecuritySection: View {
 
                 // Permission Audit Results
                 if !viewModel.permissionResults.isEmpty {
-                    ConfigCard(icon: "exclamationmark.shield.fill", title: "Permission Issues (\(viewModel.permissionResults.count))", description: "Files with insecure permissions") {
+                    AXConfigCard(icon: "exclamationmark.shield.fill", title: "Permission Issues (\(viewModel.permissionResults.count))", subtitle: "Files with insecure permissions") {
                         VStack(spacing: AXSpacing.xs) {
                             ForEach(viewModel.permissionResults) { result in
                                 HStack {
@@ -96,7 +96,7 @@ struct SiteSecuritySection: View {
 
                 // Malware Results
                 if !viewModel.malwareResults.isEmpty {
-                    ConfigCard(icon: "exclamationmark.octagon.fill", title: "Suspicious Code (\(viewModel.malwareResults.count))", description: "Potentially malicious patterns found") {
+                    AXConfigCard(icon: "exclamationmark.octagon.fill", title: "Suspicious Code (\(viewModel.malwareResults.count))", subtitle: "Potentially malicious patterns found") {
                         VStack(spacing: AXSpacing.sm) {
                             ForEach(viewModel.malwareResults) { result in
                                 VStack(alignment: .leading, spacing: 4) {

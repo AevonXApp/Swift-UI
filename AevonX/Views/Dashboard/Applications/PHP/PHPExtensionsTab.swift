@@ -51,25 +51,7 @@ struct PHPExtensionsTab: View {
     var body: some View {
         VStack(alignment: .leading, spacing: AXSpacing.lg) {
             // Search Bar
-            HStack {
-                Image(systemName: "magnifyingglass")
-                    .foregroundColor(.axTextTertiary)
-                
-                TextField("Search extensions...", text: $searchText)
-                    .textFieldStyle(.plain)
-                    .font(AXTypography.body)
-                
-                if !searchText.isEmpty {
-                    Button(action: { searchText = "" }) {
-                        Image(systemName: "xmark.circle.fill")
-                            .foregroundColor(.axTextTertiary)
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
-            .padding(AXSpacing.md)
-            .background(Color.axSurface.opacity(0.5))
-            .cornerRadius(AXCornerRadius.md)
+            AXSearchBar(text: $searchText, placeholder: "Search extensions...")
             
             // Filter Pills
             ScrollView(.horizontal, showsIndicators: false) {

@@ -17,10 +17,10 @@ struct BackupSection: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: AXSpacing.xl) {
-                SectionHeader(title: "Backup & Restore", icon: "archivebox.fill")
+                AXSectionTitle(title: "Backup & Restore", icon: "archivebox.fill")
 
                 // Create Backup
-                ConfigCard(icon: "plus.circle.fill", title: "Create Backup", description: "Create a new backup of this website") {
+                AXConfigCard(icon: "plus.circle.fill", title: "Create Backup", subtitle: "Create a new backup of this website") {
                     VStack(spacing: AXSpacing.md) {
                         Picker("Backup Type", selection: $selectedType) {
                             ForEach(SiteBackupType.allCases) { type in
@@ -67,9 +67,9 @@ struct BackupSection: View {
                 }
 
                 // Backup List
-                ConfigCard(icon: "list.bullet", title: "Backups (\(viewModel.backups.count))", description: "Existing backups for this website") {
+                AXConfigCard(icon: "list.bullet", title: "Backups (\(viewModel.backups.count))", subtitle: "Existing backups for this website") {
                     if viewModel.backups.isEmpty {
-                        EmptyStateMessage(icon: "archivebox", message: "No backups found. Create your first backup above.")
+                        AXPlaceholder(icon: "archivebox", title: "No backups found. Create your first backup above.")
                     } else {
                         VStack(spacing: AXSpacing.sm) {
                             ForEach(viewModel.backups) { backup in

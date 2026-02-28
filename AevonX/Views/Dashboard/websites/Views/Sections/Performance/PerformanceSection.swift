@@ -24,7 +24,7 @@ struct PerformanceSection: View {
         ScrollView {
             VStack(alignment: .leading, spacing: AXSpacing.xl) {
                 HStack {
-                    SectionHeader(title: "Performance", icon: "gauge.with.dots.needle.67percent")
+                    AXSectionTitle(title: "Performance", icon: "gauge.with.dots.needle.67percent")
                     Spacer()
                     Button(action: { Task { await runAllChecks() } }) {
                         HStack(spacing: 4) {
@@ -39,11 +39,11 @@ struct PerformanceSection: View {
                 }
 
                 // Speed Test
-                MetricCard(icon: "speedometer", title: "Response Time", value: responseTime, color: responseTimeColor, trend: nil)
+                AXStatCard(icon: "speedometer", label: "Response Time", value: responseTime, color: responseTimeColor)
 
                 // Disk Usage Breakdown
                 if !diskBreakdown.isEmpty {
-                    ConfigCard(icon: "internaldrive", title: "Disk Usage by Folder", description: "Top 20 folders by size") {
+                    AXConfigCard(icon: "internaldrive", title: "Disk Usage by Folder", subtitle: "Top 20 folders by size") {
                         VStack(spacing: AXSpacing.xs) {
                             ForEach(diskBreakdown, id: \.path) { entry in
                                 HStack {
@@ -65,7 +65,7 @@ struct PerformanceSection: View {
 
                 // Large Files
                 if !largeFiles.isEmpty {
-                    ConfigCard(icon: "doc.fill", title: "Large Files (>10MB)", description: "Files that may impact performance") {
+                    AXConfigCard(icon: "doc.fill", title: "Large Files (>10MB)", subtitle: "Files that may impact performance") {
                         VStack(spacing: AXSpacing.xs) {
                             ForEach(largeFiles, id: \.self) { file in
                                 HStack {

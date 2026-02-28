@@ -190,13 +190,12 @@ struct AevonXApp: App {
     
     // MARK: - Device Sleep/Wake
     
-    /// Called when device is going to sleep
-    /// Note: Suspend/resume functionality would need to be implemented in SSHConnectionService
+    /// Called when device is going to sleep.
+    /// We do NOT disconnect here — the SSH session may survive short sleeps.
+    /// If the connection dies during sleep, ConnectionHealthMonitor will detect
+    /// it on wake and trigger automatic reconnection.
     private func deviceWillSleep() async {
-        CoreLogger.shared.info("Device going to sleep - disconnecting all connections", module: "AppLifecycle")
-        // TODO: Implement suspend/resume in SSHConnectionService if needed
-        // For now, disconnect all connections to ensure clean state on sleep
-        await sshService.disconnectAll()
+        CoreLogger.shared.info("Device going to sleep — keeping connections alive", module: "AppLifecycle")
     }
     
     /// Called when device wakes up

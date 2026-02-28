@@ -20,7 +20,7 @@ struct InstalledDatabaseView: View {
             // Toolbar with service controls
             HStack(spacing: AXSpacing.md) {
                 // Search
-                SearchField(text: $viewModel.searchText, placeholder: "Search databases...", accentColor: type.brandColor)
+                AXSearchBar(text: $viewModel.searchText, placeholder: "Search databases...")
                     .frame(width: 280)
                 
                 // View Mode Toggle

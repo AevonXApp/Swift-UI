@@ -30,17 +30,8 @@ struct DockerVolumesTab: View {
             // Toolbar
             HStack {
                 // Search
-                HStack {
-                    Image(systemName: "magnifyingglass")
-                        .foregroundColor(.axTextSecondary)
-                    TextField("Search volumes...", text: $searchText)
-                        .textFieldStyle(.plain)
-                        .foregroundColor(.axTextPrimary)
-                }
-                .padding(8)
-                .background(Color.axSurface)
-                .cornerRadius(AXCornerRadius.sm)
-                .frame(maxWidth: 300)
+                AXSearchBar(text: $searchText, placeholder: "Search volumes...")
+                    .frame(maxWidth: 300)
                 
                 Spacer()
                 
@@ -60,20 +51,9 @@ struct DockerVolumesTab: View {
                 .buttonStyle(.plain)
                 
                 // Refresh Button
-                Button(action: refreshData) {
-                    Image(systemName: "arrow.clockwise")
-                        .font(.system(size: 14))
-                        .foregroundColor(.axTextSecondary)
-                        .frame(width: 32, height: 32)
-                        .background(Color.axSurface)
-                        .cornerRadius(AXCornerRadius.sm)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: AXCornerRadius.sm)
-                                .stroke(Color.axBorder, lineWidth: 1)
-                        )
+                AXRefreshIconButton(isLoading: isLoading) {
+                    refreshData()
                 }
-                .buttonStyle(.plain)
-                .disabled(isLoading)
             }
             .padding(.bottom, AXSpacing.sm)
             
@@ -95,20 +75,12 @@ struct DockerVolumesTab: View {
             
             // Volumes List
             if isLoading && volumes.isEmpty {
-                ProgressView("Loading volumes...")
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                AXLoadingState(message: "Loading volumes...")
             } else if filteredVolumes.isEmpty {
-                VStack(spacing: AXSpacing.md) {
-                    Image(systemName: "internaldrive")
-                        .font(.system(size: 48))
-                        .foregroundColor(.axTextMuted)
-                    Text("No volumes found")
-                        .font(AXTypography.headline)
-                        .foregroundColor(.axTextSecondary)
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(Color.axSurface.opacity(0.3))
-                .cornerRadius(AXCornerRadius.md)
+                AXPlaceholder(
+                    icon: "internaldrive",
+                    title: "No volumes found"
+                )
             } else {
                 ScrollView {
                     LazyVStack(spacing: AXSpacing.sm) {

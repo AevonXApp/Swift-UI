@@ -56,8 +56,13 @@ struct ApplicationDetailView: View {
 struct GenericApplicationDetailView: View {
     let application: ApplicationInstance
     let serverId: String
-    @State private var logs: String = ""
+    @State private var logLines: [String] = []
     @State private var isLoadingLogs = false
+
+    private let logColumns: [AXLogColumn] = [
+        AXLogColumn(id: "time", title: "Time", width: 140),
+        AXLogColumn(id: "message", title: "Message", width: nil),
+    ]
 
     var body: some View {
         ScrollView {
@@ -93,36 +98,16 @@ struct GenericApplicationDetailView: View {
                     }
                 }
 
-                // Logs Card
-                AXCard {
-                    VStack(alignment: .leading, spacing: AXSpacing.md) {
-                        HStack {
-                            Text("Logs")
-                                .font(AXTypography.headline)
-                                .foregroundColor(.axTextPrimary)
-
-                            Spacer()
-
-                            Button("Refresh") {
-                                Task { await loadLogs() }
-                            }
-                            .buttonStyle(.bordered)
-                        }
-
-                        if isLoadingLogs {
-                            ProgressView()
-                                .frame(maxWidth: .infinity)
-                        } else {
-                            ScrollView {
-                                Text(logs.isEmpty ? "No logs available" : logs)
-                                    .font(.system(.caption, design: .monospaced))
-                                    .foregroundColor(.axTextSecondary)
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                            }
-                            .frame(height: 300)
-                        }
-                    }
-                }
+                // Logs via shared component
+                AXLogTable(
+                    title: "\(application.type.rawValue) Logs",
+                    icon: "doc.text.fill",
+                    columns: logColumns,
+                    rows: buildRows(logLines),
+                    isLoading: isLoadingLogs,
+                    onRefresh: { await loadLogs() }
+                )
+                .frame(minHeight: 350)
             }
             .padding(AXSpacing.xl)
         }
@@ -131,18 +116,31 @@ struct GenericApplicationDetailView: View {
         }
     }
 
+    private func buildRows(_ lines: [String]) -> [AXLogRow] {
+        lines.enumerated().map { index, line in
+            AXLogRow(
+                id: index,
+                level: AXLogLevelDetector.detect(line),
+                cells: [
+                    "time": AXLogTimestamp.extract(line),
+                    "message": line
+                ],
+                raw: line
+            )
+        }
+    }
+
     private func loadLogs() async {
         isLoadingLogs = true
-
         do {
             let logContent = try await ApplicationManager.shared.readLogs(type: application.type, lines: 100, serverId: serverId)
             await MainActor.run {
-                self.logs = logContent
+                self.logLines = logContent.components(separatedBy: .newlines).filter { !$0.isEmpty }
                 self.isLoadingLogs = false
             }
         } catch {
             await MainActor.run {
-                self.logs = "Failed to load logs: \(error.localizedDescription)"
+                self.logLines = ["Failed to load logs: \(error.localizedDescription)"]
                 self.isLoadingLogs = false
             }
         }

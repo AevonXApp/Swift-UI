@@ -14,12 +14,12 @@ struct ScheduledBackupSection: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: AXSpacing.xl) {
-                SectionHeader(title: "Scheduled Backups", icon: "clock.arrow.circlepath")
+                AXSectionTitle(title: "Scheduled Backups", icon: "clock.arrow.circlepath")
 
                 // Existing schedules
-                ConfigCard(icon: "calendar.badge.clock", title: "Active Schedules", description: "Automated backup cron jobs for this site") {
+                AXConfigCard(icon: "calendar.badge.clock", title: "Active Schedules", subtitle: "Automated backup cron jobs for this site") {
                     if viewModel.schedules.isEmpty && !viewModel.isLoading {
-                        EmptyStateMessage(icon: "calendar", message: "No scheduled backups configured")
+                        AXPlaceholder(icon: "calendar", title: "No scheduled backups configured")
                     } else {
                         VStack(spacing: AXSpacing.sm) {
                             ForEach(viewModel.schedules) { schedule in
@@ -59,7 +59,7 @@ struct ScheduledBackupSection: View {
                 }
 
                 // Create new schedule
-                ConfigCard(icon: "plus.circle.fill", title: "Create Schedule", description: "Set up automated backups") {
+                AXConfigCard(icon: "plus.circle.fill", title: "Create Schedule", subtitle: "Set up automated backups") {
                     VStack(spacing: AXSpacing.md) {
                         // Frequency picker
                         HStack {

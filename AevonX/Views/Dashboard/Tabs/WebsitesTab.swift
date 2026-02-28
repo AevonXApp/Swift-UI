@@ -84,25 +84,28 @@ struct OldWebsitesTab: View {
         VStack(spacing: 0) {
             // MARK: - Stats Bar
             HStack(spacing: AXSpacing.lg) {
-                WebsiteStatCard(
-                    title: "Total Sites",
-                    value: "\(websites.count)",
+                AXStatCard(
                     icon: "globe",
-                    color: .axAccentBlue
+                    label: "Total Sites",
+                    value: "\(websites.count)",
+                    color: .axAccentBlue,
+                    layout: .horizontal
                 )
                 
-                WebsiteStatCard(
-                    title: "Online",
-                    value: "\(onlineCount)",
+                AXStatCard(
                     icon: "checkmark.circle.fill",
-                    color: .axSuccess
+                    label: "Online",
+                    value: "\(onlineCount)",
+                    color: .axSuccess,
+                    layout: .horizontal
                 )
                 
-                WebsiteStatCard(
-                    title: "SSL Secured",
-                    value: "\(sslCount)",
+                AXStatCard(
                     icon: "lock.shield.fill",
-                    color: .axAccentGreen
+                    label: "SSL Secured",
+                    value: "\(sslCount)",
+                    color: .axAccentGreen,
+                    layout: .horizontal
                 )
                 
                 Spacer()

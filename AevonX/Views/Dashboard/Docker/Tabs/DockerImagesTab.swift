@@ -38,17 +38,8 @@ struct DockerImagesTab: View {
             // Toolbar
             HStack {
                 // Search
-                HStack {
-                    Image(systemName: "magnifyingglass")
-                        .foregroundColor(.axTextSecondary)
-                    TextField("Search images...", text: $searchText)
-                        .textFieldStyle(.plain)
-                        .foregroundColor(.axTextPrimary)
-                }
-                .padding(8)
-                .background(Color.axSurface)
-                .cornerRadius(AXCornerRadius.sm)
-                .frame(maxWidth: 300)
+                AXSearchBar(text: $searchText, placeholder: "Search images...")
+                    .frame(maxWidth: 300)
                 
                 Spacer()
                 
@@ -83,20 +74,9 @@ struct DockerImagesTab: View {
                 .buttonStyle(.plain)
                 
                 // Refresh Button
-                Button(action: refreshData) {
-                    Image(systemName: "arrow.clockwise")
-                        .font(.system(size: 14))
-                        .foregroundColor(.axTextSecondary)
-                        .frame(width: 32, height: 32)
-                        .background(Color.axSurface)
-                        .cornerRadius(AXCornerRadius.sm)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: AXCornerRadius.sm)
-                                .stroke(Color.axBorder, lineWidth: 1)
-                        )
+                AXRefreshIconButton(isLoading: isLoading) {
+                    refreshData()
                 }
-                .buttonStyle(.plain)
-                .disabled(isLoading)
             }
             .padding(.bottom, AXSpacing.sm)
             
@@ -118,20 +98,12 @@ struct DockerImagesTab: View {
             
             // Images List
             if isLoading && images.isEmpty {
-                ProgressView("Loading images...")
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                AXLoadingState(message: "Loading images...")
             } else if filteredImages.isEmpty {
-                VStack(spacing: AXSpacing.md) {
-                    Image(systemName: "photo.stack")
-                        .font(.system(size: 48))
-                        .foregroundColor(.axTextMuted)
-                    Text("No images found")
-                        .font(AXTypography.headline)
-                        .foregroundColor(.axTextSecondary)
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(Color.axSurface.opacity(0.3))
-                .cornerRadius(AXCornerRadius.md)
+                AXPlaceholder(
+                    icon: "photo.stack",
+                    title: "No images found"
+                )
             } else {
                 ScrollView {
                     LazyVStack(spacing: AXSpacing.sm) {

@@ -14,7 +14,7 @@ struct SiteCloningSection: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: AXSpacing.xl) {
-                SectionHeader(title: "Clone & Migrate", icon: "doc.on.doc.fill")
+                AXSectionTitle(title: "Clone & Migrate", icon: "doc.on.doc.fill")
 
                 if viewModel.isCloning {
                     HStack(spacing: AXSpacing.sm) {
@@ -30,7 +30,7 @@ struct SiteCloningSection: View {
                 }
 
                 // Clone to new domain
-                ConfigCard(icon: "doc.on.doc", title: "Clone Site", description: "Copy this site to a new domain on the same server") {
+                AXConfigCard(icon: "doc.on.doc", title: "Clone Site", subtitle: "Copy this site to a new domain on the same server") {
                     VStack(spacing: AXSpacing.sm) {
                         HStack {
                             Text("Source:")
@@ -98,7 +98,7 @@ struct SiteCloningSection: View {
 
                 // Clone result
                 if let result = viewModel.lastCloneResult {
-                    ConfigCard(icon: "checkmark.circle.fill", title: "Clone Ready", description: "Site cloned successfully") {
+                    AXConfigCard(icon: "checkmark.circle.fill", title: "Clone Ready", subtitle: "Site cloned successfully") {
                         VStack(alignment: .leading, spacing: AXSpacing.xs) {
                             infoRow("Domain", result.domain)
                             infoRow("Path", result.docRoot)

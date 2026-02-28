@@ -42,8 +42,10 @@ struct FirewallSubTab: View {
     @State private var isLoading = true
     @State private var isTogglingFirewall = false
     @State private var isTogglingICMP = false
+    @State private var showTemplates = false
+    @State private var isApplyingTemplate = false
 
-    private let sshService = SSHService.shared
+    private let securityManager = SecurityManager.shared
 
     enum DirectionFilter: String, CaseIterable {
         case all = "All Directions"
@@ -71,6 +73,11 @@ struct FirewallSubTab: View {
                 togglesCard
                 statsBar
                 toolbarRow
+
+                if showTemplates {
+                    ruleTemplatesCard
+                }
+
                 listeningPortsTable
                 rulesTable
             }
@@ -94,29 +101,31 @@ struct FirewallSubTab: View {
         isLoading = true
         defer { Task { @MainActor in isLoading = false } }
 
-        // Firewall status
-        if let result = try? await sshService.execute(
-            CommandTemplate.security(.firewallStatus).build(), serverId: serverId
-        ) {
-            await MainActor.run {
-                let trimmed = result.stdout.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-                firewallEnabled = !trimmed.contains("inactive") && !trimmed.contains("no-firewall")
-            }
-        }
+        // Firewall status (from Core)
+        let fwActive = await securityManager.firewallStatus(serverId: serverId)
+        await MainActor.run { firewallEnabled = fwActive }
 
         // List rules
         await refreshRules()
     }
 
     private func refreshRules() async {
-        if let result = try? await sshService.execute(
-            CommandTemplate.security(.listFirewallRules).build(), serverId: serverId
-        ) {
-            await MainActor.run {
-                let output = result.stdout
-                let (parsedRules, parsedPorts) = parseFirewallOutput(output)
-                rules = parsedRules
-                listeningPorts = parsedPorts
+        // From Core: typed [FirewallRule] and [OpenPort]
+        let coreRules = await securityManager.listFirewallRules(serverId: serverId)
+        let corePorts = await securityManager.listeningPorts(serverId: serverId)
+
+        await MainActor.run {
+            rules = coreRules.map { r in
+                FirewallRule(
+                    protocolType: r.proto, port: r.port,
+                    strategy: r.target, direction: r.chain, sourceIP: r.source
+                )
+            }
+            listeningPorts = corePorts.map { p in
+                ListeningPort(
+                    protocolType: p.proto, port: p.port,
+                    process: p.service, state: "LISTEN"
+                )
             }
         }
     }
@@ -172,24 +181,24 @@ struct FirewallSubTab: View {
     }
 
     private func addRule(_ rule: FirewallRule) async {
-        let cmd = CommandTemplate.security(.addFirewallRule(
+        let _ = await securityManager.addFirewallRule(
             proto: rule.protocolType.lowercased(),
             port: rule.port,
             strategy: rule.strategy,
             direction: rule.direction,
-            sourceIP: rule.sourceIP
-        ))
-        _ = try? await sshService.execute(cmd.build(), serverId: serverId)
+            sourceIP: rule.sourceIP,
+            serverId: serverId
+        )
         await refreshRules()
     }
 
     private func deleteRule(_ rule: FirewallRule) async {
-        let cmd = CommandTemplate.security(.deleteFirewallRule(
+        let _ = await securityManager.deleteFirewallRule(
             proto: rule.protocolType.lowercased(),
             port: rule.port,
-            direction: rule.direction
-        ))
-        _ = try? await sshService.execute(cmd.build(), serverId: serverId)
+            direction: rule.direction,
+            serverId: serverId
+        )
         await refreshRules()
     }
 
@@ -218,8 +227,7 @@ struct FirewallSubTab: View {
                             .onChange(of: firewallEnabled) { _, newValue in
                                 Task {
                                     isTogglingFirewall = true
-                                    let cmd = CommandTemplate.security(.setFirewall(enabled: newValue))
-                                    _ = try? await sshService.execute(cmd.build(), serverId: serverId)
+                                    let _ = await securityManager.setFirewall(enabled: newValue, serverId: serverId)
                                     isTogglingFirewall = false
                                 }
                             }
@@ -249,8 +257,7 @@ struct FirewallSubTab: View {
                             .onChange(of: blockICMP) { _, newValue in
                                 Task {
                                     isTogglingICMP = true
-                                    let cmd = CommandTemplate.security(.setICMPBlock(enabled: newValue))
-                                    _ = try? await sshService.execute(cmd.build(), serverId: serverId)
+                                    let _ = await securityManager.setICMPBlock(enabled: newValue, serverId: serverId)
                                     isTogglingICMP = false
                                 }
                             }
@@ -266,36 +273,180 @@ struct FirewallSubTab: View {
 
     private var statsBar: some View {
         HStack(spacing: AXSpacing.lg) {
-            statPill(icon: "antenna.radiowaves.left.and.right", label: "Listening", value: "\(listeningPorts.count)", color: .axAccentBlue)
-            statPill(icon: "list.bullet.rectangle", label: "Firewall Rules", value: "\(rules.count)", color: .axAccentPurple)
-            statPill(icon: "arrow.down.to.line", label: "Inbound", value: "\(rules.filter { $0.direction == "INPUT" }.count)", color: .axAccentGreen)
-            statPill(icon: "checkmark.shield", label: "Allowed", value: "\(rules.filter { $0.strategy == "ACCEPT" }.count)", color: .axSuccess)
+            AXStatCard(icon: "antenna.radiowaves.left.and.right", label: "Listening", value: "\(listeningPorts.count)", color: .axAccentBlue, layout: .horizontal, style: .pill)
+            AXStatCard(icon: "list.bullet.rectangle", label: "Firewall Rules", value: "\(rules.count)", color: .axAccentPurple, layout: .horizontal, style: .pill)
+            AXStatCard(icon: "arrow.down.to.line", label: "Inbound", value: "\(rules.filter { $0.direction == "INPUT" }.count)", color: .axAccentGreen, layout: .horizontal, style: .pill)
+            AXStatCard(icon: "checkmark.shield", label: "Allowed", value: "\(rules.filter { $0.strategy == "ACCEPT" }.count)", color: .axSuccess, layout: .horizontal, style: .pill)
             Spacer()
         }
     }
 
-    private func statPill(icon: String, label: String, value: String, color: Color) -> some View {
-        HStack(spacing: AXSpacing.sm) {
-            Image(systemName: icon)
-                .font(.system(size: 12))
-                .foregroundColor(color)
-            Text(label)
-                .font(AXTypography.caption)
-                .foregroundColor(.axTextMuted)
-            Text(value)
-                .font(.system(size: 13, weight: .bold, design: .rounded))
-                .foregroundColor(color)
+
+    // MARK: - Rule Templates (Phase 2)
+
+    private struct RuleTemplate: Identifiable {
+        let id = UUID()
+        let name: String
+        let icon: String
+        let color: Color
+        let description: String
+        let rules: [(proto: String, port: String, strategy: String, direction: String)]
+    }
+
+    private var ruleTemplates: [RuleTemplate] {
+        [
+            RuleTemplate(
+                name: "Web Server",
+                icon: "globe",
+                color: .axAccentBlue,
+                description: "HTTP + HTTPS",
+                rules: [
+                    ("tcp", "80", "ACCEPT", "INPUT"),
+                    ("tcp", "443", "ACCEPT", "INPUT")
+                ]
+            ),
+            RuleTemplate(
+                name: "SSH Access",
+                icon: "terminal.fill",
+                color: .axAccentGreen,
+                description: "Port 22",
+                rules: [
+                    ("tcp", "22", "ACCEPT", "INPUT")
+                ]
+            ),
+            RuleTemplate(
+                name: "Database",
+                icon: "cylinder.fill",
+                color: .axAccentPurple,
+                description: "MySQL + PostgreSQL",
+                rules: [
+                    ("tcp", "3306", "ACCEPT", "INPUT"),
+                    ("tcp", "5432", "ACCEPT", "INPUT")
+                ]
+            ),
+            RuleTemplate(
+                name: "Mail Server",
+                icon: "envelope.fill",
+                color: .axWarning,
+                description: "SMTP + IMAP",
+                rules: [
+                    ("tcp", "25", "ACCEPT", "INPUT"),
+                    ("tcp", "587", "ACCEPT", "INPUT"),
+                    ("tcp", "993", "ACCEPT", "INPUT")
+                ]
+            ),
+            RuleTemplate(
+                name: "DNS",
+                icon: "network",
+                color: .axAccentBlue,
+                description: "TCP + UDP 53",
+                rules: [
+                    ("tcp", "53", "ACCEPT", "INPUT"),
+                    ("udp", "53", "ACCEPT", "INPUT")
+                ]
+            ),
+            RuleTemplate(
+                name: "FTP",
+                icon: "folder.fill",
+                color: .axError,
+                description: "FTP + Passive",
+                rules: [
+                    ("tcp", "21", "ACCEPT", "INPUT"),
+                    ("tcp", "20", "ACCEPT", "INPUT")
+                ]
+            )
+        ]
+    }
+
+    private var ruleTemplatesCard: some View {
+        AXCard {
+            VStack(alignment: .leading, spacing: AXSpacing.md) {
+                HStack(spacing: AXSpacing.sm) {
+                    Image(systemName: "square.grid.2x2.fill")
+                        .font(.system(size: 14))
+                        .foregroundColor(.axAccentPurple)
+                    Text("Quick Templates")
+                        .font(AXTypography.title3)
+                        .foregroundColor(.axTextPrimary)
+                    Spacer()
+                    Text("One-click rule groups")
+                        .font(AXTypography.caption)
+                        .foregroundColor(.axTextMuted)
+                }
+
+                LazyVGrid(columns: [
+                    GridItem(.flexible()),
+                    GridItem(.flexible()),
+                    GridItem(.flexible())
+                ], spacing: AXSpacing.md) {
+                    ForEach(ruleTemplates) { template in
+                        Button(action: {
+                            Task { await applyTemplate(template) }
+                        }) {
+                            VStack(spacing: AXSpacing.sm) {
+                                Image(systemName: template.icon)
+                                    .font(.system(size: 20))
+                                    .foregroundColor(template.color)
+
+                                Text(template.name)
+                                    .font(.system(size: 12, weight: .semibold))
+                                    .foregroundColor(.axTextPrimary)
+
+                                Text(template.description)
+                                    .font(.system(size: 10))
+                                    .foregroundColor(.axTextMuted)
+
+                                Text("\(template.rules.count) rules")
+                                    .font(.system(size: 9, weight: .medium))
+                                    .foregroundColor(template.color)
+                                    .padding(.horizontal, AXSpacing.xs)
+                                    .padding(.vertical, 2)
+                                    .background(
+                                        Capsule().fill(template.color.opacity(0.1))
+                                    )
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, AXSpacing.lg)
+                            .background(
+                                RoundedRectangle(cornerRadius: AXCornerRadius.lg)
+                                    .fill(Color.axSurface)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: AXCornerRadius.lg)
+                                            .stroke(template.color.opacity(0.15), lineWidth: 1)
+                                    )
+                            )
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                    }
+                }
+
+                if isApplyingTemplate {
+                    HStack(spacing: AXSpacing.sm) {
+                        ProgressView().scaleEffect(0.6)
+                        Text("Applying rules…")
+                            .font(AXTypography.caption)
+                            .foregroundColor(.axTextMuted)
+                    }
+                    .frame(maxWidth: .infinity)
+                }
+            }
         }
-        .padding(.horizontal, AXSpacing.md)
-        .padding(.vertical, AXSpacing.sm)
-        .background(
-            RoundedRectangle(cornerRadius: AXCornerRadius.md)
-                .fill(color.opacity(0.06))
-                .overlay(
-                    RoundedRectangle(cornerRadius: AXCornerRadius.md)
-                        .stroke(color.opacity(0.15), lineWidth: 1)
-                )
-        )
+    }
+
+    private func applyTemplate(_ template: RuleTemplate) async {
+        await MainActor.run { isApplyingTemplate = true }
+        for rule in template.rules {
+            let _ = await securityManager.addFirewallRule(
+                proto: rule.proto,
+                port: rule.port,
+                strategy: rule.strategy,
+                direction: rule.direction,
+                sourceIP: "0.0.0.0/0",
+                serverId: serverId
+            )
+        }
+        await refreshRules()
+        await MainActor.run { isApplyingTemplate = false }
     }
 
     // MARK: - Toolbar
@@ -319,26 +470,30 @@ struct FirewallSubTab: View {
             }
             .buttonStyle(PlainButtonStyle())
 
+            AXRefreshButton(isLoading: isLoading) {
+                await refreshRules()
+            }
+
             Button(action: {
-                Task { await refreshRules() }
+                withAnimation(.spring(response: 0.3)) { showTemplates.toggle() }
             }) {
                 HStack(spacing: AXSpacing.xs) {
-                    Image(systemName: "arrow.clockwise")
+                    Image(systemName: "square.grid.2x2")
                         .font(.system(size: 11))
-                    Text("Refresh")
+                    Text("Templates")
                         .font(AXTypography.headline)
                 }
                 .padding(.horizontal, AXSpacing.lg)
                 .padding(.vertical, AXSpacing.sm)
                 .background(
                     RoundedRectangle(cornerRadius: AXCornerRadius.md)
-                        .fill(Color.axSurface)
+                        .fill(showTemplates ? Color.axAccentPurple.opacity(0.1) : Color.axSurface)
                         .overlay(
                             RoundedRectangle(cornerRadius: AXCornerRadius.md)
-                                .stroke(Color.axBorder, lineWidth: 1)
+                                .stroke(showTemplates ? Color.axAccentPurple.opacity(0.3) : Color.axBorder, lineWidth: 1)
                         )
                 )
-                .foregroundColor(.axTextSecondary)
+                .foregroundColor(showTemplates ? .axAccentPurple : .axTextSecondary)
             }
             .buttonStyle(PlainButtonStyle())
 
@@ -410,20 +565,9 @@ struct FirewallSubTab: View {
         AXCard(padding: 0) {
             VStack(spacing: 0) {
                 // Section header
-                HStack {
-                    HStack(spacing: AXSpacing.sm) {
-                        Image(systemName: "antenna.radiowaves.left.and.right")
-                            .font(.system(size: 14))
-                            .foregroundColor(.axAccentBlue)
-                        Text("Listening Ports")
-                            .font(AXTypography.title3)
-                            .foregroundColor(.axTextPrimary)
+                    AXSectionTitle(title: "Listening Ports", icon: "antenna.radiowaves.left.and.right") {
+                        AXBadge(text: "\(listeningPorts.count) active", color: .axAccentBlue, style: .soft)
                     }
-                    Spacer()
-                    Text("\(listeningPorts.count) active")
-                        .font(AXTypography.caption)
-                        .foregroundColor(.axAccentBlue)
-                }
                 .padding(.horizontal, AXSpacing.lg)
                 .padding(.vertical, AXSpacing.md)
 
@@ -445,25 +589,12 @@ struct FirewallSubTab: View {
                 Divider().background(Color.axBorder)
 
                 if isLoading {
-                    VStack(spacing: AXSpacing.md) {
-                        ProgressView()
-                        Text("Scanning ports…")
-                            .font(AXTypography.body)
-                            .foregroundColor(.axTextMuted)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, AXSpacing.xxxl)
+                    AXLoadingState(message: "Scanning ports…", style: .inline)
                 } else if filteredListeningPorts.isEmpty {
-                    VStack(spacing: AXSpacing.md) {
-                        Image(systemName: "network.slash")
-                            .font(.system(size: 28))
-                            .foregroundColor(.axTextMuted)
-                        Text("No listening ports found")
-                            .font(AXTypography.body)
-                            .foregroundColor(.axTextMuted)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, AXSpacing.xxxl)
+                    AXPlaceholder(
+                        icon: "network.slash",
+                        title: "No listening ports found"
+                    )
                 } else {
                     ForEach(Array(filteredListeningPorts.enumerated()), id: \.element.id) { index, port in
                         VStack(spacing: 0) {

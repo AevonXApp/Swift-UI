@@ -165,56 +165,52 @@ struct DatabaseLogsTab: View {
     let onSuccess: (String) -> Void
     let onError: (String) -> Void
 
+    @State private var logLines: [String] = []
+    @State private var isLoading = false
+
+    private let logColumns: [AXLogColumn] = [
+        AXLogColumn(id: "time", title: "Time", width: 140),
+        AXLogColumn(id: "message", title: "Message", width: nil),
+    ]
+
     var body: some View {
-        VStack(alignment: .leading, spacing: AXSpacing.xl) {
-            AXCard {
-                VStack(alignment: .leading, spacing: AXSpacing.md) {
-                    Text("Database Logs")
-                        .font(AXTypography.headline)
-                        .foregroundColor(.axTextPrimary)
-
-                    // Simplified placeholder - AXAdvancedLogsView causes infinite layout loops
-                    VStack(alignment: .leading, spacing: AXSpacing.lg) {
-                        HStack {
-                            Image(systemName: "doc.text.fill")
-                                .foregroundColor(.axAccentBlue)
-                            Text("Log Source: \(logSourceForDatabaseType(databaseType).displayName)")
-                                .font(AXTypography.body)
-                                .foregroundColor(.axTextSecondary)
-                        }
-
-                        Divider()
-
-                        Text("Logs viewer is temporarily disabled to prevent layout issues.")
-                            .font(AXTypography.caption)
-                            .foregroundColor(.axTextTertiary)
-                            .padding(.vertical, AXSpacing.md)
-
-                        Text("This will be re-enabled with a stable implementation in the next update.")
-                            .font(AXTypography.caption)
-                            .foregroundColor(.axTextMuted)
-                    }
-                    .padding(AXSpacing.lg)
-                    .frame(minHeight: 300)
-                    .background(Color.axSurface.opacity(0.3))
-                    .cornerRadius(AXCornerRadius.md)
-                }
-            }
-        }
-        .id("\(databaseType.rawValue)-logs") // Stable ID to prevent recreation issues
+        AXLogTable(
+            title: "\(databaseType.displayName) Logs",
+            icon: "doc.text.fill",
+            columns: logColumns,
+            rows: buildRows(logLines),
+            isLoading: isLoading,
+            accentColor: databaseType.brandColor,
+            onRefresh: { await loadLogs() }
+        )
+        .frame(minHeight: 400)
+        .id("\(databaseType.rawValue)-logs")
+        .task { await loadLogs() }
     }
 
-    private func logSourceForDatabaseType(_ type: DatabaseType) -> AXLogSource {
-        switch type {
-        case .mysql: return .mysqlService
-        case .postgresql: return .postgresqlService
-        case .redis: return .redisService
-        case .mongodb: return .mongodbService
-        case .mariadb: return .mariadbService
-        case .cockroachdb: return .cockroachdbService
-        case .cassandra: return .cassandraService
-        case .elasticsearch: return .elasticsearchService
-        default: return .genericService(name: type.displayName, path: "N/A")
+    private func buildRows(_ lines: [String]) -> [AXLogRow] {
+        lines.enumerated().map { index, line in
+            AXLogRow(
+                id: index,
+                level: AXLogLevelDetector.detect(line),
+                cells: [
+                    "time": AXLogTimestamp.extract(line),
+                    "message": line
+                ],
+                raw: line
+            )
+        }
+    }
+
+    private func loadLogs() async {
+        isLoading = true
+        defer { isLoading = false }
+        do {
+            let content = try await ApplicationManager.shared.readLogs(type: application.type, lines: 200, serverId: serverId)
+            logLines = content.components(separatedBy: .newlines).filter { !$0.isEmpty }
+        } catch {
+            logLines = ["Error loading logs: \(error.localizedDescription)"]
+            onError(error.localizedDescription)
         }
     }
 }

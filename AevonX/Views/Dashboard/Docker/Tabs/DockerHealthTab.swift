@@ -51,28 +51,20 @@ struct DockerHealthTab: View {
                     summaryBadge("No Check", count: healthCount("none"), color: .gray)
                 }
                 
-                Button(action: { Task { await loadData() } }) {
-                    Image(systemName: "arrow.clockwise")
-                        .foregroundColor(.axTextSecondary)
+                AXRefreshIconButton(isLoading: isLoading) {
+                    await loadData()
                 }
-                .buttonStyle(.plain)
             }
             .padding(.horizontal, AXSpacing.md)
             .padding(.top, AXSpacing.md)
             
             if isLoading && containers.isEmpty {
-                ProgressView("Checking container health...")
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                AXLoadingState(message: "Checking container health...")
             } else if containers.isEmpty {
-                VStack(spacing: AXSpacing.md) {
-                    Image(systemName: "heart.slash")
-                        .font(.system(size: 40))
-                        .foregroundColor(.axTextMuted)
-                    Text("No containers found")
-                        .font(AXTypography.headline)
-                        .foregroundColor(.axTextSecondary)
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                AXPlaceholder(
+                    icon: "heart.slash",
+                    title: "No containers found"
+                )
             } else {
                 ScrollView {
                     LazyVStack(spacing: AXSpacing.sm) {

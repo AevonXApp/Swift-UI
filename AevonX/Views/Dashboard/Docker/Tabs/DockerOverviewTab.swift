@@ -44,20 +44,9 @@ struct DockerOverviewTab: View {
                             ProgressView()
                                 .scaleEffect(0.8)
                         } else {
-                            Button(action: refreshData) {
-                                Image(systemName: "arrow.clockwise")
-                                    .font(.system(size: 14))
-                                    .foregroundColor(.axTextSecondary)
-                                    .frame(width: 32, height: 32)
-                                    .background(Color.axSurface)
-                                    .cornerRadius(AXCornerRadius.sm)
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: AXCornerRadius.sm)
-                                            .stroke(Color.axBorder, lineWidth: 1)
-                                    )
+                            AXRefreshIconButton(isLoading: false) {
+                                refreshData()
                             }
-                            .buttonStyle(.plain)
-                            .help("Refresh")
                             
                             Button(action: { toggleService() }) {
                                 Image(systemName: serviceStatus == .active ? "stop.fill" : "play.fill")
@@ -102,35 +91,35 @@ struct DockerOverviewTab: View {
                 GridItem(.flexible())
             ], spacing: AXSpacing.md) {
                 
-                StatCard(
-                    title: "Containers",
+                AXStatCard(
+                    icon: "shippingbox.fill",
+                    label: "Containers",
                     value: "\(dockerInfo?.containers ?? 0)",
                     subtitle: "\(dockerInfo?.containersRunning ?? 0) Running",
-                    icon: "shippingbox.fill",
                     color: .axAccentBlue
                 )
                 
-                StatCard(
-                    title: "Images",
+                AXStatCard(
+                    icon: "photo.stack.fill",
+                    label: "Images",
                     value: "\(dockerInfo?.images ?? 0)",
                     subtitle: "Available Locally",
-                    icon: "photo.stack.fill",
                     color: .purple
                 )
                 
-                StatCard(
-                    title: "CPU Usage",
+                AXStatCard(
+                    icon: "cpu",
+                    label: "CPU Usage",
                     value: String(format: "%.1f%%", cpuUsage),
                     subtitle: "Docker Daemon",
-                    icon: "cpu",
                     color: .orange
                 )
                 
-                StatCard(
-                    title: "Memory",
+                AXStatCard(
+                    icon: "memorychip",
+                    label: "Memory",
                     value: String(format: "%.1f MB", memoryUsage),
                     subtitle: "Docker Daemon",
-                    icon: "memorychip",
                     color: .green
                 )
             }
@@ -324,38 +313,7 @@ struct DockerOverviewTab: View {
 
 // MARK: - Subviews
 
-private struct StatCard: View {
-    let title: String
-    let value: String
-    let subtitle: String
-    let icon: String
-    let color: Color
-    
-    var body: some View {
-        AXCard {
-            VStack(alignment: .leading, spacing: AXSpacing.sm) {
-                HStack {
-                    Image(systemName: icon)
-                        .foregroundColor(color)
-                        .font(.system(size: 20))
-                    Spacer()
-                }
-                
-                Text(value)
-                    .font(.system(size: 24, weight: .bold))
-                    .foregroundColor(.axTextPrimary)
-                
-                Text(title)
-                    .font(AXTypography.caption)
-                    .foregroundColor(.axTextSecondary)
-                
-                Text(subtitle)
-                    .font(AXTypography.caption2)
-                    .foregroundColor(.axTextMuted)
-            }
-        }
-    }
-}
+
 
     private struct DockerInfoRow: View {
         let label: String

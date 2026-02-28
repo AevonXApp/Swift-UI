@@ -15,7 +15,7 @@ struct DomainSection: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: AXSpacing.xl) {
-                SectionHeader(title: "Domain Management", icon: "globe.americas.fill")
+                AXSectionTitle(title: "Domain Management", icon: "globe.americas.fill")
 
                 // Tab bar
                 HStack(spacing: 0) {
@@ -98,7 +98,7 @@ struct DomainSection: View {
             .overlay(RoundedRectangle(cornerRadius: AXCornerRadius.md).stroke(Color.axSuccess.opacity(0.2), lineWidth: 1))
 
             // Aliases
-            ConfigCard(icon: "link.badge.plus", title: "Domain Aliases (\(viewModel.aliases.count))", description: "Additional domains pointing to this site") {
+            AXConfigCard(icon: "link.badge.plus", title: "Domain Aliases (\(viewModel.aliases.count))", subtitle: "Additional domains pointing to this site") {
                 VStack(spacing: AXSpacing.sm) {
                     HStack {
                         TextField("alias.example.com", text: $viewModel.newAlias)
@@ -114,7 +114,7 @@ struct DomainSection: View {
                     }
 
                     if viewModel.aliases.isEmpty && !viewModel.isLoading {
-                        EmptyStateMessage(icon: "link", message: "No aliases configured")
+                        AXPlaceholder(icon: "link", title: "No aliases configured")
                     } else {
                         ForEach(viewModel.aliases, id: \.self) { alias in
                             HStack {
@@ -144,7 +144,7 @@ struct DomainSection: View {
 
     private var subdomainsContent: some View {
         VStack(alignment: .leading, spacing: AXSpacing.md) {
-            ConfigCard(icon: "network", title: "Subdomains", description: "Sub-sites under \(viewModel.domain)") {
+            AXConfigCard(icon: "network", title: "Subdomains", subtitle: "Sub-sites under \(viewModel.domain)") {
                 VStack(spacing: AXSpacing.sm) {
                     HStack {
                         HStack(spacing: 0) {
@@ -168,7 +168,7 @@ struct DomainSection: View {
                     }
 
                     if viewModel.subdomains.isEmpty && !viewModel.isLoading {
-                        EmptyStateMessage(icon: "network", message: "No subdomains found")
+                        AXPlaceholder(icon: "network", title: "No subdomains found")
                     } else {
                         ForEach(viewModel.subdomains) { sub in
                             HStack {
@@ -219,7 +219,7 @@ struct DomainSection: View {
                 let grouped = Dictionary(grouping: viewModel.dnsRecords, by: { $0.type })
                 ForEach(["A", "CNAME", "MX", "NS", "TXT"], id: \.self) { type in
                     if let records = grouped[type] {
-                        ConfigCard(icon: dnsIcon(type), title: "\(type) Records (\(records.count))", description: dnsDesc(type)) {
+                        AXConfigCard(icon: dnsIcon(type), title: "\(type) Records (\(records.count))", subtitle: dnsDesc(type)) {
                             VStack(spacing: 4) {
                                 ForEach(records) { record in
                                     HStack {
@@ -243,7 +243,7 @@ struct DomainSection: View {
 
     private var redirectsContent: some View {
         VStack(alignment: .leading, spacing: AXSpacing.md) {
-            ConfigCard(icon: "arrow.uturn.right", title: "WWW Redirect", description: "Choose canonical URL format") {
+            AXConfigCard(icon: "arrow.uturn.right", title: "WWW Redirect", subtitle: "Choose canonical URL format") {
                 HStack(spacing: AXSpacing.md) {
                     wwwButton(toWWW: true, icon: "arrow.right", color: .axAccentBlue)
                     wwwButton(toWWW: false, icon: "arrow.left", color: .orange)

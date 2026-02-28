@@ -30,17 +30,8 @@ struct DockerNetworksTab: View {
             // Toolbar
             HStack {
                 // Search
-                HStack {
-                    Image(systemName: "magnifyingglass")
-                        .foregroundColor(.axTextSecondary)
-                    TextField("Search networks...", text: $searchText)
-                        .textFieldStyle(.plain)
-                        .foregroundColor(.axTextPrimary)
-                }
-                .padding(8)
-                .background(Color.axSurface)
-                .cornerRadius(AXCornerRadius.sm)
-                .frame(maxWidth: 300)
+                AXSearchBar(text: $searchText, placeholder: "Search networks...")
+                    .frame(maxWidth: 300)
                 
                 Spacer()
                 
@@ -60,20 +51,9 @@ struct DockerNetworksTab: View {
                 .buttonStyle(.plain)
                 
                 // Refresh Button
-                Button(action: refreshData) {
-                    Image(systemName: "arrow.clockwise")
-                        .font(.system(size: 14))
-                        .foregroundColor(.axTextSecondary)
-                        .frame(width: 32, height: 32)
-                        .background(Color.axSurface)
-                        .cornerRadius(AXCornerRadius.sm)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: AXCornerRadius.sm)
-                                .stroke(Color.axBorder, lineWidth: 1)
-                        )
+                AXRefreshIconButton(isLoading: isLoading) {
+                    refreshData()
                 }
-                .buttonStyle(.plain)
-                .disabled(isLoading)
             }
             .padding(.bottom, AXSpacing.sm)
             
@@ -99,20 +79,12 @@ struct DockerNetworksTab: View {
             
             // Networks List
             if isLoading && networks.isEmpty {
-                ProgressView("Loading networks...")
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                AXLoadingState(message: "Loading networks...")
             } else if filteredNetworks.isEmpty {
-                VStack(spacing: AXSpacing.md) {
-                    Image(systemName: "network")
-                        .font(.system(size: 48))
-                        .foregroundColor(.axTextMuted)
-                    Text("No networks found")
-                        .font(AXTypography.headline)
-                        .foregroundColor(.axTextSecondary)
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(Color.axSurface.opacity(0.3))
-                .cornerRadius(AXCornerRadius.md)
+                AXPlaceholder(
+                    icon: "network",
+                    title: "No networks found"
+                )
             } else {
                 ScrollView {
                     LazyVStack(spacing: AXSpacing.sm) {
@@ -224,14 +196,14 @@ private struct NetworkRow: View {
                         .foregroundColor(.axTextPrimary)
                     
                     HStack(spacing: 8) {
-                        Badge(text: network.driver, color: .axAccentBlue)
-                        Badge(text: network.scope, color: .axTextSecondary)
+                        AXBadge(text: network.driver, color: .axAccentBlue, style: .soft)
+                        AXBadge(text: network.scope, color: .axTextSecondary, style: .soft)
                         
                         if network.ipv6 {
-                            Badge(text: "IPv6", color: .axSuccess)
+                            AXBadge(text: "IPv6", color: .axSuccess, style: .soft)
                         }
                         if network.internalNetwork {
-                            Badge(text: "Internal", color: .axWarning)
+                            AXBadge(text: "Internal", color: .axWarning, style: .soft)
                         }
                         
                         Text(network.networkId.prefix(12))
@@ -285,21 +257,7 @@ private struct NetworkRow: View {
     }
 }
 
-private struct Badge: View {
-    let text: String
-    let color: Color
-    
-    var body: some View {
-        Text(text)
-            .font(AXTypography.caption)
-            .padding(.horizontal, 6)
-            .padding(.vertical, 2)
-            .background(color.opacity(0.1))
-            .foregroundColor(color)
-            .cornerRadius(4)
-            .overlay(RoundedRectangle(cornerRadius: 4).stroke(color.opacity(0.3), lineWidth: 0.5))
-    }
-}
+
 
 private struct CreateNetworkSheet: View {
     @Binding var isOpen: Bool

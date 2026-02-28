@@ -22,7 +22,7 @@ struct UnifiedBackupSection: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: AXSpacing.xl) {
-                SectionHeader(title: "Backup & Restore", icon: "archivebox.fill")
+                AXSectionTitle(title: "Backup & Restore", icon: "archivebox.fill")
 
                 Picker("", selection: $selectedTab) {
                     ForEach(BackupTab.allCases) { tab in

@@ -100,20 +100,8 @@ struct CronTab: View {
                     statBadge(vm.disabledJobsCount, label: "Disabled", color: .axTextMuted)
                 }
                 
-                HStack(spacing: AXSpacing.xs) {
-                    Image(systemName: "magnifyingglass")
-                        .font(.system(size: 11))
-                        .foregroundColor(.axTextMuted)
-                    TextField("Search tasks...", text: $vm.searchText)
-                        .font(.system(size: 12))
-                        .textFieldStyle(PlainTextFieldStyle())
-                }
-                .padding(.horizontal, AXSpacing.sm)
-                .padding(.vertical, 6)
-                .background(Color.axBackgroundTertiary)
-                .overlay(RoundedRectangle(cornerRadius: AXCornerRadius.sm).stroke(Color.axBorder, lineWidth: 1))
-                .cornerRadius(AXCornerRadius.sm)
-                .frame(width: 180)
+                AXSearchBar(text: $vm.searchText, placeholder: "Search tasks...")
+                    .frame(width: 200)
                 
                 Button(action: { vm.editingJob = nil; vm.showAddSheet = true }) {
                     HStack(spacing: AXSpacing.xs) {
@@ -140,14 +128,7 @@ struct CronTab: View {
     private var cronJobsContent: some View {
         VStack(spacing: AXSpacing.md) {
             if vm.isLoading {
-                VStack(spacing: AXSpacing.md) {
-                    ProgressView().scaleEffect(0.8)
-                    Text("Loading cron jobs from server...")
-                        .font(AXTypography.caption)
-                        .foregroundColor(.axTextTertiary)
-                }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 60)
+                AXLoadingState(message: "Loading cron jobs from server...")
             } else if vm.filteredJobs.isEmpty {
                 emptyState
             } else {

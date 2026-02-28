@@ -60,25 +60,7 @@ struct PHPDisabledFunctionsTab: View {
             }
             
             // Search
-            HStack {
-                Image(systemName: "magnifyingglass")
-                    .foregroundColor(.axTextTertiary)
-                
-                TextField("Search functions...", text: $searchText)
-                    .textFieldStyle(.plain)
-                    .font(AXTypography.body)
-                
-                if !searchText.isEmpty {
-                    Button(action: { searchText = "" }) {
-                        Image(systemName: "xmark.circle.fill")
-                            .foregroundColor(.axTextTertiary)
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
-            .padding(AXSpacing.md)
-            .background(Color.axSurface.opacity(0.5))
-            .cornerRadius(AXCornerRadius.md)
+            AXSearchBar(text: $searchText, placeholder: "Search functions...")
             
             // Functions Grid
             ScrollView {

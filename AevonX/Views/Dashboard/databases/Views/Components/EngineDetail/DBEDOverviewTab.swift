@@ -60,24 +60,24 @@ struct DBEDOverviewTab: View {
             GridItem(.flexible()),
             GridItem(.flexible())
         ], spacing: AXSpacing.lg) {
-            DBMetricCard(
-                title: "Uptime",
-                value: formatUptime(metrics.uptime),
+            AXStatCard(
                 icon: "clock",
+                label: "Uptime",
+                value: formatUptime(metrics.uptime),
                 color: viewModel.databaseType.brandColor
             )
 
-            DBMetricCard(
-                title: "Connections",
-                value: "\(metrics.connections)/\(metrics.maxConnections)",
+            AXStatCard(
                 icon: "link",
+                label: "Connections",
+                value: "\(metrics.connections)/\(metrics.maxConnections)",
                 color: .axAccentGreen
             )
 
-            DBMetricCard(
-                title: "Memory",
-                value: String(format: "%.1f MB", metrics.memoryUsage),
+            AXStatCard(
                 icon: "memorychip",
+                label: "Memory",
+                value: String(format: "%.1f MB", metrics.memoryUsage),
                 color: .axWarning
             )
         }
@@ -139,37 +139,7 @@ private struct DBInfoRow: View {
     }
 }
 
-private struct DBMetricCard: View {
-    let title: String
-    let value: String
-    let icon: String
-    let color: Color
 
-    var body: some View {
-        AXGlassCard(accentColor: color) {
-            VStack(spacing: AXSpacing.md) {
-                HStack {
-                    Image(systemName: icon)
-                        .font(.system(size: 20))
-                        .foregroundColor(color)
-                    Spacer()
-                }
-
-                VStack(alignment: .leading, spacing: AXSpacing.xxs) {
-                    Text(value)
-                        .font(AXTypography.title3)
-                        .fontWeight(.bold)
-                        .foregroundColor(.axTextPrimary)
-                    Text(title)
-                        .font(AXTypography.caption)
-                        .foregroundColor(.axTextMuted)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-            }
-            .padding(AXSpacing.lg)
-        }
-    }
-}
 
 private struct DBStatItem: View {
     let label: String

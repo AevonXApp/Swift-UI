@@ -137,23 +137,11 @@ struct FTPTab: View {
                     }
                     
                     // Search
-                    HStack(spacing: AXSpacing.xs) {
-                        Image(systemName: "magnifyingglass")
-                            .font(.system(size: 11))
-                            .foregroundColor(.axTextMuted)
-                        TextField(
-                            selectedSubTab == 0 ? "Search users..." : "Search logs...",
-                            text: selectedSubTab == 0 ? $vm.searchText : $vm.logSearchText
-                        )
-                        .font(.system(size: 12))
-                        .textFieldStyle(PlainTextFieldStyle())
-                    }
-                    .padding(.horizontal, AXSpacing.sm)
-                    .padding(.vertical, 6)
-                    .background(Color.axBackgroundTertiary)
-                    .overlay(RoundedRectangle(cornerRadius: AXCornerRadius.sm).stroke(Color.axBorder, lineWidth: 1))
-                    .cornerRadius(AXCornerRadius.sm)
-                    .frame(width: 180)
+                    AXSearchBar(
+                        text: selectedSubTab == 0 ? $vm.searchText : $vm.logSearchText,
+                        placeholder: selectedSubTab == 0 ? "Search users..." : "Search logs..."
+                    )
+                    .frame(width: 200)
                     
                     // Settings
                     Button(action: { vm.showSettingsSheet = true }) {
@@ -416,14 +404,7 @@ struct FTPTab: View {
             }
             
             if vm.isLoadingLogs {
-                VStack(spacing: AXSpacing.md) {
-                    ProgressView().scaleEffect(0.8)
-                    Text("Loading FTP logs...")
-                        .font(AXTypography.caption)
-                        .foregroundColor(.axTextTertiary)
-                }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 60)
+                AXLoadingState(message: "Loading FTP logs...")
             } else if vm.filteredLogs.isEmpty {
                 VStack(spacing: AXSpacing.lg) {
                     ZStack {
@@ -614,14 +595,7 @@ struct FTPTab: View {
     // MARK: - Loading State
     
     private var loadingState: some View {
-        VStack(spacing: AXSpacing.md) {
-            ProgressView().scaleEffect(0.8)
-            Text("Checking FTP installation...")
-                .font(AXTypography.caption)
-                .foregroundColor(.axTextTertiary)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 60)
+        AXLoadingState(message: "Checking FTP installation...")
     }
     
     // MARK: - Helpers

@@ -15,7 +15,7 @@ struct MonitoringSection: View {
         ScrollView {
             VStack(alignment: .leading, spacing: AXSpacing.xl) {
                 HStack {
-                    SectionHeader(title: "Monitoring", icon: "chart.xyaxis.line")
+                    AXSectionTitle(title: "Monitoring", icon: "chart.xyaxis.line")
                     Spacer()
                     Button(action: { Task { await viewModel.loadAll() } }) {
                         HStack(spacing: 4) {
@@ -59,10 +59,10 @@ struct MonitoringSection: View {
         VStack(alignment: .leading, spacing: AXSpacing.lg) {
             if let check = viewModel.healthCheck {
                 LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())], spacing: AXSpacing.md) {
-                    MetricCard(icon: "circle.fill", title: "Status", value: check.isUp ? "Online" : "Offline", color: check.isUp ? .axSuccess : .axError, trend: nil)
-                    MetricCard(icon: "clock", title: "Response Time", value: check.formattedResponseTime, color: (check.responseTime ?? 0) < 1.0 ? .axSuccess : .axWarning, trend: nil)
-                    MetricCard(icon: "number", title: "HTTP Code", value: check.httpStatus.map { "\($0)" } ?? "N/A", color: (check.httpStatus ?? 0) < 400 ? .axSuccess : .axError, trend: nil)
-                    MetricCard(icon: "lock.shield", title: "SSL Expires", value: check.sslDaysRemaining.map { "\($0)d" } ?? "N/A", color: (check.sslDaysRemaining ?? 999) > 30 ? .axSuccess : .axWarning, trend: nil)
+                    AXStatCard(icon: "circle.fill", label: "Status", value: check.isUp ? "Online" : "Offline", color: check.isUp ? .axSuccess : .axError)
+                    AXStatCard(icon: "clock", label: "Response Time", value: check.formattedResponseTime, color: (check.responseTime ?? 0) < 1.0 ? .axSuccess : .axWarning)
+                    AXStatCard(icon: "number", label: "HTTP Code", value: check.httpStatus.map { "\($0)" } ?? "N/A", color: (check.httpStatus ?? 0) < 400 ? .axSuccess : .axError)
+                    AXStatCard(icon: "lock.shield", label: "SSL Expires", value: check.sslDaysRemaining.map { "\($0)d" } ?? "N/A", color: (check.sslDaysRemaining ?? 999) > 30 ? .axSuccess : .axWarning)
                 }
 
                 HStack(spacing: AXSpacing.md) {
@@ -84,7 +84,7 @@ struct MonitoringSection: View {
     private var trafficView: some View {
         VStack(alignment: .leading, spacing: AXSpacing.lg) {
             if !viewModel.topURLs.isEmpty {
-                ConfigCard(icon: "link", title: "Top URLs", description: "Most requested URLs from access log") {
+                AXConfigCard(icon: "link", title: "Top URLs", subtitle: "Most requested URLs from access log") {
                     VStack(spacing: AXSpacing.xs) {
                         ForEach(viewModel.topURLs.prefix(15)) { entry in
                             HStack {
@@ -108,7 +108,7 @@ struct MonitoringSection: View {
             }
 
             if !viewModel.topIPs.isEmpty {
-                ConfigCard(icon: "person.2", title: "Top IPs", description: "Most active client IPs") {
+                AXConfigCard(icon: "person.2", title: "Top IPs", subtitle: "Most active client IPs") {
                     VStack(spacing: AXSpacing.xs) {
                         ForEach(viewModel.topIPs.prefix(10)) { entry in
                             HStack {
@@ -127,7 +127,7 @@ struct MonitoringSection: View {
             }
 
             if !viewModel.botTraffic.isEmpty {
-                ConfigCard(icon: "ant", title: "Bot Traffic", description: "Detected bot user agents") {
+                AXConfigCard(icon: "ant", title: "Bot Traffic", subtitle: "Detected bot user agents") {
                     VStack(spacing: AXSpacing.xs) {
                         ForEach(viewModel.botTraffic) { bot in
                             HStack {
@@ -158,7 +158,7 @@ struct MonitoringSection: View {
     private var errorsView: some View {
         VStack(alignment: .leading, spacing: AXSpacing.lg) {
             if !viewModel.statusCodes.isEmpty {
-                ConfigCard(icon: "number", title: "Status Code Distribution", description: "HTTP response codes from access log") {
+                AXConfigCard(icon: "number", title: "Status Code Distribution", subtitle: "HTTP response codes from access log") {
                     VStack(spacing: AXSpacing.sm) {
                         ForEach(viewModel.statusCodes) { entry in
                             HStack {
@@ -200,7 +200,7 @@ struct MonitoringSection: View {
     private var bandwidthView: some View {
         VStack(alignment: .leading, spacing: AXSpacing.lg) {
             if let bw = viewModel.bandwidth {
-                MetricCard(icon: "arrow.up.arrow.down", title: "Total Bandwidth (\(bw.period))", value: bw.formatted, color: .axAccentBlue, trend: nil)
+                AXStatCard(icon: "arrow.up.arrow.down", label: "Total Bandwidth (\(bw.period))", value: bw.formatted, color: .axAccentBlue)
             } else {
                 EmptyStateCard(icon: "arrow.up.arrow.down", title: "No Bandwidth Data", message: "Run a refresh to calculate bandwidth usage")
             }

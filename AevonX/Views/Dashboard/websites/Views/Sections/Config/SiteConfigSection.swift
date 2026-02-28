@@ -18,7 +18,7 @@ struct SiteConfigSection: View {
             VStack(alignment: .leading, spacing: AXSpacing.xl) {
                 // Toolbar
                 HStack {
-                    SectionHeader(title: "Server Config", icon: "doc.badge.gearshape.fill")
+                    AXSectionTitle(title: "Server Config", icon: "doc.badge.gearshape.fill")
                     Spacer()
                     HStack(spacing: AXSpacing.sm) {
                         // Templates

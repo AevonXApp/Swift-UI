@@ -615,36 +615,33 @@ struct ModernWebsitePanel: View {
             VStack(alignment: .leading, spacing: AXSpacing.xl) {
                 // Status Summary Cards
                 HStack(spacing: AXSpacing.md) {
-                    MetricCard(
+                    AXStatCard(
                         icon: "globe",
-                        title: "Domain Status",
+                        label: "Domain Status",
                         value: viewModel.website.status.rawValue.capitalized,
-                        color: statusColor,
-                        trend: nil
+                        color: statusColor
                     )
 
-                    MetricCard(
+                    AXStatCard(
                         icon: "lock.shield.fill",
-                        title: "SSL Certificate",
+                        label: "SSL Certificate",
                         value: viewModel.website.sslEnabled ? "Active" : "Inactive",
-                        color: viewModel.website.sslEnabled ? .axSuccess : .axWarning,
-                        trend: viewModel.website.sslEnabled ? "Secure" : "Not Secure"
+                        color: viewModel.website.sslEnabled ? .axSuccess : .axWarning
                     )
 
                     if let visitors = viewModel.website.monthlyVisitors {
-                        MetricCard(
+                        AXStatCard(
                             icon: "person.2.fill",
-                            title: "Monthly Visitors",
+                            label: "Monthly Visitors",
                             value: "\(visitors)",
-                            color: .axAccentBlue,
-                            trend: nil
+                            color: .axAccentBlue
                         )
                     }
                 }
 
                 // Quick Info
                 VStack(alignment: .leading, spacing: AXSpacing.md) {
-                    SectionHeader(title: "Site Information", icon: "info.circle.fill")
+                    AXSectionTitle(title: "Site Information", icon: "info.circle.fill")
 
                     InfoGrid(website: viewModel.website)
                 }
@@ -652,7 +649,7 @@ struct ModernWebsitePanel: View {
                 // SSL Details (if enabled)
                 if viewModel.website.sslEnabled, let ssl = viewModel.website.sslInfo {
                     VStack(alignment: .leading, spacing: AXSpacing.md) {
-                        SectionHeader(title: "SSL Certificate", icon: "lock.shield.fill")
+                        AXSectionTitle(title: "SSL Certificate", icon: "lock.shield.fill")
 
                         SSLOverviewCard(ssl: ssl)
                     }
@@ -661,7 +658,7 @@ struct ModernWebsitePanel: View {
                 // Health Issues (if any)
                 if !viewModel.website.healthIssues.isEmpty {
                     VStack(alignment: .leading, spacing: AXSpacing.md) {
-                        SectionHeader(title: "Health Issues", icon: "exclamationmark.triangle.fill")
+                        AXSectionTitle(title: "Health Issues", icon: "exclamationmark.triangle.fill")
 
                         ForEach(viewModel.website.healthIssues) { issue in
                             HealthIssueRow(issue: issue)
@@ -679,10 +676,10 @@ struct ModernWebsitePanel: View {
         ScrollView(showsIndicators: false) {
             VStack(alignment: .leading, spacing: AXSpacing.xl) {
                 // Port Configuration
-                ConfigCard(
+                AXConfigCard(
                     icon: "arrow.left.arrow.right.circle.fill",
                     title: "Listening Port",
-                    description: "Configure the internal port for this website"
+                    subtitle: "Configure the internal port for this website"
                 ) {
                     HStack(spacing: AXSpacing.md) {
                         TextField("Port", value: $viewModel.customPort, formatter: NumberFormatter())
@@ -714,15 +711,15 @@ struct ModernWebsitePanel: View {
                 }
 
                 // Domain Aliases
-                ConfigCard(
+                AXConfigCard(
                     icon: "link.circle.fill",
                     title: "Domain Aliases",
-                    description: "Additional domains pointing to this website"
+                    subtitle: "Additional domains pointing to this website"
                 ) {
                     if viewModel.website.aliases.isEmpty {
-                        EmptyStateMessage(
+                        AXPlaceholder(
                             icon: "link.badge.plus",
-                            message: "No domain aliases configured"
+                            title: "No domain aliases configured"
                         )
                     } else {
                         VStack(spacing: AXSpacing.xs) {
@@ -953,10 +950,10 @@ struct ModernWebsitePanel: View {
         ScrollView(showsIndicators: false) {
             VStack(alignment: .leading, spacing: AXSpacing.xl) {
                 // Current PHP Version
-                ConfigCard(
+                AXConfigCard(
                     icon: "chevron.left.forwardslash.chevron.right",
                     title: "PHP Version",
-                    description: "Active PHP-FPM version for this website"
+                    subtitle: "Active PHP-FPM version for this website"
                 ) {
                     if viewModel.isLoadingPHPVersions {
                         HStack {
@@ -998,10 +995,10 @@ struct ModernWebsitePanel: View {
 
                 // Version list with one-click switching
                 if !viewModel.installedPHPVersions.isEmpty {
-                    ConfigCard(
+                    AXConfigCard(
                         icon: "list.bullet",
                         title: "Switch PHP Version",
-                        description: "Click 'Switch' to change PHP-FPM for this website only"
+                        subtitle: "Click 'Switch' to change PHP-FPM for this website only"
                     ) {
                         VStack(spacing: AXSpacing.xs) {
                             ForEach(viewModel.installedPHPVersions, id: \.self) { version in
@@ -1074,27 +1071,25 @@ struct ModernWebsitePanel: View {
             VStack(alignment: .leading, spacing: AXSpacing.xl) {
                 // Active Connections
                 HStack(spacing: AXSpacing.md) {
-                    MetricCard(
+                    AXStatCard(
                         icon: "bolt.fill",
-                        title: "Active Connections",
+                        label: "Active Connections",
                         value: "\(viewModel.activeConnections)",
-                        color: .axAccentBlue,
-                        trend: "Live"
+                        color: .axAccentBlue
                     )
 
-                    MetricCard(
+                    AXStatCard(
                         icon: "chart.bar.fill",
-                        title: "Total Requests",
+                        label: "Total Requests",
                         value: "N/A",
-                        color: .axSuccess,
-                        trend: nil
+                        color: .axSuccess
                     )
                 }
 
                 // Connection List
                 if !viewModel.connectionList.isEmpty {
                     VStack(alignment: .leading, spacing: AXSpacing.md) {
-                        SectionHeader(title: "Active Connections", icon: "network")
+                        AXSectionTitle(title: "Active Connections", icon: "network")
 
                         VStack(spacing: AXSpacing.xs) {
                             ForEach(viewModel.connectionList) { connection in
@@ -1172,10 +1167,10 @@ struct ModernWebsitePanel: View {
     private var pythonConfigView: some View {
         ScrollView(showsIndicators: false) {
             VStack(alignment: .leading, spacing: AXSpacing.xl) {
-                ConfigCard(
+                AXConfigCard(
                     icon: "chevron.left.forwardslash.chevron.right",
                     title: "Python Runtime",
-                    description: "Python version and WSGI/ASGI configuration"
+                    subtitle: "Python version and WSGI/ASGI configuration"
                 ) {
                     VStack(alignment: .leading, spacing: AXSpacing.md) {
                         HStack {

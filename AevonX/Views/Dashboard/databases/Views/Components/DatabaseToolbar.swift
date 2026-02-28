@@ -13,7 +13,7 @@ struct DatabaseToolbar: View {
     
     var body: some View {
         HStack(spacing: AXSpacing.md) {
-            SearchField(text: $viewModel.searchText, placeholder: "Search...", accentColor: .axAccentBlue)
+            AXSearchBar(text: $viewModel.searchText, placeholder: "Search...")
                 .frame(width: 220)
 
             // View Mode Toggle

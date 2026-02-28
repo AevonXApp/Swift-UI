@@ -240,15 +240,7 @@ struct DatabasesTab: View {
     // MARK: - Loading View
     
     private var loadingView: some View {
-        VStack(spacing: AXSpacing.lg) {
-            ProgressView()
-                .scaleEffect(1.5)
-            
-            Text("Loading databases...")
-                .font(AXTypography.subheadline)
-                .foregroundColor(.axTextSecondary)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        AXLoadingState(message: "Loading databases...")
     }
     
     // MARK: - Error View

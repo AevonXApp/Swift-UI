@@ -19,7 +19,7 @@ struct AntiIntrusionSubTab: View {
     @State private var jailDetails: [(jail: String, currentlyBanned: Int, totalBanned: Int, bannedIPs: [String])] = []
     @State private var isInstalling = false
 
-    private let sshService = SSHService.shared
+    private let securityManager = SecurityManager.shared
 
     var body: some View {
         ScrollView {
@@ -46,66 +46,45 @@ struct AntiIntrusionSubTab: View {
         isLoading = true
         defer { Task { @MainActor in isLoading = false } }
 
-        // Check fail2ban overall status
-        if let result = try? await sshService.execute(
-            CommandTemplate.security(.fail2banStatus).build(), serverId: serverId
-        ) {
-            await MainActor.run {
-                let trimmed = result.stdout.trimmingCharacters(in: .whitespacesAndNewlines)
-                fail2banActive = !trimmed.contains("not-installed")
-
-                // Parse jail list from status output
-                var jails: [String] = []
-                for line in trimmed.components(separatedBy: "\n") {
-                    if line.contains("Jail list:") {
-                        let parts = line.components(separatedBy: ":")
-                        if parts.count >= 2 {
-                            jails = parts[1]
-                                .components(separatedBy: ",")
-                                .map { $0.trimmingCharacters(in: .whitespaces) }
-                                .filter { !$0.isEmpty }
-                        }
-                    }
-                }
-                jailList = jails
-            }
-        }
+        // Check fail2ban overall status (from Core)
+        let installed = await securityManager.fail2banStatus(serverId: serverId)
+        await MainActor.run { fail2banActive = installed }
 
         guard fail2banActive else { return }
+
+        // Get jail list (from Core)
+        let jails = await securityManager.fail2banJailList(serverId: serverId)
+        await MainActor.run { jailList = jails }
 
         // Get details for each jail
         var details: [(jail: String, currentlyBanned: Int, totalBanned: Int, bannedIPs: [String])] = []
         for jail in jailList {
-            if let result = try? await sshService.execute(
-                CommandTemplate.security(.fail2banJailStatus(jail: jail)).build(), serverId: serverId
-            ) {
-                let trimmed = result.stdout.trimmingCharacters(in: .whitespacesAndNewlines)
-                guard trimmed != "not-found" else { continue }
+            let status = await securityManager.fail2banJailStatus(jail: jail, serverId: serverId)
+            guard status != "not-found" else { continue }
 
-                var current = 0
-                var total = 0
-                var ips: [String] = []
+            var current = 0
+            var total = 0
+            var ips: [String] = []
 
-                for line in trimmed.components(separatedBy: "\n") {
-                    let l = line.trimmingCharacters(in: .whitespaces)
-                    if l.contains("Currently banned") {
-                        current = Int(l.components(separatedBy: ":").last?.trimmingCharacters(in: .whitespaces) ?? "") ?? 0
-                    }
-                    if l.contains("Total banned") {
-                        total = Int(l.components(separatedBy: ":").last?.trimmingCharacters(in: .whitespaces) ?? "") ?? 0
-                    }
-                    if l.contains("Banned IP list") {
-                        let ipParts = l.components(separatedBy: ":")
-                        if ipParts.count >= 2 {
-                            ips = ipParts.dropFirst().joined(separator: ":")
-                                .trimmingCharacters(in: .whitespaces)
-                                .components(separatedBy: " ")
-                                .filter { !$0.isEmpty }
-                        }
+            for line in status.components(separatedBy: "\n") {
+                let l = line.trimmingCharacters(in: .whitespaces)
+                if l.contains("Currently banned") {
+                    current = Int(l.components(separatedBy: ":").last?.trimmingCharacters(in: .whitespaces) ?? "") ?? 0
+                }
+                if l.contains("Total banned") {
+                    total = Int(l.components(separatedBy: ":").last?.trimmingCharacters(in: .whitespaces) ?? "") ?? 0
+                }
+                if l.contains("Banned IP list") {
+                    let ipParts = l.components(separatedBy: ":")
+                    if ipParts.count >= 2 {
+                        ips = ipParts.dropFirst().joined(separator: ":")
+                            .trimmingCharacters(in: .whitespaces)
+                            .components(separatedBy: " ")
+                            .filter { !$0.isEmpty }
                     }
                 }
-                details.append((jail: jail, currentlyBanned: current, totalBanned: total, bannedIPs: ips))
             }
+            details.append((jail: jail, currentlyBanned: current, totalBanned: total, bannedIPs: ips))
         }
         await MainActor.run {
             jailDetails = details
@@ -139,41 +118,15 @@ struct AntiIntrusionSubTab: View {
 
                 Spacer()
 
-                Button(action: {
-                    Task { await loadData() }
-                }) {
-                    HStack(spacing: AXSpacing.xs) {
-                        Image(systemName: "arrow.clockwise")
-                            .font(.system(size: 11))
-                        Text("Refresh")
-                            .font(AXTypography.headline)
-                    }
-                    .padding(.horizontal, AXSpacing.lg)
-                    .padding(.vertical, AXSpacing.sm)
-                    .background(
-                        RoundedRectangle(cornerRadius: AXCornerRadius.md)
-                            .fill(Color.axSurface)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: AXCornerRadius.md)
-                                    .stroke(Color.axBorder, lineWidth: 1)
-                            )
-                    )
-                    .foregroundColor(.axTextSecondary)
+                AXRefreshButton(isLoading: isLoading) {
+                    await loadData()
                 }
-                .buttonStyle(PlainButtonStyle())
             }
         }
     }
 
     private var loadingView: some View {
-        VStack(spacing: AXSpacing.md) {
-            ProgressView()
-            Text("Loading intrusion detection status…")
-                .font(AXTypography.body)
-                .foregroundColor(.axTextMuted)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, AXSpacing.xxxxl)
+        AXLoadingState(message: "Loading intrusion detection status…")
     }
 
     private var notActiveView: some View {
@@ -193,9 +146,7 @@ struct AntiIntrusionSubTab: View {
                 Button(action: {
                     Task {
                         isInstalling = true
-                        _ = try? await sshService.execute(
-                            "sudo apt-get install fail2ban -y", serverId: serverId
-                        )
+                        let _ = await securityManager.installFail2ban(serverId: serverId)
                         isInstalling = false
                         await loadData()
                     }
@@ -235,31 +186,14 @@ struct AntiIntrusionSubTab: View {
             let totalAllTime = jailDetails.reduce(0) { $0 + $1.totalBanned }
             let totalIPs = jailDetails.reduce(0) { $0 + $1.bannedIPs.count }
 
-            statCard(icon: "shield.fill", label: "Active Jails", value: "\(jailList.count)", color: .axAccentBlue)
-            statCard(icon: "hand.raised.fill", label: "Currently Banned", value: "\(totalCurrent)", color: .axError)
-            statCard(icon: "chart.line.uptrend.xyaxis", label: "Total Banned", value: "\(totalAllTime)", color: .axWarning)
-            statCard(icon: "network.badge.shield.half.filled", label: "Unique IPs", value: "\(totalIPs)", color: .axAccentGreen)
+            AXStatCard(icon: "shield.fill", label: "Active Jails", value: "\(jailList.count)", color: .axAccentBlue)
+            AXStatCard(icon: "hand.raised.fill", label: "Currently Banned", value: "\(totalCurrent)", color: .axError)
+            AXStatCard(icon: "chart.line.uptrend.xyaxis", label: "Total Banned", value: "\(totalAllTime)", color: .axWarning)
+            AXStatCard(icon: "network.badge.shield.half.filled", label: "Unique IPs", value: "\(totalIPs)", color: .axAccentGreen)
         }
     }
 
-    private func statCard(icon: String, label: String, value: String, color: Color) -> some View {
-        AXCard {
-            VStack(spacing: AXSpacing.sm) {
-                HStack(spacing: AXSpacing.xs) {
-                    Image(systemName: icon)
-                        .font(.system(size: 12))
-                        .foregroundColor(color)
-                    Text(label)
-                        .font(AXTypography.caption)
-                        .foregroundColor(.axTextMuted)
-                }
-                Text(value)
-                    .font(.system(size: 20, weight: .bold, design: .rounded))
-                    .foregroundColor(color)
-            }
-            .frame(maxWidth: .infinity)
-        }
-    }
+
 
     // MARK: - Jails
 
@@ -269,14 +203,7 @@ struct AntiIntrusionSubTab: View {
                 VStack(spacing: 0) {
                     // Jail header
                     HStack {
-                        HStack(spacing: AXSpacing.sm) {
-                            Image(systemName: "lock.shield.fill")
-                                .font(.system(size: 14))
-                                .foregroundColor(.axAccentBlue)
-                            Text("Jail: \(detail.jail)")
-                                .font(AXTypography.title3)
-                                .foregroundColor(.axTextPrimary)
-                        }
+                        AXSectionTitle(title: "Jail: \(detail.jail)", icon: "lock.shield.fill")
 
                         Spacer()
 
@@ -304,16 +231,12 @@ struct AntiIntrusionSubTab: View {
                     Divider().background(Color.axBorder)
 
                     if detail.bannedIPs.isEmpty {
-                        VStack(spacing: AXSpacing.sm) {
-                            Image(systemName: "checkmark.circle.fill")
-                                .font(.system(size: 20))
-                                .foregroundColor(.axSuccess)
-                            Text("No IPs currently banned in this jail")
-                                .font(AXTypography.caption)
-                                .foregroundColor(.axTextMuted)
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, AXSpacing.xl)
+                        AXPlaceholder(
+                            icon: "checkmark.circle.fill",
+                            title: "No IPs currently banned in this jail",
+                            iconColor: .axSuccess,
+                            iconSize: 20
+                        )
                     } else {
                         // IP list
                         HStack(spacing: 0) {
@@ -336,8 +259,7 @@ struct AntiIntrusionSubTab: View {
 
                                 Button(action: {
                                     Task {
-                                        let cmd = CommandTemplate.security(.fail2banUnban(ip: ip, jail: detail.jail))
-                                        _ = try? await sshService.execute(cmd.build(), serverId: serverId)
+                                        let _ = await securityManager.fail2banUnban(ip: ip, jail: detail.jail, serverId: serverId)
                                         await loadData()
                                     }
                                 }) {

@@ -35,10 +35,16 @@ struct DBEMOverviewSection: View {
                 }
 
                 if viewModel.isLoading {
-                    ProgressView()
-                        .frame(maxWidth: .infinity, minHeight: 300)
+                    AXLoadingState(message: "Loading engine data...")
+                        .frame(minHeight: 300)
                 } else if let error = viewModel.errorMessage {
-                    ErrorView(message: error)
+                    AXPlaceholder(
+                        icon: "exclamationmark.triangle.fill",
+                        title: "Error",
+                        subtitle: error,
+                        iconColor: .axError
+                    )
+                    .frame(minHeight: 300)
                 } else {
                     // Engine Info Card
                     EngineInfoCard(viewModel: viewModel)
@@ -140,24 +146,24 @@ struct MetricsGrid: View {
             GridItem(.flexible()),
             GridItem(.flexible())
         ], spacing: AXSpacing.lg) {
-            DBEMMetricCard(
-                title: "Uptime",
-                value: formatUptime(metrics.uptime),
+            AXStatCard(
                 icon: "clock",
+                label: "Uptime",
+                value: formatUptime(metrics.uptime),
                 color: themeColor
             )
 
-            DBEMMetricCard(
-                title: "Connections",
-                value: "\(metrics.connections)/\(metrics.maxConnections)",
+            AXStatCard(
                 icon: "link",
+                label: "Connections",
+                value: "\(metrics.connections)/\(metrics.maxConnections)",
                 color: .axAccentGreen
             )
 
-            DBEMMetricCard(
-                title: "Memory",
-                value: String(format: "%.1f MB", metrics.memoryUsage),
+            AXStatCard(
                 icon: "memorychip",
+                label: "Memory",
+                value: String(format: "%.1f MB", metrics.memoryUsage),
                 color: .axWarning
             )
         }
@@ -203,39 +209,7 @@ struct PerformanceCard: View {
     }
 }
 
-struct DBEMMetricCard: View {
-    let title: String
-    let value: String
-    let icon: String
-    let color: Color
 
-    var body: some View {
-        AXGlassCard(accentColor: color) {
-            VStack(spacing: AXSpacing.md) {
-                HStack {
-                    Image(systemName: icon)
-                        .font(.system(size: 20))
-                        .foregroundColor(color)
-
-                    Spacer()
-                }
-
-                VStack(alignment: .leading, spacing: AXSpacing.xxs) {
-                    Text(value)
-                        .font(AXTypography.title3)
-                        .fontWeight(.bold)
-                        .foregroundColor(.axTextPrimary)
-
-                    Text(title)
-                        .font(AXTypography.caption)
-                        .foregroundColor(.axTextMuted)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-            }
-            .padding(AXSpacing.lg)
-        }
-    }
-}
 
 struct StatColumn: View {
     let label: String
@@ -274,20 +248,4 @@ struct DBEMInfoRow: View {
     }
 }
 
-struct ErrorView: View {
-    let message: String
 
-    var body: some View {
-        VStack(spacing: AXSpacing.lg) {
-            Image(systemName: "exclamationmark.triangle.fill")
-                .font(.system(size: 48))
-                .foregroundColor(.axError)
-
-            Text(message)
-                .font(AXTypography.subheadline)
-                .foregroundColor(.axTextMuted)
-                .multilineTextAlignment(.center)
-        }
-        .frame(maxWidth: .infinity, minHeight: 300)
-    }
-}

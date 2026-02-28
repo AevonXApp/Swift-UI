@@ -16,7 +16,7 @@ struct HeadersSection: View {
         ScrollView {
             VStack(alignment: .leading, spacing: AXSpacing.xl) {
                 HStack {
-                    SectionHeader(title: "HTTP Headers", icon: "text.badge.plus")
+                    AXSectionTitle(title: "HTTP Headers", icon: "text.badge.plus")
                     Spacer()
                     HStack(spacing: AXSpacing.sm) {
                         Button(action: { Task { await viewModel.runSecurityAudit() } }) {
@@ -47,7 +47,7 @@ struct HeadersSection: View {
 
                 // Audit Results
                 if !viewModel.auditResults.isEmpty {
-                    ConfigCard(icon: "checkmark.shield", title: "Security Headers Audit", description: "Check which security headers are present") {
+                    AXConfigCard(icon: "checkmark.shield", title: "Security Headers Audit", subtitle: "Check which security headers are present") {
                         VStack(spacing: AXSpacing.xs) {
                             ForEach(viewModel.auditResults) { result in
                                 HStack {
@@ -77,9 +77,9 @@ struct HeadersSection: View {
                 }
 
                 // Current Headers
-                ConfigCard(icon: "list.bullet", title: "Current Headers (\(viewModel.headers.count))", description: "Headers configured in Nginx site config") {
+                AXConfigCard(icon: "list.bullet", title: "Current Headers (\(viewModel.headers.count))", subtitle: "Headers configured in Nginx site config") {
                     if viewModel.headers.isEmpty {
-                        EmptyStateMessage(icon: "text.badge.minus", message: "No custom headers configured")
+                        AXPlaceholder(icon: "text.badge.minus", title: "No custom headers configured")
                     } else {
                         VStack(spacing: AXSpacing.xs) {
                             ForEach(viewModel.headers) { header in
@@ -104,7 +104,7 @@ struct HeadersSection: View {
                 }
 
                 // Header Types Reference
-                ConfigCard(icon: "book", title: "Header Reference", description: "Available security header types") {
+                AXConfigCard(icon: "book", title: "Header Reference", subtitle: "Available security header types") {
                     LazyVGrid(columns: [GridItem(.flexible(), spacing: AXSpacing.sm), GridItem(.flexible(), spacing: AXSpacing.sm)], spacing: AXSpacing.sm) {
                         ForEach(HTTPHeaderType.allCases.filter { $0 != .custom }) { type in
                             HStack(spacing: AXSpacing.sm) {

@@ -24,7 +24,7 @@ struct UnifiedPerformanceSection: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: AXSpacing.xl) {
-                SectionHeader(title: "Performance", icon: "gauge.with.dots.needle.67percent")
+                AXSectionTitle(title: "Performance", icon: "gauge.with.dots.needle.67percent")
 
                 Picker("", selection: $selectedTab) {
                     ForEach(PerfTab.allCases) { tab in

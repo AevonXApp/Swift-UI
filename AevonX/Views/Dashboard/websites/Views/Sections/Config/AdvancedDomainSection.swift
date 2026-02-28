@@ -14,7 +14,7 @@ struct AdvancedDomainSection: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: AXSpacing.xl) {
-                SectionHeader(title: "Advanced Domain", icon: "globe.americas.fill")
+                AXSectionTitle(title: "Advanced Domain", icon: "globe.americas.fill")
 
                 Picker("", selection: $viewModel.selectedTab) {
                     ForEach(AdvancedDomainViewModel.DomainTab.allCases) { tab in
@@ -40,7 +40,7 @@ struct AdvancedDomainSection: View {
 
     private var aliasesTab: some View {
         VStack(alignment: .leading, spacing: AXSpacing.md) {
-            ConfigCard(icon: "link.badge.plus", title: "Domain Aliases", description: "Additional domains pointing to this site") {
+            AXConfigCard(icon: "link.badge.plus", title: "Domain Aliases", subtitle: "Additional domains pointing to this site") {
                 VStack(spacing: AXSpacing.sm) {
                     HStack {
                         TextField("alias.example.com", text: $viewModel.newAlias)
@@ -54,7 +54,7 @@ struct AdvancedDomainSection: View {
                     }
 
                     if viewModel.aliases.isEmpty && !viewModel.isLoading {
-                        EmptyStateMessage(icon: "link", message: "No aliases configured")
+                        AXPlaceholder(icon: "link", title: "No aliases configured")
                     } else {
                         ForEach(viewModel.aliases, id: \.self) { alias in
                             HStack {
@@ -84,7 +84,7 @@ struct AdvancedDomainSection: View {
 
     private var subdomainsTab: some View {
         VStack(alignment: .leading, spacing: AXSpacing.md) {
-            ConfigCard(icon: "network", title: "Subdomains", description: "Manage subdomains of \(viewModel.domain)") {
+            AXConfigCard(icon: "network", title: "Subdomains", subtitle: "Manage subdomains of \(viewModel.domain)") {
                 VStack(spacing: AXSpacing.sm) {
                     HStack {
                         TextField("subdomain", text: $viewModel.newSubdomain)
@@ -163,7 +163,7 @@ struct AdvancedDomainSection: View {
 
     private var redirectsTab: some View {
         VStack(alignment: .leading, spacing: AXSpacing.md) {
-            ConfigCard(icon: "arrow.uturn.right", title: "WWW Redirect", description: "Force www or non-www") {
+            AXConfigCard(icon: "arrow.uturn.right", title: "WWW Redirect", subtitle: "Force www or non-www") {
                 HStack(spacing: AXSpacing.lg) {
                     Button(action: { Task { await viewModel.setWWWRedirect(toWWW: true) } }) {
                         VStack(spacing: 4) {

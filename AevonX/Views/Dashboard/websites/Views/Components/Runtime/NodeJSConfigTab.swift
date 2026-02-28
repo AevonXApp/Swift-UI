@@ -191,10 +191,10 @@ struct NodeJSConfigTab: View {
     // MARK: - Version Card
     
     private var versionCard: some View {
-        ConfigCard(
+        AXConfigCard(
             icon: "terminal",
             title: "Node.js Runtime",
-            description: "Current Node.js and NPM versions"
+            subtitle: "Current Node.js and NPM versions"
         ) {
             HStack(spacing: AXSpacing.xl) {
                 VStack(alignment: .leading, spacing: 4) {
@@ -237,10 +237,10 @@ struct NodeJSConfigTab: View {
     // MARK: - Package Info Card
     
     private func packageInfoCard(_ pkg: PackageJSON) -> some View {
-        ConfigCard(
+        AXConfigCard(
             icon: "doc.text.fill",
             title: "package.json",
-            description: pkg.name ?? "Application info"
+            subtitle: pkg.name ?? "Application info"
         ) {
             VStack(alignment: .leading, spacing: AXSpacing.md) {
                 HStack(spacing: AXSpacing.xl) {
@@ -283,10 +283,10 @@ struct NodeJSConfigTab: View {
     // MARK: - NPM Scripts Card
     
     private func npmScriptsCard(_ scripts: [String: String]) -> some View {
-        ConfigCard(
+        AXConfigCard(
             icon: "play.circle.fill",
             title: "NPM Scripts",
-            description: "Available npm run commands"
+            subtitle: "Available npm run commands"
         ) {
             VStack(alignment: .leading, spacing: AXSpacing.sm) {
                 ForEach(scripts.sorted(by: { $0.key < $1.key }), id: \.key) { key, value in
@@ -335,10 +335,10 @@ struct NodeJSConfigTab: View {
     // MARK: - Installed Versions Card
     
     private var installedVersionsCard: some View {
-        ConfigCard(
+        AXConfigCard(
             icon: "list.bullet",
             title: "Installed Versions",
-            description: "Node.js versions available via nvm"
+            subtitle: "Node.js versions available via nvm"
         ) {
             VStack(spacing: AXSpacing.xs) {
                 ForEach(viewModel.installedVersions, id: \.self) { version in

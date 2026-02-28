@@ -14,10 +14,10 @@ struct PerformanceTuningSection: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: AXSpacing.xl) {
-                SectionHeader(title: "Performance Tuning", icon: "slider.horizontal.3")
+                AXSectionTitle(title: "Performance Tuning", icon: "slider.horizontal.3")
 
                 // Presets
-                ConfigCard(icon: "wand.and.stars", title: "Quick Presets", description: "Apply a pre-configured performance profile") {
+                AXConfigCard(icon: "wand.and.stars", title: "Quick Presets", subtitle: "Apply a pre-configured performance profile") {
                     HStack(spacing: AXSpacing.md) {
                         presetButton(name: "conservative", icon: "tortoise", color: .axSuccess, description: "Safe defaults")
                         presetButton(name: "balanced", icon: "speedometer", color: .axAccentBlue, description: "Recommended")
@@ -27,7 +27,7 @@ struct PerformanceTuningSection: View {
 
                 // Worker Info
                 if let info = viewModel.workerInfo {
-                    ConfigCard(icon: "cpu", title: "Nginx Workers", description: "Current worker configuration") {
+                    AXConfigCard(icon: "cpu", title: "Nginx Workers", subtitle: "Current worker configuration") {
                         HStack(spacing: AXSpacing.xl) {
                             infoStat(label: "CPU Cores", value: "\(info.cpuCores)", color: .axAccentBlue)
                             infoStat(label: "Workers", value: info.workerProcesses, color: .axSuccess)
@@ -40,7 +40,7 @@ struct PerformanceTuningSection: View {
                 let categories = Dictionary(grouping: viewModel.directives, by: { $0.category })
                 ForEach(["Buffers", "Timeouts", "Compression", "Other"], id: \.self) { category in
                     if let items = categories[category], !items.isEmpty {
-                        ConfigCard(icon: categoryIcon(category), title: category, description: categoryDesc(category)) {
+                        AXConfigCard(icon: categoryIcon(category), title: category, subtitle: categoryDesc(category)) {
                             VStack(spacing: AXSpacing.sm) {
                                 ForEach(items) { item in
                                     directiveRow(item)

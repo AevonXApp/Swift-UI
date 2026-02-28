@@ -58,7 +58,7 @@ struct SystemHardeningSubTab: View {
     @State private var isLoading = true
     @State private var selectedCategory: HardeningCheck.Category? = nil
 
-    private let sshService = SSHService.shared
+    private let securityManager = SecurityManager.shared
 
     private var filteredChecks: [HardeningCheck] {
         if let cat = selectedCategory {
@@ -112,12 +112,10 @@ struct SystemHardeningSubTab: View {
         isLoading = true
         defer { Task { @MainActor in isLoading = false } }
 
-        if let result = try? await sshService.execute(
-            CommandTemplate.security(.systemHardeningCheck).build(), serverId: serverId
-        ) {
-            await MainActor.run {
-                checks = parseHardeningResults(result.stdout)
-            }
+        // From Core: typed SecurityScore with raw hardening data
+        let score = await securityManager.hardeningCheck(serverId: serverId)
+        await MainActor.run {
+            checks = parseHardeningResults(score.rawData)
         }
     }
 

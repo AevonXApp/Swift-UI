@@ -47,7 +47,17 @@ struct SSHSubTab: View {
     @State private var showKeyCopied = false
     @State private var showKeySheet = false
 
-    private let sshService = SSHService.shared
+    // Phase 2: Authorized Keys Manager
+    @State private var authorizedKeys: [String] = []
+    @State private var newKeyText = ""
+    @State private var isAddingKey = false
+    @State private var keyToRemoveIndex: Int? = nil
+
+    // Phase 2: Session Monitor
+    @State private var sessions: [(user: String, ip: String, since: String)] = []
+    @State private var isLoadingSessions = false
+
+    private let securityManager = SecurityManager.shared
 
     private let rootLoginOptions = [
         "yes",
@@ -85,8 +95,12 @@ struct SSHSubTab: View {
 
                 if innerTab == 0 {
                     basicSetupContent
-                } else {
+                } else if innerTab == 1 {
                     loginLogsContent
+                } else if innerTab == 2 {
+                    authorizedKeysContent
+                } else {
+                    sessionsContent
                 }
             }
             .padding(AXSpacing.xxl)
@@ -100,42 +114,30 @@ struct SSHSubTab: View {
         isLoading = true
         defer { isLoading = false }
 
-        // SSH Status
-        if let result = try? await sshService.execute(
-            CommandTemplate.security(.sshStatus).build(), serverId: serverId
-        ) {
-            await MainActor.run {
-                sshEnabled = result.stdout.trimmingCharacters(in: .whitespacesAndNewlines) == "active"
-            }
+        // SSH Status (from Core)
+        let isActive = await securityManager.sshStatus(serverId: serverId)
+        await MainActor.run { sshEnabled = isActive }
+
+        // SSH Config (from Core)
+        let config = await securityManager.sshConfig(serverId: serverId)
+        await MainActor.run {
+            sshPort = config.port
+            passwordLogin = (config.passwordAuth == "yes")
+            keyLogin = (config.pubkeyAuth == "yes")
+            rootLoginSetting = config.permitRootLogin
         }
 
-        // SSH Config
-        if let result = try? await sshService.execute(
-            CommandTemplate.security(.sshConfig).build(), serverId: serverId
-        ) {
-            await MainActor.run {
-                parseSSHConfig(result.stdout)
-            }
+        // SSH Stats (from Core)
+        let stats = await securityManager.sshLoginStats(serverId: serverId)
+        await MainActor.run {
+            successCount = stats.success
+            failedCount = stats.failed
+            todayFailedCount = stats.todayFailed
         }
 
-        // SSH Stats
-        if let result = try? await sshService.execute(
-            CommandTemplate.security(.sshLoginStats).build(), serverId: serverId
-        ) {
-            await MainActor.run {
-                parseSSHStats(result.stdout)
-            }
-        }
-
-        // Public key
-        if let result = try? await sshService.execute(
-            CommandTemplate.security(.readSSHPublicKey).build(), serverId: serverId
-        ) {
-            await MainActor.run {
-                let key = result.stdout.trimmingCharacters(in: .whitespacesAndNewlines)
-                publicKey = key == "no-key" ? nil : key
-            }
-        }
+        // Public key (from Core)
+        let key = await securityManager.readSSHPublicKey(serverId: serverId)
+        await MainActor.run { publicKey = key }
 
         // Login logs
         await refreshLogs()
@@ -174,19 +176,15 @@ struct SSHSubTab: View {
         isRefreshing = true
         defer { Task { @MainActor in isRefreshing = false } }
 
-        if let result = try? await sshService.execute(
-            CommandTemplate.security(.sshLoginLogs(count: 100)).build(), serverId: serverId
-        ) {
-            await MainActor.run {
-                loginLogs = parseLoginLogs(result.stdout)
-            }
+        let logLines = await securityManager.sshLoginLogs(count: 100, serverId: serverId)
+        await MainActor.run {
+            loginLogs = parseLoginLogs(logLines)
         }
     }
 
-    private func parseLoginLogs(_ raw: String) -> [SSHLoginLog] {
-        guard raw != "no-logs" else { return [] }
+    private func parseLoginLogs(_ lines: [String]) -> [SSHLoginLog] {
         var logs: [SSHLoginLog] = []
-        for line in raw.components(separatedBy: "\n") {
+        for line in lines {
             let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
             guard !trimmed.isEmpty else { continue }
 
@@ -300,31 +298,10 @@ struct SSHSubTab: View {
     // MARK: - Inner Tab Switcher
 
     private var innerTabSwitcher: some View {
-        HStack(spacing: 0) {
-            ForEach(["Basic Setup", "SSH Login Logs"], id: \.self) { tab in
-                let index = tab == "Basic Setup" ? 0 : 1
-                Button(action: {
-                    withAnimation(.easeInOut(duration: 0.2)) { innerTab = index }
-                }) {
-                    Text(tab)
-                        .font(AXTypography.headline)
-                        .foregroundColor(innerTab == index ? .axTextPrimary : .axTextMuted)
-                        .padding(.horizontal, AXSpacing.xl)
-                        .padding(.vertical, AXSpacing.sm)
-                        .background(
-                            RoundedRectangle(cornerRadius: AXCornerRadius.md)
-                                .fill(innerTab == index ? Color.axSurface : Color.clear)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: AXCornerRadius.md)
-                                        .stroke(innerTab == index ? Color.axBorder : Color.clear, lineWidth: 1)
-                                )
-                        )
-                }
-                .buttonStyle(PlainButtonStyle())
-            }
-
-            Spacer()
-        }
+        AXTabSwitcher(
+            labels: ["Basic Setup", "Login Logs", "Keys", "Sessions"],
+            selected: $innerTab
+        )
     }
 
     // MARK: - Basic Setup
@@ -334,21 +311,19 @@ struct SSHSubTab: View {
             // Authentication
             AXCard {
                 VStack(alignment: .leading, spacing: AXSpacing.lg) {
-                    sectionHeader(icon: "key.fill", title: "Authentication")
+                    AXSectionTitle(title: "Authentication", icon: "key.fill")
                     Divider().background(Color.axBorder)
 
                     HStack {
                         toggleRow(icon: "lock.fill", label: "SSH Password Login", isOn: $passwordLogin, color: .axAccentBlue) {
                             Task {
-                                let cmd = CommandTemplate.security(.setSSHPasswordAuth(enabled: passwordLogin))
-                                _ = try? await sshService.execute(cmd.build(), serverId: serverId)
+                                let _ = await securityManager.setSSHPasswordAuth(enabled: passwordLogin, serverId: serverId)
                             }
                         }
                         Spacer()
                         toggleRow(icon: "key.horizontal", label: "SSH Key Login", isOn: $keyLogin, color: .axAccentGreen) {
                             Task {
-                                let cmd = CommandTemplate.security(.setSSHKeyAuth(enabled: keyLogin))
-                                _ = try? await sshService.execute(cmd.build(), serverId: serverId)
+                                let _ = await securityManager.setSSHKeyAuth(enabled: keyLogin, serverId: serverId)
                             }
                         }
                         Spacer()
@@ -359,7 +334,7 @@ struct SSHSubTab: View {
             // SSH Port
             AXCard {
                 VStack(alignment: .leading, spacing: AXSpacing.lg) {
-                    sectionHeader(icon: "number", title: "SSH Port")
+                    AXSectionTitle(title: "SSH Port", icon: "number")
                     Divider().background(Color.axBorder)
 
                     HStack(spacing: AXSpacing.md) {
@@ -382,8 +357,7 @@ struct SSHSubTab: View {
 
                         Button(action: {
                             Task {
-                                let cmd = CommandTemplate.security(.setSSHPort(port: sshPort))
-                                _ = try? await sshService.execute(cmd.build(), serverId: serverId)
+                                let _ = await securityManager.setSSHPort(port: sshPort, serverId: serverId)
                             }
                         }) {
                             Text("Save")
@@ -408,7 +382,7 @@ struct SSHSubTab: View {
             // Root Login
             AXCard {
                 VStack(alignment: .leading, spacing: AXSpacing.lg) {
-                    sectionHeader(icon: "person.badge.shield.checkmark", title: "Root Login Settings")
+                    AXSectionTitle(title: "Root Login Settings", icon: "person.badge.shield.checkmark")
                     Divider().background(Color.axBorder)
 
                     HStack(spacing: AXSpacing.md) {
@@ -422,8 +396,7 @@ struct SSHSubTab: View {
 
                         Button(action: {
                             Task {
-                                let cmd = CommandTemplate.security(.setSSHRootLogin(mode: rootLoginSetting))
-                                _ = try? await sshService.execute(cmd.build(), serverId: serverId)
+                                let _ = await securityManager.setSSHRootLogin(mode: rootLoginSetting, serverId: serverId)
                             }
                         }) {
                             Text("Apply")
@@ -444,7 +417,7 @@ struct SSHSubTab: View {
             // SSH Key Management
             AXCard {
                 VStack(alignment: .leading, spacing: AXSpacing.lg) {
-                    sectionHeader(icon: "key.horizontal.fill", title: "SSH Key Management")
+                    AXSectionTitle(title: "SSH Key Management", icon: "key.horizontal.fill")
                     Divider().background(Color.axBorder)
 
                     if let key = publicKey {
@@ -573,29 +546,9 @@ struct SSHSubTab: View {
         VStack(spacing: AXSpacing.lg) {
             // Filter bar
             HStack(spacing: AXSpacing.md) {
-                Button(action: {
-                    Task { await refreshLogs() }
-                }) {
-                    HStack(spacing: AXSpacing.xs) {
-                        if isRefreshing {
-                            ProgressView()
-                                .scaleEffect(0.6)
-                        } else {
-                            Image(systemName: "arrow.clockwise")
-                                .font(.system(size: 11))
-                        }
-                        Text("Refresh")
-                            .font(AXTypography.headline)
-                    }
-                    .padding(.horizontal, AXSpacing.lg)
-                    .padding(.vertical, AXSpacing.sm)
-                    .background(
-                        RoundedRectangle(cornerRadius: AXCornerRadius.md)
-                            .fill(Color.axAccentGreen)
-                    )
-                    .foregroundColor(.white)
+                AXRefreshButton(label: "Refresh", isLoading: isRefreshing) {
+                    await refreshLogs()
                 }
-                .buttonStyle(PlainButtonStyle())
 
                 Spacer()
 
@@ -673,16 +626,10 @@ struct SSHSubTab: View {
                     Divider().background(Color.axBorder)
 
                     if filteredLogs.isEmpty {
-                        VStack(spacing: AXSpacing.md) {
-                            Image(systemName: isLoading ? "hourglass" : "doc.text")
-                                .font(.system(size: 28))
-                                .foregroundColor(.axTextMuted)
-                            Text(isLoading ? "Loading logs..." : "No login logs found")
-                                .font(AXTypography.body)
-                                .foregroundColor(.axTextMuted)
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, AXSpacing.xxxxl)
+                        AXPlaceholder(
+                            icon: isLoading ? "hourglass" : "doc.text",
+                            title: isLoading ? "Loading logs..." : "No login logs found"
+                        )
                     } else {
                         ForEach(Array(filteredLogs.enumerated()), id: \.element.id) { index, log in
                             VStack(spacing: 0) {
@@ -727,18 +674,331 @@ struct SSHSubTab: View {
         }
     }
 
-    // MARK: - Helpers
+    // MARK: - Authorized Keys Content (Phase 2)
 
-    private func sectionHeader(icon: String, title: String) -> some View {
-        HStack(spacing: AXSpacing.sm) {
-            Image(systemName: icon)
-                .font(.system(size: 16))
-                .foregroundColor(.axAccentBlue)
-            Text(title)
-                .font(AXTypography.title3)
-                .foregroundColor(.axTextPrimary)
+    private var authorizedKeysContent: some View {
+        VStack(spacing: AXSpacing.lg) {
+            // Add key card
+            AXCard {
+                VStack(alignment: .leading, spacing: AXSpacing.md) {
+                    AXSectionTitle(title: "Add Authorized Key", icon: "key.horizontal.fill")
+                    Divider().background(Color.axBorder)
+
+                    Text("Paste a public SSH key (e.g. ssh-ed25519 AAAA... user@host)")
+                        .font(AXTypography.caption)
+                        .foregroundColor(.axTextMuted)
+
+                    HStack(spacing: AXSpacing.md) {
+                        TextField("ssh-ed25519 AAAA...", text: $newKeyText)
+                            .font(.system(size: 12, design: .monospaced))
+                            .textFieldStyle(.plain)
+                            .padding(AXSpacing.md)
+                            .background(
+                                RoundedRectangle(cornerRadius: AXCornerRadius.md)
+                                    .fill(Color.axBackgroundTertiary.opacity(0.5))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: AXCornerRadius.md)
+                                            .stroke(Color.axBorder.opacity(0.5), lineWidth: 1)
+                                    )
+                            )
+
+                        Button(action: {
+                            guard !newKeyText.isEmpty else { return }
+                            Task {
+                                isAddingKey = true
+                                let _ = await securityManager.addAuthorizedKey(key: newKeyText, serverId: serverId)
+                                await MainActor.run { newKeyText = "" }
+                                isAddingKey = false
+                                await loadAuthorizedKeys()
+                            }
+                        }) {
+                            HStack(spacing: AXSpacing.xxs) {
+                                if isAddingKey {
+                                    ProgressView().scaleEffect(0.6)
+                                } else {
+                                    Image(systemName: "plus")
+                                        .font(.system(size: 11, weight: .semibold))
+                                }
+                                Text("Add Key")
+                                    .font(.system(size: 12, weight: .semibold))
+                            }
+                            .foregroundColor(.white)
+                            .padding(.horizontal, AXSpacing.lg)
+                            .padding(.vertical, AXSpacing.sm)
+                            .background(
+                                RoundedRectangle(cornerRadius: AXCornerRadius.md)
+                                    .fill(newKeyText.isEmpty ? Color.axTextMuted : Color.axAccentGreen)
+                            )
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                        .disabled(newKeyText.isEmpty || isAddingKey)
+                    }
+                }
+            }
+
+            // Keys list
+            AXCard(padding: 0) {
+                VStack(spacing: 0) {
+                    HStack {
+                        HStack(spacing: AXSpacing.sm) {
+                            Image(systemName: "list.bullet.rectangle")
+                                .font(.system(size: 14))
+                                .foregroundColor(.axAccentBlue)
+                            Text("Authorized Keys")
+                                .font(AXTypography.title3)
+                                .foregroundColor(.axTextPrimary)
+                        }
+                        Spacer()
+                        Text("\(authorizedKeys.count) keys")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, AXSpacing.sm)
+                            .padding(.vertical, AXSpacing.xxxs)
+                            .background(Capsule().fill(Color.axAccentBlue))
+
+                        Button(action: { Task { await loadAuthorizedKeys() } }) {
+                            Image(systemName: "arrow.clockwise")
+                                .font(.system(size: 11))
+                                .foregroundColor(.axTextMuted)
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                    }
+                    .padding(AXSpacing.lg)
+
+                    Divider().background(Color.axBorder)
+
+                    if authorizedKeys.isEmpty {
+                        VStack(spacing: AXSpacing.md) {
+                            Image(systemName: "key.slash")
+                                .font(.system(size: 28))
+                                .foregroundColor(.axTextMuted)
+                            Text("No authorized keys found")
+                                .font(AXTypography.body)
+                                .foregroundColor(.axTextMuted)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, AXSpacing.xxxl)
+                    } else {
+                        ForEach(Array(authorizedKeys.enumerated()), id: \.offset) { index, key in
+                            let parts = key.components(separatedBy: " ")
+                            let keyType = parts.first ?? "unknown"
+                            let keyComment = parts.count >= 3 ? parts.dropFirst(2).joined(separator: " ") : "—"
+                            let fingerprint = String(parts.count >= 2 ? String(parts[1].prefix(20)) + "…" : "—")
+
+                            HStack(spacing: AXSpacing.md) {
+                                Image(systemName: "key.horizontal")
+                                    .font(.system(size: 11))
+                                    .foregroundColor(.axAccentBlue)
+
+                                VStack(alignment: .leading, spacing: AXSpacing.xxxs) {
+                                    Text(keyComment)
+                                        .font(.system(size: 12, weight: .medium))
+                                        .foregroundColor(.axTextPrimary)
+                                        .lineLimit(1)
+                                    HStack(spacing: AXSpacing.sm) {
+                                        Text(keyType)
+                                            .font(.system(size: 10, design: .monospaced))
+                                            .foregroundColor(.axAccentPurple)
+                                        Text(fingerprint)
+                                            .font(.system(size: 10, design: .monospaced))
+                                            .foregroundColor(.axTextMuted)
+                                    }
+                                }
+
+                                Spacer()
+
+                                Button(action: { keyToRemoveIndex = index }) {
+                                    HStack(spacing: AXSpacing.xxs) {
+                                        Image(systemName: "trash")
+                                            .font(.system(size: 10))
+                                        Text("Remove")
+                                            .font(.system(size: 11, weight: .medium))
+                                    }
+                                    .foregroundColor(.axError)
+                                    .padding(.horizontal, AXSpacing.sm)
+                                    .padding(.vertical, AXSpacing.xxxs)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: AXCornerRadius.sm)
+                                            .fill(Color.axError.opacity(0.08))
+                                            .overlay(
+                                                RoundedRectangle(cornerRadius: AXCornerRadius.sm)
+                                                    .stroke(Color.axError.opacity(0.2), lineWidth: 1)
+                                            )
+                                    )
+                                }
+                                .buttonStyle(PlainButtonStyle())
+                            }
+                            .padding(.horizontal, AXSpacing.lg)
+                            .padding(.vertical, AXSpacing.sm)
+                            .background(index % 2 == 0 ? Color.clear : Color.axSurface.opacity(0.3))
+                        }
+                    }
+                }
+            }
+        }
+        .task { await loadAuthorizedKeys() }
+        .alert("Remove Key", isPresented: Binding(
+            get: { keyToRemoveIndex != nil },
+            set: { if !$0 { keyToRemoveIndex = nil } }
+        )) {
+            Button("Cancel", role: .cancel) { keyToRemoveIndex = nil }
+            Button("Remove", role: .destructive) {
+                if let idx = keyToRemoveIndex {
+                    Task {
+                        let _ = await securityManager.removeAuthorizedKey(index: idx, serverId: serverId)
+                        await loadAuthorizedKeys()
+                    }
+                }
+            }
+        } message: {
+            Text("Are you sure you want to remove this authorized key? The associated user will lose SSH access.")
         }
     }
+
+    private func loadAuthorizedKeys() async {
+        let keys = await securityManager.readAuthorizedKeys(serverId: serverId)
+        await MainActor.run { authorizedKeys = keys }
+    }
+
+    // MARK: - Sessions Content (Phase 2)
+
+    private var sessionsContent: some View {
+        AXCard(padding: 0) {
+            VStack(spacing: 0) {
+                HStack {
+                    HStack(spacing: AXSpacing.sm) {
+                        Image(systemName: "person.3.fill")
+                            .font(.system(size: 14))
+                            .foregroundColor(.axAccentBlue)
+                        Text("Active SSH Sessions")
+                            .font(AXTypography.title3)
+                            .foregroundColor(.axTextPrimary)
+                    }
+                    Spacer()
+
+                    Text("\(sessions.count) active")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, AXSpacing.sm)
+                        .padding(.vertical, AXSpacing.xxxs)
+                        .background(Capsule().fill(sessions.isEmpty ? Color.axSuccess : Color.axAccentBlue))
+
+                    Button(action: { Task { await loadSessions() } }) {
+                        HStack(spacing: AXSpacing.xxs) {
+                            if isLoadingSessions {
+                                ProgressView().scaleEffect(0.5)
+                            } else {
+                                Image(systemName: "arrow.clockwise")
+                                    .font(.system(size: 11))
+                            }
+                            Text("Refresh")
+                                .font(.system(size: 11, weight: .medium))
+                        }
+                        .foregroundColor(.axTextMuted)
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                }
+                .padding(AXSpacing.lg)
+
+                Divider().background(Color.axBorder)
+
+                if sessions.isEmpty {
+                    VStack(spacing: AXSpacing.md) {
+                        Image(systemName: "person.crop.circle.badge.xmark")
+                            .font(.system(size: 28))
+                            .foregroundColor(.axTextMuted)
+                        Text("No active SSH sessions")
+                            .font(AXTypography.body)
+                            .foregroundColor(.axTextMuted)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, AXSpacing.xxxl)
+                } else {
+                    // Table header
+                    HStack(spacing: 0) {
+                        Text("User").frame(width: 120, alignment: .leading)
+                        Text("IP Address").frame(maxWidth: .infinity, alignment: .leading)
+                        Text("Since").frame(width: 140, alignment: .leading)
+                        Text("Action").frame(width: 100, alignment: .center)
+                    }
+                    .font(AXTypography.caption)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.axTextMuted)
+                    .padding(.horizontal, AXSpacing.lg)
+                    .padding(.vertical, AXSpacing.sm)
+                    .background(Color.axBackgroundTertiary.opacity(0.5))
+
+                    Divider().background(Color.axBorder)
+
+                    ForEach(Array(sessions.enumerated()), id: \.offset) { index, session in
+                        HStack(spacing: 0) {
+                            HStack(spacing: AXSpacing.sm) {
+                                Image(systemName: "person.circle.fill")
+                                    .font(.system(size: 14))
+                                    .foregroundColor(.axAccentBlue)
+                                Text(session.user)
+                                    .font(.system(size: 12, weight: .medium))
+                                    .foregroundColor(.axTextPrimary)
+                            }
+                            .frame(width: 120, alignment: .leading)
+
+                            Text(session.ip)
+                                .font(.system(size: 12, design: .monospaced))
+                                .foregroundColor(.axTextSecondary)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+
+                            Text(session.since)
+                                .font(.system(size: 12))
+                                .foregroundColor(.axTextMuted)
+                                .frame(width: 140, alignment: .leading)
+
+                            Button(action: {
+                                Task {
+                                    let _ = await securityManager.killSession(user: session.user, serverId: serverId)
+                                    await loadSessions()
+                                }
+                            }) {
+                                HStack(spacing: AXSpacing.xxs) {
+                                    Image(systemName: "xmark.circle")
+                                        .font(.system(size: 10))
+                                    Text("Kill")
+                                        .font(.system(size: 11, weight: .medium))
+                                }
+                                .foregroundColor(.axError)
+                                .padding(.horizontal, AXSpacing.sm)
+                                .padding(.vertical, AXSpacing.xxxs)
+                                .background(
+                                    RoundedRectangle(cornerRadius: AXCornerRadius.sm)
+                                        .fill(Color.axError.opacity(0.08))
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: AXCornerRadius.sm)
+                                                .stroke(Color.axError.opacity(0.2), lineWidth: 1)
+                                        )
+                                )
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                            .frame(width: 100, alignment: .center)
+                        }
+                        .padding(.horizontal, AXSpacing.lg)
+                        .padding(.vertical, AXSpacing.sm)
+                        .background(index % 2 == 0 ? Color.clear : Color.axSurface.opacity(0.3))
+                    }
+                }
+            }
+        }
+        .task { await loadSessions() }
+    }
+
+    private func loadSessions() async {
+        isLoadingSessions = true
+        defer { Task { @MainActor in isLoadingSessions = false } }
+        let results = await securityManager.activeSessions(serverId: serverId)
+        await MainActor.run { sessions = results }
+    }
+
+    // MARK: - Helpers
+
+
 
     private func toggleRow(icon: String, label: String, isOn: Binding<Bool>, color: Color, onChange: @escaping () -> Void) -> some View {
         HStack(spacing: AXSpacing.md) {
@@ -779,15 +1039,9 @@ struct SSHSubTab: View {
         isGeneratingKey = true
         defer { Task { @MainActor in isGeneratingKey = false } }
 
-        if let result = try? await sshService.execute(
-            CommandTemplate.security(.generateSSHKey).build(), serverId: serverId
-        ) {
-            let trimmed = result.stdout.trimmingCharacters(in: .whitespacesAndNewlines)
-            if trimmed != "FAILED" {
-                await MainActor.run {
-                    publicKey = trimmed
-                }
-            }
+        let key = await securityManager.generateSSHKey(serverId: serverId)
+        if let key = key {
+            await MainActor.run { publicKey = key }
         }
     }
 
