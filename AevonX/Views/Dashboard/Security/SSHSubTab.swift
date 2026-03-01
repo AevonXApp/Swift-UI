@@ -8,6 +8,13 @@
 
 import SwiftUI
 import AevonXCore
+
+private struct SSHSessionItem: Identifiable {
+    let id: Int; let user: String; let ip: String; let since: String
+    init(_ i: Int, _ s: (user: String, ip: String, since: String)) {
+        self.id = i; self.user = s.user; self.ip = s.ip; self.since = s.since
+    }
+}
 #if os(macOS)
 import UniformTypeIdentifiers
 #endif
@@ -604,71 +611,49 @@ struct SSHSubTab: View {
             }
 
             // Logs table
-            AXCard(padding: 0) {
-                VStack(spacing: 0) {
-                    HStack(spacing: 0) {
-                        Text("IP:Port")
-                            .frame(width: 200, alignment: .leading)
-                        Text("User")
-                            .frame(width: 120, alignment: .leading)
-                        Text("Status")
-                            .frame(width: 120, alignment: .leading)
-                        Text("Time")
-                            .frame(maxWidth: .infinity, alignment: .leading)
+            AXDataTable(
+                title: "Login Logs",
+                icon: "doc.text.fill",
+                accentColor: .axAccentBlue,
+                badgeText: "\(filteredLogs.count) entries",
+                columns: [
+                    AXDataColumn(title: "IP:Port", width: 200),
+                    AXDataColumn(title: "User", width: 120),
+                    AXDataColumn(title: "Status", width: 120),
+                    AXDataColumn(title: "Time", width: nil),
+                ],
+                items: filteredLogs,
+                totalCount: loginLogs.count,
+                pageSize: 50,
+                isLoading: isLoading,
+                emptyIcon: "doc.text",
+                emptyTitle: isLoading ? "Loading logs..." : "No login logs found"
+            ) { log, _ in
+                HStack(spacing: 0) {
+                    Text(log.ipPort)
+                        .font(.system(size: 11, weight: .medium, design: .monospaced))
+                        .foregroundColor(.axAccentBlue)
+                        .frame(width: 200, alignment: .leading)
+
+                    Text(log.user)
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(.axTextPrimary)
+                        .frame(width: 120, alignment: .leading)
+
+                    HStack(spacing: AXSpacing.xxs) {
+                        Circle()
+                            .fill(log.success ? Color.axSuccess : Color.axError)
+                            .frame(width: 5, height: 5)
+                        Text(log.success ? "Success" : "Login failure")
+                            .font(AXTypography.caption)
+                            .foregroundColor(log.success ? .axSuccess : .axError)
                     }
-                    .font(AXTypography.caption)
-                    .fontWeight(.semibold)
-                    .foregroundColor(.axTextMuted)
-                    .padding(.horizontal, AXSpacing.lg)
-                    .padding(.vertical, AXSpacing.md)
-                    .background(Color.axBackgroundTertiary.opacity(0.5))
+                    .frame(width: 120, alignment: .leading)
 
-                    Divider().background(Color.axBorder)
-
-                    if filteredLogs.isEmpty {
-                        AXPlaceholder(
-                            icon: isLoading ? "hourglass" : "doc.text",
-                            title: isLoading ? "Loading logs..." : "No login logs found"
-                        )
-                    } else {
-                        ForEach(Array(filteredLogs.enumerated()), id: \.element.id) { index, log in
-                            VStack(spacing: 0) {
-                                HStack(spacing: 0) {
-                                    Text(log.ipPort)
-                                        .font(.system(size: 11, weight: .medium, design: .monospaced))
-                                        .foregroundColor(.axAccentBlue)
-                                        .frame(width: 200, alignment: .leading)
-
-                                    Text(log.user)
-                                        .font(.system(size: 12, weight: .medium))
-                                        .foregroundColor(.axTextPrimary)
-                                        .frame(width: 120, alignment: .leading)
-
-                                    HStack(spacing: AXSpacing.xxs) {
-                                        Circle()
-                                            .fill(log.success ? Color.axSuccess : Color.axError)
-                                            .frame(width: 5, height: 5)
-                                        Text(log.success ? "Success" : "Login failure")
-                                            .font(AXTypography.caption)
-                                            .foregroundColor(log.success ? .axSuccess : .axError)
-                                    }
-                                    .frame(width: 120, alignment: .leading)
-
-                                    Text(log.timestamp)
-                                        .font(.system(size: 10, design: .monospaced))
-                                        .foregroundColor(.axTextMuted)
-                                        .frame(maxWidth: .infinity, alignment: .leading)
-                                }
-                                .padding(.horizontal, AXSpacing.lg)
-                                .padding(.vertical, AXSpacing.sm)
-                                .background(index % 2 == 0 ? Color.clear : Color.axSurface.opacity(0.3))
-
-                                if index < filteredLogs.count - 1 {
-                                    Divider().background(Color.axBorder.opacity(0.3))
-                                }
-                            }
-                        }
-                    }
+                    Text(log.timestamp)
+                        .font(.system(size: 10, design: .monospaced))
+                        .foregroundColor(.axTextMuted)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                 }
             }
         }
@@ -863,127 +848,54 @@ struct SSHSubTab: View {
     // MARK: - Sessions Content (Phase 2)
 
     private var sessionsContent: some View {
-        AXCard(padding: 0) {
-            VStack(spacing: 0) {
-                HStack {
-                    HStack(spacing: AXSpacing.sm) {
-                        Image(systemName: "person.3.fill")
-                            .font(.system(size: 14))
-                            .foregroundColor(.axAccentBlue)
-                        Text("Active SSH Sessions")
-                            .font(AXTypography.title3)
-                            .foregroundColor(.axTextPrimary)
-                    }
-                    Spacer()
-
-                    Text("\(sessions.count) active")
-                        .font(.system(size: 11, weight: .semibold))
-                        .foregroundColor(.white)
-                        .padding(.horizontal, AXSpacing.sm)
-                        .padding(.vertical, AXSpacing.xxxs)
-                        .background(Capsule().fill(sessions.isEmpty ? Color.axSuccess : Color.axAccentBlue))
-
-                    Button(action: { Task { await loadSessions() } }) {
-                        HStack(spacing: AXSpacing.xxs) {
-                            if isLoadingSessions {
-                                ProgressView().scaleEffect(0.5)
-                            } else {
-                                Image(systemName: "arrow.clockwise")
-                                    .font(.system(size: 11))
-                            }
-                            Text("Refresh")
-                                .font(.system(size: 11, weight: .medium))
-                        }
-                        .foregroundColor(.axTextMuted)
-                    }
-                    .buttonStyle(PlainButtonStyle())
+        AXDataTable(
+            title: "Active SSH Sessions",
+            icon: "person.3.fill",
+            accentColor: sessions.isEmpty ? .axSuccess : .axAccentBlue,
+            badgeText: "\(sessions.count) active",
+            columns: [
+                AXDataColumn(title: "User", width: 120),
+                AXDataColumn(title: "IP Address", width: nil),
+                AXDataColumn(title: "Since", width: 140),
+                AXDataColumn(title: "Action", width: 100, alignment: .center),
+            ],
+            items: sessions.enumerated().map { SSHSessionItem($0.offset, $0.element) },
+            isLoading: isLoadingSessions,
+            emptyIcon: "person.crop.circle.badge.xmark",
+            emptyTitle: "No active SSH sessions"
+        ) { item, _ in
+            HStack(spacing: 0) {
+                HStack(spacing: AXSpacing.sm) {
+                    Image(systemName: "person.circle.fill")
+                        .font(.system(size: 14))
+                        .foregroundColor(.axAccentBlue)
+                    Text(item.user)
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(.axTextPrimary)
                 }
-                .padding(AXSpacing.lg)
+                .frame(width: 120, alignment: .leading)
 
-                Divider().background(Color.axBorder)
+                Text(item.ip)
+                    .font(.system(size: 12, design: .monospaced))
+                    .foregroundColor(.axTextSecondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
 
-                if sessions.isEmpty {
-                    VStack(spacing: AXSpacing.md) {
-                        Image(systemName: "person.crop.circle.badge.xmark")
-                            .font(.system(size: 28))
-                            .foregroundColor(.axTextMuted)
-                        Text("No active SSH sessions")
-                            .font(AXTypography.body)
-                            .foregroundColor(.axTextMuted)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, AXSpacing.xxxl)
-                } else {
-                    // Table header
-                    HStack(spacing: 0) {
-                        Text("User").frame(width: 120, alignment: .leading)
-                        Text("IP Address").frame(maxWidth: .infinity, alignment: .leading)
-                        Text("Since").frame(width: 140, alignment: .leading)
-                        Text("Action").frame(width: 100, alignment: .center)
-                    }
-                    .font(AXTypography.caption)
-                    .fontWeight(.semibold)
+                Text(item.since)
+                    .font(.system(size: 12))
                     .foregroundColor(.axTextMuted)
-                    .padding(.horizontal, AXSpacing.lg)
-                    .padding(.vertical, AXSpacing.sm)
-                    .background(Color.axBackgroundTertiary.opacity(0.5))
+                    .frame(width: 140, alignment: .leading)
 
-                    Divider().background(Color.axBorder)
-
-                    ForEach(Array(sessions.enumerated()), id: \.offset) { index, session in
-                        HStack(spacing: 0) {
-                            HStack(spacing: AXSpacing.sm) {
-                                Image(systemName: "person.circle.fill")
-                                    .font(.system(size: 14))
-                                    .foregroundColor(.axAccentBlue)
-                                Text(session.user)
-                                    .font(.system(size: 12, weight: .medium))
-                                    .foregroundColor(.axTextPrimary)
-                            }
-                            .frame(width: 120, alignment: .leading)
-
-                            Text(session.ip)
-                                .font(.system(size: 12, design: .monospaced))
-                                .foregroundColor(.axTextSecondary)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-
-                            Text(session.since)
-                                .font(.system(size: 12))
-                                .foregroundColor(.axTextMuted)
-                                .frame(width: 140, alignment: .leading)
-
-                            Button(action: {
-                                Task {
-                                    let _ = await securityManager.killSession(user: session.user, serverId: serverId)
-                                    await loadSessions()
-                                }
-                            }) {
-                                HStack(spacing: AXSpacing.xxs) {
-                                    Image(systemName: "xmark.circle")
-                                        .font(.system(size: 10))
-                                    Text("Kill")
-                                        .font(.system(size: 11, weight: .medium))
-                                }
-                                .foregroundColor(.axError)
-                                .padding(.horizontal, AXSpacing.sm)
-                                .padding(.vertical, AXSpacing.xxxs)
-                                .background(
-                                    RoundedRectangle(cornerRadius: AXCornerRadius.sm)
-                                        .fill(Color.axError.opacity(0.08))
-                                        .overlay(
-                                            RoundedRectangle(cornerRadius: AXCornerRadius.sm)
-                                                .stroke(Color.axError.opacity(0.2), lineWidth: 1)
-                                        )
-                                )
-                            }
-                            .buttonStyle(PlainButtonStyle())
-                            .frame(width: 100, alignment: .center)
-                        }
-                        .padding(.horizontal, AXSpacing.lg)
-                        .padding(.vertical, AXSpacing.sm)
-                        .background(index % 2 == 0 ? Color.clear : Color.axSurface.opacity(0.3))
+                AXActionButton(label: "Kill", icon: "xmark.circle", style: .destructive, size: .small) {
+                    Task {
+                        let _ = await securityManager.killSession(user: item.user, serverId: serverId)
+                        await loadSessions()
                     }
                 }
+                .frame(width: 100, alignment: .center)
+            }
+        } trailingContent: {
+            AXRefreshButton(isLoading: isLoadingSessions) {
+                await loadSessions()
             }
         }
         .task { await loadSessions() }

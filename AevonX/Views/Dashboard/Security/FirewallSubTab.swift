@@ -562,87 +562,58 @@ struct FirewallSubTab: View {
     }
 
     private var listeningPortsTable: some View {
-        AXCard(padding: 0) {
-            VStack(spacing: 0) {
-                // Section header
-                    AXSectionTitle(title: "Listening Ports", icon: "antenna.radiowaves.left.and.right") {
-                        AXBadge(text: "\(listeningPorts.count) active", color: .axAccentBlue, style: .soft)
-                    }
-                .padding(.horizontal, AXSpacing.lg)
-                .padding(.vertical, AXSpacing.md)
+        AXDataTable(
+            title: "Listening Ports",
+            icon: "antenna.radiowaves.left.and.right",
+            accentColor: .axAccentBlue,
+            badgeText: "\(listeningPorts.count) active",
+            columns: [
+                AXDataColumn(title: "Protocol", width: 80),
+                AXDataColumn(title: "Port", width: 80),
+                AXDataColumn(title: "Service / Process", width: nil),
+                AXDataColumn(title: "State", width: 80),
+                AXDataColumn(title: "Firewall", width: 100),
+                AXDataColumn(title: "Actions", width: 140),
+            ],
+            items: filteredListeningPorts,
+            totalCount: listeningPorts.count,
+            pageSize: 25,
+            isLoading: isLoading,
+            emptyIcon: "network.slash",
+            emptyTitle: "No listening ports found"
+        ) { port, _ in
+            HStack(spacing: 0) {
+                Text(port.protocolType)
+                    .font(.system(size: 12, weight: .medium, design: .monospaced))
+                    .foregroundColor(.axTextSecondary)
+                    .frame(width: 80, alignment: .leading)
 
-                Divider().background(Color.axBorder)
+                Text(port.port)
+                    .font(.system(size: 12, weight: .semibold, design: .monospaced))
+                    .foregroundColor(.axTextPrimary)
+                    .frame(width: 80, alignment: .leading)
 
-                // Table headers
-                HStack(spacing: 0) {
-                    tableHeaderCell("Protocol", width: 80)
-                    tableHeaderCell("Port", width: 80)
-                    tableHeaderCell("Service / Process", width: nil)
-                    tableHeaderCell("State", width: 80)
-                    tableHeaderCell("Firewall", width: 100)
-                    tableHeaderCell("Actions", width: 140)
-                }
-                .padding(.horizontal, AXSpacing.lg)
-                .padding(.vertical, AXSpacing.sm)
-                .background(Color.axBackgroundTertiary.opacity(0.5))
+                Text(port.process.isEmpty ? "—" : port.process)
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(.axAccentBlue)
+                    .frame(maxWidth: .infinity, alignment: .leading)
 
-                Divider().background(Color.axBorder)
-
-                if isLoading {
-                    AXLoadingState(message: "Scanning ports…", style: .inline)
-                } else if filteredListeningPorts.isEmpty {
-                    AXPlaceholder(
-                        icon: "network.slash",
-                        title: "No listening ports found"
+                Text("LISTEN")
+                    .font(AXTypography.caption)
+                    .foregroundColor(.axAccentGreen)
+                    .padding(.horizontal, AXSpacing.sm)
+                    .padding(.vertical, AXSpacing.xxxs)
+                    .background(
+                        RoundedRectangle(cornerRadius: AXCornerRadius.sm)
+                            .fill(Color.axAccentGreen.opacity(0.1))
                     )
-                } else {
-                    ForEach(Array(filteredListeningPorts.enumerated()), id: \.element.id) { index, port in
-                        VStack(spacing: 0) {
-                            HStack(spacing: 0) {
-                                Text(port.protocolType)
-                                    .font(.system(size: 12, weight: .medium, design: .monospaced))
-                                    .foregroundColor(.axTextSecondary)
-                                    .frame(width: 80, alignment: .leading)
+                    .frame(width: 80, alignment: .leading)
 
-                                Text(port.port)
-                                    .font(.system(size: 12, weight: .semibold, design: .monospaced))
-                                    .foregroundColor(.axTextPrimary)
-                                    .frame(width: 80, alignment: .leading)
+                firewallStatusForPort(port)
+                    .frame(width: 100, alignment: .leading)
 
-                                Text(port.process.isEmpty ? "—" : port.process)
-                                    .font(.system(size: 12, weight: .medium))
-                                    .foregroundColor(.axAccentBlue)
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-
-                                Text("LISTEN")
-                                    .font(AXTypography.caption)
-                                    .foregroundColor(.axAccentGreen)
-                                    .padding(.horizontal, AXSpacing.sm)
-                                    .padding(.vertical, AXSpacing.xxxs)
-                                    .background(
-                                        RoundedRectangle(cornerRadius: AXCornerRadius.sm)
-                                            .fill(Color.axAccentGreen.opacity(0.1))
-                                    )
-                                    .frame(width: 80, alignment: .leading)
-
-                                // Firewall status for this port
-                                firewallStatusForPort(port)
-                                    .frame(width: 100, alignment: .leading)
-
-                                // Actions
-                                portActions(port)
-                                    .frame(width: 140, alignment: .center)
-                            }
-                            .padding(.horizontal, AXSpacing.lg)
-                            .padding(.vertical, AXSpacing.sm)
-                            .background(index % 2 == 0 ? Color.clear : Color.axSurface.opacity(0.3))
-
-                            if index < filteredListeningPorts.count - 1 {
-                                Divider().background(Color.axBorder.opacity(0.5))
-                            }
-                        }
-                    }
-                }
+                portActions(port)
+                    .frame(width: 140, alignment: .center)
             }
         }
     }
@@ -819,140 +790,79 @@ struct FirewallSubTab: View {
     // MARK: - Firewall Rules Table
 
     private var rulesTable: some View {
-        AXCard(padding: 0) {
-            VStack(spacing: 0) {
-                // Section header
-                HStack {
-                    HStack(spacing: AXSpacing.sm) {
-                        Image(systemName: "flame.fill")
-                            .font(.system(size: 14))
-                            .foregroundColor(.axAccentPurple)
-                        Text("Firewall Rules")
-                            .font(AXTypography.title3)
-                            .foregroundColor(.axTextPrimary)
-                    }
-                    Spacer()
-                    Text("\(rules.count) rules")
-                        .font(AXTypography.caption)
-                        .foregroundColor(.axAccentPurple)
-                }
-                .padding(.horizontal, AXSpacing.lg)
-                .padding(.vertical, AXSpacing.md)
+        AXDataTable(
+            title: "Firewall Rules",
+            icon: "flame.fill",
+            accentColor: .axAccentPurple,
+            badgeText: "\(rules.count) rules",
+            columns: [
+                AXDataColumn(title: "Protocol", width: 90),
+                AXDataColumn(title: "Port", width: 110),
+                AXDataColumn(title: "Strategy", width: 100),
+                AXDataColumn(title: "Direction", width: 100),
+                AXDataColumn(title: "Source IP", width: nil),
+                AXDataColumn(title: "Actions", width: 80),
+            ],
+            items: filteredRules,
+            totalCount: rules.count,
+            pageSize: 25,
+            isLoading: isLoading,
+            emptyIcon: "shield.slash",
+            emptyTitle: "No firewall rules configured"
+        ) { rule, _ in
+            HStack(spacing: 0) {
+                Text(rule.protocolType)
+                    .font(.system(size: 12, weight: .medium, design: .monospaced))
+                    .foregroundColor(.axTextSecondary)
+                    .frame(width: 90, alignment: .leading)
 
-                Divider().background(Color.axBorder)
+                Text(rule.port)
+                    .font(.system(size: 12, weight: .semibold, design: .monospaced))
+                    .foregroundColor(.axTextPrimary)
+                    .frame(width: 110, alignment: .leading)
 
-                HStack(spacing: 0) {
-                    tableHeaderCell("Protocol", width: 90)
-                    tableHeaderCell("Port", width: 110)
-                    tableHeaderCell("Strategy", width: 100)
-                    tableHeaderCell("Direction", width: 100)
-                    tableHeaderCell("Source IP", width: nil)
-                    tableHeaderCell("Actions", width: 80)
-                }
-                .padding(.horizontal, AXSpacing.lg)
-                .padding(.vertical, AXSpacing.sm)
-                .background(Color.axBackgroundTertiary.opacity(0.5))
+                strategyBadge(rule.strategy)
+                    .frame(width: 100, alignment: .leading)
 
-                Divider().background(Color.axBorder)
-
-                if isLoading {
-                    VStack(spacing: AXSpacing.md) {
-                        ProgressView()
-                        Text("Loading firewall rules…")
-                            .font(AXTypography.body)
-                            .foregroundColor(.axTextMuted)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, AXSpacing.xxxl)
-                } else if filteredRules.isEmpty {
-                    VStack(spacing: AXSpacing.md) {
-                        Image(systemName: "shield.slash")
-                            .font(.system(size: 28))
-                            .foregroundColor(.axTextMuted)
-                        Text("No firewall rules configured")
-                            .font(AXTypography.body)
-                            .foregroundColor(.axTextMuted)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, AXSpacing.xxxl)
-                } else {
-                    ForEach(Array(filteredRules.enumerated()), id: \.element.id) { index, rule in
-                        VStack(spacing: 0) {
-                            firewallRow(rule: rule, isEven: index % 2 == 0)
-                            if index < filteredRules.count - 1 {
-                                Divider().background(Color.axBorder.opacity(0.5))
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    private func tableHeaderCell(_ title: String, width: CGFloat?) -> some View {
-        Group {
-            if let w = width {
-                Text(title)
+                Text(rule.direction == "INPUT" ? "Inbound" : "Outbound")
                     .font(AXTypography.caption)
-                    .fontWeight(.semibold)
-                    .foregroundColor(.axTextMuted)
-                    .frame(width: w, alignment: .leading)
-            } else {
-                Text(title)
-                    .font(AXTypography.caption)
-                    .fontWeight(.semibold)
-                    .foregroundColor(.axTextMuted)
+                    .foregroundColor(.axTextSecondary)
+                    .frame(width: 100, alignment: .leading)
+
+                Text(rule.sourceIP)
+                    .font(.system(size: 11, design: .monospaced))
+                    .foregroundColor(.axTextTertiary)
                     .frame(maxWidth: .infinity, alignment: .leading)
+
+                AXActionButton(label: "Delete", icon: "trash", style: .destructive, size: .small) {
+                    Task { await deleteRule(rule) }
+                }
+                .frame(width: 80, alignment: .center)
             }
         }
     }
 
-    private func firewallRow(rule: FirewallRule, isEven: Bool) -> some View {
-        HStack(spacing: 0) {
-            Text(rule.protocolType)
-                .font(.system(size: 12, weight: .medium, design: .monospaced))
-                .foregroundColor(.axTextSecondary)
-                .frame(width: 90, alignment: .leading)
-
-            Text(rule.port)
-                .font(.system(size: 12, weight: .semibold, design: .monospaced))
-                .foregroundColor(.axTextPrimary)
-                .frame(width: 110, alignment: .leading)
-
-            Text(rule.strategy)
-                .font(AXTypography.caption)
-                .foregroundColor(rule.strategy == "ACCEPT" ? .axAccentGreen : .axError)
-                .padding(.horizontal, AXSpacing.sm)
-                .padding(.vertical, AXSpacing.xxxs)
-                .background(
-                    RoundedRectangle(cornerRadius: AXCornerRadius.sm)
-                        .fill(rule.strategy == "ACCEPT" ? Color.axAccentGreen.opacity(0.1) : Color.axError.opacity(0.1))
-                )
-                .frame(width: 100, alignment: .leading)
-
-            Text(rule.direction == "INPUT" ? "Inbound" : "Outbound")
-                .font(AXTypography.caption)
-                .foregroundColor(.axTextSecondary)
-                .frame(width: 100, alignment: .leading)
-
-            Text(rule.sourceIP)
-                .font(.system(size: 11, design: .monospaced))
-                .foregroundColor(.axTextTertiary)
-                .frame(maxWidth: .infinity, alignment: .leading)
-
-            Button(action: {
-                Task { await deleteRule(rule) }
-            }) {
-                Image(systemName: "trash")
-                    .font(.system(size: 11))
-                    .foregroundColor(.axError)
+    private func strategyBadge(_ strategy: String) -> some View {
+        let color: Color = {
+            switch strategy {
+            case "ACCEPT": return .axAccentGreen
+            case "DROP": return .axError
+            case "DOCKER", "DOCKER-USER", "DOCKER-FORWARD", "DOCKER-CT":
+                return .axAccentPurple
+            default: return .axTextMuted
             }
-            .buttonStyle(PlainButtonStyle())
-            .frame(width: 80, alignment: .center)
-        }
-        .padding(.horizontal, AXSpacing.lg)
-        .padding(.vertical, AXSpacing.sm)
-        .background(isEven ? Color.clear : Color.axSurface.opacity(0.3))
+        }()
+
+        return Text(strategy)
+            .font(AXTypography.caption)
+            .fontWeight(.semibold)
+            .foregroundColor(color)
+            .padding(.horizontal, AXSpacing.sm)
+            .padding(.vertical, AXSpacing.xxxs)
+            .background(
+                RoundedRectangle(cornerRadius: AXCornerRadius.sm)
+                    .fill(color.opacity(0.1))
+            )
     }
 }
 

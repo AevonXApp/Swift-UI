@@ -43,91 +43,72 @@ struct SecurityTab: View {
     // MARK: - Security Sidebar
 
     private var securitySidebar: some View {
-        VStack(spacing: 0) {
-            // Sidebar Header — Security Info Card
-            VStack(spacing: AXSpacing.md) {
-                // Shield + Title
-                HStack(spacing: AXSpacing.md) {
-                    ZStack {
-                        Circle()
-                            .fill(
-                                LinearGradient(
-                                    colors: [.axAccentBlue, .axAccentBlue.opacity(0.7)],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
+        AXSidebarContainer(
+            width: 260,
+            header: {
+                // Sidebar Header — Security Info Card
+                VStack(spacing: AXSpacing.md) {
+                    HStack(spacing: AXSpacing.md) {
+                        ZStack {
+                            Circle()
+                                .fill(
+                                    LinearGradient(
+                                        colors: [.axAccentBlue, .axAccentBlue.opacity(0.7)],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    )
                                 )
-                            )
-                            .frame(width: 40, height: 40)
-                            .shadow(color: .axAccentBlue.opacity(0.4), radius: 8, x: 0, y: 2)
+                                .frame(width: 40, height: 40)
+                                .shadow(color: .axAccentBlue.opacity(0.4), radius: 8, x: 0, y: 2)
 
-                        Image(systemName: "shield.lefthalf.filled")
-                            .font(.system(size: 18, weight: .bold))
-                            .foregroundColor(.white)
-                    }
-
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Security Center")
-                            .font(AXTypography.subheadline)
-                            .fontWeight(.bold)
-                            .foregroundColor(.axTextPrimary)
-
-                        Text(server.name)
-                            .font(.system(size: 11))
-                            .foregroundColor(.axTextTertiary)
-                            .lineLimit(1)
-                    }
-
-                    Spacer()
-                }
-
-                // Quick Protection Status
-                HStack(spacing: AXSpacing.md) {
-                    protectionStat(icon: "flame.fill", label: "Firewall", color: .axAccentBlue)
-                    protectionStat(icon: "hand.raised.fill", label: "fail2ban", color: .axAccentGreen)
-                }
-            }
-            .padding(AXSpacing.lg)
-
-            Divider()
-                .background(Color.axBorder.opacity(0.3))
-
-            // Navigation Items
-            ScrollView(showsIndicators: false) {
-                VStack(spacing: AXSpacing.xxs) {
-                    ForEach(SecuritySidebarItem.categorizedItems(), id: \.0) { category, items in
-                        SidebarCategoryHeader(title: category.rawValue, icon: category.icon)
-                        ForEach(items) { item in
-                            SecuritySidebarButton(
-                                item: item,
-                                isSelected: selectedItem == item,
-                                action: {
-                                    withAnimation(.easeInOut(duration: 0.2)) {
-                                        selectedItem = item
-                                    }
-                                }
-                            )
+                            Image(systemName: "shield.lefthalf.filled")
+                                .font(.system(size: 18, weight: .bold))
+                                .foregroundColor(.white)
                         }
+
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Security Center")
+                                .font(AXTypography.subheadline)
+                                .fontWeight(.bold)
+                                .foregroundColor(.axTextPrimary)
+
+                            Text(server.name)
+                                .font(.system(size: 11))
+                                .foregroundColor(.axTextTertiary)
+                                .lineLimit(1)
+                        }
+
+                        Spacer()
+                    }
+
+                    HStack(spacing: AXSpacing.md) {
+                        protectionStat(icon: "flame.fill", label: "Firewall", color: .axAccentBlue)
+                        protectionStat(icon: "hand.raised.fill", label: "fail2ban", color: .axAccentGreen)
                     }
                 }
-                .padding(.horizontal, AXSpacing.md)
-                .padding(.vertical, AXSpacing.lg)
+                .padding(AXSpacing.lg)
+            },
+            items: {
+                ForEach(SecuritySidebarItem.categorizedItems(), id: \.0) { category, items in
+                    AXSidebarCategoryHeader(title: category.rawValue, icon: category.icon)
+                    ForEach(items) { item in
+                        AXSidebarRow(
+                            icon: item.icon,
+                            title: item.rawValue,
+                            color: item.color,
+                            isSelected: selectedItem == item,
+                            action: {
+                                withAnimation(.easeInOut(duration: 0.2)) {
+                                    selectedItem = item
+                                }
+                            }
+                        )
+                    }
+                }
+            },
+            footer: {
+                sidebarFooter
             }
-
-            Spacer()
-
-            // Sidebar Footer
-            sidebarFooter
-        }
-        .frame(width: 260)
-        .background(
-            LinearGradient(
-                gradient: Gradient(colors: [
-                    Color.axSurface,
-                    Color.axSurface.opacity(0.98)
-                ]),
-                startPoint: .top,
-                endPoint: .bottom
-            )
         )
     }
 
@@ -150,29 +131,7 @@ struct SecurityTab: View {
     }
 
     private var sidebarFooter: some View {
-        VStack(spacing: 0) {
-            Divider()
-                .background(Color.axBorder.opacity(0.3))
-
-            HStack(spacing: AXSpacing.sm) {
-                Image(systemName: "info.circle.fill")
-                    .font(.system(size: 12))
-                    .foregroundColor(.axAccentBlue.opacity(0.7))
-
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("15 Security Sections")
-                        .font(.system(size: 10, weight: .medium))
-                        .foregroundColor(.axTextSecondary)
-                    Text("144 features available")
-                        .font(.system(size: 9))
-                        .foregroundColor(.axTextTertiary)
-                }
-
-                Spacer()
-            }
-            .padding(AXSpacing.md)
-            .background(Color.axBackground.opacity(0.5))
-        }
+        EmptyView()
     }
 
     // MARK: - Section Header

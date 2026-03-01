@@ -100,6 +100,26 @@ enum SecuritySidebarItem: String, CaseIterable, Identifiable {
         }
     }
 
+    var color: Color {
+        switch self {
+        case .dashboard:      return .axSuccess
+        case .firewallRules:  return .orange
+        case .ssh:            return .cyan
+        case .users:          return .axAccentBlue
+        case .bruteForce:     return .red
+        case .antiIntrusion:  return .pink
+        case .waf:            return .purple
+        case .geoip:          return .mint
+        case .malware:        return .red
+        case .fileIntegrity:  return .indigo
+        case .hardening:      return .yellow
+        case .network:        return .teal
+        case .auditLog:       return .cyan
+        case .certificates:   return .orange
+        case .aiAssistant:    return .purple
+        }
+    }
+
     var description: String {
         switch self {
         case .dashboard:      return "Overall security score & alerts"

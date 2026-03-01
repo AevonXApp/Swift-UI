@@ -62,53 +62,47 @@ struct UnifiedServiceSidebar<Section: SidebarSection>: View {
     }
 
     var body: some View {
-        VStack(spacing: 0) {
-            // Header
-            if let logoName = logoName {
-                ServiceSidebarHeader(
-                    application: application,
-                    brandColor: brandColor,
-                    logoName: logoName,
-                    onBack: onBack
-                )
-            } else if let iconName = iconName {
-                ServiceSidebarHeader(
-                    application: application,
-                    brandColor: brandColor,
-                    iconName: iconName,
-                    onBack: onBack
-                )
-            }
-
-            Divider()
-                .padding(.horizontal, AXSpacing.md)
-
-            // Navigation Sections
-            ScrollView {
-                VStack(spacing: AXSpacing.xs) {
-                    ForEach(sections, id: \.id) { section in
-                        ServiceSidebarNavigationRow(
-                            section: section,
-                            isSelected: selectedSection.id == section.id,
-                            action: {
-                                withAnimation(.spring(response: 0.3)) {
-                                    selectedSection = section
-                                }
-                            }
-                        )
-                    }
+        AXSidebarContainer(
+            width: 260,
+            header: {
+                if let logoName = logoName {
+                    ServiceSidebarHeader(
+                        application: application,
+                        brandColor: brandColor,
+                        logoName: logoName,
+                        onBack: onBack
+                    )
+                } else if let iconName = iconName {
+                    ServiceSidebarHeader(
+                        application: application,
+                        brandColor: brandColor,
+                        iconName: iconName,
+                        onBack: onBack
+                    )
                 }
-                .padding(AXSpacing.md)
+            },
+            items: {
+                ForEach(sections, id: \.id) { section in
+                    AXSidebarRow(
+                        icon: section.icon,
+                        title: section.displayName,
+                        color: brandColor,
+                        isSelected: selectedSection.id == section.id,
+                        action: {
+                            withAnimation(.spring(response: 0.3)) {
+                                selectedSection = section
+                            }
+                        }
+                    )
+                }
+            },
+            footer: {
+                ServiceControlButtons(
+                    application: application,
+                    onControl: onControl
+                )
             }
-
-            Spacer()
-
-            // Service Controls
-            ServiceControlButtons(
-                application: application,
-                onControl: onControl
-            )
-        }
+        )
     }
 }
 

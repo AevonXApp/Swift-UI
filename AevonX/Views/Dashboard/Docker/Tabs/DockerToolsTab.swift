@@ -66,108 +66,48 @@ struct DockerToolsTab: View {
     // MARK: - Sidebar
     
     private var toolsSidebar: some View {
-        VStack(spacing: 0) {
-            // Header
-            HStack(spacing: 8) {
-                Image(systemName: "wrench.and.screwdriver.fill")
-                    .font(.system(size: 11, weight: .bold))
-                    .foregroundColor(.axAccentBlue)
-                Text("TOOLS")
-                    .font(.system(size: 10, weight: .heavy))
-                    .foregroundColor(.axTextMuted)
-                    .tracking(1.5)
-                Spacer()
-            }
-            .padding(.horizontal, 14)
-            .padding(.top, 14)
-            .padding(.bottom, 10)
-            
-            Rectangle()
-                .fill(Color.axBorder.opacity(0.25))
-                .frame(height: 1)
-                .padding(.horizontal, 10)
-            
-            // Items
-            VStack(spacing: 3) {
-                ForEach(ToolSection.allCases) { tool in
-                    Button {
-                        withAnimation(.easeInOut(duration: 0.15)) {
-                            selectedTool = tool
-                        }
-                    } label: {
-                        HStack(spacing: 10) {
-                            // Icon with colored background
-                            ZStack {
-                                RoundedRectangle(cornerRadius: 6)
-                                    .fill(selectedTool == tool ? tool.color.opacity(0.15) : tool.color.opacity(0.07))
-                                    .frame(width: 26, height: 26)
-                                Image(systemName: tool.icon)
-                                    .font(.system(size: 11, weight: .semibold))
-                                    .foregroundColor(selectedTool == tool ? tool.color : tool.color.opacity(0.7))
-                            }
-                            
-                            Text(tool.rawValue)
-                                .font(.system(size: 12, weight: selectedTool == tool ? .semibold : .medium))
-                                .foregroundColor(selectedTool == tool ? .axTextPrimary : .axTextSecondary)
-                                .lineLimit(1)
-                            
-                            Spacer()
-                            
-                            // Active indicator
-                            if selectedTool == tool {
-                                Circle()
-                                    .fill(tool.color)
-                                    .frame(width: 5, height: 5)
-                            }
-                        }
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 7)
-                        .background(
-                            RoundedRectangle(cornerRadius: 8)
-                                .fill(selectedTool == tool ? tool.color.opacity(0.08) : Color.clear)
-                        )
-                        .overlay(
-                            HStack {
-                                if selectedTool == tool {
-                                    RoundedRectangle(cornerRadius: 2)
-                                        .fill(tool.color)
-                                        .frame(width: 3)
-                                }
-                                Spacer()
-                            }
-                        )
-                    }
-                    .buttonStyle(.plain)
+        AXSidebarContainer(
+            width: 200,
+            header: {
+                HStack(spacing: 8) {
+                    Image(systemName: "wrench.and.screwdriver.fill")
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundColor(.axAccentBlue)
+                    Text("TOOLS")
+                        .font(.system(size: 10, weight: .heavy))
+                        .foregroundColor(.axTextMuted)
+                        .tracking(1.5)
+                    Spacer()
                 }
+                .padding(.horizontal, 14)
+                .padding(.top, 14)
+                .padding(.bottom, 10)
+            },
+            items: {
+                ForEach(ToolSection.allCases) { tool in
+                    AXSidebarRow(
+                        icon: tool.icon,
+                        title: tool.rawValue,
+                        color: tool.color,
+                        isSelected: selectedTool == tool,
+                        action: {
+                            withAnimation(.easeInOut(duration: 0.15)) {
+                                selectedTool = tool
+                            }
+                        }
+                    )
+                }
+            },
+            footer: {
+                Rectangle()
+                    .fill(Color.axBorder.opacity(0.25))
+                    .frame(height: 1)
+                    .padding(.horizontal, 10)
+                Text("Docker Tools v1.0")
+                    .font(.system(size: 9, weight: .medium))
+                    .foregroundColor(.axTextMuted.opacity(0.5))
+                    .padding(.vertical, 10)
             }
-            .padding(.horizontal, 8)
-            .padding(.top, 10)
-            
-            Spacer()
-            
-            // Bottom version tag
-            Rectangle()
-                .fill(Color.axBorder.opacity(0.25))
-                .frame(height: 1)
-                .padding(.horizontal, 10)
-            
-            Text("Docker Tools v1.0")
-                .font(.system(size: 9, weight: .medium))
-                .foregroundColor(.axTextMuted.opacity(0.5))
-                .padding(.vertical, 10)
-        }
-        .frame(width: 200)
-        .frame(maxHeight: .infinity)
-        .background(
-            Color.axSurface.opacity(0.6)
-                .overlay(
-                    HStack {
-                        Spacer()
-                        Rectangle()
-                            .fill(Color.axBorder.opacity(0.2))
-                            .frame(width: 1)
-                    }
-                )
         )
     }
     

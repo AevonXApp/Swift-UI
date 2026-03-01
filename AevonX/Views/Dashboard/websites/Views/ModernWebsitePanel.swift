@@ -93,6 +93,31 @@ enum ModernSidebarItem: String, CaseIterable, Identifiable {
         }
     }
 
+    var color: Color {
+        switch self {
+        case .overview: return .axSuccess
+        case .domainManager: return .cyan
+        case .siteDirectory: return .orange
+        case .serverConfig: return .indigo
+        case .runtimeConfig: return .purple
+        case .sslTls: return .axSuccess
+        case .siteSecurity: return .red
+        case .httpHeaders: return .teal
+        case .cacheManager: return .yellow
+        case .performance: return .pink
+        case .monitoring: return .mint
+        case .quickActions: return .axAccentBlue
+        case .gitSource: return .purple
+        case .urlRewrites: return .orange
+        case .backupRestore: return .indigo
+        case .cloneMigrate: return .cyan
+        case .databaseLink: return .teal
+        case .envVariables: return .yellow
+        case .processManager: return .red
+        case .logs: return .mint
+        }
+    }
+
     func displayName(for runtime: RuntimeType) -> String {
         switch self {
         case .runtimeConfig:
@@ -238,111 +263,91 @@ struct ModernWebsitePanel: View {
     // MARK: - Premium Sidebar
 
     private var premiumSidebar: some View {
-        VStack(spacing: 0) {
-            // Sidebar Header
-            VStack(spacing: AXSpacing.md) {
-                // Back Button
-                HStack {
-                    Button(action: onBack) {
-                        HStack(spacing: AXSpacing.xs) {
-                            Image(systemName: "chevron.left")
-                                .font(.system(size: 11, weight: .bold))
-                            Text("Back")
-                                .font(AXTypography.caption)
-                                .fontWeight(.semibold)
-                        }
-                        .foregroundColor(isHoveringBack ? .white : .axAccentBlue)
-                        .padding(.horizontal, AXSpacing.sm)
-                        .padding(.vertical, AXSpacing.xs)
-                        .background(isHoveringBack ? Color.axAccentBlue : Color.axAccentBlue.opacity(0.1))
-                        .cornerRadius(AXCornerRadius.sm)
-                    }
-                    .buttonStyle(PlainButtonStyle())
-                    .onHover { hovering in
-                        isHoveringBack = hovering
-                    }
-
-                    Spacer()
-                }
-
-                // Site Info Card
-                VStack(alignment: .leading, spacing: AXSpacing.xs) {
+        AXSidebarContainer(
+            width: 260,
+            header: {
+                VStack(spacing: AXSpacing.md) {
+                    // Back Button
                     HStack {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(viewModel.website.name)
-                                .font(AXTypography.subheadline)
-                                .fontWeight(.bold)
-                                .foregroundColor(.axTextPrimary)
-                                .lineLimit(1)
-
-                            Text(viewModel.website.domain)
-                                .font(.system(size: 11))
-                                .foregroundColor(.axTextTertiary)
-                                .lineLimit(1)
+                        Button(action: onBack) {
+                            HStack(spacing: AXSpacing.xs) {
+                                Image(systemName: "chevron.left")
+                                    .font(.system(size: 11, weight: .bold))
+                                Text("Back")
+                                    .font(AXTypography.caption)
+                                    .fontWeight(.semibold)
+                            }
+                            .foregroundColor(isHoveringBack ? .white : .axAccentBlue)
+                            .padding(.horizontal, AXSpacing.sm)
+                            .padding(.vertical, AXSpacing.xs)
+                            .background(isHoveringBack ? Color.axAccentBlue : Color.axAccentBlue.opacity(0.1))
+                            .cornerRadius(AXCornerRadius.sm)
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                        .onHover { hovering in
+                            isHoveringBack = hovering
                         }
 
                         Spacer()
-
-                        statusIndicator
                     }
 
-                    // Quick Stats
-                    HStack(spacing: AXSpacing.md) {
-                        quickStat(icon: "arrow.up.arrow.down", value: viewModel.website.formattedBandwidth, color: .axAccentBlue)
-                        quickStat(icon: "internaldrive", value: viewModel.website.formattedDiskUsage, color: .axSuccess)
-                    }
-                    .padding(.top, AXSpacing.xs)
-                }
-                .padding(AXSpacing.md)
-                .background(
-                    RoundedRectangle(cornerRadius: AXCornerRadius.lg)
-                        .fill(Color.axBackground)
-                        .shadow(color: Color.black.opacity(0.05), radius: 2, x: 0, y: 1)
-                )
-            }
-            .padding(AXSpacing.lg)
+                    // Site Info Card
+                    VStack(alignment: .leading, spacing: AXSpacing.xs) {
+                        HStack {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(viewModel.website.name)
+                                    .font(AXTypography.subheadline)
+                                    .fontWeight(.bold)
+                                    .foregroundColor(.axTextPrimary)
+                                    .lineLimit(1)
 
-            Divider()
-                .background(Color.axBorder.opacity(0.3))
+                                Text(viewModel.website.domain)
+                                    .font(.system(size: 11))
+                                    .foregroundColor(.axTextTertiary)
+                                    .lineLimit(1)
+                            }
 
-            // Navigation Items
-            ScrollView(showsIndicators: false) {
-                VStack(spacing: AXSpacing.xxs) {
-                    ForEach(ModernSidebarItem.categorizedItems(for: viewModel.website.runtime), id: \.0) { category, items in
-                        SidebarCategoryHeader(title: category.rawValue, icon: category.icon)
-                        ForEach(items) { item in
-                            PremiumSidebarButton(
-                                item: item,
-                                runtime: viewModel.website.runtime,
-                                isSelected: selectedItem == item,
-                                action: {
-                                    withAnimation(.easeInOut(duration: 0.2)) {
-                                        selectedItem = item
-                                    }
-                                }
-                            )
+                            Spacer()
+
+                            statusIndicator
                         }
+
+                        HStack(spacing: AXSpacing.md) {
+                            quickStat(icon: "arrow.up.arrow.down", value: viewModel.website.formattedBandwidth, color: .axAccentBlue)
+                            quickStat(icon: "internaldrive", value: viewModel.website.formattedDiskUsage, color: .axSuccess)
+                        }
+                        .padding(.top, AXSpacing.xs)
+                    }
+                    .padding(AXSpacing.md)
+                    .background(
+                        RoundedRectangle(cornerRadius: AXCornerRadius.lg)
+                            .fill(Color.axBackground)
+                            .shadow(color: Color.black.opacity(0.05), radius: 2, x: 0, y: 1)
+                    )
+                }
+                .padding(AXSpacing.lg)
+            },
+            items: {
+                ForEach(ModernSidebarItem.categorizedItems(for: viewModel.website.runtime), id: \.0) { category, items in
+                    AXSidebarCategoryHeader(title: category.rawValue, icon: category.icon)
+                    ForEach(items) { item in
+                        AXSidebarRow(
+                            icon: item.icon(for: viewModel.website.runtime),
+                            title: item.displayName(for: viewModel.website.runtime),
+                            color: item.color,
+                            isSelected: selectedItem == item,
+                            action: {
+                                withAnimation(.easeInOut(duration: 0.2)) {
+                                    selectedItem = item
+                                }
+                            }
+                        )
                     }
                 }
-                .padding(.horizontal, AXSpacing.md)
-                .padding(.vertical, AXSpacing.lg)
+            },
+            footer: {
+                sidebarFooter
             }
-
-            Spacer()
-
-            // Sidebar Footer
-            sidebarFooter
-        }
-        .frame(width: 260)
-        .background(
-            LinearGradient(
-                gradient: Gradient(colors: [
-                    Color.axSurface,
-                    Color.axSurface.opacity(0.98)
-                ]),
-                startPoint: .top,
-                endPoint: .bottom
-            )
         )
     }
 

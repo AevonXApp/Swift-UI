@@ -9,13 +9,24 @@
 import SwiftUI
 import AevonXCore
 
+private struct IndexedAttack: Identifiable {
+    let id: Int; let src: AttackSource
+    init(_ i: Int, _ s: AttackSource) { self.id = i; self.src = s }
+}
+
 struct GeoIPSection: View {
     let serverId: String
 
     @State private var isLoading = true
     @State private var attackSources: [AttackSource] = []
+    @State private var searchText = ""
 
     private let securityManager = SecurityManager.shared
+
+    private var filteredSources: [AttackSource] {
+        if searchText.isEmpty { return attackSources }
+        return attackSources.filter { $0.ip.localizedCaseInsensitiveContains(searchText) }
+    }
 
     var body: some View {
         ScrollView(showsIndicators: false) {
@@ -27,45 +38,41 @@ struct GeoIPSection: View {
                     Spacer()
                 }
 
+                // Search
+                AXSearchBar(text: $searchText, placeholder: "Search IP addresses…")
+
                 // Attack Sources Table
-                AXCard(padding: 0) {
-                    VStack(spacing: 0) {
-                        HStack {
-                            AXSectionTitle(title: "Top Attack Sources", icon: "map.fill", iconColor: .axError)
-                            AXRefreshButton(isLoading: isLoading) {
-                                Task { await loadData() }
-                            }
-                        }
-                        .padding(.horizontal, AXSpacing.lg)
-                        .padding(.vertical, AXSpacing.md)
-
-                        Divider().background(Color.axBorder)
-
-                        if isLoading {
-                            AXLoadingState(message: "Analyzing login sources…", style: .inline)
-                        } else if attackSources.isEmpty {
-                            AXPlaceholder(
-                                icon: "checkmark.shield.fill",
-                                title: "No failed login attempts detected"
-                            )
-                        } else {
-                            ForEach(Array(attackSources.enumerated()), id: \.offset) { index, source in
-                                HStack {
-                                    Text(source.ip)
-                                        .font(.system(size: 12, weight: .medium, design: .monospaced))
-                                        .foregroundColor(.axTextPrimary)
-                                    Spacer()
-                                    AXBadge(
-                                        text: "\(source.count) attempts",
-                                        color: source.count > 50 ? .axError : .axWarning,
-                                        style: .filled
-                                    )
-                                }
-                                .padding(.horizontal, AXSpacing.lg)
-                                .padding(.vertical, AXSpacing.sm)
-                                .background(index % 2 == 0 ? Color.clear : Color.axSurface.opacity(0.3))
-                            }
-                        }
+                AXDataTable(
+                    title: "Top Attack Sources",
+                    icon: "map.fill",
+                    iconColor: .axError,
+                    accentColor: .axError,
+                    badgeText: "\(attackSources.count) sources",
+                    columns: [
+                        AXDataColumn(title: "IP Address", width: nil),
+                        AXDataColumn(title: "Attempts", width: 120, alignment: .trailing),
+                    ],
+                    items: filteredSources.enumerated().map { IndexedAttack($0.offset, $0.element) },
+                    totalCount: attackSources.count,
+                    isLoading: isLoading,
+                    emptyIcon: "checkmark.shield.fill",
+                    emptyTitle: "No failed login attempts detected"
+                ) { item, _ in
+                    HStack(spacing: 0) {
+                        Text(item.src.ip)
+                            .font(.system(size: 12, weight: .medium, design: .monospaced))
+                            .foregroundColor(.axTextPrimary)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        AXBadge(
+                            text: "\(item.src.count) attempts",
+                            color: item.src.count > 50 ? .axError : .axWarning,
+                            style: .filled
+                        )
+                        .frame(width: 120, alignment: .trailing)
+                    }
+                } trailingContent: {
+                    AXRefreshButton(isLoading: isLoading) {
+                        Task { await loadData() }
                     }
                 }
             }
@@ -73,8 +80,6 @@ struct GeoIPSection: View {
         }
         .task { await loadData() }
     }
-
-
 
     private func loadData() async {
         isLoading = true

@@ -9,6 +9,12 @@
 import SwiftUI
 import AevonXCore
 
+private struct FileItem: Identifiable {
+    let id: Int
+    let path: String
+    init(index: Int, path: String) { self.id = index; self.path = path }
+}
+
 struct FileIntegritySection: View {
     let serverId: String
 
@@ -16,8 +22,18 @@ struct FileIntegritySection: View {
     @State private var suidFiles: [String] = []
     @State private var writableFiles: [String] = []
     @State private var selectedTab = 0
+    @State private var searchText = ""
 
     private let securityManager = SecurityManager.shared
+
+    private var currentFiles: [String] {
+        selectedTab == 0 ? suidFiles : writableFiles
+    }
+
+    private var filteredFiles: [String] {
+        if searchText.isEmpty { return currentFiles }
+        return currentFiles.filter { $0.localizedCaseInsensitiveContains(searchText) }
+    }
 
     var body: some View {
         ScrollView(showsIndicators: false) {
@@ -35,44 +51,32 @@ struct FileIntegritySection: View {
                     selected: $selectedTab
                 )
 
+                // Search
+                AXSearchBar(text: $searchText, placeholder: "Search file paths…")
+
                 // Content
-                AXCard(padding: 0) {
-                    VStack(spacing: 0) {
-                        HStack {
-                            AXSectionTitle(
-                                title: selectedTab == 0 ? "SUID/SGID Files" : "World-Writable Files",
-                                icon: selectedTab == 0 ? "lock.open.fill" : "pencil.circle.fill",
-                                iconColor: selectedTab == 0 ? .axWarning : .axError
-                            )
-                            AXRefreshButton(isLoading: isLoading) {
-                                Task { await loadData() }
-                            }
-                        }
-                        .padding(.horizontal, AXSpacing.lg)
-                        .padding(.vertical, AXSpacing.md)
-
-                        Divider().background(Color.axBorder)
-
-                        let currentFiles = selectedTab == 0 ? suidFiles : writableFiles
-
-                        if isLoading {
-                            AXLoadingState(message: "Scanning file system…", style: .inline)
-                        } else if currentFiles.isEmpty {
-                            AXPlaceholder(
-                                icon: "checkmark.shield.fill",
-                                title: "No suspicious files found"
-                            )
-                        } else {
-                            ForEach(Array(currentFiles.enumerated()), id: \.offset) { index, file in
-                                Text(file)
-                                    .font(.system(size: 11, design: .monospaced))
-                                    .foregroundColor(.axTextPrimary)
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                                    .padding(.horizontal, AXSpacing.lg)
-                                    .padding(.vertical, AXSpacing.sm)
-                                    .background(index % 2 == 0 ? Color.clear : Color.axSurface.opacity(0.3))
-                            }
-                        }
+                AXDataTable(
+                    title: selectedTab == 0 ? "SUID/SGID Files" : "World-Writable Files",
+                    icon: selectedTab == 0 ? "lock.open.fill" : "pencil.circle.fill",
+                    iconColor: selectedTab == 0 ? .axWarning : .axError,
+                    accentColor: selectedTab == 0 ? .axWarning : .axError,
+                    badgeText: "\(currentFiles.count) files",
+                    columns: [
+                        AXDataColumn(title: "File Path", width: nil),
+                    ],
+                    items: filteredFiles.enumerated().map { FileItem(index: $0.offset, path: $0.element) },
+                    totalCount: currentFiles.count,
+                    isLoading: isLoading,
+                    emptyIcon: "checkmark.shield.fill",
+                    emptyTitle: "No suspicious files found"
+                ) { file, _ in
+                    Text(file.path)
+                        .font(.system(size: 11, design: .monospaced))
+                        .foregroundColor(.axTextPrimary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                } trailingContent: {
+                    AXRefreshButton(isLoading: isLoading) {
+                        Task { await loadData() }
                     }
                 }
             }
@@ -80,8 +84,6 @@ struct FileIntegritySection: View {
         }
         .task { await loadData() }
     }
-
-
 
     // MARK: - Data (from Core)
 

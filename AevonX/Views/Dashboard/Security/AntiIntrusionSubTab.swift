@@ -18,6 +18,7 @@ struct AntiIntrusionSubTab: View {
     @State private var jailList: [String] = []
     @State private var jailDetails: [(jail: String, currentlyBanned: Int, totalBanned: Int, bannedIPs: [String])] = []
     @State private var isInstalling = false
+    @State private var searchText = ""
 
     private let securityManager = SecurityManager.shared
 
@@ -197,82 +198,131 @@ struct AntiIntrusionSubTab: View {
 
     // MARK: - Jails
 
+    private func filteredIPs(_ ips: [String]) -> [String] {
+        if searchText.isEmpty { return ips }
+        return ips.filter { $0.localizedCaseInsensitiveContains(searchText) }
+    }
+
     private var jailsCard: some View {
-        ForEach(jailDetails, id: \.jail) { detail in
-            AXCard(padding: 0) {
-                VStack(spacing: 0) {
-                    // Jail header
-                    HStack {
-                        AXSectionTitle(title: "Jail: \(detail.jail)", icon: "lock.shield.fill")
+        VStack(spacing: AXSpacing.xl) {
+            // Search bar
+            AXSearchBar(text: $searchText, placeholder: "Search banned IPs…")
 
-                        Spacer()
+            ForEach(jailDetails, id: \.jail) { detail in
+                let filtered = filteredIPs(detail.bannedIPs)
 
-                        HStack(spacing: AXSpacing.lg) {
-                            HStack(spacing: AXSpacing.xs) {
-                                Text("Currently:")
-                                    .font(AXTypography.caption)
-                                    .foregroundColor(.axTextMuted)
-                                Text("\(detail.currentlyBanned)")
-                                    .font(.system(size: 13, weight: .bold, design: .rounded))
-                                    .foregroundColor(.axError)
-                            }
-                            HStack(spacing: AXSpacing.xs) {
-                                Text("Total:")
-                                    .font(AXTypography.caption)
-                                    .foregroundColor(.axTextMuted)
-                                Text("\(detail.totalBanned)")
-                                    .font(.system(size: 13, weight: .bold, design: .rounded))
-                                    .foregroundColor(.axWarning)
-                            }
-                        }
-                    }
-                    .padding(AXSpacing.lg)
+                AXCard(padding: 0) {
+                    VStack(spacing: 0) {
+                        // Jail header
+                        HStack {
+                            AXSectionTitle(title: "Jail: \(detail.jail)", icon: "lock.shield.fill")
 
-                    Divider().background(Color.axBorder)
+                            Spacer()
 
-                    if detail.bannedIPs.isEmpty {
-                        AXPlaceholder(
-                            icon: "checkmark.circle.fill",
-                            title: "No IPs currently banned in this jail",
-                            iconColor: .axSuccess,
-                            iconSize: 20
-                        )
-                    } else {
-                        // IP list
-                        HStack(spacing: 0) {
-                            Text("IP Address").frame(maxWidth: .infinity, alignment: .leading)
-                            Text("Action").frame(width: 100, alignment: .center)
-                        }
-                        .font(AXTypography.caption)
-                        .fontWeight(.semibold)
-                        .foregroundColor(.axTextMuted)
-                        .padding(.horizontal, AXSpacing.lg)
-                        .padding(.vertical, AXSpacing.sm)
-                        .background(Color.axBackgroundTertiary.opacity(0.5))
-
-                        ForEach(Array(detail.bannedIPs.enumerated()), id: \.element) { index, ip in
-                            HStack(spacing: 0) {
-                                Text(ip)
-                                    .font(.system(size: 12, weight: .medium, design: .monospaced))
-                                    .foregroundColor(.axError)
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-
-                                Button(action: {
-                                    Task {
-                                        let _ = await securityManager.fail2banUnban(ip: ip, jail: detail.jail, serverId: serverId)
-                                        await loadData()
-                                    }
-                                }) {
-                                    Text("Unban")
+                            HStack(spacing: AXSpacing.lg) {
+                                HStack(spacing: AXSpacing.xs) {
+                                    Text("Currently:")
                                         .font(AXTypography.caption)
-                                        .foregroundColor(.axAccentBlue)
+                                        .foregroundColor(.axTextMuted)
+                                    Text("\(detail.currentlyBanned)")
+                                        .font(.system(size: 13, weight: .bold, design: .rounded))
+                                        .foregroundColor(.axError)
                                 }
-                                .buttonStyle(PlainButtonStyle())
-                                .frame(width: 100, alignment: .center)
+                                HStack(spacing: AXSpacing.xs) {
+                                    Text("Total:")
+                                        .font(AXTypography.caption)
+                                        .foregroundColor(.axTextMuted)
+                                    Text("\(detail.totalBanned)")
+                                        .font(.system(size: 13, weight: .bold, design: .rounded))
+                                        .foregroundColor(.axWarning)
+                                }
                             }
+                        }
+                        .padding(AXSpacing.lg)
+
+                        Divider().background(Color.axBorder)
+
+                        if detail.bannedIPs.isEmpty {
+                            AXPlaceholder(
+                                icon: "checkmark.circle.fill",
+                                title: "No IPs currently banned in this jail",
+                                iconColor: .axSuccess,
+                                iconSize: 20
+                            )
+                        } else if filtered.isEmpty {
+                            AXPlaceholder(
+                                icon: "magnifyingglass",
+                                title: "No IPs match \"\(searchText)\""
+                            )
+                        } else {
+                            // Status bar
+                            if !searchText.isEmpty {
+                                HStack {
+                                    Text("Showing \(filtered.count) of \(detail.bannedIPs.count)")
+                                        .font(.system(size: 10))
+                                        .foregroundColor(.axTextMuted)
+                                    Spacer()
+                                }
+                                .padding(.horizontal, AXSpacing.lg)
+                                .padding(.vertical, AXSpacing.xs)
+                                .background(Color.axBackgroundTertiary.opacity(0.3))
+                            }
+
+                            // Table header
+                            HStack(spacing: 0) {
+                                Text("IP Address").frame(maxWidth: .infinity, alignment: .leading)
+                                Text("Action").frame(width: 120, alignment: .center)
+                            }
+                            .font(AXTypography.caption)
+                            .fontWeight(.semibold)
+                            .foregroundColor(.axTextMuted)
                             .padding(.horizontal, AXSpacing.lg)
                             .padding(.vertical, AXSpacing.sm)
-                            .background(index % 2 == 0 ? Color.clear : Color.axSurface.opacity(0.3))
+                            .background(Color.axBackgroundTertiary.opacity(0.5))
+
+                            ForEach(Array(filtered.enumerated()), id: \.element) { index, ip in
+                                HStack(spacing: 0) {
+                                    HStack(spacing: AXSpacing.sm) {
+                                        Circle()
+                                            .fill(Color.axError)
+                                            .frame(width: 6, height: 6)
+                                        Text(ip)
+                                            .font(.system(size: 12, weight: .medium, design: .monospaced))
+                                            .foregroundColor(.axError)
+                                    }
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                                    Button(action: {
+                                        Task {
+                                            let _ = await securityManager.fail2banUnban(ip: ip, jail: detail.jail, serverId: serverId)
+                                            await loadData()
+                                        }
+                                    }) {
+                                        HStack(spacing: AXSpacing.xxs) {
+                                            Image(systemName: "trash")
+                                                .font(.system(size: 10))
+                                            Text("Remove")
+                                                .font(.system(size: 11, weight: .medium))
+                                        }
+                                        .foregroundColor(.axError)
+                                        .padding(.horizontal, AXSpacing.sm)
+                                        .padding(.vertical, AXSpacing.xxxs)
+                                        .background(
+                                            RoundedRectangle(cornerRadius: AXCornerRadius.sm)
+                                                .fill(Color.axError.opacity(0.08))
+                                                .overlay(
+                                                    RoundedRectangle(cornerRadius: AXCornerRadius.sm)
+                                                        .stroke(Color.axError.opacity(0.2), lineWidth: 1)
+                                                )
+                                        )
+                                    }
+                                    .buttonStyle(PlainButtonStyle())
+                                    .frame(width: 120, alignment: .center)
+                                }
+                                .padding(.horizontal, AXSpacing.lg)
+                                .padding(.vertical, AXSpacing.sm)
+                                .background(index % 2 == 0 ? Color.clear : Color.axSurface.opacity(0.3))
+                            }
                         }
                     }
                 }

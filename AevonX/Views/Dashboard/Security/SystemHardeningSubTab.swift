@@ -57,14 +57,23 @@ struct SystemHardeningSubTab: View {
     @State private var checks: [HardeningCheck] = []
     @State private var isLoading = true
     @State private var selectedCategory: HardeningCheck.Category? = nil
+    @State private var searchText = ""
 
     private let securityManager = SecurityManager.shared
 
     private var filteredChecks: [HardeningCheck] {
+        var result = checks
         if let cat = selectedCategory {
-            return checks.filter { $0.category == cat }
+            result = result.filter { $0.category == cat }
         }
-        return checks
+        if !searchText.isEmpty {
+            result = result.filter {
+                $0.label.localizedCaseInsensitiveContains(searchText) ||
+                $0.description.localizedCaseInsensitiveContains(searchText) ||
+                $0.currentValue.localizedCaseInsensitiveContains(searchText)
+            }
+        }
+        return result
     }
 
     private var complianceScore: Int {
@@ -82,6 +91,9 @@ struct SystemHardeningSubTab: View {
             VStack(spacing: AXSpacing.xl) {
                 complianceCard
                 categoryFilter
+
+                // Search
+                AXSearchBar(text: $searchText, placeholder: "Search hardening checks…")
 
                 if isLoading {
                     loadingView

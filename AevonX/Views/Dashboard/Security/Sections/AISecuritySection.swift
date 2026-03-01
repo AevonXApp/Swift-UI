@@ -9,6 +9,23 @@
 import SwiftUI
 import AevonXCore
 
+private struct ConfigItem: Identifiable {
+    let id: Int
+    let setting: String
+    let current: String
+    let recommended: String
+    let risk: String
+    init(index: Int, setting: String, current: String, recommended: String, risk: String) {
+        self.id = index; self.setting = setting; self.current = current
+        self.recommended = recommended; self.risk = risk
+    }
+}
+
+private struct IndexedAttacker: Identifiable {
+    let id: Int; let attacker: AttackSource
+    init(_ i: Int, _ a: AttackSource) { self.id = i; self.attacker = a }
+}
+
 struct AISecuritySection: View {
     let serverId: String
 
@@ -136,67 +153,53 @@ struct AISecuritySection: View {
 
                 // Top Attackers Table
                 if !data.topAttackers.isEmpty {
-                    AXCard(padding: 0) {
-                        VStack(spacing: 0) {
-                            AXSectionTitle(title: "Top Attack Sources", icon: "exclamationmark.triangle.fill", iconColor: .axError) {
-                                AXBadge(text: "\(data.topAttackers.count) sources", color: .axTextMuted, style: .soft)
+                    AXDataTable(
+                        title: "Top Attack Sources",
+                        icon: "exclamationmark.triangle.fill",
+                        iconColor: .axError,
+                        accentColor: .axError,
+                        badgeText: "\(data.topAttackers.count) sources",
+                        columns: [
+                            AXDataColumn(title: "#", width: 30),
+                            AXDataColumn(title: "IP Address", width: nil),
+                            AXDataColumn(title: "Attempts", width: 100, alignment: .trailing),
+                            AXDataColumn(title: "Severity", width: 80, alignment: .center),
+                        ],
+                        items: data.topAttackers.prefix(10).enumerated().map { IndexedAttacker($0.offset, $0.element) },
+                        pageSize: 10,
+                        emptyIcon: "shield.checkered",
+                        emptyTitle: "No attack sources detected"
+                    ) { item, index in
+                        HStack(spacing: 0) {
+                            Text("\(index + 1)")
+                                .font(.system(size: 11))
+                                .foregroundColor(.axTextMuted)
+                                .frame(width: 30, alignment: .leading)
+
+                            HStack(spacing: AXSpacing.sm) {
+                                Circle()
+                                    .fill(attackerColor(item.attacker.count))
+                                    .frame(width: 6, height: 6)
+                                Text(item.attacker.ip)
+                                    .font(.system(size: 12, weight: .medium, design: .monospaced))
+                                    .foregroundColor(.axTextPrimary)
                             }
-                            .padding(AXSpacing.lg)
+                            .frame(maxWidth: .infinity, alignment: .leading)
 
-                            Divider().background(Color.axBorder)
+                            Text(formatNumber(item.attacker.count))
+                                .font(.system(size: 12, weight: .bold, design: .rounded))
+                                .foregroundColor(attackerColor(item.attacker.count))
+                                .frame(width: 100, alignment: .trailing)
 
-                            // Table header
-                            HStack(spacing: 0) {
-                                Text("#").frame(width: 30, alignment: .leading)
-                                Text("IP Address").frame(maxWidth: .infinity, alignment: .leading)
-                                Text("Attempts").frame(width: 100, alignment: .trailing)
-                                Text("Severity").frame(width: 80, alignment: .center)
-                            }
-                            .font(AXTypography.caption)
-                            .fontWeight(.semibold)
-                            .foregroundColor(.axTextMuted)
-                            .padding(.horizontal, AXSpacing.lg)
-                            .padding(.vertical, AXSpacing.sm)
-                            .background(Color.axBackgroundTertiary.opacity(0.5))
-
-                            Divider().background(Color.axBorder)
-
-                            ForEach(Array(data.topAttackers.prefix(10).enumerated()), id: \.offset) { index, attacker in
-                                HStack(spacing: 0) {
-                                    Text("\(index + 1)")
-                                        .font(.system(size: 11))
-                                        .foregroundColor(.axTextMuted)
-                                        .frame(width: 30, alignment: .leading)
-
-                                    HStack(spacing: AXSpacing.sm) {
-                                        Circle()
-                                            .fill(attackerColor(attacker.count))
-                                            .frame(width: 6, height: 6)
-                                        Text(attacker.ip)
-                                            .font(.system(size: 12, weight: .medium, design: .monospaced))
-                                            .foregroundColor(.axTextPrimary)
-                                    }
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-
-                                    Text(formatNumber(attacker.count))
-                                        .font(.system(size: 12, weight: .bold, design: .rounded))
-                                        .foregroundColor(attackerColor(attacker.count))
-                                        .frame(width: 100, alignment: .trailing)
-
-                                    Text(attackerSeverity(attacker.count))
-                                        .font(.system(size: 10, weight: .semibold))
-                                        .foregroundColor(attackerColor(attacker.count))
-                                        .padding(.horizontal, AXSpacing.xs)
-                                        .padding(.vertical, 2)
-                                        .background(
-                                            Capsule().fill(attackerColor(attacker.count).opacity(0.1))
-                                        )
-                                        .frame(width: 80, alignment: .center)
-                                }
-                                .padding(.horizontal, AXSpacing.lg)
-                                .padding(.vertical, AXSpacing.sm)
-                                .background(index % 2 == 0 ? Color.clear : Color.axSurface.opacity(0.3))
-                            }
+                            Text(attackerSeverity(item.attacker.count))
+                                .font(.system(size: 10, weight: .semibold))
+                                .foregroundColor(attackerColor(item.attacker.count))
+                                .padding(.horizontal, AXSpacing.xs)
+                                .padding(.vertical, 2)
+                                .background(
+                                    Capsule().fill(attackerColor(item.attacker.count).opacity(0.1))
+                                )
+                                .frame(width: 80, alignment: .center)
                         }
                     }
                 }
@@ -275,72 +278,46 @@ struct AISecuritySection: View {
     // MARK: - Config Audit
 
     private var configAuditView: some View {
-        AXCard(padding: 0) {
-            VStack(spacing: 0) {
-                HStack {
-                    AXSectionTitle(title: "Configuration Audit", icon: "gearshape.fill")
-                    if !configIssues.isEmpty {
-                        AXBadge(text: "\(configIssues.count) issues", color: .axWarning, style: .filled)
-                    }
-                }
-                .padding(AXSpacing.lg)
+        AXDataTable(
+            title: "Configuration Audit",
+            icon: "gearshape.fill",
+            accentColor: .axWarning,
+            badgeText: configIssues.isEmpty ? nil : "\(configIssues.count) issues",
+            columns: [
+                AXDataColumn(title: "Setting", width: nil),
+                AXDataColumn(title: "Current", width: 120, alignment: .center),
+                AXDataColumn(title: "Recommended", width: 140, alignment: .center),
+                AXDataColumn(title: "Risk", width: 70, alignment: .center),
+            ],
+            items: configIssues.enumerated().map { ConfigItem(index: $0.offset, setting: $0.element.setting, current: $0.element.current, recommended: $0.element.recommended, risk: $0.element.risk) },
+            emptyIcon: "doc.text.magnifyingglass",
+            emptyTitle: "Run analysis to audit server configuration"
+        ) { issue, _ in
+            HStack(spacing: 0) {
+                Text(issue.setting)
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(.axTextPrimary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
 
-                Divider().background(Color.axBorder)
+                Text(issue.current)
+                    .font(.system(size: 11, design: .monospaced))
+                    .foregroundColor(.axError)
+                    .frame(width: 120, alignment: .center)
 
-                if configIssues.isEmpty {
-                    AXPlaceholder(
-                        icon: "doc.text.magnifyingglass",
-                        title: "Run analysis to audit server configuration"
+                Text(issue.recommended)
+                    .font(.system(size: 11, design: .monospaced))
+                    .foregroundColor(.axSuccess)
+                    .frame(width: 140, alignment: .center)
+
+                Text(issue.risk)
+                    .font(.system(size: 10, weight: .bold))
+                    .foregroundColor(issue.risk == "HIGH" ? .axError : .axWarning)
+                    .padding(.horizontal, AXSpacing.xs)
+                    .padding(.vertical, 2)
+                    .background(
+                        Capsule().fill((issue.risk == "HIGH" ? Color.axError : Color.axWarning).opacity(0.1))
                     )
-                } else {
-                    // Table header
-                    HStack(spacing: 0) {
-                        Text("Setting").frame(maxWidth: .infinity, alignment: .leading)
-                        Text("Current").frame(width: 120, alignment: .center)
-                        Text("Recommended").frame(width: 140, alignment: .center)
-                        Text("Risk").frame(width: 70, alignment: .center)
-                    }
-                    .font(AXTypography.caption)
-                    .fontWeight(.semibold)
-                    .foregroundColor(.axTextMuted)
-                    .padding(.horizontal, AXSpacing.lg)
-                    .padding(.vertical, AXSpacing.sm)
-                    .background(Color.axBackgroundTertiary.opacity(0.5))
-
-                    Divider().background(Color.axBorder)
-
-                    ForEach(Array(configIssues.enumerated()), id: \.offset) { index, issue in
-                        HStack(spacing: 0) {
-                            Text(issue.setting)
-                                .font(.system(size: 12, weight: .medium))
-                                .foregroundColor(.axTextPrimary)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-
-                            Text(issue.current)
-                                .font(.system(size: 11, design: .monospaced))
-                                .foregroundColor(.axError)
-                                .frame(width: 120, alignment: .center)
-
-                            Text(issue.recommended)
-                                .font(.system(size: 11, design: .monospaced))
-                                .foregroundColor(.axSuccess)
-                                .frame(width: 140, alignment: .center)
-
-                            Text(issue.risk)
-                                .font(.system(size: 10, weight: .bold))
-                                .foregroundColor(issue.risk == "HIGH" ? .axError : .axWarning)
-                                .padding(.horizontal, AXSpacing.xs)
-                                .padding(.vertical, 2)
-                                .background(
-                                    Capsule().fill((issue.risk == "HIGH" ? Color.axError : Color.axWarning).opacity(0.1))
-                                )
-                                .frame(width: 70, alignment: .center)
-                        }
-                        .padding(.horizontal, AXSpacing.lg)
-                        .padding(.vertical, AXSpacing.md)
-                        .background(index % 2 == 0 ? Color.clear : Color.axSurface.opacity(0.3))
-                    }
-                }
+                    .frame(width: 70, alignment: .center)
             }
         }
     }

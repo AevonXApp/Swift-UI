@@ -9,6 +9,12 @@
 import SwiftUI
 import AevonXCore
 
+private struct IndexedUser: Identifiable {
+    let id: Int
+    let user: SystemUser
+    init(_ i: Int, _ u: SystemUser) { self.id = i; self.user = u }
+}
+
 struct UsersSection: View {
     let serverId: String
 
@@ -38,76 +44,55 @@ struct UsersSection: View {
                 AXSearchBar(text: $searchText, placeholder: "Search users…")
 
                 // Users Table
-                AXCard(padding: 0) {
-                    VStack(spacing: 0) {
-                        // Header
+                AXDataTable(
+                    title: "System Users",
+                    icon: "person.2.fill",
+                    accentColor: .axAccentBlue,
+                    badgeText: "\(users.count) users",
+                    columns: [
+                        AXDataColumn(title: "User", width: nil),
+                        AXDataColumn(title: "UID", width: 60),
+                        AXDataColumn(title: "Shell", width: 120),
+                        AXDataColumn(title: "Home", width: 150),
+                        AXDataColumn(title: "Sudo", width: 60, alignment: .center),
+                    ],
+                    items: filteredUsers.enumerated().map { IndexedUser($0.offset, $0.element) },
+                    totalCount: users.count,
+                    isLoading: isLoading,
+                    emptyIcon: "person.slash",
+                    emptyTitle: "No users found"
+                ) { item, _ in
+                    HStack(spacing: 0) {
+                        Text(item.user.name)
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(.axTextPrimary)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        Text(item.user.uid)
+                            .font(.system(size: 12, design: .monospaced))
+                            .foregroundColor(.axTextSecondary)
+                            .frame(width: 60, alignment: .leading)
+                        Text(item.user.shell)
+                            .font(.system(size: 11, design: .monospaced))
+                            .foregroundColor(.axTextSecondary)
+                            .frame(width: 120, alignment: .leading)
+                            .lineLimit(1)
+                        Text(item.user.home)
+                            .font(.system(size: 11, design: .monospaced))
+                            .foregroundColor(.axTextSecondary)
+                            .frame(width: 150, alignment: .leading)
+                            .lineLimit(1)
                         HStack {
-                            AXSectionTitle(title: "System Users", icon: "person.2.fill")
-                            AXRefreshButton(isLoading: isLoading) {
-                                Task { await loadUsers() }
+                            if item.user.hasSudo {
+                                Image(systemName: "checkmark.shield.fill")
+                                    .font(.system(size: 12))
+                                    .foregroundColor(.axWarning)
                             }
                         }
-                        .padding(.horizontal, AXSpacing.lg)
-                        .padding(.vertical, AXSpacing.md)
-
-                        Divider().background(Color.axBorder)
-
-                        // Table header row
-                        HStack(spacing: 0) {
-                            Text("User").font(AXTypography.caption).fontWeight(.semibold).foregroundColor(.axTextMuted)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                            Text("UID").font(AXTypography.caption).fontWeight(.semibold).foregroundColor(.axTextMuted)
-                                .frame(width: 60, alignment: .leading)
-                            Text("Shell").font(AXTypography.caption).fontWeight(.semibold).foregroundColor(.axTextMuted)
-                                .frame(width: 120, alignment: .leading)
-                            Text("Home").font(AXTypography.caption).fontWeight(.semibold).foregroundColor(.axTextMuted)
-                                .frame(width: 150, alignment: .leading)
-                            Text("Sudo").font(AXTypography.caption).fontWeight(.semibold).foregroundColor(.axTextMuted)
-                                .frame(width: 60, alignment: .center)
-                        }
-                        .padding(.horizontal, AXSpacing.lg)
-                        .padding(.vertical, AXSpacing.sm)
-                        .background(Color.axBackgroundTertiary.opacity(0.5))
-
-                        Divider().background(Color.axBorder)
-
-                        if isLoading {
-                            AXLoadingState(message: "Loading users…", style: .inline)
-                        } else {
-                            ForEach(Array(filteredUsers.enumerated()), id: \.offset) { index, user in
-                                HStack(spacing: 0) {
-                                    Text(user.name)
-                                        .font(.system(size: 12, weight: .medium))
-                                        .foregroundColor(.axTextPrimary)
-                                        .frame(maxWidth: .infinity, alignment: .leading)
-                                    Text(user.uid)
-                                        .font(.system(size: 12, design: .monospaced))
-                                        .foregroundColor(.axTextSecondary)
-                                        .frame(width: 60, alignment: .leading)
-                                    Text(user.shell)
-                                        .font(.system(size: 11, design: .monospaced))
-                                        .foregroundColor(.axTextSecondary)
-                                        .frame(width: 120, alignment: .leading)
-                                        .lineLimit(1)
-                                    Text(user.home)
-                                        .font(.system(size: 11, design: .monospaced))
-                                        .foregroundColor(.axTextSecondary)
-                                        .frame(width: 150, alignment: .leading)
-                                        .lineLimit(1)
-                                    HStack {
-                                        if user.hasSudo {
-                                            Image(systemName: "checkmark.shield.fill")
-                                                .font(.system(size: 12))
-                                                .foregroundColor(.axWarning)
-                                        }
-                                    }
-                                    .frame(width: 60, alignment: .center)
-                                }
-                                .padding(.horizontal, AXSpacing.lg)
-                                .padding(.vertical, AXSpacing.sm)
-                                .background(index % 2 == 0 ? Color.clear : Color.axSurface.opacity(0.3))
-                            }
-                        }
+                        .frame(width: 60, alignment: .center)
+                    }
+                } trailingContent: {
+                    AXRefreshButton(isLoading: isLoading) {
+                        Task { await loadUsers() }
                     }
                 }
             }

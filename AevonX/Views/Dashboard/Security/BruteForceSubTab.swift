@@ -28,6 +28,8 @@ struct BruteForceSubTab: View {
     @State private var banSearchText = ""
     @State private var banSortAscending = true
     @State private var showUnbanAllConfirm = false
+    @State private var newBanIP = ""
+    @State private var isAddingBan = false
     @State private var ipToUnban: String? = nil
 
     // Phase 2: Whitelist
@@ -482,6 +484,63 @@ struct BruteForceSubTab: View {
 
                 Divider().background(Color.axBorder)
 
+                // Ban IP row
+                HStack(spacing: AXSpacing.md) {
+                    HStack(spacing: AXSpacing.sm) {
+                        Image(systemName: "nosign")
+                            .font(.system(size: 12))
+                            .foregroundColor(.axError)
+                        TextField("Enter IP to ban (e.g. 192.168.1.100)", text: $newBanIP)
+                            .font(.system(size: 12, design: .monospaced))
+                            .textFieldStyle(.plain)
+                    }
+                    .padding(.horizontal, AXSpacing.md)
+                    .padding(.vertical, AXSpacing.sm)
+                    .background(
+                        RoundedRectangle(cornerRadius: AXCornerRadius.md)
+                            .fill(Color.axBackgroundTertiary.opacity(0.5))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: AXCornerRadius.md)
+                                    .stroke(Color.axBorder.opacity(0.5), lineWidth: 1)
+                            )
+                    )
+
+                    Button(action: {
+                        guard !newBanIP.isEmpty else { return }
+                        Task {
+                            isAddingBan = true
+                            let _ = await securityManager.fail2banBanIP(ip: newBanIP, jail: "sshd", serverId: serverId)
+                            await MainActor.run { newBanIP = "" }
+                            isAddingBan = false
+                            await loadData()
+                        }
+                    }) {
+                        HStack(spacing: AXSpacing.xxs) {
+                            if isAddingBan {
+                                ProgressView().scaleEffect(0.6)
+                            } else {
+                                Image(systemName: "plus")
+                                    .font(.system(size: 11, weight: .semibold))
+                            }
+                            Text("Ban")
+                                .font(.system(size: 11, weight: .semibold))
+                        }
+                        .foregroundColor(.white)
+                        .padding(.horizontal, AXSpacing.lg)
+                        .padding(.vertical, AXSpacing.sm)
+                        .background(
+                            RoundedRectangle(cornerRadius: AXCornerRadius.md)
+                                .fill(newBanIP.isEmpty ? Color.axTextMuted : Color.axError)
+                        )
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    .disabled(newBanIP.isEmpty || isAddingBan)
+                }
+                .padding(.horizontal, AXSpacing.lg)
+                .padding(.vertical, AXSpacing.md)
+
+                Divider().background(Color.axBorder)
+
                 if bannedIPs.isEmpty {
                     AXPlaceholder(
                         icon: "checkmark.shield.fill",
@@ -522,17 +581,21 @@ struct BruteForceSubTab: View {
 
                             Button(action: { ipToUnban = ip }) {
                                 HStack(spacing: AXSpacing.xxs) {
-                                    Image(systemName: "lock.open.fill")
+                                    Image(systemName: "trash")
                                         .font(.system(size: 10))
-                                    Text("Unban")
+                                    Text("Remove")
                                         .font(.system(size: 11, weight: .medium))
                                 }
-                                .foregroundColor(.white)
-                                .padding(.horizontal, AXSpacing.md)
+                                .foregroundColor(.axError)
+                                .padding(.horizontal, AXSpacing.sm)
                                 .padding(.vertical, AXSpacing.xxxs)
                                 .background(
                                     RoundedRectangle(cornerRadius: AXCornerRadius.sm)
-                                        .fill(Color.axError.opacity(0.85))
+                                        .fill(Color.axError.opacity(0.08))
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: AXCornerRadius.sm)
+                                                .stroke(Color.axError.opacity(0.2), lineWidth: 1)
+                                        )
                                 )
                             }
                             .buttonStyle(PlainButtonStyle())

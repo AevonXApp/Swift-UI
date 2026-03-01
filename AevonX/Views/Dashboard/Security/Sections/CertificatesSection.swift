@@ -9,14 +9,29 @@
 import SwiftUI
 import AevonXCore
 
+private struct IndexedCert: Identifiable {
+    let id: Int
+    let cert: CertificateInfo
+    init(_ i: Int, _ c: CertificateInfo) { self.id = i; self.cert = c }
+}
+
 struct CertificatesSection: View {
     let serverId: String
 
     @State private var isLoading = true
     @State private var certificates: [CertificateInfo] = []
     @State private var tlsVersion = "Unknown"
+    @State private var searchText = ""
 
     private let securityManager = SecurityManager.shared
+
+    private var filteredCerts: [CertificateInfo] {
+        if searchText.isEmpty { return certificates }
+        return certificates.filter {
+            $0.domain.localizedCaseInsensitiveContains(searchText) ||
+            $0.issuer.localizedCaseInsensitiveContains(searchText)
+        }
+    }
 
     var body: some View {
         ScrollView(showsIndicators: false) {
@@ -27,77 +42,46 @@ struct CertificatesSection: View {
                     Spacer()
                 }
 
-                AXCard(padding: 0) {
-                    VStack(spacing: 0) {
-                        HStack {
-                            HStack(spacing: AXSpacing.sm) {
-                                Image(systemName: "lock.fill").font(.system(size: 14)).foregroundColor(.axAccentBlue)
-                                Text("SSL Certificates").font(AXTypography.title3).foregroundColor(.axTextPrimary)
-                            }
-                            Spacer()
-                            Button(action: { Task { await loadCertData() } }) {
-                                HStack(spacing: AXSpacing.xs) {
-                                    Image(systemName: "arrow.clockwise").font(.system(size: 11))
-                                    Text("Refresh").font(.system(size: 12, weight: .semibold))
-                                }
-                                .foregroundColor(.axTextSecondary)
-                                .padding(.horizontal, AXSpacing.md)
-                                .padding(.vertical, AXSpacing.sm)
-                                .background(Color.axSurface)
-                                .cornerRadius(AXCornerRadius.md)
-                                .overlay(RoundedRectangle(cornerRadius: AXCornerRadius.md).stroke(Color.axBorder, lineWidth: 1))
-                            }
-                            .buttonStyle(PlainButtonStyle())
-                        }
-                        .padding(.horizontal, AXSpacing.lg)
-                        .padding(.vertical, AXSpacing.md)
+                // Search
+                AXSearchBar(text: $searchText, placeholder: "Search domains, issuers…")
 
-                        Divider().background(Color.axBorder)
-
-                        HStack(spacing: 0) {
-                            Text("Domain").font(AXTypography.caption).fontWeight(.semibold).foregroundColor(.axTextMuted)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                            Text("Issuer").font(AXTypography.caption).fontWeight(.semibold).foregroundColor(.axTextMuted)
-                                .frame(width: 150, alignment: .leading)
-                            Text("Expiry").font(AXTypography.caption).fontWeight(.semibold).foregroundColor(.axTextMuted)
-                                .frame(width: 120, alignment: .leading)
-                            Text("Status").font(AXTypography.caption).fontWeight(.semibold).foregroundColor(.axTextMuted)
-                                .frame(width: 100, alignment: .center)
-                        }
-                        .padding(.horizontal, AXSpacing.lg)
-                        .padding(.vertical, AXSpacing.sm)
-                        .background(Color.axBackgroundTertiary.opacity(0.5))
-
-                        Divider().background(Color.axBorder)
-
-                        if isLoading {
-                            VStack(spacing: AXSpacing.md) {
-                                ProgressView()
-                                Text("Checking certificates…").font(AXTypography.body).foregroundColor(.axTextMuted)
-                            }
-                            .frame(maxWidth: .infinity).padding(.vertical, AXSpacing.xxxl)
-                        } else if certificates.isEmpty {
-                            VStack(spacing: AXSpacing.md) {
-                                Image(systemName: "lock.open").font(.system(size: 28)).foregroundColor(.axTextMuted)
-                                Text("No SSL certificates found").font(AXTypography.body).foregroundColor(.axTextMuted)
-                            }
-                            .frame(maxWidth: .infinity).padding(.vertical, AXSpacing.xxxl)
-                        } else {
-                            ForEach(Array(certificates.enumerated()), id: \.offset) { index, cert in
-                                HStack(spacing: 0) {
-                                    Text(cert.domain).font(.system(size: 12, weight: .medium)).foregroundColor(.axTextPrimary)
-                                        .frame(maxWidth: .infinity, alignment: .leading)
-                                    Text(cert.issuer).font(.system(size: 11)).foregroundColor(.axTextSecondary)
-                                        .frame(width: 150, alignment: .leading).lineLimit(1)
-                                    Text(cert.expiry).font(.system(size: 11, design: .monospaced)).foregroundColor(.axTextSecondary)
-                                        .frame(width: 120, alignment: .leading)
-                                    certStatusBadge(daysLeft: cert.daysLeft).frame(width: 100, alignment: .center)
-                                }
-                                .padding(.horizontal, AXSpacing.lg)
-                                .padding(.vertical, AXSpacing.sm)
-                                .background(index % 2 == 0 ? Color.clear : Color.axSurface.opacity(0.3))
-                            }
-                        }
+                AXDataTable(
+                    title: "SSL Certificates",
+                    icon: "lock.fill",
+                    accentColor: .axAccentBlue,
+                    badgeText: "\(certificates.count) certificates",
+                    columns: [
+                        AXDataColumn(title: "Domain", width: nil),
+                        AXDataColumn(title: "Issuer", width: 150),
+                        AXDataColumn(title: "Expiry", width: 120),
+                        AXDataColumn(title: "Status", width: 100, alignment: .center),
+                    ],
+                    items: filteredCerts.enumerated().map { IndexedCert($0.offset, $0.element) },
+                    totalCount: certificates.count,
+                    isLoading: isLoading,
+                    emptyIcon: "lock.open",
+                    emptyTitle: "No SSL certificates found"
+                ) { item, _ in
+                    HStack(spacing: 0) {
+                        Text(item.cert.domain)
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(.axTextPrimary)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        Text(item.cert.issuer)
+                            .font(.system(size: 11))
+                            .foregroundColor(.axTextSecondary)
+                            .frame(width: 150, alignment: .leading)
+                            .lineLimit(1)
+                        Text(item.cert.expiry)
+                            .font(.system(size: 11, design: .monospaced))
+                            .foregroundColor(.axTextSecondary)
+                            .frame(width: 120, alignment: .leading)
+                        certStatusBadge(daysLeft: item.cert.daysLeft)
+                            .frame(width: 100, alignment: .center)
+                    }
+                } trailingContent: {
+                    AXRefreshButton(isLoading: isLoading) {
+                        Task { await loadCertData() }
                     }
                 }
             }
