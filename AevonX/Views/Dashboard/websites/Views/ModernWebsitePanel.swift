@@ -175,8 +175,8 @@ enum ModernSidebarItem: String, CaseIterable, Identifiable {
     /// Returns sidebar items organized by category for the given runtime
     static func categorizedItems(for runtime: RuntimeType) -> [(SidebarCategory, [Self])] {
         var core: [Self] = [.overview, .domainManager, .siteDirectory, .serverConfig]
-        var security: [Self] = [.sslTls, .siteSecurity, .httpHeaders]
-        var perf: [Self] = [.cacheManager, .performance, .monitoring]
+        let security: [Self] = [.sslTls, .siteSecurity, .httpHeaders]
+        let perf: [Self] = [.cacheManager, .performance, .monitoring]
         var tools: [Self] = [.quickActions, .gitSource, .urlRewrites, .backupRestore, .cloneMigrate, .databaseLink]
 
         switch runtime {

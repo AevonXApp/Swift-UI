@@ -330,6 +330,23 @@ struct PluginConfigurationView: View {
                         .background(Color.axSurface)
                         .cornerRadius(AXCornerRadius.xs)
                         .frame(maxWidth: 220, alignment: .trailing)
+                    
+                case .password:
+                    SecureField("", text: Binding(
+                        get: { field.value.asString },
+                        set: { newValue in
+                            updateField(sectionId: section.id, fieldId: field.id, value: .string(newValue))
+                        }
+                    ))
+                    .textFieldStyle(PlainTextFieldStyle())
+                    .padding(AXSpacing.sm)
+                    .background(Color.axSurface)
+                    .cornerRadius(AXCornerRadius.xs)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: AXCornerRadius.xs)
+                            .stroke(Color.axBorder, lineWidth: 1)
+                    )
+                    .frame(width: 220)
                 }
             }
         }
