@@ -185,6 +185,74 @@ struct ServerDashboardView: View {
                     onCancel: { viewModel.isShutdownConfirming = false }
                 )
             }
+            
+            // ── Quick Install Overlays ────────────────────────────────
+            if let qi = viewModel.quickInstallVM {
+                QuickInstallOverlayHost(
+                    qi: qi,
+                    onDone: {
+                        withAnimation(.easeOut(duration: 0.2)) {
+                            viewModel.quickInstallVM = nil
+                        }
+                    }
+                )
+            }
+        }
+        .animation(.spring(response: 0.4, dampingFraction: 0.8), value: viewModel.quickInstallVM != nil)
+    }
+}
+
+// MARK: - QuickInstall Overlay Host
+/// Dedicated subview so @ObservedObject properly tracks all @Published changes on qi.
+/// An optional-chain (viewModel.quickInstallVM?.isMinimized) doesn't trigger SwiftUI
+/// re-renders reliably — a direct @ObservedObject does.
+private struct QuickInstallOverlayHost: View {
+    @ObservedObject var qi: QuickInstallViewModel
+    var onDone: () -> Void
+
+    var body: some View {
+        if qi.isVisible {
+            if qi.isMinimized {
+                // ── Floating bubble (bottom-right)
+                GeometryReader { geo in
+                    QuickInstallBubble(viewModel: qi) {
+                        qi.isMinimized = false
+                    }
+                    .position(
+                        x: geo.size.width - 60,
+                        y: geo.size.height - 80
+                    )
+                }
+                .allowsHitTesting(true)
+                .transition(.scale.combined(with: .opacity))
+            } else if qi.isInstalling || qi.isComplete || qi.isFailed {
+                // ── Progress / result view
+                Color.black.opacity(0.45)
+                    .ignoresSafeArea()
+                    .transition(.opacity)
+                QuickInstallProgressView(
+                    viewModel: qi,
+                    onMinimize: { qi.isMinimized = true },
+                    onDone: onDone
+                )
+                .frame(maxWidth: 720)
+                .padding(AXSpacing.xl)
+                .transition(.scale.combined(with: .opacity))
+            } else {
+                // ── Selection wizard
+                Color.black.opacity(0.45)
+                    .ignoresSafeArea()
+                    .transition(.opacity)
+                QuickInstallView(
+                    viewModel: qi,
+                    onStartInstall: {
+                        Task { await qi.beginInstallation() }
+                    },
+                    onDismiss: onDone
+                )
+                .padding(AXSpacing.xl)
+                .transition(.scale.combined(with: .opacity))
+            }
         }
     }
 }

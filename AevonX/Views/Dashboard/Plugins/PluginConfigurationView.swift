@@ -312,7 +312,7 @@ struct PluginConfigurationView: View {
                     )
                     .frame(width: 120)
                     
-                case .options:
+                case .options, .select:
                     AXOptionPicker(
                         selectedOption: Binding(
                             get: { field.value.asString },

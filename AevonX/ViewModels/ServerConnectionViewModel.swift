@@ -208,6 +208,14 @@ public class ServerConnectionViewModel: ObservableObject {
 
     /// Active plugin configuration being shown (replaces NavigationStack navigation)
     @Published var activeConfigPlugin: Plugin? = nil
+
+    /// Quick Install ViewModel — persists across tab navigation so bubble stays visible
+    @Published var quickInstallVM: QuickInstallViewModel? = nil
+
+    /// Whether the server appears fresh (no services detected yet)
+    var isFreshServer: Bool {
+        quickInstallVM?.serverScan?.isFreshServer ?? false
+    }
     
     /// Whether to show connection error alert
     @Published var showConnectionError: Bool = false
@@ -401,13 +409,37 @@ public class ServerConnectionViewModel: ObservableObject {
                 do {
                     let detector = CapabilityDetector(sshService: sshService)
                     let profile = try await detector.detect(serverId: serverId)
-                    self.serverProfile = profile
-                    self.serviceStrategy = ServiceStrategyFactory.strategy(for: profile, sshService: sshService)
-                    self.packageStrategy = PackageStrategyFactory.strategy(for: profile, sshService: sshService)
+                    await MainActor.run {
+                        self.serverProfile = profile
+                        self.serviceStrategy = ServiceStrategyFactory.strategy(for: profile, sshService: sshService)
+                        self.packageStrategy = PackageStrategyFactory.strategy(for: profile, sshService: sshService)
+                    }
                     CoreLogger.shared.info(
                         "Server profile: \(profile.distro.rawValue), init=\(profile.initSystem.rawValue), pkg=\(profile.packageManager.rawValue)",
                         module: "ServerConnection"
                     )
+
+                    // ── Auto Quick Install Check ─────────────────────────
+                    // Scan FIRST, then assign to self only if fresh (prevents flash-and-disappear)
+                    await MainActor.run {
+                        guard self.quickInstallVM == nil else { return }
+                        let qi = QuickInstallViewModel(serverId: self.serverId, profile: profile)
+                        // Do NOT assign to self yet — wait for scan result
+                        Task { @MainActor in
+                            await qi.scanServer()
+                            CoreLogger.shared.info(
+                                "QuickInstall scan — installed: \(qi.serverScan?.installed.keys.sorted().joined(separator: ", ") ?? "nil"), isFresh: \(qi.serverScan?.isFreshServer ?? false)",
+                                module: "QuickInstall"
+                            )
+                            if qi.serverScan?.isFreshServer == true {
+                                // Assign and show only after scan confirms fresh
+                                self.quickInstallVM = qi
+                                qi.isVisible = true
+                                qi.isMinimized = false
+                            }
+                            // Non-fresh: qi is discarded without ever being shown
+                        }
+                    }
                 } catch {
                     CoreLogger.shared.warning("Failed to detect server capabilities: \(error.localizedDescription)", module: "ServerConnection")
                 }

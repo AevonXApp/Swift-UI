@@ -28,6 +28,15 @@ struct OverviewTab: View {
                 // MARK: - Connection Status Bar
                 ConnectionStatusBar(viewModel: viewModel)
                 
+                // MARK: - Fresh Server Banner (auto-shown after scan)
+                if viewModel.isConnected, let qi = viewModel.quickInstallVM, !qi.isVisible == false,
+                   qi.serverScan?.isFreshServer == true, !qi.isInstalling {
+                    FreshServerBanner {
+                        viewModel.quickInstallVM?.isVisible = true
+                        viewModel.quickInstallVM?.isMinimized = false
+                    }
+                }
+                
                 // MARK: - Quick Vitals Grid
                 AXCard {
                     VStack(alignment: .leading, spacing: AXSpacing.lg) {
@@ -237,6 +246,21 @@ struct OverviewTab: View {
                         
                         HStack(spacing: AXSpacing.lg) {
                             QuickActionButton(
+                                icon: "bolt.circle.fill",
+                                title: "Setup Server",
+                                color: .axAccentBlue,
+                                isEnabled: viewModel.isConnected,
+                                action: {
+                                    let qi = QuickInstallViewModel(
+                                        serverId: serverId,
+                                        profile: viewModel.serverProfile
+                                    )
+                                    viewModel.quickInstallVM = qi
+                                    // Start server scan in background
+                                    Task { await qi.scanServer() }
+                                }
+                            )
+                            QuickActionButton(
                                 icon: "terminal",
                                 title: "Terminal",
                                 color: .axAccentBlue,
@@ -251,7 +275,6 @@ struct OverviewTab: View {
                                 color: .axAccentGreen,
                                 isEnabled: viewModel.isConnected,
                                 action: {
-                                    // TODO: Open Deploy modal
                                     CoreLogger.shared.info("Deploy action triggered", module: "OverviewTab")
                                 }
                             )
@@ -271,10 +294,6 @@ struct OverviewTab: View {
                                 isEnabled: viewModel.isConnected,
                                 action: {
                                     viewModel.selectedTab = .terminal
-                                    // Pre-fill with log viewing command
-                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                                        // The terminal will be opened, user can type log commands
-                                    }
                                 }
                             )
                             QuickActionButton(
@@ -706,6 +725,73 @@ struct SparklineView: View {
                 }
             }
         }
+    }
+}
+
+// MARK: - Fresh Server Banner
+
+/// Shown automatically in OverviewTab when the server scan detects a fresh/empty server
+struct FreshServerBanner: View {
+    let onSetup: () -> Void
+
+    @State private var isHovered = false
+
+    var body: some View {
+        HStack(spacing: AXSpacing.md) {
+            ZStack {
+                Circle()
+                    .fill(Color.axAccentBlue.opacity(0.15))
+                    .frame(width: 36, height: 36)
+                Image(systemName: "sparkles")
+                    .font(.system(size: 16))
+                    .foregroundColor(.axAccentBlue)
+            }
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Fresh server detected")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundColor(.axTextPrimary)
+                Text("No services found — set up your environment with one click")
+                    .font(AXTypography.caption)
+                    .foregroundColor(.axTextSecondary)
+            }
+
+            Spacer()
+
+            Button(action: onSetup) {
+                HStack(spacing: AXSpacing.xs) {
+                    Image(systemName: "bolt.fill")
+                        .font(.system(size: 11, weight: .semibold))
+                    Text("Setup Server")
+                        .font(.system(size: 12, weight: .semibold))
+                }
+                .foregroundColor(.white)
+                .padding(.horizontal, AXSpacing.lg)
+                .padding(.vertical, AXSpacing.sm)
+                .background(
+                    LinearGradient(
+                        colors: [.axAccentBlue, .axAccentBlue.opacity(0.8)],
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                )
+                .cornerRadius(AXCornerRadius.md)
+                .scaleEffect(isHovered ? 1.02 : 1.0)
+                .animation(.easeInOut(duration: 0.15), value: isHovered)
+            }
+            .buttonStyle(PlainButtonStyle())
+            .onHover { isHovered = $0 }
+        }
+        .padding(AXSpacing.lg)
+        .background(
+            RoundedRectangle(cornerRadius: AXCornerRadius.lg)
+                .fill(Color.axAccentBlue.opacity(0.06))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: AXCornerRadius.lg)
+                .stroke(Color.axAccentBlue.opacity(0.25), lineWidth: 1)
+        )
+        .transition(.move(edge: .top).combined(with: .opacity))
     }
 }
 
