@@ -81,7 +81,7 @@ struct GitTab: View {
                     .foregroundColor(.axTextSecondary)
                 
                 if vm.isGeneratingCommitMessage {
-                    HStack(spacing: 8) {
+                    HStack(spacing: AXSpacing.sm) {
                         ProgressView().scaleEffect(0.6)
                         Text("Generating commit message...")
                             .font(.system(size: 11))
@@ -93,7 +93,7 @@ struct GitTab: View {
                     TextEditor(text: $vm.commitMessage)
                         .font(.system(size: 12, design: .monospaced))
                         .scrollContentBackground(.hidden)
-                        .padding(8)
+                        .padding(AXSpacing.sm)
                         .background(Color.axBackgroundTertiary)
                         .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.axBorder, lineWidth: 1))
                         .cornerRadius(6)
@@ -893,7 +893,7 @@ struct GitTab: View {
                 .padding(.vertical, 40)
             } else {
                 // File change stats
-                HStack(spacing: 8) {
+                HStack(spacing: AXSpacing.sm) {
                     let modified = vm.fileChanges.filter { $0.status == .modified }.count
                     let added = vm.fileChanges.filter { $0.status == .added || $0.status == .untracked }.count
                     let deleted = vm.fileChanges.filter { $0.status == .deleted }.count

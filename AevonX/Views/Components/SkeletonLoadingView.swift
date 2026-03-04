@@ -116,7 +116,7 @@ struct SkeletonCard: View {
         }
         .padding(12)
         .background(Color.axBackgroundTertiary)
-        .cornerRadius(8)
+        .cornerRadius(AXCornerRadius.md)
     }
 }
 

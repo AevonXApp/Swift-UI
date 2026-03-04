@@ -25,7 +25,7 @@ struct DockerTerminalView: View {
         VStack(spacing: 0) {
             // Header
             HStack {
-                HStack(spacing: 8) {
+                HStack(spacing: AXSpacing.sm) {
                     Image(systemName: "terminal.fill")
                         .foregroundColor(.axTextSecondary)
                     Text("Terminal: \(containerName)")

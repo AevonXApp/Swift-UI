@@ -53,7 +53,7 @@ struct DockerLogsView: View {
                             .font(AXTypography.headline)
                             .foregroundColor(.axTextPrimary)
                     }
-                    HStack(spacing: 8) {
+                    HStack(spacing: AXSpacing.sm) {
                         Text(container.shortId)
                             .font(AXTypography.caption)
                             .foregroundColor(.axTextSecondary)

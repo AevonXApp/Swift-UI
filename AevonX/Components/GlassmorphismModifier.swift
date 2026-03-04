@@ -13,14 +13,14 @@ struct GlassmorphismModifier: ViewModifier {
     var blurRadius: CGFloat = 20
     var backgroundOpacity: Double = 0.75
     var borderOpacity: Double = 0.08
-    var cornerRadius: CGFloat = 12
-    
+    var cornerRadius: CGFloat = AXCornerRadius.lg
+
     func body(content: Content) -> some View {
         content
             .background(
                 ZStack {
                     Color.black.opacity(backgroundOpacity)
-                    
+
                     // Gradient overlay for depth
                     LinearGradient(
                         colors: [
@@ -36,7 +36,7 @@ struct GlassmorphismModifier: ViewModifier {
             .background(.ultraThinMaterial)
             .overlay(
                 RoundedRectangle(cornerRadius: cornerRadius)
-                    .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                    .stroke(Color.axGlassBorder, lineWidth: 1)
             )
             .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
     }
@@ -47,7 +47,7 @@ extension View {
         blurRadius: CGFloat = 20,
         backgroundOpacity: Double = 0.75,
         borderOpacity: Double = 0.08,
-        cornerRadius: CGFloat = 12
+        cornerRadius: CGFloat = AXCornerRadius.lg
     ) -> some View {
         modifier(GlassmorphismModifier(
             blurRadius: blurRadius,
@@ -61,28 +61,33 @@ extension View {
 // MARK: - Card Component with Hover State
 struct AXCard<Content: View>: View {
     let content: Content
-    var padding: CGFloat = 16
-    var cornerRadius: CGFloat = 12
-    var accentColor: Color = Color(hex: "#00D4FF")
-    
+    var padding: CGFloat = AXSpacing.lg
+    var cornerRadius: CGFloat = AXCornerRadius.lg
+    var accentColor: Color = .axAccentBlue
+
     @State private var isHovered = false
-    
-    init(padding: CGFloat = 16, cornerRadius: CGFloat = 12, accentColor: Color = Color(hex: "#00D4FF"), @ViewBuilder content: () -> Content) {
+
+    init(
+        padding: CGFloat = AXSpacing.lg,
+        cornerRadius: CGFloat = AXCornerRadius.lg,
+        accentColor: Color = .axAccentBlue,
+        @ViewBuilder content: () -> Content
+    ) {
         self.padding = padding
         self.cornerRadius = cornerRadius
         self.accentColor = accentColor
         self.content = content()
     }
-    
+
     var body: some View {
         content
             .padding(padding)
             .background(
                 RoundedRectangle(cornerRadius: cornerRadius)
-                    .fill(Color(hex: "#1E1E1E"))
+                    .fill(Color.axSurface)
                     .overlay(
                         RoundedRectangle(cornerRadius: cornerRadius)
-                            .stroke(Color(hex: "#27272A"), lineWidth: 1)
+                            .stroke(Color.axBorder, lineWidth: 1)
                     )
                     .shadow(
                         color: isHovered ? accentColor.opacity(0.05) : Color.clear,
@@ -104,28 +109,28 @@ struct StatusIndicator: View {
     let status: ServerStatus
     var showLabel: Bool = true
     var size: CGFloat = 8
-    
+
     var body: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: AXSpacing.sm) {
             Circle()
                 .fill(statusColor)
                 .frame(width: size, height: size)
-                .shadow(color: statusColor.opacity(0.5), radius: size/2, x: 0, y: 0)
-            
+                .shadow(color: statusColor.opacity(0.5), radius: size / 2, x: 0, y: 0)
+
             if showLabel {
                 Text(status.rawValue)
-                    .font(.system(size: 10, weight: .medium, design: .default))
-                    .foregroundColor(Color(hex: "#A1A1AA"))
+                    .font(AXTypography.caption)
+                    .foregroundColor(.axTextSecondary)
             }
         }
     }
-    
+
     private var statusColor: Color {
         switch status {
-        case .online: return Color(hex: "#22C55E")
-        case .offline: return Color(hex: "#52525B")
-        case .maintenance: return Color(hex: "#F59E0B")
-        case .error: return Color(hex: "#EF4444")
+        case .online: return .axSuccess
+        case .offline: return .axTextMuted
+        case .maintenance: return .axWarning
+        case .error: return .axError
         }
     }
 }
@@ -135,10 +140,10 @@ struct AnimatedCounter: View {
     let value: Double
     var suffix: String = "%"
     var font: Font = .system(size: 18, weight: .semibold, design: .rounded)
-    var color: Color = Color(hex: "#FAFAFA")
-    
+    var color: Color = .axTextPrimary
+
     @State private var displayValue: Double = 0
-    
+
     var body: some View {
         Text("\(Int(displayValue))\(suffix)")
             .font(font)
@@ -159,10 +164,10 @@ struct AnimatedCounter: View {
 // MARK: - Hoverable Button Style
 struct HoverableButtonStyle: ButtonStyle {
     @State private var isHovered = false
-    var backgroundColor: Color = Color(hex: "#1E1E1E")
-    var hoverColor: Color = Color(hex: "#2A2A2A")
-    var cornerRadius: CGFloat = 8
-    
+    var backgroundColor: Color = .axSurface
+    var hoverColor: Color = .axSurfaceHover
+    var cornerRadius: CGFloat = AXCornerRadius.md
+
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .background(
@@ -182,16 +187,16 @@ struct HoverableButtonStyle: ButtonStyle {
 // MARK: - Interactive Row Style
 struct InteractiveRowModifier: ViewModifier {
     var isSelected: Bool = false
-    var cornerRadius: CGFloat = 12
-    var accentColor: Color = Color(hex: "#00D4FF")
-    
+    var cornerRadius: CGFloat = AXCornerRadius.lg
+    var accentColor: Color = .axAccentBlue
+
     @State private var isHovered = false
-    
+
     func body(content: Content) -> some View {
         content
             .background(
                 RoundedRectangle(cornerRadius: cornerRadius)
-                    .fill(isSelected ? accentColor.opacity(0.08) : (isHovered ? Color(hex: "#2A2A2A").opacity(0.5) : Color.clear))
+                    .fill(isSelected ? accentColor.opacity(0.08) : (isHovered ? Color.axSurfaceHover.opacity(0.5) : Color.clear))
                     .overlay(
                         RoundedRectangle(cornerRadius: cornerRadius)
                             .stroke(isSelected ? accentColor.opacity(0.3) : Color.clear, lineWidth: 1)
@@ -207,7 +212,7 @@ struct InteractiveRowModifier: ViewModifier {
 }
 
 extension View {
-    func interactiveRow(isSelected: Bool = false, cornerRadius: CGFloat = 12, accentColor: Color = Color(hex: "#00D4FF")) -> some View {
+    func interactiveRow(isSelected: Bool = false, cornerRadius: CGFloat = AXCornerRadius.lg, accentColor: Color = .axAccentBlue) -> some View {
         modifier(InteractiveRowModifier(isSelected: isSelected, cornerRadius: cornerRadius, accentColor: accentColor))
     }
 }

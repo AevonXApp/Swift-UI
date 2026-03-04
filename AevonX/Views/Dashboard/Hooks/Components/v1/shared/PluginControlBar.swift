@@ -39,7 +39,7 @@ public struct PluginControlBar: View {
             Spacer()
 
             // ── Right: status + controls ─────────────────────────────────
-            HStack(spacing: 8) {
+            HStack(spacing: AXSpacing.sm) {
                 ServiceStateBadge(state: state)
 
                 if hasHealthCheck {

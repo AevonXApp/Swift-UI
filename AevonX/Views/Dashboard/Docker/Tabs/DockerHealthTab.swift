@@ -113,7 +113,7 @@ struct DockerHealthTab: View {
                     .padding(.horizontal, 8)
                     .padding(.vertical, 3)
                     .background(color.opacity(0.1))
-                    .cornerRadius(8)
+                    .cornerRadius(AXCornerRadius.md)
                 
                 // Failing streak
                 if let info = info, info.failingStreak > 0 {

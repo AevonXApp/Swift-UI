@@ -71,7 +71,7 @@ struct DockerContainersTab: View {
                 Spacer()
                 
                 // Show All Toggle
-                HStack(spacing: 8) {
+                HStack(spacing: AXSpacing.sm) {
                     Toggle("Show All", isOn: $showAll)
                         .toggleStyle(.switch)
                         .controlSize(.small)
@@ -141,7 +141,7 @@ struct DockerContainersTab: View {
                         LazyVStack(spacing: AXSpacing.sm) {
                             ForEach(filteredContainers) { container in
                                 VStack(spacing: 0) {
-                                    HStack(spacing: 8) {
+                                    HStack(spacing: AXSpacing.sm) {
                                         // Selection checkbox
                                         Button(action: {
                                             if selectedContainerIds.contains(container.id) {
@@ -485,7 +485,7 @@ private struct ContainerRow: View {
                         .font(AXTypography.headline)
                         .foregroundColor(.axTextPrimary)
                     
-                    HStack(spacing: 8) {
+                    HStack(spacing: AXSpacing.sm) {
                         Label(container.image, systemImage: "photo")
                             .font(AXTypography.caption)
                             .foregroundColor(.axTextSecondary)

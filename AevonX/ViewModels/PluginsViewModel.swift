@@ -19,7 +19,8 @@ class PluginsViewModel: ObservableObject {
     
     @Published var installedPlugins: [Plugin] = []
     @Published var installationProgress: [String: Double] = [:] // pluginId: progress
-    @Published var installationStatus: [String: String] = [:] // pluginId: status message
+    @Published var installationStatus: [String: String] = [:]   // pluginId: status message
+    @Published var installSources: [String: InstallSource] = [:] // slug: source
     
     private let apiService = PluginAPIService.shared
     private let pluginManager = PluginManager.shared
@@ -119,7 +120,12 @@ class PluginsViewModel: ObservableObject {
                 await loadMarketplace()
             }
             
-            let installedSlugs = try await pluginManager.listInstalledPluginSlugs(on: serverId)
+            // Fetch installed slugs and install sources concurrently
+            async let slugsTask   = pluginManager.listInstalledPluginSlugs(on: serverId)
+            async let sourcesTask = pluginManager.listInstalledSources(on: serverId)
+            
+            let (installedSlugs, sources) = try await (slugsTask, sourcesTask)
+            self.installSources = sources
             
             var matchedPlugins: [Plugin] = []
             for slug in installedSlugs {
@@ -144,7 +150,11 @@ class PluginsViewModel: ObservableObject {
                         versions: nil
                     )
                     matchedPlugins.append(stub)
-                    CoreLogger.shared.info("Installed plugin \(slug) not in marketplace — showing as stub.", module: "PluginsViewModel")
+                    // Stubs are always dev-build (server-owner installs)
+                    if self.installSources[slug] == nil {
+                        self.installSources[slug] = .devBuild
+                    }
+                    CoreLogger.shared.info("Installed plugin \(slug) not in marketplace — showing as dev build.", module: "PluginsViewModel")
                 }
             }
             

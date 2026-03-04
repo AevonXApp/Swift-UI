@@ -42,7 +42,7 @@ struct DockerComposeEditor: View {
                         .padding(.horizontal, 8)
                         .padding(.vertical, 3)
                         .background(Color.orange.opacity(0.1))
-                        .cornerRadius(8)
+                        .cornerRadius(AXCornerRadius.md)
                 }
                 
                 Button(action: { dismiss() }) {

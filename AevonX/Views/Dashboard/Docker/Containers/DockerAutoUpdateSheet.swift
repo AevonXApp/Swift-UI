@@ -118,7 +118,7 @@ struct DockerAutoUpdateSheet: View {
                     
                     // Progress
                     if isUpdating {
-                        VStack(spacing: 8) {
+                        VStack(spacing: AXSpacing.sm) {
                             ProgressView(value: progressValue)
                                 .progressViewStyle(.linear)
                             Text(progressMessage)

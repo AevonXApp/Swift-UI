@@ -217,7 +217,7 @@ struct ProcessManagerTab: View {
                 .multilineTextAlignment(.center)
             
             Button(action: { Task { await viewModel.installPM2() } }) {
-                HStack(spacing: 8) {
+                HStack(spacing: AXSpacing.sm) {
                     if viewModel.isInstallingPM2 {
                         ProgressView().scaleEffect(0.7)
                     } else {

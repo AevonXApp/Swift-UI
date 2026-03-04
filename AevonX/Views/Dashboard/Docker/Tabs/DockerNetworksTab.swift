@@ -195,7 +195,7 @@ private struct NetworkRow: View {
                         .font(AXTypography.headline)
                         .foregroundColor(.axTextPrimary)
                     
-                    HStack(spacing: 8) {
+                    HStack(spacing: AXSpacing.sm) {
                         AXBadge(text: network.driver, color: .axAccentBlue, style: .soft)
                         AXBadge(text: network.scope, color: .axTextSecondary, style: .soft)
                         

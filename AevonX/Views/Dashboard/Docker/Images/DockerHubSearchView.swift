@@ -42,7 +42,7 @@ struct DockerHubSearchView: View {
             .background(Color.axSurface)
             
             // Search bar
-            HStack(spacing: 8) {
+            HStack(spacing: AXSpacing.sm) {
                 Image(systemName: "magnifyingglass")
                     .foregroundColor(.axTextMuted)
                     .font(.system(size: 12))
@@ -188,7 +188,7 @@ private struct HubResultRow: View {
                 .foregroundColor(.axAccentBlue)
                 .frame(width: 36, height: 36)
                 .background(Color.axAccentBlue.opacity(0.1))
-                .cornerRadius(8)
+                .cornerRadius(AXCornerRadius.md)
             
             // Info
             VStack(alignment: .leading, spacing: 2) {

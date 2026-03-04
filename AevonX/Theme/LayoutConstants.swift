@@ -18,7 +18,7 @@ import SwiftUI
 /// **Usage**:
 /// ```swift
 /// .frame(width: LayoutConstants.sidebarWidth)
-/// .padding(LayoutConstants.Spacing.medium)
+/// .frame(width: LayoutConstants.TableColumn.standard)
 /// ```
 public enum LayoutConstants {
     
@@ -83,46 +83,6 @@ public enum LayoutConstants {
         
         /// Extra large icon (hero sections)
         public static let extraLarge: CGFloat = 56
-    }
-    
-    // MARK: - Spacing
-    
-    /// Consistent spacing values
-    public enum Spacing {
-        /// Tight spacing between related elements
-        public static let tight: CGFloat = 4
-        
-        /// Small spacing
-        public static let small: CGFloat = 8
-        
-        /// Medium spacing
-        public static let medium: CGFloat = 12
-        
-        /// Standard spacing
-        public static let standard: CGFloat = 16
-        
-        /// Large spacing (between sections)
-        public static let large: CGFloat = 24
-        
-        /// Extra large spacing (between major sections)
-        public static let extraLarge: CGFloat = 32
-    }
-    
-    // MARK: - Corner Radius
-    
-    /// Consistent corner radius values
-    public enum CornerRadius {
-        /// Small radius (tags, badges)
-        public static let small: CGFloat = 6
-        
-        /// Medium radius (cards, buttons)
-        public static let medium: CGFloat = 10
-        
-        /// Large radius (panels, sheets)
-        public static let large: CGFloat = 16
-        
-        /// Circular (avatars, icons)
-        public static let circular: CGFloat = 999
     }
     
     // MARK: - Dialog & Sheet Sizes

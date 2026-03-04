@@ -39,7 +39,7 @@ struct DockerRunToComposeView: View {
                     TextEditor(text: $runCommand)
                         .font(.system(size: 12, design: .monospaced))
                         .frame(minHeight: 80)
-                        .padding(8)
+                        .padding(AXSpacing.sm)
                         .background(Color.axSurface)
                         .cornerRadius(AXCornerRadius.sm)
                         .overlay(
@@ -101,7 +101,7 @@ struct DockerRunToComposeView: View {
                                 .textSelection(.enabled)
                                 .frame(maxWidth: .infinity, alignment: .leading)
                         }
-                        .padding(8)
+                        .padding(AXSpacing.sm)
                         .frame(minHeight: 150)
                         .background(Color(nsColor: .textBackgroundColor).opacity(0.5))
                         .cornerRadius(AXCornerRadius.sm)

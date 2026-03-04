@@ -27,7 +27,7 @@ struct AIAnalysisSheet: View {
 
     private var sheetHeader: some View {
         HStack {
-            HStack(spacing: 8) {
+            HStack(spacing: AXSpacing.sm) {
                 Image(systemName: "brain")
                     .font(.system(size: 18))
                     .foregroundColor(.axAccentBlue)
@@ -259,7 +259,7 @@ struct AIAnalysisSheet: View {
                         .foregroundColor(insight.level.color)
                         .frame(width: 30, height: 30)
                         .background(insight.level.color.opacity(0.1))
-                        .cornerRadius(8)
+                        .cornerRadius(AXCornerRadius.md)
 
                     VStack(alignment: .leading, spacing: 2) {
                         Text(insight.title)

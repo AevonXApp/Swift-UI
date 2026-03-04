@@ -55,7 +55,7 @@ struct DockerQuickCreateView: View {
                     .padding(AXSpacing.xl)
                     
                     if let error = errorMessage {
-                        HStack(spacing: 8) {
+                        HStack(spacing: AXSpacing.sm) {
                             Image(systemName: "exclamationmark.triangle.fill")
                             Text(error)
                         }

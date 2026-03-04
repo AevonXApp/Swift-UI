@@ -218,7 +218,7 @@ struct TerminalView: View {
     // MARK: - Status Bar
 
     private func statusBar(text: String, color: Color, background: Color) -> some View {
-        HStack(spacing: 8) {
+        HStack(spacing: AXSpacing.sm) {
             ProgressView()
                 .scaleEffect(0.6)
                 .tint(color)

@@ -211,7 +211,7 @@ struct DockerSecurityTab: View {
                         .padding(.horizontal, 10)
                         .padding(.vertical, 4)
                         .background(gradeColor(result.grade).opacity(0.1))
-                        .cornerRadius(8)
+                        .cornerRadius(AXCornerRadius.md)
                     }
                     .buttonStyle(.plain)
                     
@@ -310,7 +310,7 @@ struct DockerSecurityTab: View {
             Button {
                 scanVulnerabilities(container)
             } label: {
-                HStack(spacing: 8) {
+                HStack(spacing: AXSpacing.sm) {
                     ZStack {
                         RoundedRectangle(cornerRadius: 6)
                             .fill(Color.purple.opacity(0.12))
@@ -373,7 +373,7 @@ struct DockerSecurityTab: View {
             .frame(maxHeight: 200)
             .padding(10)
             .background(Color.black.opacity(0.25))
-            .cornerRadius(8)
+            .cornerRadius(AXCornerRadius.md)
             .overlay(
                 RoundedRectangle(cornerRadius: 8)
                     .stroke(Color.purple.opacity(0.15), lineWidth: 1)

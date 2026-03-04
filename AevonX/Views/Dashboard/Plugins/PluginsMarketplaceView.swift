@@ -245,8 +245,9 @@ struct PluginsMarketplaceView: View {
                 )
             } else {
                 LazyVGrid(columns: columns, spacing: AXSpacing.md) {
-                    ForEach(displayedPlugins) { plugin in
+               ForEach(displayedPlugins) { plugin in
                         let isInstalled = viewModel.installedPlugins.contains(where: { $0.slug == plugin.slug })
+                        let source = viewModel.installSources[plugin.slug]
                         
                         PluginCard(
                             plugin: plugin,
@@ -254,6 +255,8 @@ struct PluginsMarketplaceView: View {
                             isInstalled: isInstalled,
                             progress: viewModel.installationProgress[plugin.id] ?? 0,
                             status: viewModel.installationStatus[plugin.id] ?? "",
+                            installSource: source,
+                            isInMarketplace: viewModel.plugins.contains(where: { $0.slug == plugin.slug }),
                             onInstall: {
                                 if let versions = plugin.versions, !versions.isEmpty {
                                     pluginToInstall = plugin
@@ -335,15 +338,29 @@ struct PluginCard: View {
     let isInstalled: Bool
     let progress: Double
     let status: String
+    var installSource: InstallSource? = nil
+    var isInMarketplace: Bool = true
     let onInstall: () -> Void
     let onSettings: () -> Void
     let onUninstall: () -> Void
+    
+    /// True = dev-build but NOT in marketplace (brand new plugin by owner)
+    private var isDevOnly: Bool {
+        installSource == .devBuild && !isInMarketplace
+    }
+    
+    /// True = marketplace plugin that was re-installed via Upload Build
+    private var isUploadBuild: Bool {
+        installSource == .devBuild && isInMarketplace
+    }
     
     @State private var isHovered = false
     @State private var showUninstallConfirmation = false
     
     private var accentColor: Color {
-        .axAccentBlue
+        if isDevOnly    { return .purple }
+        if isUploadBuild { return .orange }
+        return .axAccentBlue
     }
     
     var body: some View {
@@ -375,6 +392,13 @@ struct PluginCard: View {
                                         )
                                     )
                                     .help("Official AevonX Plugin")
+                            }
+                            
+                            // Install source badges
+                            if isDevOnly {
+                                installBadge(icon: "person.circle.fill", label: "By You", color: .purple)
+                            } else if isUploadBuild {
+                                installBadge(icon: "arrow.up.circle.fill", label: "Upload Build", color: .orange)
                             }
                             
                             Spacer()
@@ -452,7 +476,20 @@ struct PluginCard: View {
                 )
                 .frame(width: 56, height: 56)
             
-            if let imageUrl = plugin.imageUrl, let url = URL(string: imageUrl) {
+            if isDevOnly {
+                // No marketplace image — show AevonX app icon
+                #if os(macOS)
+                Image(nsImage: NSApp.applicationIconImage)
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 42, height: 42)
+                    .cornerRadius(10)
+                #else
+                Image(systemName: "hammer.fill")
+                    .font(.system(size: 22))
+                    .foregroundColor(accentColor.opacity(0.7))
+                #endif
+            } else if let imageUrl = plugin.imageUrl, let url = URL(string: imageUrl) {
                 AsyncImage(url: url) { image in
                     image.resizable().aspectRatio(contentMode: .fit)
                 } placeholder: {
@@ -474,6 +511,25 @@ struct PluginCard: View {
                 .stroke(accentColor.opacity(0.15), lineWidth: 1)
         )
         .shadow(color: accentColor.opacity(isHovered ? 0.2 : 0.05), radius: 8)
+    }
+    
+    private func installBadge(icon: String, label: String, color: Color) -> some View {
+        HStack(spacing: 3) {
+            Image(systemName: icon)
+                .font(.system(size: 9, weight: .bold))
+            Text(label)
+                .font(.system(size: 9, weight: .black))
+                .textCase(.uppercase)
+        }
+        .foregroundColor(color)
+        .padding(.horizontal, AXSpacing.sm)
+        .padding(.vertical, 3)
+        .background(color.opacity(0.12))
+        .cornerRadius(AXCornerRadius.sm)
+        .overlay(
+            RoundedRectangle(cornerRadius: AXCornerRadius.sm)
+                .stroke(color.opacity(0.3), lineWidth: 1)
+        )
     }
     
     @ViewBuilder

@@ -165,10 +165,10 @@ struct DockerAIComposeGenerator: View {
                                         .lineLimit(2)
                                         .multilineTextAlignment(.center)
                                 }
-                                .padding(8)
+                                .padding(AXSpacing.sm)
                                 .frame(maxWidth: .infinity)
                                 .background(Color.axSurface)
-                                .cornerRadius(8)
+                                .cornerRadius(AXCornerRadius.md)
                                 .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.axBorder, lineWidth: 1))
                             }
                             .buttonStyle(.plain)

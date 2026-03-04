@@ -76,7 +76,7 @@ struct HostKeyChangeAlertView: View {
             .padding(.horizontal)
             
             // Warning
-            HStack(spacing: 8) {
+            HStack(spacing: AXSpacing.sm) {
                 Image(systemName: "exclamationmark.triangle.fill")
                     .foregroundStyle(.orange)
                 Text("Only accept if you trust this change")

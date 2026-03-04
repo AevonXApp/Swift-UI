@@ -1584,7 +1584,7 @@ struct CustomContextMenuView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 1) {
             // Header — file name with gradient
-            HStack(spacing: 8) {
+            HStack(spacing: AXSpacing.sm) {
                 ZStack {
                     RoundedRectangle(cornerRadius: 5)
                         .fill(file.isDirectory ? Color.blue.opacity(0.2) : Color.gray.opacity(0.2))

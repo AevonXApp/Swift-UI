@@ -46,14 +46,14 @@ struct DockerComposeValidator: View {
                     
                     // Status
                     if isValidating {
-                        HStack(spacing: 8) {
+                        HStack(spacing: AXSpacing.sm) {
                             ProgressView().controlSize(.small)
                             Text("Validating docker-compose.yml...")
                                 .font(.system(size: 12))
                                 .foregroundColor(.axTextSecondary)
                         }
                     } else if let valid = isValid {
-                        HStack(spacing: 8) {
+                        HStack(spacing: AXSpacing.sm) {
                             Image(systemName: valid ? "checkmark.circle.fill" : "xmark.circle.fill")
                                 .foregroundColor(valid ? .axSuccess : .axError)
                                 .font(.system(size: 20))

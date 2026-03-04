@@ -52,7 +52,7 @@ struct DockerContainerWizard: View {
                     stepContent
                     
                     if let error = errorMessage {
-                        HStack(spacing: 8) {
+                        HStack(spacing: AXSpacing.sm) {
                             Image(systemName: "exclamationmark.triangle.fill")
                             Text(error)
                         }
@@ -454,7 +454,7 @@ struct DockerContainerWizard: View {
                 .foregroundColor(.axAccentBlue)
                 .frame(width: 36, height: 36)
                 .background(Color.axAccentBlue.opacity(0.1))
-                .cornerRadius(8)
+                .cornerRadius(AXCornerRadius.md)
             
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)

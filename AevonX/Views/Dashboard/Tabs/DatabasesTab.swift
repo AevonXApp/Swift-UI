@@ -1048,7 +1048,7 @@ struct DatabaseStatusIndicator: View {
     var size: CGFloat = 8
     
     var body: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: AXSpacing.sm) {
             Circle()
                 .fill(statusColor)
                 .frame(width: size, height: size)

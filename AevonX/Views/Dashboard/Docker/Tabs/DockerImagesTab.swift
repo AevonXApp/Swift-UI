@@ -238,7 +238,7 @@ private struct ImageRow: View {
                 
                 // Info
                 VStack(alignment: .leading, spacing: 4) {
-                    HStack(spacing: 8) {
+                    HStack(spacing: AXSpacing.sm) {
                         Text(image.repository)
                             .font(AXTypography.headline)
                             .foregroundColor(.axTextPrimary)

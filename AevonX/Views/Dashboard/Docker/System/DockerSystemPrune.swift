@@ -39,7 +39,7 @@ struct DockerSystemPrune: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: AXSpacing.lg) {
                     // Warning
-                    HStack(spacing: 8) {
+                    HStack(spacing: AXSpacing.sm) {
                         Image(systemName: "exclamationmark.triangle.fill")
                             .foregroundColor(.axWarning)
                         VStack(alignment: .leading, spacing: 2) {

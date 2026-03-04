@@ -184,7 +184,7 @@ private struct VolumeRow: View {
                         .font(AXTypography.headline)
                         .foregroundColor(.axTextPrimary)
                     
-                    HStack(spacing: 8) {
+                    HStack(spacing: AXSpacing.sm) {
                         Text(volume.driver)
                             .font(AXTypography.caption)
                             .padding(.horizontal, 6)

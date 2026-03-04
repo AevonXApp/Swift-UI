@@ -130,7 +130,7 @@ public struct PluginCodeEditorComponent: View {
                     TextEditor(text: $content)
                         .font(.system(size: 12, design: .monospaced))
                         .scrollContentBackground(.hidden)
-                        .padding(8)
+                        .padding(AXSpacing.sm)
                         .onChange(of: content) { _, newValue in
                             lineCount = newValue.components(separatedBy: "\n").count
                         }

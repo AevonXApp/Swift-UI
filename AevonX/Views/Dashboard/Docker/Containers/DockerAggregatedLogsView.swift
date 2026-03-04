@@ -114,7 +114,7 @@ struct DockerAggregatedLogsView: View {
                             .font(AXTypography.caption2)
                             .foregroundColor(.axTextMuted)
                     }
-                    .padding(8)
+                    .padding(AXSpacing.sm)
                     .background(Color.axSurface)
                     
                     Divider()
@@ -125,7 +125,7 @@ struct DockerAggregatedLogsView: View {
                         Spacer()
                     } else if logEntries.isEmpty {
                         Spacer()
-                        VStack(spacing: 8) {
+                        VStack(spacing: AXSpacing.sm) {
                             Image(systemName: "text.alignleft")
                                 .font(.system(size: 32))
                                 .foregroundColor(.axTextMuted)

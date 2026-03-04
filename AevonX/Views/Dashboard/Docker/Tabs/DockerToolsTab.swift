@@ -69,7 +69,7 @@ struct DockerToolsTab: View {
         AXSidebarContainer(
             width: 200,
             header: {
-                HStack(spacing: 8) {
+                HStack(spacing: AXSpacing.sm) {
                     Image(systemName: "wrench.and.screwdriver.fill")
                         .font(.system(size: 11, weight: .bold))
                         .foregroundColor(.axAccentBlue)
@@ -591,7 +591,7 @@ private struct DockerDependenciesInline: View {
                         }
                         .padding(.horizontal, 10).padding(.vertical, 6)
                         .background(nodeColors[idx % nodeColors.count].opacity(0.1))
-                        .cornerRadius(8)
+                        .cornerRadius(AXCornerRadius.md)
                     }
                 }
                 
@@ -645,7 +645,7 @@ private struct DockerRunToComposeInline: View {
             TextEditor(text: $runCommand)
                 .font(.system(size: 12, design: .monospaced))
                 .frame(minHeight: 70)
-                .padding(8)
+                .padding(AXSpacing.sm)
                 .background(Color.axSurface)
                 .cornerRadius(AXCornerRadius.sm)
                 .overlay(RoundedRectangle(cornerRadius: AXCornerRadius.sm).stroke(Color.axBorder))
@@ -887,7 +887,7 @@ private struct DockerProfilesInline: View {
                             .textSelection(.enabled)
                             .frame(maxWidth: .infinity, alignment: .leading)
                     }
-                    .padding(8).frame(maxHeight: 200)
+                    .padding(AXSpacing.sm).frame(maxHeight: 200)
                     .background(Color.black.opacity(0.3))
                     .cornerRadius(AXCornerRadius.sm)
                 }

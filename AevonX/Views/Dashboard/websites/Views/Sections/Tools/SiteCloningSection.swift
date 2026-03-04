@@ -132,7 +132,7 @@ struct SiteCloningSection: View {
 
     private func actionCard(icon: String, title: String, subtitle: String, color: Color, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            VStack(spacing: 8) {
+            VStack(spacing: AXSpacing.sm) {
                 Image(systemName: icon)
                     .font(.system(size: 24))
                     .foregroundColor(color)

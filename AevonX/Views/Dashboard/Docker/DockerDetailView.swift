@@ -92,7 +92,7 @@ struct DockerDetailView: View {
             // Quick actions toolbar
             if isDockerInstalled == true {
                 ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 8) {
+                    HStack(spacing: AXSpacing.sm) {
                         quickActionButton(icon: "sparkles", label: "AI Compose", color: .purple) {
                             showAICompose = true
                         }
@@ -121,7 +121,7 @@ struct DockerDetailView: View {
                 HStack(spacing: AXSpacing.md) {
                     ForEach(DockerTab.allCases) { tab in
                         Button(action: { selectedTab = tab }) {
-                            HStack(spacing: 8) {
+                            HStack(spacing: AXSpacing.sm) {
                                 Image(systemName: tab.icon)
                                     .font(.system(size: 14))
                                 Text(tab.rawValue)

@@ -33,7 +33,7 @@ struct PluginConfigurationView: View {
                     Image(systemName: "chevron.left")
                         .font(.system(size: 14, weight: .bold))
                         .foregroundColor(.axTextSecondary)
-                        .padding(8)
+                        .padding(AXSpacing.sm)
                         .background(Color.axSurface)
                         .cornerRadius(AXCornerRadius.sm)
                 }

@@ -339,7 +339,7 @@ struct DockerContainerInspector: View {
                 .padding(.horizontal, 6)
                 .padding(.vertical, 1)
                 .background(Color.axAccentBlue.opacity(0.1))
-                .cornerRadius(8)
+                .cornerRadius(AXCornerRadius.md)
         }
     }
     

@@ -887,7 +887,7 @@ struct DockerTemplateDeployView: View {
                         .padding(.horizontal, 6)
                         .padding(.vertical, 2)
                         .background(Color.axAccentBlue.opacity(0.15))
-                        .cornerRadius(8)
+                        .cornerRadius(AXCornerRadius.md)
                 }
                 
                 Spacer()
@@ -910,7 +910,7 @@ struct DockerTemplateDeployView: View {
                 // ── Browse Screen ──
                 VStack(spacing: 0) {
                     // Search
-                    HStack(spacing: 8) {
+                    HStack(spacing: AXSpacing.sm) {
                         Image(systemName: "magnifyingglass")
                             .foregroundColor(.axTextMuted)
                             .font(.system(size: 12))
@@ -927,7 +927,7 @@ struct DockerTemplateDeployView: View {
                     
                     // Category Pills
                     ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 8) {
+                        HStack(spacing: AXSpacing.sm) {
                             ForEach(DockerTemplateCategory.allCases) { cat in
                                 Button(action: { selectedCategory = cat }) {
                                     HStack(spacing: 4) {
@@ -1049,7 +1049,7 @@ struct DockerTemplateDeployView: View {
                     }
                     
                     if let error = errorMessage {
-                        HStack(spacing: 8) {
+                        HStack(spacing: AXSpacing.sm) {
                             Image(systemName: "exclamationmark.triangle.fill")
                             Text(error)
                         }
@@ -1134,7 +1134,7 @@ private struct TemplateCard: View {
                         .foregroundColor(template.category.color)
                         .frame(width: 36, height: 36)
                         .background(template.category.color.opacity(0.1))
-                        .cornerRadius(8)
+                        .cornerRadius(AXCornerRadius.md)
                     
                     Spacer()
                     
@@ -1149,7 +1149,7 @@ private struct TemplateCard: View {
                         .padding(.horizontal, 6)
                         .padding(.vertical, 2)
                         .background(Color.orange.opacity(0.12))
-                        .cornerRadius(8)
+                        .cornerRadius(AXCornerRadius.md)
                     }
                 }
                 

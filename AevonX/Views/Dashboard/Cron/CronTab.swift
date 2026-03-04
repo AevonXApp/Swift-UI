@@ -265,7 +265,7 @@ struct CronTab: View {
                         .padding(.horizontal, 5)
                         .padding(.vertical, 1)
                         .background(selectedSubTab == index ? Color.white.opacity(0.2) : Color.axBorder.opacity(0.5))
-                        .cornerRadius(8)
+                        .cornerRadius(AXCornerRadius.md)
                 }
             }
             .foregroundColor(selectedSubTab == index ? .white : .axTextSecondary)

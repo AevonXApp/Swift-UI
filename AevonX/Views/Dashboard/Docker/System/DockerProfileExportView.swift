@@ -143,7 +143,7 @@ struct DockerProfileExportView: View {
                         .textSelection(.enabled)
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                .padding(8)
+                .padding(AXSpacing.sm)
                 .frame(maxHeight: 250)
                 .background(Color.axSurface)
                 .cornerRadius(AXCornerRadius.sm)

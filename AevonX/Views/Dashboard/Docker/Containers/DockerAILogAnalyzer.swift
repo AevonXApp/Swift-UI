@@ -125,7 +125,7 @@ struct DockerAILogAnalyzer: View {
                                     .padding(.horizontal, 16)
                                     .padding(.vertical, 8)
                                     .background(Color.purple)
-                                    .cornerRadius(8)
+                                    .cornerRadius(AXCornerRadius.md)
                                 }
                                 .buttonStyle(.plain)
                             }

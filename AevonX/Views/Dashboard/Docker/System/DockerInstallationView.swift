@@ -46,7 +46,7 @@ struct DockerInstallationView: View {
                         }
                         .padding(.top, AXSpacing.md)
                     } else if let error = errorMessage {
-                        HStack(spacing: 8) {
+                        HStack(spacing: AXSpacing.sm) {
                             Image(systemName: "exclamationmark.triangle.fill")
                             Text(error)
                         }

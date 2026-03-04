@@ -17,7 +17,7 @@ public struct HookToastOverlay: View {
     public init() {}
 
     public var body: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: AXSpacing.sm) {
             Spacer()
             ForEach(manager.activeToasts) { toast in
                 toastView(toast)

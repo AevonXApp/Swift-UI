@@ -108,7 +108,7 @@ struct DockerConnectDomainSheet: View {
                             .padding(.vertical, 10)
                             .background(Color.axAccentBlue)
                             .foregroundColor(.white)
-                            .cornerRadius(8)
+                            .cornerRadius(AXCornerRadius.md)
                             .padding(.top, AXSpacing.md)
                     }
                     
@@ -145,7 +145,7 @@ struct DockerConnectDomainSheet: View {
                                 .padding(.vertical, 8)
                                 .background(Color.axAccentBlue)
                                 .foregroundColor(.white)
-                                .cornerRadius(8)
+                                .cornerRadius(AXCornerRadius.md)
                             }
                         }
                         .padding(.top, AXSpacing.sm)
@@ -221,7 +221,7 @@ struct DockerConnectDomainSheet: View {
                                 }
                                 .padding(10)
                                 .background(Color.axAccentBlue.opacity(0.05))
-                                .cornerRadius(8)
+                                .cornerRadius(AXCornerRadius.md)
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 8)
                                         .stroke(Color.axAccentBlue.opacity(0.15), lineWidth: 1)
@@ -280,7 +280,7 @@ struct DockerConnectDomainSheet: View {
                             .padding(.horizontal, 16)
                             .padding(.vertical, 10)
                             .background(Color.axError.opacity(0.1))
-                            .cornerRadius(8)
+                            .cornerRadius(AXCornerRadius.md)
                         }
                         .buttonStyle(.plain)
                         
@@ -299,7 +299,7 @@ struct DockerConnectDomainSheet: View {
                             .padding(.horizontal, 16)
                             .padding(.vertical, 10)
                             .background(Color.axAccentBlue)
-                            .cornerRadius(8)
+                            .cornerRadius(AXCornerRadius.md)
                         }
                         .buttonStyle(.plain)
                     }
@@ -468,7 +468,7 @@ struct DockerConnectDomainSheet: View {
                         .padding(.vertical, 10)
                         .background(canConnect ? Color.axAccentBlue : Color.axSurface)
                         .foregroundColor(canConnect ? .white : .axTextMuted)
-                        .cornerRadius(8)
+                        .cornerRadius(AXCornerRadius.md)
                     }
                     .buttonStyle(.plain)
                     .disabled(!canConnect)

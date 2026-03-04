@@ -79,7 +79,7 @@ struct DockerBackupSheet: View {
                     
                     // Progress
                     if isBackingUp {
-                        VStack(spacing: 8) {
+                        VStack(spacing: AXSpacing.sm) {
                             ProgressView(value: progressValue)
                                 .progressViewStyle(.linear)
                             Text(progressMessage)
@@ -141,7 +141,7 @@ struct DockerBackupSheet: View {
                                                 .font(AXTypography.body)
                                                 .foregroundColor(.axTextPrimary)
                                             
-                                            HStack(spacing: 8) {
+                                            HStack(spacing: AXSpacing.sm) {
                                                 if backup.hasImage {
                                                     Label("Image", systemImage: "photo")
                                                         .font(AXTypography.caption2)

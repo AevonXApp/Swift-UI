@@ -103,7 +103,7 @@ public struct PluginLogViewerComponent: View {
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: 0) {
                         ForEach(filteredLines) { line in
-                            HStack(spacing: 8) {
+                            HStack(spacing: AXSpacing.sm) {
                                 Text(line.text)
                                     .font(.system(size: 11, design: .monospaced))
                                     .foregroundColor(line.color)

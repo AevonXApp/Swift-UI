@@ -349,7 +349,7 @@ struct TerminalSnippetsSheet: View {
                         .padding(.horizontal, 6)
                         .padding(.vertical, 2)
                         .background(Color.axBorder.opacity(0.4))
-                        .cornerRadius(8)
+                        .cornerRadius(AXCornerRadius.md)
                     
                     // Run icon
                     Image(systemName: "play.circle.fill")
@@ -570,7 +570,7 @@ struct AddSnippetSheet: View {
                                     .padding(.horizontal, 6)
                                     .padding(.vertical, 2)
                                     .background(Color.axBorder.opacity(0.4))
-                                    .cornerRadius(8)
+                                    .cornerRadius(AXCornerRadius.md)
                                 
                                 Image(systemName: "play.circle.fill")
                                     .font(.system(size: 16))

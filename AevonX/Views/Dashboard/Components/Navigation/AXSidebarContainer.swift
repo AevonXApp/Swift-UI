@@ -99,7 +99,7 @@ extension AXSidebarContainer where Header == EmptyView, Footer == EmptyView {
     AXSidebarContainer(
         width: 220,
         header: {
-            HStack(spacing: 8) {
+            HStack(spacing: AXSpacing.sm) {
                 Image(systemName: "wrench.and.screwdriver.fill")
                     .font(.system(size: 11, weight: .bold))
                     .foregroundColor(.axAccentBlue)
