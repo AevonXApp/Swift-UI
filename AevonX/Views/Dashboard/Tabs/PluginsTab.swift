@@ -14,6 +14,7 @@ struct PluginsTab: View {
     
     @State private var selectedTab: PluginViewType = .marketplace
     @State private var pluginForConfiguration: Plugin?
+    @StateObject private var viewModel = PluginsViewModel()
     
     // Dev build sheet
     @State private var showDevBuildSheet: Bool = false
@@ -106,7 +107,7 @@ struct PluginsTab: View {
                     Divider()
                         .background(Color.axBorder)
                     
-                    // Content
+                    // Content — both tabs share the same viewModel
                     Group {
                         switch selectedTab {
                         case .marketplace:
@@ -117,7 +118,8 @@ struct PluginsTab: View {
                                     withAnimation(.easeInOut(duration: 0.25)) {
                                         pluginForConfiguration = plugin
                                     }
-                                }
+                                },
+                                viewModel: viewModel
                             )
                         case .installed:
                             PluginsMarketplaceView(
@@ -127,7 +129,8 @@ struct PluginsTab: View {
                                     withAnimation(.easeInOut(duration: 0.25)) {
                                         pluginForConfiguration = plugin
                                     }
-                                }
+                                },
+                                viewModel: viewModel
                             )
                         }
                     }

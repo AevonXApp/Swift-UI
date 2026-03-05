@@ -213,21 +213,21 @@ struct LoggedInView: View {
                 
                 // Navigation
                 VStack(spacing: AXSpacing.xs) {
-                    ProfileTabButton(
+                    AXSidebarTabRow(
                         icon: "person",
                         title: "Account",
                         isSelected: selectedTab == 0,
                         action: { selectedTab = 0 }
                     )
                     
-                    ProfileTabButton(
+                    AXSidebarTabRow(
                         icon: "clock.arrow.circlepath",
                         title: "Activity",
                         isSelected: selectedTab == 1,
                         action: { selectedTab = 1 }
                     )
                     
-                    ProfileTabButton(
+                    AXSidebarTabRow(
                         icon: vaultViewModel.isVaultInitialized ? "lock.shield.fill" : "lock.shield",
                         title: "Encryption",
                         isSelected: selectedTab == 2,
@@ -312,37 +312,6 @@ struct LoggedInView: View {
     }
 }
 
-struct ProfileTabButton: View {
-    let icon: String
-    let title: String
-    let isSelected: Bool
-    let action: () -> Void
-    
-    var body: some View {
-        Button(action: action) {
-            HStack(spacing: AXSpacing.md) {
-                Image(systemName: icon)
-                    .font(.system(size: 16))
-                    .foregroundColor(isSelected ? .axAccentBlue : .axTextSecondary)
-                    .frame(width: 24)
-                
-                Text(title)
-                    .font(AXTypography.body)
-                    .fontWeight(isSelected ? .semibold : .regular)
-                    .foregroundColor(isSelected ? .axTextPrimary : .axTextSecondary)
-                
-                Spacer()
-            }
-            .padding(.horizontal, AXSpacing.lg)
-            .padding(.vertical, AXSpacing.sm)
-            .background(
-                RoundedRectangle(cornerRadius: AXCornerRadius.md)
-                    .fill(isSelected ? Color.axAccentBlue.opacity(0.1) : Color.clear)
-            )
-        }
-        .buttonStyle(PlainButtonStyle())
-    }
-}
 
 // MARK: - Account Tab (Real Data)
 

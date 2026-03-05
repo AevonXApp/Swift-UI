@@ -66,7 +66,7 @@ struct PluginChartComponent: View {
             for valCol in valueColumns {
                 let raw = row[valCol.key] ?? "0"
                 let value = Double(raw.components(separatedBy: .whitespaces).first ?? raw) ?? 0
-                points.append(ChartPoint(label: label, value: value, series: valCol.label))
+                points.append(ChartPoint(label: label, value: value, series: valCol.displayLabel))
             }
         }
         return points
@@ -139,7 +139,7 @@ struct PluginChartComponent: View {
                             RoundedRectangle(cornerRadius: 2)
                                 .fill(seriesColor(index: i))
                                 .frame(width: 12, height: 4)
-                            Text(col.label)
+                            Text(col.displayLabel)
                                 .font(.system(size: 11))
                                 .foregroundColor(.axTextSecondary)
                         }

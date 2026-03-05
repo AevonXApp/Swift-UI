@@ -35,7 +35,7 @@ struct PluginsMarketplaceView: View {
     var showInstalledOnly: Bool = false
     let onSettings: (Plugin) -> Void
     
-    @StateObject private var viewModel = PluginsViewModel()
+    @ObservedObject var viewModel: PluginsViewModel
     @State private var pluginToInstall: Plugin?
     
     let columns = [

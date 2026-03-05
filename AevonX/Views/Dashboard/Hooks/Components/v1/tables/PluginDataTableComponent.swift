@@ -375,7 +375,7 @@ struct PluginDataTableComponent: View {
                     Image(systemName: icon).font(.system(size: 10, weight: .semibold))
                         .foregroundColor(sortColumn == col.key ? .axAccentBlue : .axTextMuted)
                 }
-                Text(col.label.uppercased()).font(.system(size: 11, weight: .bold))
+                Text(col.displayLabel.uppercased()).font(.system(size: 11, weight: .bold))
                     .foregroundColor(sortColumn == col.key ? .axAccentBlue : .axTextSecondary).tracking(0.5)
                 if sortColumn == col.key {
                     Image(systemName: sortAscending ? "chevron.up" : "chevron.down")
@@ -758,7 +758,7 @@ struct PluginDataTableComponent: View {
         let rows = filteredRows; var content = ""
         switch format {
         case .csv:
-            content = columns.map { $0.label }.joined(separator: ",") + "\n"
+            content = columns.map { $0.displayLabel }.joined(separator: ",") + "\n"
             for row in rows {
                 let line = columns.map { col in
                     let val = row[col.key] ?? ""
@@ -800,7 +800,7 @@ final class PluginDataTableViewModel: ObservableObject {
         errorMessage = nil
         do {
             let result = try await HookCommandDispatcher.shared.fetchData(
-                action: ds.action, payload: ds.payload, format: ds.format, rowsPath: ds.rowsPath,
+                action: ds.action, payload: ds.payload, format: ds.format ?? .json, rowsPath: ds.rowsPath,
                 serverId: serverId, context: context, type: ds.type, namespace: plugin.namespace, transform: ds.transform, keyColumn: ds.keyColumn
             )
             rows = result; lastUpdated = Date(); hasLoadedOnce = true

@@ -31,35 +31,35 @@ struct SettingsView: View {
             HStack(spacing: 0) {
                 // Sidebar
                 VStack(alignment: .leading, spacing: AXSpacing.xs) {
-                    SettingsTabButton(
+                    AXSidebarTabRow(
                         icon: "gearshape",
                         title: "General",
                         isSelected: selectedTab == 0,
                         action: { selectedTab = 0 }
                     )
                     
-                    SettingsTabButton(
+                    AXSidebarTabRow(
                         icon: "paintbrush",
                         title: "Appearance",
                         isSelected: selectedTab == 1,
                         action: { selectedTab = 1 }
                     )
                     
-                    SettingsTabButton(
+                    AXSidebarTabRow(
                         icon: "bell",
                         title: "Notifications",
                         isSelected: selectedTab == 2,
                         action: { selectedTab = 2 }
                     )
                     
-                    SettingsTabButton(
+                    AXSidebarTabRow(
                         icon: "network",
                         title: "Network",
                         isSelected: selectedTab == 3,
                         action: { selectedTab = 3 }
                     )
                     
-                    SettingsTabButton(
+                    AXSidebarTabRow(
                         icon: "lock.shield",
                         title: "Security",
                         isSelected: selectedTab == 4,
@@ -73,7 +73,7 @@ struct SettingsView: View {
                         Divider()
                             .background(Color.axBorder)
                         
-                        SettingsTabButton(
+                        AXSidebarTabRow(
                             icon: "info.circle",
                             title: "About",
                             isSelected: selectedTab == 5,
@@ -119,37 +119,7 @@ struct SettingsView: View {
     }
 }
 
-struct SettingsTabButton: View {
-    let icon: String
-    let title: String
-    let isSelected: Bool
-    let action: () -> Void
-    
-    var body: some View {
-        Button(action: action) {
-            HStack(spacing: AXSpacing.md) {
-                Image(systemName: icon)
-                    .font(.system(size: 16))
-                    .foregroundColor(isSelected ? .axAccentBlue : .axTextSecondary)
-                    .frame(width: 24)
-                
-                Text(title)
-                    .font(AXTypography.body)
-                    .fontWeight(isSelected ? .semibold : .regular)
-                    .foregroundColor(isSelected ? .axTextPrimary : .axTextSecondary)
-                
-                Spacer()
-            }
-            .padding(.horizontal, AXSpacing.lg)
-            .padding(.vertical, AXSpacing.sm)
-            .background(
-                RoundedRectangle(cornerRadius: AXCornerRadius.md)
-                    .fill(isSelected ? Color.axAccentBlue.opacity(0.1) : Color.clear)
-            )
-        }
-        .buttonStyle(PlainButtonStyle())
-    }
-}
+
 
 // MARK: - Settings Sections
 

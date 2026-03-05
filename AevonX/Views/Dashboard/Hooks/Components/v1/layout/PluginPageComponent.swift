@@ -21,10 +21,12 @@ public struct PluginPageComponent: View {
     let serverId: String
     let context: [String: String]
     @State private var selectedTabIndex: Int = 0
+    @State private var selectedSidebarId: String? = nil
 
     @ObservedObject private var registry = HookRegistry.shared
 
     private var hasTabs: Bool { if let tabs = plugin.tabs, !tabs.isEmpty { return true }; return false }
+    private var hasSidebar: Bool { if let sidebar = plugin.sidebar, !sidebar.isEmpty { return true }; return false }
     private var isSelfContained: Bool { plugin.component == .dataTable || plugin.component == .chart }
 
     /// Build a HookNamespace from the plugin's namespace string — used to feed PluginControlBar
@@ -37,12 +39,115 @@ public struct PluginPageComponent: View {
 
     public var body: some View {
         VStack(spacing: 0) {
-            if hasTabs { tabbedPageContent }
+            if hasSidebar { sidebarPageContent }
+            else if hasTabs { tabbedPageContent }
             else {
                 if !isSelfContained { pageHeader; Divider() }
                 pageContent
             }
         }.background(Color.axBackground)
+    }
+
+    // MARK: - Sidebar Page
+
+    @ViewBuilder
+    private var sidebarPageContent: some View {
+        let sidebarItems = plugin.sidebar ?? []
+        let activeId = selectedSidebarId ?? sidebarItems.first?.id ?? ""
+
+        HStack(spacing: 0) {
+            // ── Left Sidebar Navigation ──
+            VStack(alignment: .leading, spacing: 2) {
+                // Plugin header
+                HStack(spacing: AXSpacing.sm) {
+                    if let icon = plugin.icon {
+                        Image(systemName: icon)
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.accentColor)
+                    }
+                    Text(plugin.name)
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundColor(.axTextPrimary)
+                        .lineLimit(1)
+                }
+                .padding(.horizontal, AXSpacing.md)
+                .padding(.vertical, AXSpacing.md)
+
+                Divider().padding(.horizontal, AXSpacing.sm)
+
+                // Sidebar items
+                ScrollView(.vertical, showsIndicators: false) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        ForEach(sidebarItems) { item in
+                            Button(action: {
+                                withAnimation(.easeInOut(duration: 0.2)) {
+                                    selectedSidebarId = item.id
+                                }
+                            }) {
+                                HStack(spacing: AXSpacing.sm) {
+                                    Image(systemName: item.icon ?? "circle")
+                                        .font(.system(size: 13, weight: item.id == activeId ? .semibold : .regular))
+                                        .foregroundColor(item.id == activeId ? .accentColor : .axTextMuted)
+                                        .frame(width: 20)
+                                    Text(item.label)
+                                        .font(.system(size: 13, weight: item.id == activeId ? .semibold : .regular))
+                                        .foregroundColor(item.id == activeId ? .axTextPrimary : .axTextSecondary)
+                                        .lineLimit(1)
+                                    Spacer()
+                                }
+                                .padding(.horizontal, AXSpacing.md)
+                                .padding(.vertical, 8)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 8)
+                                        .fill(item.id == activeId ? Color.accentColor.opacity(0.12) : Color.clear)
+                                )
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                    .padding(.top, AXSpacing.sm)
+                }
+
+                Spacer()
+
+                // Version badge
+                if let ns = hookNamespace, let manifest = ns.manifest {
+                    Text("v\(manifest.version)")
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundColor(.axTextMuted)
+                        .padding(.horizontal, AXSpacing.md)
+                        .padding(.bottom, AXSpacing.md)
+                }
+            }
+            .frame(width: 200)
+            .background(Color.axSurface.opacity(0.6))
+
+            Divider()
+
+            // ── Content Area ──
+            VStack(spacing: 0) {
+                // Control bar
+                if let ns = hookNamespace, ns.manifest?.healthCheck != nil {
+                    PluginControlBar(namespace: ns, serverId: serverId)
+                        .padding(.horizontal, AXSpacing.xxl)
+                        .padding(.vertical, AXSpacing.sm)
+                    Divider().opacity(0.3)
+                }
+
+                // Active sidebar content
+                if let activeItem = sidebarItems.first(where: { $0.id == activeId }),
+                   let content = activeItem.content {
+                    PluginPageComponent(
+                        plugin: sidebarContentPlugin(content),
+                        serverId: serverId,
+                        context: context
+                    )
+                } else {
+                    emptyState
+                }
+            }
+            .frame(maxWidth: .infinity)
+        }
     }
 
     // MARK: - Tabbed Page
@@ -143,12 +248,32 @@ public struct PluginPageComponent: View {
     @ViewBuilder
     private func layoutContent(_ layout: HookPluginLayout) -> some View {
         switch layout.type {
-        case .overview: overviewLayout(layout)
-        case .table: tableLayout(layout)
-        case .grid, .cardsDetails: gridLayout(layout)
-        case .split: splitLayout(layout)
-        case .dashboard: dashboardLayout(layout)
-        case .tabs: tabsLayout(layout)
+        // ── Core layouts ─────────────────────────────────────────
+        case .overview:                             overviewLayout(layout)
+        case .table:                                tableLayout(layout)
+        case .grid, .cardsDetails:                  gridLayout(layout)
+        case .split:                                splitLayout(layout)
+        case .dashboard:                            dashboardLayout(layout)
+        case .tabs:                                 tabsLayout(layout)
+
+        // ── Plugin-specific layouts (widget-based) ──────────────
+        case .commandCenter, .intelligenceFeed,
+             .operationsPanel, .analyticsBoard,
+             .forensicsView:
+            // These layouts use the `widgets` array in hook.json
+            // → rendered via dashboardLayout which handles cards + widgets
+            dashboardLayout(layout)
+
+        // ── New diversity layouts ────────────────────────────────
+        case .heroCards, .mosaic:                    gridLayout(layout)
+        case .metricsWall:                          dashboardLayout(layout)
+        case .splitDetail, .sidebarDetail:          splitLayout(layout)
+        case .kanban:                               gridLayout(layout)
+        case .timelineView:                         overviewLayout(layout)
+        case .comparison:                           splitLayout(layout)
+        case .flow:                                 overviewLayout(layout)
+        case .report:                               overviewLayout(layout)
+        case .unknown:                              dashboardLayout(layout)
         }
     }
 
@@ -232,8 +357,59 @@ public struct PluginPageComponent: View {
             namespace: plugin.namespace, fields: card.fields)
     }
 
+    /// Injects the parent plugin's namespace into sidebar content
+    private func sidebarContentPlugin(_ content: HookPluginDefinition) -> HookPluginDefinition {
+        var copy = content
+        copy.namespace = plugin.namespace
+        return copy
+    }
+
     @ViewBuilder private func dashboardLayout(_ layout: HookPluginLayout) -> some View {
-        dashboardCardsContent(cards: layout.cards ?? [], columns: layout.columns ?? 2)
+        VStack(spacing: 0) {
+            dashboardCardsContent(cards: layout.cards ?? [], columns: layout.columns ?? 2)
+
+            // If the plugin itself has a data_source + columns, render it as a data table below cards
+            if plugin.dataSource != nil, let columns = plugin.columns, !columns.isEmpty {
+                let tablePlugin = HookPluginDefinition(
+                    id: plugin.id + "_table",
+                    name: plugin.titleOverride ?? plugin.name,
+                    description: plugin.description,
+                    hook: plugin.hook,
+                    component: .dataTable,
+                    icon: plugin.iconOverride ?? plugin.icon,
+                    dataSource: plugin.dataSource,
+                    columns: columns,
+                    namespace: plugin.namespace,
+                    onRowTap: plugin.onRowTap,
+                    rowActions: plugin.rowActions,
+                    searchKeys: plugin.searchKeys,
+                    filters: plugin.filters
+                )
+                PluginDataTableComponent(plugin: tablePlugin, serverId: serverId, context: context)
+                    .padding(.horizontal, AXSpacing.xxl)
+                    .padding(.top, AXSpacing.md)
+            }
+
+            // Secondary tables (e.g. "Risk by Category" below "Active Threats")
+            if let secondaryTables = plugin.secondaryTables {
+                ForEach(Array(secondaryTables.enumerated()), id: \.offset) { _, table in
+                    let secondaryPlugin = HookPluginDefinition(
+                        id: table.id ?? "secondary",
+                        name: table.title ?? "Data",
+                        description: nil,
+                        hook: plugin.hook,
+                        component: .dataTable,
+                        icon: table.icon,
+                        dataSource: table.dataSource,
+                        columns: table.columns,
+                        namespace: plugin.namespace
+                    )
+                    PluginDataTableComponent(plugin: secondaryPlugin, serverId: serverId, context: context)
+                        .padding(.horizontal, AXSpacing.xxl)
+                        .padding(.top, AXSpacing.md)
+                }
+            }
+        }
     }
 
     @ViewBuilder private func gridLayout(_ layout: HookPluginLayout) -> some View {
