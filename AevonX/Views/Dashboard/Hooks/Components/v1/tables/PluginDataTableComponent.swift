@@ -282,9 +282,10 @@ struct PluginDataTableComponent: View {
         case .status:
             statusBadge(value)
         case .badge:
-            Text(value).font(.system(size: 11, weight: .semibold)).foregroundColor(.axAccentBlue)
+            let badgeColor = badgeSeverityColor(value)
+            Text(value).font(.system(size: 11, weight: .semibold)).foregroundColor(badgeColor)
                 .padding(.horizontal, 7).padding(.vertical, 3)
-                .background(Color.axAccentBlue.opacity(0.12)).cornerRadius(5)
+                .background(badgeColor.opacity(0.12)).cornerRadius(5)
         case .datetime:
             VStack(alignment: .leading, spacing: 2) {
                 Text(relativeTime(value)).font(.system(size: 12, weight: .medium)).foregroundColor(.axTextPrimary)
@@ -432,10 +433,11 @@ struct PluginDataTableComponent: View {
                 }
             case .status: statusBadge(value)
             case .badge:
-                Text(value).font(.system(size: 10, weight: .semibold)).foregroundColor(.axAccentBlue)
+                let badgeColor = badgeSeverityColor(value)
+                Text(value).font(.system(size: 10, weight: .semibold)).foregroundColor(badgeColor)
                     .padding(.horizontal, 7).padding(.vertical, 3)
-                    .background(Color.axAccentBlue.opacity(0.12)).cornerRadius(5)
-                    .overlay(RoundedRectangle(cornerRadius: 5).stroke(Color.axAccentBlue.opacity(0.2), lineWidth: 1))
+                    .background(badgeColor.opacity(0.12)).cornerRadius(5)
+                    .overlay(RoundedRectangle(cornerRadius: 5).stroke(badgeColor.opacity(0.25), lineWidth: 1))
             case .boolean:
                 let isTrue = value.lowercased() == "true" || value == "1" || value.lowercased() == "yes"
                 HStack(spacing: 4) {
@@ -677,6 +679,27 @@ struct PluginDataTableComponent: View {
         if seconds < 3600 { return "\(seconds / 60)m ago" }
         if seconds < 86400 { return "\(seconds / 3600)h ago" }
         return "\(seconds / 86400)d ago"
+    }
+
+    /// Map badge values to semantic colors based on severity / status keywords
+    private func badgeSeverityColor(_ value: String) -> Color {
+        switch value.lowercased() {
+        // Severity levels
+        case "critical":                                          return .axError
+        case "high":                                              return Color(red: 0.96, green: 0.62, blue: 0.04) // orange
+        case "medium":                                            return .axWarning
+        case "low":                                               return .axSuccess
+        case "info", "informational":                             return .axAccentBlue
+        // Status words
+        case "open", "active", "enabled", "true", "yes", "running", "online":
+            return .axSuccess
+        case "resolved", "closed", "fixed", "done", "completed":  return Color(red: 0.4, green: 0.7, blue: 0.4)
+        case "failed", "error", "disabled", "false", "no", "blocked", "offline":
+            return .axError
+        case "pending", "warning", "degraded", "skipped":         return .axWarning
+        case "dry_run", "dry-run":                                return Color(red: 0.6, green: 0.5, blue: 0.9)
+        default:                                                  return .axAccentBlue
+        }
     }
 
     // MARK: - Filter Bar

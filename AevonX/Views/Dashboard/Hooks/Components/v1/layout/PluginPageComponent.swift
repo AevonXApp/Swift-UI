@@ -94,6 +94,9 @@ public struct PluginPageComponent: View {
                                         .foregroundColor(item.id == activeId ? .axTextPrimary : .axTextSecondary)
                                         .lineLimit(1)
                                     Spacer()
+                                    if item.badgeSource != nil {
+                                        SidebarBadgeView(item: item, serverId: serverId, namespace: plugin.namespace)
+                                    }
                                 }
                                 .padding(.horizontal, AXSpacing.md)
                                 .padding(.vertical, 8)
@@ -444,5 +447,49 @@ public struct PluginPageComponent: View {
             Image(systemName: plugin.icon ?? "puzzlepiece").font(.system(size: 40)).foregroundColor(.axTextMuted)
             Text("No layout defined for this plugin").font(AXTypography.body).foregroundColor(.axTextMuted)
         }.frame(maxWidth: .infinity, maxHeight: .infinity).padding(AXSpacing.xxl)
+    }
+}
+
+// MARK: - Sidebar Badge View
+
+/// Displays a small count badge next to a sidebar item label.
+/// Fetches its value from the sidebar item's `badgeSource` data source.
+private struct SidebarBadgeView: View {
+    let item: HookSidebarItem
+    let serverId: String
+    var namespace: String?
+
+    @StateObject private var vm = HookPluginViewModel()
+    @State private var badgeValue: String?
+
+    var body: some View {
+        Group {
+            if let value = badgeValue, !value.isEmpty, value != "0" {
+                Text(value)
+                    .font(.system(size: 10, weight: .bold))
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .background(Capsule().fill(Color.axAccentBlue))
+            }
+        }
+        .task { await loadBadge() }
+    }
+
+    private func loadBadge() async {
+        guard let source = item.badgeSource else { return }
+        let command = HookPluginCommand(type: .pluginCmd, action: source.action)
+        await vm.execute(command: command, pluginId: "badge_\(item.id)", serverId: serverId, context: [:], namespace: namespace)
+        guard let output = vm.resultOutput, let data = output.data(using: .utf8),
+              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return }
+
+        if let field = source.valuePath ?? source.rowsPath {
+            if let val = json[field] { badgeValue = "\(val)" }
+        } else {
+            // Try common field names
+            for key in json.keys {
+                if let intVal = json[key] as? Int { badgeValue = "\(intVal)"; break }
+            }
+        }
     }
 }
