@@ -1026,14 +1026,7 @@ struct ActivityTab: View {
     }
     
     private func timeAgo(_ date: Date) -> String {
-        let diff = Date().timeIntervalSince(date)
-        switch diff {
-        case ..<60.0:      return "Just now"
-        case ..<3600.0:    return "\(Int(diff / 60))m ago"
-        case ..<86400.0:   return "\(Int(diff / 3600))h ago"
-        case ..<604800.0:  return "\(Int(diff / 86400))d ago"
-        default:           return "\(Int(diff / 604800))w ago"
-        }
+        AXFormatter.formatTimeAgo(date)
     }
 }
 

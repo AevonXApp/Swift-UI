@@ -74,11 +74,12 @@ public struct NginxOverviewTab: View {
 
                     Divider()
 
-                    AppInfoRow(label: "Version", value: application.version ?? "Unknown")
-                    AppInfoRow(label: "Auto-start", value: application.autoStart ? "Enabled" : "Disabled")
+                    AXInfoRow(label: "Version", value: application.version ?? "Unknown", valueColor: .axAccentBlue)
+                    AXInfoRow(label: "Auto-start", value: application.autoStart ? "Enabled" : "Disabled",
+                              valueColor: application.autoStart ? .axSuccess : .axTextMuted)
 
                     if let memory = application.memoryUsage {
-                        AppInfoRow(label: "Memory Usage", value: String(format: "%.1f MB", memory))
+                        AXInfoRow(label: "Memory Usage", value: String(format: "%.1f MB", memory))
                     }
                 }
             }

@@ -44,13 +44,28 @@ public enum CommonServiceSection: String, ServiceSection, CaseIterable {
 
 // MARK: - Section Extensions
 
-/// Make PHPSection conform to ServiceSection
-extension PHPSection: ServiceSection {
+/// Make PHPSection conform to ServiceSection & SidebarSection
+extension PHPSection: ServiceSection, SidebarSection {
     public var displayName: String { rawValue }
 }
 
-/// Make NginxSection conform to ServiceSection
-extension NginxSection: ServiceSection {
+/// Make NginxSection conform to ServiceSection & SidebarSection
+extension NginxSection: ServiceSection, SidebarSection {
+    public var displayName: String { rawValue }
+}
+
+/// Make ApacheSection conform to ServiceSection & SidebarSection
+extension ApacheSection: ServiceSection, SidebarSection {
+    public var displayName: String { rawValue }
+}
+
+/// Make NodeJSSection conform to ServiceSection & SidebarSection
+extension NodeJSSection: ServiceSection, SidebarSection {
+    public var displayName: String { rawValue }
+}
+
+/// Make PythonSection conform to ServiceSection & SidebarSection
+extension PythonSection: ServiceSection, SidebarSection {
     public var displayName: String { rawValue }
 }
 

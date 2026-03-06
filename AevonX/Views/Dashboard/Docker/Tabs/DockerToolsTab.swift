@@ -490,12 +490,12 @@ private struct DockerTrafficInline: View {
                                 .lineLimit(1)
                                 .frame(width: 150, alignment: .leading)
                             
-                            Text(formatBytes(stat.rxBytes))
+                            Text(AXFormatter.formatBytes(stat.rxBytes))
                                 .font(.system(size: 11, design: .monospaced))
                                 .foregroundColor(.axSuccess)
                                 .frame(width: 100, alignment: .trailing)
                             
-                            Text(formatBytes(stat.txBytes))
+                            Text(AXFormatter.formatBytes(stat.txBytes))
                                 .font(.system(size: 11, design: .monospaced))
                                 .foregroundColor(.axAccentBlue)
                                 .frame(width: 100, alignment: .trailing)
@@ -538,9 +538,6 @@ private struct DockerTrafficInline: View {
         }
     }
     
-    private func formatBytes(_ bytes: Int64) -> String {
-        ByteCountFormatter.string(fromByteCount: bytes, countStyle: .binary)
-    }
 }
 
 // MARK: - Dependencies Inline

@@ -152,7 +152,7 @@ public final class TrafficAnalyticsViewModel: ObservableObject {
 
     public var totalBandwidth: String {
         let total = bandwidthData.reduce(0) { $0 + $1.totalBytes }
-        return ByteCountFormatter.string(fromByteCount: Int64(total), countStyle: .binary)
+        return AXFormatter.formatBytes(Int64(total))
     }
 
     public var topRequestMethod: String? {

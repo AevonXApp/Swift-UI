@@ -39,7 +39,7 @@ struct DBOverviewSection: View {
             GridItem(.flexible())
         ], spacing: AXSpacing.lg) {
             overviewStat(icon: "cylinder", label: "Engine", value: viewModel.database.type.displayName, color: viewModel.database.type.brandColor)
-            overviewStat(icon: "internaldrive", label: "Size", value: formatSize(viewModel.database.size), color: .axAccentGreen)
+            overviewStat(icon: "internaldrive", label: "Size", value: AXFormatter.formatSizeMB(viewModel.database.size), color: .axAccentGreen)
             overviewStat(icon: "tablecells", label: "Tables", value: "\(viewModel.tables.count)", color: .axWarning)
             overviewStat(icon: "bolt.horizontal", label: "Connections", value: "\(viewModel.database.connections)", color: .axInfo)
         }
@@ -129,7 +129,7 @@ struct DBOverviewSection: View {
             Text("\(table.rowCount) rows")
                 .font(AXTypography.caption)
                 .foregroundColor(.axTextMuted)
-            Text(viewModel.formatBytes(table.dataSize))
+            Text(AXFormatter.formatBytes(table.dataSize))
                 .font(AXTypography.caption)
                 .foregroundColor(.axTextMuted)
                 .frame(width: 70, alignment: .trailing)
@@ -137,12 +137,4 @@ struct DBOverviewSection: View {
         .padding(.vertical, AXSpacing.xs)
     }
 
-    private func formatSize(_ mb: Double) -> String {
-        if mb >= 1024 { return String(format: "%.1f GB", mb / 1024) }
-        return String(format: "%.1f MB", mb)
-    }
-    
-    private func formatBytes(_ bytes: Double) -> String {
-        return viewModel.formatBytes(Int64(bytes))
-    }
 }

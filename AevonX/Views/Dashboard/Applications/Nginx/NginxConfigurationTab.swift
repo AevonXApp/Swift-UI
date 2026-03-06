@@ -95,7 +95,7 @@ public struct NginxConfigurationTab: View {
                     
                     VStack(alignment: .leading, spacing: AXSpacing.sm) {
                         DetailItem(label: "Main Config File", value: nginxConfig.configPath)
-                        DetailItem(label: "Include Directory", value: "/etc/nginx/conf.d/*.conf")
+                        DetailItem(label: "Include Directory", value: "Detected dynamically")
                         DetailItem(label: "Logs Directory", value: nginxConfig.logPath)
                     }
                 }

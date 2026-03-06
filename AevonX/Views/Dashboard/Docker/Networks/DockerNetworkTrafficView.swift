@@ -45,8 +45,8 @@ struct DockerNetworkTrafficView: View {
                     // Total summary
                     if !stats.isEmpty {
                         HStack(spacing: AXSpacing.md) {
-                            trafficCard("Total Received", value: formatBytes(totalRx), icon: "arrow.down.circle.fill", color: .axAccentBlue)
-                            trafficCard("Total Sent", value: formatBytes(totalTx), icon: "arrow.up.circle.fill", color: .axSuccess)
+                            trafficCard("Total Received", value: AXFormatter.formatBytes(totalRx), icon: "arrow.down.circle.fill", color: .axAccentBlue)
+                            trafficCard("Total Sent", value: AXFormatter.formatBytes(totalTx), icon: "arrow.up.circle.fill", color: .axSuccess)
                             trafficCard("Containers", value: "\(stats.count)", icon: "shippingbox.fill", color: .purple)
                         }
                     }
@@ -157,12 +157,6 @@ struct DockerNetworkTrafficView: View {
         }
     }
     
-    private func formatBytes(_ bytes: Int64) -> String {
-        if bytes > 1_073_741_824 { return String(format: "%.2f GB", Double(bytes) / 1_073_741_824) }
-        if bytes > 1_048_576 { return String(format: "%.1f MB", Double(bytes) / 1_048_576) }
-        if bytes > 1024 { return String(format: "%.0f KB", Double(bytes) / 1024) }
-        return "\(bytes) B"
-    }
     
     private func loadStats() {
         isLoading = true

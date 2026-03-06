@@ -116,7 +116,7 @@ struct ModernDatabaseCard: View {
                 HStack(spacing: AXSpacing.lg) {
                     // Size
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(database.formattedSize)
+                        Text(AXFormatter.formatSizeMB(database.size))
                             .font(AXTypography.caption)
                             .fontWeight(.semibold)
                             .foregroundColor(.axTextPrimary)

@@ -7,6 +7,7 @@
 
 import Foundation
 import SwiftUI
+import AevonXCore
 
 // MARK: - Site Health Check
 
@@ -36,10 +37,7 @@ struct SiteHealthCheck: Identifiable {
 
     var formattedResponseTime: String {
         guard let time = responseTime else { return "N/A" }
-        if time < 1.0 {
-            return String(format: "%.0fms", time * 1000)
-        }
-        return String(format: "%.2fs", time)
+        return AXFormatter.formatResponseTimeSeconds(time)
     }
 }
 
@@ -98,9 +96,7 @@ struct SiteBandwidthData: Identifiable {
     let period: String  // e.g., "Today", "This Week"
 
     var formatted: String {
-        let formatter = ByteCountFormatter()
-        formatter.countStyle = .file
-        return formatter.string(fromByteCount: totalBytes)
+        AXFormatter.formatBytes(totalBytes)
     }
 }
 

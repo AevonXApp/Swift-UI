@@ -42,10 +42,11 @@ struct ApacheVirtualHostsTab: View {
             ScrollView {
                 VStack(spacing: AXSpacing.md) {
                     if apacheConfig.virtualHosts.isEmpty {
-                        Text("No Virtual Hosts configured")
-                            .font(AXTypography.body)
-                            .foregroundColor(.axTextSecondary)
-                            .padding(.top, AXSpacing.xl)
+                        AXPlaceholder(
+                            icon: "globe",
+                            title: "No Virtual Hosts",
+                            subtitle: "Add a virtual host to get started"
+                        )
                     } else {
                         ForEach(apacheConfig.virtualHosts) { vhost in
                             VHostCard(
@@ -212,7 +213,7 @@ private struct AddVHostSheet: View {
     let onAdd: (ApacheVHost) -> Void
     
     @State private var domain = ""
-    @State private var documentRoot = "/var/www/html"
+    @State private var documentRoot = ""
     @State private var port = 80
     @State private var adminEmail = ""
     

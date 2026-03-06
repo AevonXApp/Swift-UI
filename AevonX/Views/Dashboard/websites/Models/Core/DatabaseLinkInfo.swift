@@ -7,6 +7,7 @@
 
 import Foundation
 import SwiftUI
+import AevonXCore
 
 // MARK: - Database Link
 
@@ -110,9 +111,7 @@ struct DatabaseStats: Identifiable {
     var sizeBytes: Int64
     var tableCount: Int
 
-    var formattedSize: String {
-        let formatter = ByteCountFormatter()
-        formatter.countStyle = .file
-        return formatter.string(fromByteCount: sizeBytes)
+    var sizeFormatted: String {
+        AXFormatter.formatBytes(sizeBytes)
     }
 }

@@ -31,6 +31,12 @@ struct ApplicationDetailView: View {
             case .apache:
                 ApacheDetailView(application: application, serverId: serverId, onBack: onBack)
 
+            case .nodejs:
+                NodeJSDetailView(application: application, serverId: serverId, onBack: onBack)
+
+            case .python:
+                PythonDetailView(application: application, serverId: serverId, onBack: onBack)
+
             // ✅ NEW: Route database engines to unified detail view
             case .mysql, .postgresql, .redis, .mongodb, .mariadb, .sqlite, .cockroachdb, .cassandra, .elasticsearch:
                 if let dbType = DatabaseType(rawValue: application.type.rawValue) {
@@ -75,7 +81,8 @@ struct GenericApplicationDetailView: View {
                             .foregroundColor(.axTextPrimary)
 
                         HStack {
-                            AppInfoRow(label: "Status", value: application.isRunning ? "Running" : "Stopped")
+                            AXInfoRow(label: "Status", value: application.isRunning ? "Running" : "Stopped",
+                                      valueColor: application.isRunning ? .axSuccess : .axError)
                             Spacer()
                             Circle()
                                 .fill(application.isRunning ? Color.axSuccess : Color.axTextMuted)
@@ -83,18 +90,19 @@ struct GenericApplicationDetailView: View {
                         }
 
                         if let version = application.version {
-                            AppInfoRow(label: "Version", value: version)
+                            AXInfoRow(label: "Version", value: version, valueColor: .axAccentBlue)
                         }
 
                         if let port = application.port {
-                            AppInfoRow(label: "Port", value: "\(port)")
+                            AXInfoRow(label: "Port", value: "\(port)")
                         }
 
                         if let memoryUsage = application.memoryUsage {
-                            AppInfoRow(label: "Memory", value: String(format: "%.1f MB", memoryUsage))
+                            AXInfoRow(label: "Memory", value: String(format: "%.1f MB", memoryUsage))
                         }
 
-                        AppInfoRow(label: "Auto-start", value: application.autoStart ? "Enabled" : "Disabled")
+                        AXInfoRow(label: "Auto-start", value: application.autoStart ? "Enabled" : "Disabled",
+                                  valueColor: application.autoStart ? .axSuccess : .axTextMuted)
                     }
                 }
 
@@ -143,25 +151,6 @@ struct GenericApplicationDetailView: View {
                 self.logLines = ["Failed to load logs: \(error.localizedDescription)"]
                 self.isLoadingLogs = false
             }
-        }
-    }
-}
-
-// MARK: - App Info Row Component
-
-struct AppInfoRow: View {
-    let label: String
-    let value: String
-
-    var body: some View {
-        HStack {
-            Text(label)
-                .font(AXTypography.caption)
-                .foregroundColor(.axTextTertiary)
-            Spacer()
-            Text(value)
-                .font(AXTypography.body)
-                .foregroundColor(.axTextPrimary)
         }
     }
 }

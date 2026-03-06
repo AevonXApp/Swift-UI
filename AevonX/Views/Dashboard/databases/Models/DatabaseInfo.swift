@@ -103,34 +103,6 @@ public struct DatabaseInfo: Identifiable, Codable, Hashable {
         self.healthIssues = healthIssues
     }
     
-    /// Formatted size string
-    public var formattedSize: String {
-        if size >= 1024 * 1024 {
-            return String(format: "%.2f TB", size / (1024 * 1024))
-        } else if size >= 1024 {
-            return String(format: "%.2f GB", size / 1024)
-        } else {
-            return String(format: "%.0f MB", size)
-        }
-    }
-    
-    /// Formatted uptime string
-    public var formattedUptime: String {
-        guard let uptime = uptime else { return "Unknown" }
-        
-        let days = Int(uptime) / 86400
-        let hours = (Int(uptime) % 86400) / 3600
-        let minutes = (Int(uptime) % 3600) / 60
-        
-        if days > 0 {
-            return "\(days)d \(hours)h \(minutes)m"
-        } else if hours > 0 {
-            return "\(hours)h \(minutes)m"
-        } else {
-            return "\(minutes)m"
-        }
-    }
-    
     /// Connection string representation
     public var connectionString: String {
         if let socket = socket, !socket.isEmpty {

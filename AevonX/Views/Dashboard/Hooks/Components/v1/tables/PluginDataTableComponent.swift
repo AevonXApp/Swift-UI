@@ -651,10 +651,7 @@ struct PluginDataTableComponent: View {
 
     private func formatBytes(_ value: String) -> String {
         guard let bytes = Double(value) else { return value }
-        let units = ["B", "KB", "MB", "GB", "TB"]
-        var size = bytes; var unitIndex = 0
-        while size >= 1024 && unitIndex < units.count - 1 { size /= 1024; unitIndex += 1 }
-        return String(format: "%.1f %@", size, units[unitIndex])
+        return AXFormatter.formatBytes(bytes)
     }
 
     private func formatNumber(_ value: String) -> String {

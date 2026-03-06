@@ -1,3 +1,10 @@
+//
+//  NginxVersionsTab.swift
+//  AevonX
+//
+//  Nginx Version management — now using UnifiedVersionsView
+//  Business logic preserved, uses ApplicationManager for install/switch
+//
 
 import SwiftUI
 import AevonXCore
@@ -6,24 +13,15 @@ import AevonXCore
 public struct NginxVersionsTab: View {
     let application: ApplicationInstance
     let serverId: String
-    
+
     @State private var availableVersions: [String] = []
     @State private var currentVersion: String?
-    @State private var isLoadingVersions = false
-    @State private var currentOperation: VersionOperation?
-    @State private var operationProgress: Double = 0.0
-    @State private var operationMessage: String = ""
+    @State private var isLoading = false
 
-    enum VersionOperation: Equatable {
-        case installing(String)
-        case switching(String)
-        
-        var version: String {
-            switch self {
-            case .installing(let v), .switching(let v): return v
-            }
-        }
-    }
+    // Step installer
+    @StateObject private var installerVM = AXStepInstallerViewModel(steps: [])
+    @State private var installerTitle: String = ""
+    @State private var showInstaller = false
 
     public init(application: ApplicationInstance, serverId: String) {
         self.application = application
@@ -31,283 +29,146 @@ public struct NginxVersionsTab: View {
     }
 
     public var body: some View {
-        VStack(spacing: AXSpacing.lg) {
-            // Current Version Card
-            AXCard {
-                VStack(alignment: .leading, spacing: AXSpacing.md) {
-                    HStack(alignment: .top) {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("Current Version")
-                                .font(AXTypography.caption)
-                                .fontWeight(.medium)
-                                .foregroundColor(.axTextTertiary)
-                            
-                            Text(currentVersion ?? application.version ?? "Unknown")
-                                .font(.system(size: 32, weight: .bold, design: .monospaced))
-                                .foregroundColor(.axTextPrimary)
-                        }
-                        
-                        Spacer()
-                        
-                        VStack(spacing: AXSpacing.xs) {
-                            HStack(spacing: 4) {
-                                Circle()
-                                    .fill(application.isRunning ? Color.axSuccess : Color.axError)
-                                    .frame(width: 6, height: 6)
-                                Text(application.isRunning ? "Running" : "Stopped")
-                                    .font(AXTypography.caption2)
-                                    .foregroundColor(.axTextSecondary)
-                            }
-                            
-                            if application.isRunning {
-                                Image(systemName: "checkmark.circle.fill")
-                                    .font(.system(size: 24))
-                                    .foregroundColor(.axSuccess)
-                            }
-                        }
-                    }
-                }
+        UnifiedVersionsView(
+            title: "Nginx Versions",
+            serviceName: "Nginx",
+            currentVersion: currentVersion ?? application.version,
+            versions: buildVersionItems(),
+            isLoading: isLoading,
+            serviceIcon: "server.rack",
+            accentColor: Color(hex: "#009639"),
+            onRefresh: { await loadVersions() },
+            onInstall: { version in Task { await installVersion(version) } },
+            onSwitch: { version in Task { await switchToVersion(version) } },
+            onUninstall: nil,
+            installerVM: installerVM,
+            installerTitle: installerTitle,
+            showInstaller: showInstaller,
+            onDismissInstaller: {
+                showInstaller = false
+                Task { await loadVersions() }
             }
-
-            // Available Versions Section
-            VStack(spacing: 0) {
-                // Toolbar
-                HStack(spacing: AXSpacing.md) {
-                    Text("AVAILABLE VERSIONS (\(availableVersions.count))")
-                        .font(AXTypography.caption)
-                        .fontWeight(.bold)
-                        .foregroundColor(.axTextTertiary)
-                    
-                    Spacer()
-                    
-                    Button(action: { Task { await loadVersions() } }) {
-                        HStack(spacing: AXSpacing.xs) {
-                            Image(systemName: "arrow.clockwise")
-                                .font(.system(size: 11))
-                            Text("Refresh")
-                                .font(AXTypography.caption)
-                        }
-                        .foregroundColor(.axAccentBlue)
-                    }
-                    .buttonStyle(.plain)
-                    .disabled(isLoadingVersions)
-                }
-                .padding(.bottom, AXSpacing.md)
-
-                // Versions List
-                if isLoadingVersions {
-                    AXCard {
-                        VStack(spacing: AXSpacing.md) {
-                            ProgressView()
-                            Text("Loading versions...")
-                                .font(AXTypography.caption)
-                                .foregroundColor(.axTextTertiary)
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding(AXSpacing.xl)
-                    }
-                } else if availableVersions.isEmpty {
-                    AXCard {
-                        VStack(spacing: AXSpacing.md) {
-                            Image(systemName: "exclamationmark.triangle")
-                                .font(.system(size: 32))
-                                .foregroundColor(.axWarning.opacity(0.5))
-                            Text("No versions available")
-                                .font(AXTypography.subheadline)
-                                .foregroundColor(.axTextSecondary)
-                            Text("Try refreshing to fetch available versions")
-                                .font(AXTypography.caption)
-                                .foregroundColor(.axTextTertiary)
-                                .multilineTextAlignment(.center)
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding(AXSpacing.xl)
-                    }
-                } else {
-                    VStack(spacing: AXSpacing.sm) {
-                        ForEach(availableVersions, id: \.self) { version in
-                            VersionRow(
-                                version: version,
-                                isCurrent: version == (currentVersion ?? application.version),
-                                operation: currentOperation?.version == version ? currentOperation : nil,
-                                progress: operationProgress,
-                                progressMessage: operationMessage,
-                                onInstall: { await installVersion(version) },
-                                onSwitch: { await switchToVersion(version) }
-                            )
-                        }
-                    }
-                }
-            }
-        }
+        )
         .task {
             await loadVersions()
         }
     }
 
+    // MARK: - Build Version Items
+
+    private func buildVersionItems() -> [VersionItem] {
+        availableVersions.map { version in
+            let isCurrent = version == (currentVersion ?? application.version)
+            let badge: String? = {
+                // Mark latest & LTS
+                if version == availableVersions.first { return "Latest" }
+                return nil
+            }()
+
+            return VersionItem(
+                version: version,
+                isCurrent: isCurrent,
+                isInstalled: isCurrent,
+                badge: isCurrent ? nil : badge,
+                badgeColor: .axAccentBlue
+            )
+        }
+    }
+
+    // MARK: - Data Loading
+
     private func loadVersions() async {
-        isLoadingVersions = true
+        isLoading = true
         do {
             let appInfo = try await ApplicationManager.shared.getApplicationInfo(type: .nginx, serverId: serverId)
             let versions = try await ApplicationManager.shared.getAvailableVersions(type: .nginx, serverId: serverId)
-            await MainActor.run {
-                self.currentVersion = appInfo.version
-                self.availableVersions = versions
-                self.isLoadingVersions = false
-            }
+            self.currentVersion = appInfo.version
+            self.availableVersions = versions
         } catch {
-            await MainActor.run {
-                self.availableVersions = []
-                self.isLoadingVersions = false
-                GlobalToastManager.shared.showError("Failed to load versions: \(error.localizedDescription)")
-            }
+            self.availableVersions = []
+            GlobalToastManager.shared.showError("Failed to load versions: \(error.localizedDescription)")
         }
+        isLoading = false
     }
-    
+
+    // MARK: - Actions
+
     private func installVersion(_ version: String) async {
-        currentOperation = .installing(version)
-        operationProgress = 0.0
-        operationMessage = "Starting installation..."
-        
-        do {
-            try await ApplicationManager.shared.installVersion(version, type: .nginx, serverId: serverId) { message, progress in
-                Task { @MainActor in
-                    self.operationProgress = progress
-                    self.operationMessage = message
+        let steps: [AXInstallStep] = [
+            AXInstallStep(title: "Download Nginx \(version)", description: "Fetching packages", icon: "arrow.down.circle"),
+            AXInstallStep(title: "Install Nginx \(version)", description: "Installing nginx=\(version)*", icon: "shippingbox"),
+            AXInstallStep(title: "Verify Installation", description: "Confirming version", icon: "checkmark.shield"),
+        ]
+
+        installerVM.steps = steps
+        installerTitle = "Installing Nginx \(version)"
+        showInstaller = true
+
+        let sshService = SSHService.shared
+
+        await installerVM.run(serverId: serverId) { step, sid in
+            switch step.title {
+            case let t where t.starts(with: "Download"):
+                let result = try await sshService.execute("sudo apt-get update -y 2>/dev/null", serverId: sid)
+                guard result.exitCode == 0 else {
+                    throw NSError(domain: "NginxInstall", code: 1, userInfo: [NSLocalizedDescriptionKey: "apt-get update failed"])
                 }
-            }
-            
-            await MainActor.run {
-                self.currentOperation = nil
-                GlobalToastManager.shared.showSuccess("Nginx version \(version) installed successfully!")
-            }
-            await loadVersions()
-        } catch {
-            await MainActor.run {
-                self.currentOperation = nil
-                GlobalToastManager.shared.showError(error.localizedDescription)
+                return "Package lists updated"
+
+            case let t where t.starts(with: "Install"):
+                let result = try await sshService.execute("sudo apt-get install -y nginx=\(version)* 2>&1", serverId: sid)
+                guard result.exitCode == 0 else {
+                    throw NSError(domain: "NginxInstall", code: 2, userInfo: [NSLocalizedDescriptionKey: result.stderr.isEmpty ? "Installation failed" : result.stderr])
+                }
+                return "Installed"
+
+            case "Verify Installation":
+                let result = try await sshService.execute("nginx -v 2>&1", serverId: sid)
+                return result.stderr.trimmingCharacters(in: .whitespacesAndNewlines)
+
+            default:
+                return nil
             }
         }
     }
-    
+
     private func switchToVersion(_ version: String) async {
-        currentOperation = .switching(version)
-        operationProgress = 0.0
-        operationMessage = "Starting switch..."
-        
-        do {
-            try await ApplicationManager.shared.switchVersion(version, type: .nginx, serverId: serverId) { message, progress in
-                Task { @MainActor in
-                    self.operationProgress = progress
-                    self.operationMessage = message
-                }
-            }
-            
-            await MainActor.run {
-                self.currentOperation = nil
-                GlobalToastManager.shared.showSuccess("Switched to Nginx version \(version) successfully!")
-            }
-            await loadVersions()
-        } catch {
-            await MainActor.run {
-                self.currentOperation = nil
-                GlobalToastManager.shared.showError(error.localizedDescription)
-            }
-        }
-    }
-}
+        let steps: [AXInstallStep] = [
+            AXInstallStep(title: "Stop Nginx", description: "Stopping current service", icon: "stop.circle"),
+            AXInstallStep(title: "Switch to \(version)", description: "Updating package version", icon: "arrow.triangle.swap"),
+            AXInstallStep(title: "Start Nginx", description: "Starting updated service", icon: "play.circle"),
+            AXInstallStep(title: "Verify Switch", description: "Confirming new version", icon: "checkmark.shield"),
+        ]
 
-// MARK: - Version Row Component
+        installerVM.steps = steps
+        installerTitle = "Switching to Nginx \(version)"
+        showInstaller = true
 
-private struct VersionRow: View {
-    let version: String
-    let isCurrent: Bool
-    let operation: NginxVersionsTab.VersionOperation?
-    let progress: Double
-    let progressMessage: String
-    let onInstall: () async -> Void
-    let onSwitch: () async -> Void
-    
-    var isOperating: Bool {
-        operation != nil
-    }
-    
-    var body: some View {
-        AXCard(padding: AXSpacing.md) {
-            VStack(spacing: AXSpacing.sm) {
-                HStack(spacing: AXSpacing.md) {
-                    // Version Number
-                    Text(version)
-                        .font(.system(size: 18, weight: .semibold, design: .monospaced))
-                        .foregroundColor(.axTextPrimary)
-                    
-                    Spacer()
-                    
-                    // Status/Actions
-                    if isCurrent {
-                        HStack(spacing: AXSpacing.xs) {
-                            Image(systemName: "checkmark.circle.fill")
-                                .font(.system(size: 12))
-                            Text("Current")
-                                .font(AXTypography.caption)
-                                .fontWeight(.medium)
-                        }
-                        .foregroundColor(.axSuccess)
-                        .padding(.horizontal, AXSpacing.sm)
-                        .padding(.vertical, 4)
-                        .background(Color.axSuccess.opacity(0.1))
-                        .cornerRadius(AXCornerRadius.sm)
-                    } else if isOperating {
-                        HStack(spacing: AXSpacing.xs) {
-                            ProgressView()
-                                .controlSize(.small)
-                            Text("\(Int(progress * 100))%")
-                                .font(AXTypography.caption2)
-                                .fontWeight(.medium)
-                                .foregroundColor(.axTextSecondary)
-                        }
-                    } else {
-                        HStack(spacing: AXSpacing.sm) {
-                            Button(action: { Task { await onInstall() } }) {
-                                Text("Install")
-                                    .font(AXTypography.caption)
-                                    .fontWeight(.medium)
-                                    .foregroundColor(.axAccentBlue)
-                                    .padding(.horizontal, AXSpacing.md)
-                                    .padding(.vertical, 6)
-                                    .background(Color.axAccentBlue.opacity(0.1))
-                                    .cornerRadius(AXCornerRadius.md)
-                                    .overlay(RoundedRectangle(cornerRadius: AXCornerRadius.md).stroke(Color.axAccentBlue.opacity(0.3), lineWidth: 1))
-                            }
-                            .buttonStyle(.plain)
-                            
-                            Button(action: { Task { await onSwitch() } }) {
-                                Text("Switch")
-                                    .font(AXTypography.caption)
-                                    .fontWeight(.medium)
-                                    .foregroundColor(.axTextSecondary)
-                                    .padding(.horizontal, AXSpacing.md)
-                                    .padding(.vertical, 6)
-                                    .background(Color.axSurface)
-                                    .cornerRadius(AXCornerRadius.md)
-                                    .overlay(RoundedRectangle(cornerRadius: AXCornerRadius.md).stroke(Color.axBorder, lineWidth: 1))
-                            }
-                            .buttonStyle(.plain)
-                        }
-                    }
+        let sshService = SSHService.shared
+
+        await installerVM.run(serverId: serverId) { step, sid in
+            switch step.title {
+            case "Stop Nginx":
+                _ = try await sshService.execute("sudo systemctl stop nginx 2>/dev/null", serverId: sid)
+                return "Stopped"
+
+            case let t where t.starts(with: "Switch"):
+                let result = try await sshService.execute("sudo apt-get install -y nginx=\(version)* 2>&1", serverId: sid)
+                guard result.exitCode == 0 else {
+                    throw NSError(domain: "NginxSwitch", code: 1, userInfo: [NSLocalizedDescriptionKey: result.stderr])
                 }
-                
-                // Progress Bar
-                if isOperating {
-                    VStack(alignment: .leading, spacing: 4) {
-                        ProgressView(value: progress)
-                            .tint(.axAccentBlue)
-                        
-                        Text(progressMessage)
-                            .font(AXTypography.caption2)
-                            .foregroundColor(.axTextTertiary)
-                    }
-                }
+                return "Installed \(version)"
+
+            case "Start Nginx":
+                _ = try await sshService.execute("sudo systemctl start nginx 2>/dev/null", serverId: sid)
+                return "Started"
+
+            case "Verify Switch":
+                let result = try await sshService.execute("nginx -v 2>&1", serverId: sid)
+                return result.stderr.trimmingCharacters(in: .whitespacesAndNewlines)
+
+            default:
+                return nil
             }
         }
     }

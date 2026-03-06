@@ -149,7 +149,7 @@ struct MetricsGrid: View {
             AXStatCard(
                 icon: "clock",
                 label: "Uptime",
-                value: formatUptime(metrics.uptime),
+                value: AXFormatter.formatUptime(metrics.uptime),
                 color: themeColor
             )
 
@@ -163,25 +163,13 @@ struct MetricsGrid: View {
             AXStatCard(
                 icon: "memorychip",
                 label: "Memory",
-                value: String(format: "%.1f MB", metrics.memoryUsage),
+                value: AXFormatter.formatSizeMB(metrics.memoryUsage),
                 color: .axWarning
             )
         }
     }
 
-    private func formatUptime(_ seconds: TimeInterval) -> String {
-        let days = Int(seconds) / 86400
-        let hours = (Int(seconds) % 86400) / 3600
-        let minutes = (Int(seconds) % 3600) / 60
 
-        if days > 0 {
-            return "\(days)d \(hours)h \(minutes)m"
-        } else if hours > 0 {
-            return "\(hours)h \(minutes)m"
-        } else {
-            return "\(minutes)m"
-        }
-    }
 }
 
 struct PerformanceCard: View {

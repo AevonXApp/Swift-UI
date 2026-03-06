@@ -36,11 +36,7 @@ extension RequestStatistics {
 
     /// Formatted average response time
     public var formattedResponseTime: String {
-        if averageResponseTime < 1000 {
-            return String(format: "%.0f ms", averageResponseTime)
-        } else {
-            return String(format: "%.2f s", averageResponseTime / 1000)
-        }
+        AXFormatter.formatResponseTime(averageResponseTime)
     }
 }
 
@@ -52,17 +48,17 @@ extension BandwidthDataPoint {
 
     /// Formatted bytes in
     public var formattedBytesIn: String {
-        ByteCountFormatter.string(fromByteCount: Int64(bytesIn), countStyle: .binary)
+        AXFormatter.formatBytes(Int64(bytesIn))
     }
 
     /// Formatted bytes out
     public var formattedBytesOut: String {
-        ByteCountFormatter.string(fromByteCount: Int64(bytesOut), countStyle: .binary)
+        AXFormatter.formatBytes(Int64(bytesOut))
     }
 
     /// Formatted total
     public var formattedTotal: String {
-        ByteCountFormatter.string(fromByteCount: Int64(totalBytes), countStyle: .binary)
+        AXFormatter.formatBytes(Int64(totalBytes))
     }
 }
 
@@ -80,11 +76,7 @@ extension EndpointStat {
 
     /// Formatted response time
     public var formattedResponseTime: String {
-        if averageResponseTime < 1000 {
-            return String(format: "%.0f ms", averageResponseTime)
-        } else {
-            return String(format: "%.2f s", averageResponseTime / 1000)
-        }
+        AXFormatter.formatResponseTime(averageResponseTime)
     }
 
     /// Health status based on error rate and response time

@@ -816,14 +816,7 @@ struct DatabaseUserRow: View {
     }
     
     private func timeAgo(_ date: Date) -> String {
-        let interval = Date().timeIntervalSince(date)
-        if interval < 3600 {
-            return "\(Int(interval / 60))m ago"
-        } else if interval < 86400 {
-            return "\(Int(interval / 3600))h ago"
-        } else {
-            return "\(Int(interval / 86400))d ago"
-        }
+        AXFormatter.formatTimeAgo(date)
     }
 }
 
@@ -1007,11 +1000,7 @@ struct DatabaseInfoCard: View {
     }
     
     private func formatSize(_ mb: Double) -> String {
-        if mb >= 1024 {
-            return String(format: "%.1f GB", mb / 1024)
-        } else {
-            return String(format: "%.0f MB", mb)
-        }
+        AXFormatter.formatSizeMB(mb)
     }
 }
 

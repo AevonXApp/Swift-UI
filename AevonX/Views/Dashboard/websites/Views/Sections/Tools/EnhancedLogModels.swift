@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import AevonXCore
 
 // MARK: - Table Models
 
@@ -63,7 +64,7 @@ enum EnhancedLogParser {
         if let match = statusPattern?.firstMatch(in: raw, options: [], range: NSRange(raw.startIndex..., in: raw)) {
             if let r1 = Range(match.range(at: 1), in: raw) { statusCode = String(raw[r1]) }
             if let r2 = Range(match.range(at: 2), in: raw) {
-                if let bytes = Int(raw[r2]) { size = formatBytes(bytes) }
+                if let bytes = Int(raw[r2]) { size = AXFormatter.formatBytes(bytes) }
             }
         }
 
@@ -111,11 +112,6 @@ enum EnhancedLogParser {
         return raw
     }
 
-    static func formatBytes(_ bytes: Int) -> String {
-        if bytes < 1024 { return "\(bytes) B" }
-        if bytes < 1048576 { return String(format: "%.1f KB", Double(bytes) / 1024) }
-        return String(format: "%.1f MB", Double(bytes) / 1048576)
-    }
 
     // MARK: - Badges
 

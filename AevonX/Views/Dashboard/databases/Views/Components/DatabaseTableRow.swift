@@ -50,7 +50,7 @@ struct DatabaseTableRow: View {
                 .frame(width: 100, alignment: .leading)
             
             // Size
-            Text(database.formattedSize)
+            Text(AXFormatter.formatSizeMB(database.size))
                 .font(AXTypography.caption)
                 .foregroundColor(.axTextSecondary)
                 .frame(width: 100, alignment: .leading)

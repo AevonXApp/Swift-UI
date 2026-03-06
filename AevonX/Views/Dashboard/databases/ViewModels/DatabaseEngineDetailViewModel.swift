@@ -1008,25 +1008,10 @@ public final class DatabaseEngineDetailViewModel: ObservableObject {
         }
     }
     
-    /// Formatted uptime
-    public var formattedUptime: String {
-        guard let uptime = metrics?.uptime else { return "N/A" }
-        return formatUptime(uptime)
-    }
-    
     /// Connection usage percentage
     public var connectionUsagePercent: Double {
         guard let metrics = metrics, metrics.maxConnections > 0 else { return 0 }
         return Double(metrics.connections) / Double(metrics.maxConnections)
-    }
-    
-    /// Memory usage formatted
-    public var formattedMemoryUsage: String {
-        guard let metrics = metrics else { return "N/A" }
-        if metrics.memoryUsage >= 1024 {
-            return String(format: "%.2f GB", metrics.memoryUsage / 1024)
-        }
-        return String(format: "%.1f MB", metrics.memoryUsage)
     }
     
     /// Whether any operation is in progress
@@ -1045,20 +1030,6 @@ public final class DatabaseEngineDetailViewModel: ObservableObject {
     }
     
     // MARK: - Helpers
-    
-    private func formatUptime(_ seconds: Double) -> String {
-        let days = Int(seconds) / 86400
-        let hours = (Int(seconds) % 86400) / 3600
-        let minutes = (Int(seconds) % 3600) / 60
-        
-        if days > 0 {
-            return "\(days)d \(hours)h \(minutes)m"
-        } else if hours > 0 {
-            return "\(hours)h \(minutes)m"
-        } else {
-            return "\(minutes)m"
-        }
-    }
     
     /// Whether this database engine supports user management features
     public var supportsUserManagement: Bool {

@@ -33,17 +33,13 @@ extension AccessLogEntry {
 
     /// Formatted response size
     public var formattedSize: String {
-        ByteCountFormatter.string(fromByteCount: Int64(responseSize), countStyle: .binary)
+        AXFormatter.formatBytes(Int64(responseSize))
     }
 
     /// Formatted response time
     public var formattedResponseTime: String? {
         guard let time = responseTime else { return nil }
-        if time < 1000 {
-            return String(format: "%.0f ms", time)
-        } else {
-            return String(format: "%.2f s", time / 1000)
-        }
+        return AXFormatter.formatResponseTime(time)
     }
 
     /// Whether this is an error request

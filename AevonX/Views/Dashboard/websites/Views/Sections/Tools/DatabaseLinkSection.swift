@@ -73,7 +73,7 @@ struct DatabaseLinkSection: View {
                             if let stats = dbStats {
                                 HStack(spacing: AXSpacing.xl) {
                                     VStack(spacing: 4) {
-                                        Text(stats.formattedSize)
+                                        Text(stats.sizeFormatted)
                                             .font(.system(size: 20, weight: .bold))
                                             .foregroundColor(.axAccentBlue)
                                         Text("Size").font(.system(size: 11)).foregroundColor(.axTextTertiary)

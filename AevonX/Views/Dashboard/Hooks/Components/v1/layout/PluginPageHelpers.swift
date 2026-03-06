@@ -80,12 +80,12 @@ struct DashboardStatPill: View {
             if let extracted = extractValue(from: json, path: valuePath) {
                 let title = card.title.lowercased()
                 if title.contains("uptime") {
-                    if let seconds = extracted as? Double { displayValue = formatDuration(seconds: seconds) }
-                    else if let seconds = extracted as? Int { displayValue = formatDuration(seconds: Double(seconds)) }
-                    else if valuePath.contains("ms"), let ms = extracted as? Double { displayValue = formatDuration(seconds: ms / 1000.0) }
-                    else if valuePath.contains("ms"), let ms = extracted as? Int { displayValue = formatDuration(seconds: Double(ms) / 1000.0) }
-                    else { displayValue = formatStatValue(extracted) }
-                } else { displayValue = formatStatValue(extracted) }
+                    if let seconds = extracted as? Double { displayValue = AXFormatter.formatDuration(seconds: seconds) }
+                    else if let seconds = extracted as? Int { displayValue = AXFormatter.formatDuration(seconds: Double(seconds)) }
+                    else if valuePath.contains("ms"), let ms = extracted as? Double { displayValue = AXFormatter.formatDuration(seconds: ms / 1000.0) }
+                    else if valuePath.contains("ms"), let ms = extracted as? Int { displayValue = AXFormatter.formatDuration(seconds: Double(ms) / 1000.0) }
+                    else { displayValue = AXFormatter.formatValue(extracted) }
+                } else { displayValue = AXFormatter.formatValue(extracted) }
                 if let suffix = json["suffix"] as? String, !suffix.isEmpty { displayValue = (displayValue ?? "") + suffix }
                 if let trend = json["trend"] as? String {
                     switch trend { case "up": displayValue = (displayValue ?? "") + " ↑"; case "down": displayValue = (displayValue ?? "") + " ↓"; default: break }
@@ -106,11 +106,11 @@ struct DashboardStatPill: View {
                 }
             } else { statusColor = .axError; displayValue = "✗ \(statusText)" }
         } else if title.contains("uptime") {
-            if let seconds = json["uptime_seconds"] as? Double { displayValue = formatDuration(seconds: seconds); statusColor = .axSuccess }
-            else if let seconds = json["uptime_seconds"] as? Int { displayValue = formatDuration(seconds: Double(seconds)); statusColor = .axSuccess }
-            else if let ms = json["uptime_ms"] as? Double { displayValue = formatDuration(seconds: ms / 1000.0); statusColor = .axSuccess }
-            else if let ms = json["uptime_ms"] as? Int { displayValue = formatDuration(seconds: Double(ms) / 1000.0); statusColor = .axSuccess }
-            else { displayValue = formatStatValue(json["uptime"] ?? "—"); statusColor = .axSuccess }
+            if let seconds = json["uptime_seconds"] as? Double { displayValue = AXFormatter.formatDuration(seconds: seconds); statusColor = .axSuccess }
+            else if let seconds = json["uptime_seconds"] as? Int { displayValue = AXFormatter.formatDuration(seconds: Double(seconds)); statusColor = .axSuccess }
+            else if let ms = json["uptime_ms"] as? Double { displayValue = AXFormatter.formatDuration(seconds: ms / 1000.0); statusColor = .axSuccess }
+            else if let ms = json["uptime_ms"] as? Int { displayValue = AXFormatter.formatDuration(seconds: Double(ms) / 1000.0); statusColor = .axSuccess }
+            else { displayValue = AXFormatter.formatValue(json["uptime"] ?? "—"); statusColor = .axSuccess }
         } else if title.contains("scan") || title.contains("summary") {
             let totalFindings = json["total_findings"] as? Int ?? 0; let filesScanned = json["files_scanned"] as? Int ?? 0
             statusColor = totalFindings > 0 ? .axWarning : .axSuccess
@@ -139,12 +139,7 @@ struct DashboardStatPill: View {
     }
 
     private func formatDuration(seconds: Double) -> String {
-        let totalSeconds = Int(seconds)
-        if totalSeconds < 60 { return "\(totalSeconds)s" }
-        let days = totalSeconds / 86400; let hours = (totalSeconds % 86400) / 3600; let minutes = (totalSeconds % 3600) / 60
-        if days > 0 { return hours > 0 ? "\(days)d \(hours)h" : "\(days)d" }
-        if hours > 0 { return minutes > 0 ? "\(hours)h \(minutes)m" : "\(hours)h" }
-        return "\(minutes)m"
+        AXFormatter.formatDuration(seconds: seconds)
     }
 
     private func extractValue(from json: [String: Any], path: String) -> Any? {
@@ -154,20 +149,11 @@ struct DashboardStatPill: View {
     }
 
     private func formatStatValue(_ value: Any) -> String {
-        if let intVal = value as? Int { return formatLargeNumber(Double(intVal)) }
-        else if let doubleVal = value as? Double {
-            if doubleVal == doubleVal.rounded() && doubleVal < 1_000_000 { return formatLargeNumber(doubleVal) }
-            return String(format: "%.1f", doubleVal)
-        } else if let stringVal = value as? String {
-            if let num = Double(stringVal) { return formatLargeNumber(num) }; return stringVal
-        }
-        return "\(value)"
+        AXFormatter.formatValue(value)
     }
 
     private func formatLargeNumber(_ num: Double) -> String {
-        if num >= 1_000_000 { return String(format: "%.1fM", num / 1_000_000) }
-        else if num >= 1_000 { return String(format: "%.1fK", num / 1_000) }
-        return num == num.rounded() ? String(Int(num)) : String(format: "%.1f", num)
+        AXFormatter.formatNumber(num)
     }
 
     private func detectStatusColor(for value: Any, title: String) -> Color {

@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import AevonXCore
 
 struct OldWebsitesTab: View {
     @State private var websites: [Website] = [
@@ -359,18 +360,7 @@ private struct WebsitesTabRow: View {
     }
     
     private func timeAgo(from date: Date?) -> String {
-        guard let date = date else { return "Never" }
-        let interval = Date().timeIntervalSince(date)
-        
-        if interval < 60 {
-            return "Just now"
-        } else if interval < 3600 {
-            return "\(Int(interval / 60))m ago"
-        } else if interval < 86400 {
-            return "\(Int(interval / 3600))h ago"
-        } else {
-            return "\(Int(interval / 86400))d ago"
-        }
+        AXFormatter.formatTimeAgo(date, fallback: "Never")
     }
 }
 

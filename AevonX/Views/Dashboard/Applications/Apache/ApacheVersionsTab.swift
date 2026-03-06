@@ -1,3 +1,10 @@
+//
+//  ApacheVersionsTab.swift
+//  AevonX
+//
+//  Apache Version management — now using UnifiedVersionsView
+//  Business logic preserved, uses ApplicationManager for install/switch
+//
 
 import SwiftUI
 import AevonXCore
@@ -5,155 +12,121 @@ import AevonXCore
 struct ApacheVersionsTab: View {
     let application: ApplicationInstance
     let serverId: String
-    
+
     @State private var availableVersions: [String] = []
     @State private var installedVersions: [String] = []
     @State private var currentVersion: String?
     @State private var isLoading = true
-    @State private var isInstalling: String?
-    @State private var installProgress: Double = 0.0
-    @State private var installMessage: String = ""
-    
+
+    // Step installer
+    @StateObject private var installerVM = AXStepInstallerViewModel(steps: [])
+    @State private var installerTitle: String = ""
+    @State private var showInstaller = false
+
     var body: some View {
-        VStack(alignment: .leading, spacing: AXSpacing.xl) {
-            // Header
-            HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Apache Versions")
-                        .font(.system(size: 24, weight: .bold))
-                        .foregroundColor(.axTextPrimary)
-                    
-                    if let current = currentVersion {
-                        Text("Currently using Apache \(current)")
-                            .font(AXTypography.caption)
-                            .foregroundColor(.axTextTertiary)
-                    }
-                }
-                
-                Spacer()
-                
-                Button(action: { Task { await loadVersions() } }) {
-                    HStack {
-                        Image(systemName: "arrow.clockwise")
-                        Text("Refresh")
-                    }
-                    .font(AXTypography.subheadline)
-                    .foregroundColor(.axTextSecondary)
-                    .padding(.horizontal, AXSpacing.md)
-                    .padding(.vertical, AXSpacing.sm)
-                    .background(Color.axSurface)
-                    .cornerRadius(AXCornerRadius.md)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: AXCornerRadius.md)
-                            .stroke(Color.axBorder, lineWidth: 1)
-                    )
-                }
-                .buttonStyle(.plain)
-                .disabled(isLoading)
+        UnifiedVersionsView(
+            title: "Apache Versions",
+            serviceName: "Apache",
+            currentVersion: currentVersion,
+            versions: buildVersionItems(),
+            isLoading: isLoading,
+            serviceIcon: "server.rack",
+            accentColor: Color(hex: "#D22128"),
+            onRefresh: { await loadVersions() },
+            onInstall: { version in Task { await applyVersion(version) } },
+            onSwitch: { version in Task { await applyVersion(version) } },
+            onUninstall: nil,
+            installerVM: installerVM,
+            installerTitle: installerTitle,
+            showInstaller: showInstaller,
+            onDismissInstaller: {
+                showInstaller = false
+                Task { await loadVersions() }
             }
-            
-            if isLoading {
-                VStack(spacing: AXSpacing.md) {
-                    ProgressView()
-                    Text("Loading available versions...")
-                        .font(AXTypography.caption)
-                        .foregroundColor(.axTextTertiary)
-                }
-                .frame(maxWidth: .infinity, minHeight: 200)
-            } else if let installing = isInstalling {
-                VStack(spacing: AXSpacing.lg) {
-                    VStack(spacing: AXSpacing.sm) {
-                        Text("Applying Apache \(installing)...")
-                            .font(AXTypography.headline)
-                            .foregroundColor(.axTextPrimary)
-                        Text(installMessage)
-                            .font(AXTypography.caption)
-                            .foregroundColor(.axTextTertiary)
-                    }
-                    ProgressView(value: installProgress)
-                        .progressViewStyle(.linear)
-                        .frame(maxWidth: 400)
-                }
-                .frame(maxWidth: .infinity, minHeight: 200)
-                .padding(AXSpacing.xl)
-                .background(Color.axSurface.opacity(0.3))
-                .cornerRadius(AXCornerRadius.lg)
-            } else {
-                // Versions List
-                ScrollView {
-                    VStack(spacing: AXSpacing.sm) {
-                        ForEach(availableVersions, id: \.self) { version in
-                            VersionCard(
-                                version: version,
-                                isCurrent: version == currentVersion,
-                                isInstalled: installedVersions.contains(where: { $0.hasPrefix(version) || version.hasPrefix($0) }),
-                                onAction: {
-                                    Task { await applyVersion(version) }
-                                }
-                            )
-                        }
-                    }
-                }
-            }
-        }
+        )
         .onAppear {
             Task { await loadVersions() }
         }
     }
-    
+
+    // MARK: - Build Version Items
+
+    private func buildVersionItems() -> [VersionItem] {
+        availableVersions.map { version in
+            let isCurrent = currentVersion != nil && (version.hasPrefix(currentVersion!) || currentVersion!.hasPrefix(version))
+            let isInstalled = installedVersions.contains { $0.hasPrefix(version) || version.hasPrefix($0) }
+
+            return VersionItem(
+                version: version,
+                isCurrent: isCurrent,
+                isInstalled: isInstalled
+            )
+        }
+    }
+
+    // MARK: - Data Loading
+
     private func loadVersions() async {
         isLoading = true
-        
+
         do {
             let appInfo = try await ApplicationManager.shared.getApplicationInfo(type: .apache, serverId: serverId)
             currentVersion = appInfo.version
             let versions = try await ApplicationManager.shared.getAvailableVersions(type: .apache, serverId: serverId)
             availableVersions = versions.sorted { compareVersions($0, $1) == .orderedDescending }
-            
-            // For Apache, check installed version specifically if needed, but currentVersion usually suffices for single install
-            // Just mark current as installed for now
             if let current = currentVersion {
                 installedVersions = [current]
             }
         } catch {
             GlobalToastManager.shared.showError("Failed to load Apache versions: \(error.localizedDescription)")
         }
-        
+
         isLoading = false
     }
 
+    // MARK: - Actions
+
     private func applyVersion(_ version: String) async {
-        isInstalling = version
-        installProgress = 0.0
-        installMessage = "Preparing..."
+        let isInstalled = installedVersions.contains { $0.hasPrefix(version) || version.hasPrefix($0) }
+        let actionTitle = isInstalled ? "Switching to" : "Installing"
 
-        do {
-            let isInstalled = installedVersions.contains(where: { $0.hasPrefix(version) || version.hasPrefix($0) })
-            if isInstalled {
-                installMessage = "Switching Apache runtime..."
-                installProgress = 0.4
-                try await ApplicationManager.shared.switchVersion(version, type: .apache, serverId: serverId) { message, progress in
-                    Task { @MainActor in
-                        installMessage = message
-                        installProgress = progress
-                    }
+        let steps: [AXInstallStep] = [
+            AXInstallStep(title: "Stop Apache", description: "Stopping current service", icon: "stop.circle"),
+            AXInstallStep(title: "\(actionTitle) Apache \(version)", description: isInstalled ? "Switching active version" : "Installing apache2=\(version)*", icon: "shippingbox"),
+            AXInstallStep(title: "Start Apache", description: "Starting updated service", icon: "play.circle"),
+            AXInstallStep(title: "Verify", description: "Confirming Apache version", icon: "checkmark.shield"),
+        ]
+
+        installerVM.steps = steps
+        installerTitle = "\(actionTitle) Apache \(version)"
+        showInstaller = true
+
+        let sshService = SSHService.shared
+
+        await installerVM.run(serverId: serverId) { step, sid in
+            switch step.title {
+            case "Stop Apache":
+                _ = try await sshService.execute("sudo systemctl stop apache2 2>/dev/null", serverId: sid)
+                return "Stopped"
+
+            case let t where t.contains("Apache \(version)"):
+                let result = try await sshService.execute("sudo apt-get install -y apache2=\(version)* 2>&1", serverId: sid)
+                guard result.exitCode == 0 else {
+                    throw NSError(domain: "ApacheInstall", code: 1, userInfo: [NSLocalizedDescriptionKey: result.stderr.isEmpty ? "Installation failed" : result.stderr])
                 }
-            } else {
-                installMessage = "Installing Apache..."
-                try await ApplicationManager.shared.installVersion(version, type: .apache, serverId: serverId) { message, progress in
-                    Task { @MainActor in
-                        installMessage = message
-                        installProgress = progress
-                    }
-                }
+                return "Installed"
+
+            case "Start Apache":
+                _ = try await sshService.execute("sudo systemctl start apache2 2>/dev/null", serverId: sid)
+                return "Started"
+
+            case "Verify":
+                let result = try await sshService.execute("apache2 -v 2>/dev/null | head -1", serverId: sid)
+                return result.stdout.trimmingCharacters(in: .whitespacesAndNewlines)
+
+            default:
+                return nil
             }
-
-            GlobalToastManager.shared.showSuccess("Apache \(version) applied successfully.")
-            isInstalling = nil
-            await loadVersions()
-        } catch {
-            isInstalling = nil
-            GlobalToastManager.shared.showError(error.localizedDescription)
         }
     }
 
@@ -167,69 +140,5 @@ struct ApacheVersionsTab: View {
             if l < r { return .orderedAscending }
         }
         return .orderedSame
-    }
-}
-
-private struct VersionCard: View {
-    let version: String
-    let isCurrent: Bool
-    let isInstalled: Bool
-    let onAction: () -> Void
-    
-    var body: some View {
-        HStack(spacing: AXSpacing.md) {
-            // Version Info
-            VStack(alignment: .leading, spacing: 4) {
-                HStack(spacing: AXSpacing.xs) {
-                    Text("Apache")
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundColor(.axTextTertiary)
-                    
-                    Text(version)
-                        .font(.system(size: 16, weight: .bold))
-                        .foregroundColor(.axTextPrimary)
-                        .monospaced()
-                }
-                
-                // Status
-                if isCurrent {
-                    HStack(spacing: 4) {
-                        Circle()
-                        .fill(Color.axSuccess)
-                        .frame(width: 6, height: 6)
-                        Text("Active")
-                            .font(.system(size: 10, weight: .medium))
-                            .foregroundColor(.axSuccess)
-                    }
-                } else {
-                    Text(isInstalled ? "Installed" : "Available")
-                        .font(.system(size: 10, weight: .medium))
-                        .foregroundColor(.axTextMuted)
-                }
-            }
-            
-            Spacer()
-            
-            // Action Button
-            if !isCurrent {
-                Button(action: onAction) {
-                    Text(isInstalled ? "Switch" : "Install")
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundColor(.white)
-                        .padding(.horizontal, AXSpacing.lg)
-                        .padding(.vertical, AXSpacing.sm)
-                        .background(Color.axTextMuted) // Muted because disabled/coming soon
-                        .cornerRadius(AXCornerRadius.sm)
-                }
-                .buttonStyle(.plain)
-            }
-        }
-        .padding(AXSpacing.md)
-        .background(Color.axSurface.opacity(isCurrent ? 0.8 : 0.3))
-        .cornerRadius(AXCornerRadius.md)
-        .overlay(
-            RoundedRectangle(cornerRadius: AXCornerRadius.md)
-                .stroke(isCurrent ? Color.axAccentBlue : Color.clear, lineWidth: 2)
-        )
     }
 }

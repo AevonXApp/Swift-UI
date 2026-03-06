@@ -60,23 +60,13 @@ struct DatabaseOverviewTab: View {
 
             // Actions
             HStack(spacing: AXSpacing.md) {
-                Button(action: onReload) {
-                    HStack {
-                        Image(systemName: "arrow.clockwise")
-                        Text("Reload Service")
-                    }
-                    .frame(maxWidth: .infinity)
+                AXActionButton(label: "Reload Service", icon: "arrow.clockwise", style: .ghost, fullWidth: true) {
+                    onReload()
                 }
-                .buttonStyle(.bordered)
 
-                Button(action: onTest) {
-                    HStack {
-                        Image(systemName: "checkmark.circle")
-                        Text("Test Configuration")
-                    }
-                    .frame(maxWidth: .infinity)
+                AXActionButton(label: "Test Configuration", icon: "checkmark.circle", style: .ghost, fullWidth: true) {
+                    onTest()
                 }
-                .buttonStyle(.bordered)
             }
         }
     }
@@ -119,22 +109,20 @@ struct DatabaseConfigurationTab: View {
                         .cornerRadius(AXCornerRadius.md)
 
                     HStack {
-                        Button("Reset") {
+                        AXActionButton(label: "Reset", icon: "arrow.uturn.backward", style: .ghost) {
                             editedConfig = dbConfig.rawConfig
                             hasChanges = false
                         }
-                        .buttonStyle(.bordered)
                         .disabled(!hasChanges)
 
                         Spacer()
 
-                        Button("Save Configuration") {
+                        AXActionButton(label: "Save Configuration", icon: "checkmark", style: .primary) {
                             Task {
                                 await onSave(editedConfig)
                                 hasChanges = false
                             }
                         }
-                        .buttonStyle(.borderedProminent)
                         .disabled(!hasChanges)
                     }
                 }

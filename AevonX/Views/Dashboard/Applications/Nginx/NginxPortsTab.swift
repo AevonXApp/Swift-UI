@@ -84,7 +84,13 @@ public struct NginxPortsTab: View {
                         )
                         .frame(width: 160)
 
-                        Button(action: {
+                        AXActionButton(
+                            label: isUpdating ? "Updating..." : "Update Port",
+                            icon: "network",
+                            style: .primary,
+                            isLoading: isUpdating,
+                            fullWidth: true
+                        ) {
                             Task {
                                 if let portInt = Int(newPort) {
                                     isUpdating = true
@@ -92,16 +98,7 @@ public struct NginxPortsTab: View {
                                     isUpdating = false
                                 }
                             }
-                        }) {
-                            HStack {
-                                if isUpdating {
-                                    ProgressView().controlSize(.small)
-                                }
-                                Text(isUpdating ? "Updating..." : "Update Port")
-                            }
-                            .frame(maxWidth: .infinity)
                         }
-                        .buttonStyle(.borderedProminent)
                         .disabled(isUpdating || newPort.isEmpty)
                     }
 

@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import AevonXCore
 
 struct Project: Identifiable {
     let id = UUID()
@@ -386,14 +387,7 @@ struct ProjectCard: View {
     }
     
     private func timeAgo(_ date: Date) -> String {
-        let interval = Date().timeIntervalSince(date)
-        if interval < 3600 {
-            return "\(Int(interval / 60))m ago"
-        } else if interval < 86400 {
-            return "\(Int(interval / 3600))h ago"
-        } else {
-            return "\(Int(interval / 86400))d ago"
-        }
+        AXFormatter.formatTimeAgo(date)
     }
 }
 
