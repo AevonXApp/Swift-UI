@@ -778,10 +778,11 @@ struct ServiceCard: View {
     // MARK: - Auto-start Toggle
 
     private var autoStartToggle: some View {
-        HStack(spacing: 6) {
+        HStack(spacing: 4) {
             Text("Auto")
                 .font(.system(size: 10, weight: .medium))
                 .foregroundColor(.axTextMuted)
+                .fixedSize()
 
             Toggle("", isOn: $localAutoStart)
                 .toggleStyle(SwitchToggleStyle(tint: .axAccentBlue))
@@ -791,7 +792,7 @@ struct ServiceCard: View {
                 }
                 .disabled(isProcessing)
         }
-        .frame(width: 80)
+        .frame(width: 90)
     }
 
     // MARK: - Action Buttons
