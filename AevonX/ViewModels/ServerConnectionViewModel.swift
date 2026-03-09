@@ -215,7 +215,7 @@ public class ServerConnectionViewModel: ObservableObject {
 
     /// Whether the server appears fresh (no services detected yet)
     var isFreshServer: Bool {
-        quickInstallVM?.serverScan?.isFreshServer ?? false
+        quickInstallVM?.serverScan?.isEmpty ?? true
     }
     
     /// Whether to show connection error alert
@@ -447,10 +447,10 @@ public class ServerConnectionViewModel: ObservableObject {
                         Task { @MainActor in
                             await qi.scanServer()
                             CoreLogger.shared.info(
-                                "QuickInstall scan — installed: \(qi.serverScan?.installed.keys.sorted().joined(separator: ", ") ?? "nil"), isFresh: \(qi.serverScan?.isFreshServer ?? false)",
+                                "QuickInstall scan — installed: \(qi.serverScan?.keys.sorted().joined(separator: ", ") ?? "nil"), isFresh: \(qi.serverScan?.isEmpty ?? true)",
                                 module: "QuickInstall"
                             )
-                            if qi.serverScan?.isFreshServer == true {
+                            if qi.serverScan?.isEmpty == true {
                                 // Assign and show only after scan confirms fresh
                                 self.quickInstallVM = qi
                                 qi.isVisible = true
@@ -812,7 +812,7 @@ public class ServerConnectionViewModel: ObservableObject {
                     let signedCATToken = try await self.requestCATFromBackend()
                     
                     // Step 2: Encrypt CAT
-                    let encryptedCAT = try await CATEncryption.shared.encrypt(
+                    let _ = try await CATEncryption.shared.encrypt(
                         signedToken: signedCATToken,
                         serverId: serverId
                     )

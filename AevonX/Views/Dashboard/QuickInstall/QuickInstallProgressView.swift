@@ -8,7 +8,6 @@
 //
 
 import SwiftUI
-import AevonXCore
 
 struct QuickInstallProgressView: View {
 
@@ -93,8 +92,8 @@ struct QuickInstallProgressView: View {
             Spacer()
 
             // Package summaries
-            ForEach(viewModel.selections.prefix(4)) { sel in
-                Text(sel.packageName)
+            ForEach(Array(viewModel.selections.prefix(4))) { sel in
+                Text(sel.package_name)
                     .font(.system(size: 10, weight: .medium))
                     .foregroundColor(.axTextSecondary)
                     .padding(.horizontal, 6)

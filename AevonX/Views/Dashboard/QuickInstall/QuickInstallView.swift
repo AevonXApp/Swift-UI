@@ -7,6 +7,8 @@
 //
 //  Layout: 3-column — Category sidebar | Package grid | Selection summary bar
 //
+//  Migrated: Uses Go Core bridge types instead of AevonXCore types.
+//
 
 import SwiftUI
 import AevonXCore
@@ -182,7 +184,7 @@ struct QuickInstallView: View {
 
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: AXSpacing.sm) {
-                    ForEach(viewModel.presets) { preset in
+                    ForEach(viewModel.bridgePresets) { preset in
                         QIPresetChip(preset: preset) {
                             withAnimation(.spring(response: 0.3)) {
                                 viewModel.applyPreset(preset)
@@ -202,7 +204,7 @@ struct QuickInstallView: View {
             QICategoryRow(
                 title: "All",
                 icon: "square.grid.2x2",
-                count: viewModel.allPackages.count,
+                count: viewModel.allPackageCount,
                 isSelected: viewModel.selectedCategory == nil
             ) {
                 withAnimation(.easeInOut(duration: 0.2)) {
@@ -215,15 +217,15 @@ struct QuickInstallView: View {
                 .padding(.horizontal, AXSpacing.md)
                 .padding(.vertical, AXSpacing.xs)
 
-            ForEach(QICategory.allCases, id: \.self) { cat in
+            ForEach(viewModel.categories, id: \.id) { cat in
                 QICategoryRow(
-                    title: cat.rawValue,
+                    title: cat.name,
                     icon: cat.icon,
-                    count: viewModel.allPackages.filter { $0.category == cat }.count,
-                    isSelected: viewModel.selectedCategory == cat
+                    count: cat.count,
+                    isSelected: viewModel.selectedCategory == cat.id
                 ) {
                     withAnimation(.easeInOut(duration: 0.2)) {
-                        viewModel.selectedCategory = cat
+                        viewModel.selectedCategory = cat.id
                     }
                 }
             }
@@ -263,7 +265,7 @@ struct QuickInstallView: View {
                             package: pkg,
                             isSelected: viewModel.isSelected(pkg.id),
                             installedVersion: viewModel.installedVersion(for: pkg.id),
-                            selectedVersionId: viewModel.selections.first(where: { $0.packageId == pkg.id })?.versionId,
+                            selectedVersionId: viewModel.selections.first(where: { $0.package_id == pkg.id })?.version_id,
                             onToggle: {
                                 withAnimation(.spring(response: 0.3)) {
                                     viewModel.togglePackage(pkg)
@@ -294,9 +296,9 @@ struct QuickInstallView: View {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: AXSpacing.sm) {
                         ForEach(viewModel.selections) { sel in
-                            QISelectionChip(label: "\(sel.packageName) \(sel.versionId)") {
+                            QISelectionChip(label: "\(sel.package_name) \(sel.version_id)") {
                                 withAnimation(.spring(response: 0.25)) {
-                                    viewModel.removeSelection(sel.packageId)
+                                    viewModel.removeSelection(sel.package_id)
                                 }
                             }
                         }
@@ -377,7 +379,7 @@ struct QuickInstallView: View {
 // MARK: - Preset Chip
 
 private struct QIPresetChip: View {
-    let preset: QIPreset
+    let preset: BridgeQIPreset
     let action: () -> Void
 
     @State private var isHovered = false
@@ -387,24 +389,24 @@ private struct QIPresetChip: View {
             HStack(spacing: AXSpacing.xs) {
                 Image(systemName: preset.icon)
                     .font(.system(size: 12, weight: .semibold))
-                    .foregroundColor(colorFromHex(preset.accentHex))
+                    .foregroundColor(colorFromHex(preset.accent_hex))
 
                 VStack(alignment: .leading, spacing: 1) {
                     Text(preset.name)
                         .font(.system(size: 12, weight: .semibold))
                         .foregroundColor(.axTextPrimary)
-                    Text(preset.packageVersionPairs.map { $0.packageId.capitalized }.joined(separator: " · "))
+                    Text(preset.packages.map { $0.package_id.capitalized }.joined(separator: " · "))
                         .font(.system(size: 10))
                         .foregroundColor(.axTextMuted)
                 }
             }
             .padding(.horizontal, AXSpacing.md)
             .padding(.vertical, AXSpacing.sm)
-            .background(isHovered ? colorFromHex(preset.accentHex).opacity(0.1) : Color.axSurface)
+            .background(isHovered ? colorFromHex(preset.accent_hex).opacity(0.1) : Color.axSurface)
             .cornerRadius(AXCornerRadius.md)
             .overlay(
                 RoundedRectangle(cornerRadius: AXCornerRadius.md)
-                    .stroke(colorFromHex(preset.accentHex).opacity(isHovered ? 0.5 : 0.25), lineWidth: 1)
+                    .stroke(colorFromHex(preset.accent_hex).opacity(isHovered ? 0.5 : 0.25), lineWidth: 1)
             )
             .scaleEffect(isHovered ? 1.02 : 1.0)
             .animation(.easeInOut(duration: 0.15), value: isHovered)
@@ -467,7 +469,7 @@ private struct QICategoryRow: View {
 // MARK: - Package Card
 
 private struct QIPackageCard: View {
-    let package: QIPackage
+    let package: BridgeQIPackage
     let isSelected: Bool
     let installedVersion: String?
     let selectedVersionId: String?
@@ -477,7 +479,7 @@ private struct QIPackageCard: View {
     @State private var isHovered = false
     @State private var showVersionPicker = false
 
-    private var accentColor: Color { colorFromHex(package.accentHex) }
+    private var accentColor: Color { colorFromHex(package.accent_hex) }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -549,7 +551,7 @@ private struct QIPackageCard: View {
                             Button(action: { onVersionChange(ver.id) }) {
                                 HStack {
                                     Text(ver.label)
-                                    if ver.isRecommended {
+                                    if ver.is_recommended {
                                         Image(systemName: "star.fill")
                                     }
                                 }

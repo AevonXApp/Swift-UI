@@ -30,7 +30,7 @@ struct OverviewTab: View {
                 
                 // MARK: - Fresh Server Banner (auto-shown after scan)
                 if viewModel.isConnected, let qi = viewModel.quickInstallVM, !qi.isVisible == false,
-                   qi.serverScan?.isFreshServer == true, !qi.isInstalling {
+                   qi.serverScan?.isEmpty == true, !qi.isInstalling {
                     FreshServerBanner {
                         viewModel.quickInstallVM?.isVisible = true
                         viewModel.quickInstallVM?.isMinimized = false

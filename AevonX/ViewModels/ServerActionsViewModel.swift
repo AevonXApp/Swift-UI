@@ -9,6 +9,7 @@
 import SwiftUI
 import Combine
 import AevonXCore
+import AevonXCoreBridge
 
 @MainActor
 public class ServerActionsViewModel: ObservableObject {
@@ -24,7 +25,7 @@ public class ServerActionsViewModel: ObservableObject {
     // MARK: - Private Properties
     
     private let serverId: String
-    private let sshService = SSHService.shared
+    private let sshService: any SSHServiceProtocol = SSHBridge.shared
     
     /// Callback to trigger disconnect (set by parent)
     var onDisconnectNeeded: (() async -> Void)?
@@ -53,9 +54,9 @@ public class ServerActionsViewModel: ObservableObject {
         CoreLogger.shared.info("Restarting services...", module: "ServerActions")
         
         do {
-            _ = try await executeCommand(.services(.restartNginx))
-            _ = try? await executeCommand(.services(.restartMySQL))
-            _ = try? await executeCommand(.services(.restartPHPFPM))
+            _ = try await executeCommand(CommandTemplate.services(.restartNginx))
+            _ = try? await executeCommand(CommandTemplate.services(.restartMySQL))
+            _ = try? await executeCommand(CommandTemplate.services(.restartPHPFPM))
             
             CoreLogger.shared.info("Services restarted successfully", module: "ServerActions")
             await onRefreshStats?()
@@ -96,7 +97,7 @@ public class ServerActionsViewModel: ObservableObject {
     
     // MARK: - Private
     
-    private func executeCommand(_ command: CommandTemplate) async throws -> SSHCommandResult {
+    private func executeCommand(_ command: CommandTemplate) async throws -> AevonXCore.SSHCommandResult {
         let commandString = command.build()
         return try await sshService.execute(commandString, serverId: serverId)
     }

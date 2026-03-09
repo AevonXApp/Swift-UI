@@ -23,10 +23,12 @@ struct AevonXApp: App {
         print("[AevonXApp] INFO: API URL: \(ConfigurationManager.shared.currentConfiguration.fullBaseURL)")
         
         // Inject API fetcher into SubscriptionManager (breaks circular dependency)
+        // Inject Go SSH into SystemControlService
         Task {
             await SubscriptionManager.shared.setApiFetcher { baseURL, token in
                 await APIBridge.shared.fetchSubscriptionStatusAsync(baseURL: baseURL, token: token)
             }
+            await SystemControlService.shared.setSSHService(SSHBridge.shared)
         }
         
         // Setup app lifecycle notifications
