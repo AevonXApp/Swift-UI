@@ -80,6 +80,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = F865D4152F2C555400A29BB5 /* Build configuration list for PBXNativeTarget "AevonX" */;
 			buildPhases = (
+				F86F50C02F5F0D3500DA237A /* ShellScript */,
 				F865D4062F2C555300A29BB5 /* Sources */,
 				F865D4072F2C555300A29BB5 /* Frameworks */,
 				F865D4082F2C555300A29BB5 /* Resources */,
@@ -148,6 +149,27 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		F86F50C02F5F0D3500DA237A /* ShellScript */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 12;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "# Type a script or drag a script file from your workspace to insert its path.\n\"${SRCROOT}/../core-go/scripts/build_xcframework.sh\"\n";
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		F865D4062F2C555300A29BB5 /* Sources */ = {

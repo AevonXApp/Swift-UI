@@ -7,19 +7,27 @@
 
 import SwiftUI
 import AevonXCore
+import AevonXCoreBridge
 
 @main
 struct AevonXApp: App {
     @StateObject private var authViewModel = AuthViewModel()
     @Environment(\.scenePhase) private var scenePhase
     
-    // SSH connection service for lifecycle integration
-    private let sshService = SSHService.shared
+    // Go Core handles all SSH connections — CoreShutdown disconnects everything
+    // No need to hold a local sshService reference
     
     init() {
         // Log app startup information
         print("[AevonXApp] INFO: AevonX App Started - v\(BuildConfiguration.appVersion) (\(BuildConfiguration.buildNumber)) on \(BuildConfiguration.platform)")
         print("[AevonXApp] INFO: API URL: \(ConfigurationManager.shared.currentConfiguration.fullBaseURL)")
+        
+        // Inject API fetcher into SubscriptionManager (breaks circular dependency)
+        Task {
+            await SubscriptionManager.shared.setApiFetcher { baseURL, token in
+                await APIBridge.shared.fetchSubscriptionStatusAsync(baseURL: baseURL, token: token)
+            }
+        }
         
         // Setup app lifecycle notifications
         setupLifecycleNotifications()
@@ -212,8 +220,8 @@ struct AevonXApp: App {
     private func appWillTerminate() async {
         CoreLogger.shared.info("App terminating - cleaning up connections", module: "AppLifecycle")
         
-        // Disconnect all connections
-        await sshService.disconnectAll()
+        // Disconnect all SSH connections via Go Core
+        CoreBridge.shared.shutdown()
     }
     
     // MARK: - User Actions
@@ -222,8 +230,8 @@ struct AevonXApp: App {
     private func handleUserLogout() async {
         CoreLogger.shared.info("User logged out - clearing connections", module: "AppLifecycle")
         
-        // Disconnect all servers for security
-        await sshService.disconnectAll()
+        // Disconnect all SSH connections via Go Core
+        CoreBridge.shared.shutdown()
     }
     
     // MARK: - Operation Management

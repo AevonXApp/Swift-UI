@@ -255,8 +255,8 @@ public class ServerConnectionViewModel: ObservableObject {
     /// Server ID from Core
     private let serverId: String
     
-    /// SSH connection service from Core
-    private let sshService = SSHService.shared
+    /// SSH service backed by Go Core — used by strategies and detectors
+    private let sshService: any SSHServiceProtocol = SSHBridge.shared
     
     /// Server profile (detected capabilities: OS, init system, package manager)
     @Published private(set) var serverProfile: ServerProfile?
@@ -383,16 +383,34 @@ public class ServerConnectionViewModel: ObservableObject {
                 throw ConnectionError.serverPayloadNotFound
             }
 
-            // Step 4: Establish connection via Core SSH service
-            connectionStage = .establishingSSH
-            connectionProgress = 0.6
-            _ = try await sshService.connect(
-                to: serverPayload,
-                host: server.host,
-                port: server.port,
-                serverId: serverId,
-                encryptedCAT: encryptedCAT
+            // Step 4: Decrypt credentials using local encryption
+            connectionStage = .decrypting
+            connectionProgress = 0.5
+            let serverData = try await ServerEncryptionService.shared.decryptServer(
+                EncryptedServerData.self,
+                from: serverPayload
             )
+            
+            // Step 5: Establish SSH connection via Go Core
+            connectionStage = .establishingSSH
+            connectionProgress = 0.7
+            let connectResult = await SSHBridge.shared.connectAsync(
+                serverID: serverId,
+                host: server.host,
+                port: Int32(server.port),
+                username: serverData.connectionDetails.username,
+                password: serverData.authentication.password ?? "",
+                privateKey: serverData.authentication.privateKey ?? "",
+                passphrase: serverData.authentication.keyPassphrase ?? ""
+            )
+            
+            // Check connection result
+            guard let resultData = connectResult.data(using: .utf8),
+                  let resultJSON = try? JSONSerialization.jsonObject(with: resultData) as? [String: Any],
+                  resultJSON["success"] as? Bool == true else {
+                let errorMsg = parseGoError(connectResult)
+                throw ConnectionError.sshConnectionFailed(errorMsg)
+            }
             
             // Connection successful
             isConnected = true
@@ -487,8 +505,8 @@ public class ServerConnectionViewModel: ObservableObject {
         // Stop health monitoring
         await ConnectionHealthMonitor.shared.stopMonitoring(serverId: serverId)
         
-        // Disconnect via Core SSH service
-        await sshService.disconnect(serverId: serverId)
+        // Disconnect via Go Core SSH
+        SSHBridge.shared.disconnect(serverID: serverId)
         
         isConnected = false
         isConnecting = false
@@ -558,16 +576,17 @@ public class ServerConnectionViewModel: ObservableObject {
             
             // Verify the SSH session is still alive with a quick test command.
             // If it survived sleep, no reconnection is needed.
+            // Verify SSH via Go Core — quick echo test
             Task {
-                do {
-                    let result = try await SSHService.shared.execute("echo 1", serverId: serverId)
-                    if result.isSuccess {
-                        CoreLogger.shared.info("SSH session survived sleep — no reconnection needed", module: "ServerConnection")
-                        return
-                    }
-                } catch {
-                    CoreLogger.shared.warning("SSH session died during sleep: \(error.localizedDescription)", module: "ServerConnection")
+                let testJSON = await SSHBridge.shared.executeAsync(serverID: serverId, command: "echo 1")
+                if let td = testJSON.data(using: .utf8),
+                   let tr = try? JSONSerialization.jsonObject(with: td) as? [String: Any],
+                   tr["success"] as? Bool == true {
+                    CoreLogger.shared.info("SSH session survived sleep — no reconnection needed", module: "ServerConnection")
+                    return
                 }
+                
+                CoreLogger.shared.warning("SSH session died during sleep", module: "ServerConnection")
                 
                 // Connection is dead — trigger reconnection
                 await ConnectionHealthMonitor.shared.deviceDidWake()
@@ -753,10 +772,23 @@ public class ServerConnectionViewModel: ObservableObject {
         stats.stopPolling()
     }
     
-    /// Executes a predefined command via SSH wrapper
+    /// Executes a predefined command via Go SSH Bridge
     private func executeCommand(_ command: CommandTemplate) async throws -> AevonXCore.SSHCommandResult {
         let commandString = command.build()
-        return try await sshService.execute(commandString, serverId: serverId)
+        let resultJSON = await SSHBridge.shared.executeAsync(serverID: serverId, command: commandString)
+        
+        guard let data = resultJSON.data(using: .utf8),
+              let result = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              result["success"] as? Bool == true,
+              let cmdData = result["data"] as? [String: Any] else {
+            throw SSHServiceError.commandFailed("Go SSH command failed")
+        }
+        
+        return AevonXCore.SSHCommandResult(
+            stdout: cmdData["stdout"] as? String ?? "",
+            stderr: cmdData["stderr"] as? String ?? "",
+            exitCode: Int32(cmdData["exit_code"] as? Int ?? -1)
+        )
     }
     
     // MARK: - Health Monitoring
@@ -790,14 +822,25 @@ public class ServerConnectionViewModel: ObservableObject {
                         return false
                     }
                     
-                    // Step 4: Connect via SSH
-                    _ = try await self.sshService.connect(
-                        to: serverPayload,
-                        host: self.server.host,
-                        port: self.server.port,
-                        serverId: serverId,
-                        encryptedCAT: encryptedCAT
+                    // Step 4: Decrypt and connect via Go SSH
+                    let serverData = try await ServerEncryptionService.shared.decryptServer(
+                        EncryptedServerData.self,
+                        from: serverPayload
                     )
+                    let connectResult = await SSHBridge.shared.connectAsync(
+                        serverID: serverId,
+                        host: self.server.host,
+                        port: Int32(self.server.port),
+                        username: serverData.connectionDetails.username,
+                        password: serverData.authentication.password ?? "",
+                        privateKey: serverData.authentication.privateKey ?? "",
+                        passphrase: serverData.authentication.keyPassphrase ?? ""
+                    )
+                    guard let rd = connectResult.data(using: .utf8),
+                          let rj = try? JSONSerialization.jsonObject(with: rd) as? [String: Any],
+                          rj["success"] as? Bool == true else {
+                        return false
+                    }
                     
                     // Success — update UI state
                     await MainActor.run {
@@ -966,36 +1009,51 @@ public class ServerConnectionViewModel: ObservableObject {
         applicationCount = 0
     }
     
-    /// Updates inventory counts from SSH data
+    /// Updates inventory counts from Go SSH data
     private func updateInventoryCounts() async {
         // Count applications/services (1 SSH command)
         if let serviceResult = try? await executeCommand(.overview(.serviceCount)) {
             applicationCount = parseCount(serviceResult.stdout) ?? 0
         }
         
-        // Count websites — lightweight ls | wc -l (1 SSH command)
-        if let result = try? await SSHService.shared.execute(
-            "ls -1 /etc/nginx/sites-enabled/ 2>/dev/null | grep -v default | wc -l",
-            serverId: serverId
-        ) {
-            websiteInventoryCount = parseCount(result.stdout) ?? 0
+        // Count websites — lightweight ls | wc -l via Go SSH
+        let websiteJSON = await SSHBridge.shared.executeAsync(
+            serverID: serverId,
+            command: "ls -1 /etc/nginx/sites-enabled/ 2>/dev/null | grep -v default | wc -l"
+        )
+        if let wd = websiteJSON.data(using: .utf8),
+           let wr = try? JSONSerialization.jsonObject(with: wd) as? [String: Any],
+           wr["success"] as? Bool == true,
+           let wData = wr["data"] as? [String: Any],
+           let stdout = wData["stdout"] as? String {
+            websiteInventoryCount = parseCount(stdout) ?? 0
         }
         
-        // Count databases — quick queries (2 SSH commands)
+        // Count databases — quick queries via Go SSH
         var dbCount = 0
         // MySQL databases
-        if let mysqlResult = try? await SSHService.shared.execute(
-            "mysql -N -e 'SHOW DATABASES;' 2>/dev/null | grep -vcE '^(information_schema|performance_schema|mysql|sys)$' || echo '0'",
-            serverId: serverId
-        ) {
-            dbCount += parseCount(mysqlResult.stdout) ?? 0
+        let mysqlJSON = await SSHBridge.shared.executeAsync(
+            serverID: serverId,
+            command: "mysql -N -e 'SHOW DATABASES;' 2>/dev/null | grep -vcE '^(information_schema|performance_schema|mysql|sys)$' || echo '0'"
+        )
+        if let md = mysqlJSON.data(using: .utf8),
+           let mr = try? JSONSerialization.jsonObject(with: md) as? [String: Any],
+           mr["success"] as? Bool == true,
+           let mData = mr["data"] as? [String: Any],
+           let stdout = mData["stdout"] as? String {
+            dbCount += parseCount(stdout) ?? 0
         }
         // PostgreSQL databases
-        if let pgResult = try? await SSHService.shared.execute(
-            "sudo -u postgres psql -t -c 'SELECT count(*) FROM pg_database WHERE NOT datistemplate;' 2>/dev/null || echo '0'",
-            serverId: serverId
-        ) {
-            dbCount += parseCount(pgResult.stdout) ?? 0
+        let pgJSON = await SSHBridge.shared.executeAsync(
+            serverID: serverId,
+            command: "sudo -u postgres psql -t -c 'SELECT count(*) FROM pg_database WHERE NOT datistemplate;' 2>/dev/null || echo '0'"
+        )
+        if let pd = pgJSON.data(using: .utf8),
+           let pr = try? JSONSerialization.jsonObject(with: pd) as? [String: Any],
+           pr["success"] as? Bool == true,
+           let pData = pr["data"] as? [String: Any],
+           let stdout = pData["stdout"] as? String {
+            dbCount += parseCount(stdout) ?? 0
         }
         databaseInventoryCount = dbCount
     }
@@ -1012,6 +1070,7 @@ enum ConnectionError: Error, LocalizedError {
     case serverPayloadNotFound
     case deviceIdentificationFailed
     case authenticationRequired
+    case sshConnectionFailed(String)
     
     var errorDescription: String? {
         switch self {
@@ -1021,6 +1080,22 @@ enum ConnectionError: Error, LocalizedError {
             return "Failed to identify device"
         case .authenticationRequired:
             return "Authentication required. Please log in."
+        case .sshConnectionFailed(let detail):
+            return "SSH connection failed: \(detail)"
         }
+    }
+}
+
+// MARK: - Go Response Parsing Helper
+
+extension ServerConnectionViewModel {
+    /// Extracts error message from a Go Core JSON error response.
+    func parseGoError(_ json: String) -> String {
+        guard let data = json.data(using: .utf8),
+              let result = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let error = result["error"] as? String else {
+            return "Unknown error"
+        }
+        return error
     }
 }

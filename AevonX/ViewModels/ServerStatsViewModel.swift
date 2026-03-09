@@ -1,26 +1,16 @@
-//
-//  ServerStatsViewModel.swift
-//  AevonX
-//
-//  Manages server stats polling, history, and display.
-//  Extracted from ServerConnectionViewModel for single-responsibility.
-//
-//  Uses BatchCommandBuilder to combine 8 SSH calls into 1,
-//  and CacheManager for reducing redundant queries.
-//
-
 import SwiftUI
 import AevonXCore
+import AevonXCoreBridge
 import Combine
 
 // MARK: - Server Stats ViewModel
 
 /// Manages server system stats (CPU, memory, disk, uptime, load, temperature).
 ///
-/// **Performance**: Uses `BatchCommandBuilder.overviewStats()` to execute
-/// all overview commands in a single SSH call (8→1 reduction).
+/// **Performance**: Uses Go Core's `SSHFetchStats` which executes all overview
+/// commands in a single SSH call (8→1 reduction) via `StatsBridge`.
 ///
-/// **Caching**: Results are cached via `CacheManager` with dynamic TTL (30s).
+/// **Architecture**: All SSH commands now go through Go Core, not Swift NIO.
 @MainActor
 public class ServerStatsViewModel: ObservableObject {
     
@@ -68,7 +58,6 @@ public class ServerStatsViewModel: ObservableObject {
     // MARK: - Private Properties
     
     private let serverId: String
-    private let sshService: any SSHServiceProtocol
     
     /// Stats polling task
     private var pollingTask: Task<Void, Never>?
@@ -86,9 +75,8 @@ public class ServerStatsViewModel: ObservableObject {
     
     // MARK: - Initialization
     
-    init(serverId: String, sshService: any SSHServiceProtocol = SSHService.shared) {
+    init(serverId: String) {
         self.serverId = serverId
-        self.sshService = sshService
         
         // Initialize history arrays
         self.cpuUsageHistory = Array(repeating: 0.0, count: maxHistoryPoints)
@@ -137,75 +125,78 @@ public class ServerStatsViewModel: ObservableObject {
         isInForeground = false
     }
     
-    // MARK: - Stats Refresh
+    // MARK: - Stats Refresh (via Go Core SSH)
     
-    /// Refresh all stats using a batched SSH command.
+    /// Refresh all stats using Go Core's SSHFetchStats.
     ///
-    /// Combines CPU, memory, disk, uptime, load, temperature, websites, and services
-    /// into a single SSH call using `BatchCommandBuilder`.
+    /// Go Core builds the same batched SSH command as the old Swift
+    /// `BatchCommandBuilder.overviewStats()`, executes it via Go SSH,
+    /// and returns parsed JSON with all stats.
     func refreshStats() async {
-        guard await sshService.isConnected(serverId: serverId) else { return }
+        // Check connection via Go SSH
+        guard SSHBridge.shared.isConnected(serverID: serverId) else { return }
         
         isRefreshing = true
         defer { isRefreshing = false }
         
-        do {
-            // Build and execute batched overview command (8 commands → 1 SSH call)
-            let builder = BatchCommandBuilder.overviewStats()
-            let batchCommand = builder.build()
-            let result = try await sshService.execute(batchCommand, serverId: serverId)
-            
-            // Parse batched results
-            let parsed = BatchCommandBuilder.parseResults(result.stdout)
-            
-            // Update CPU
-            if let cpuStr = parsed["cpu"], let cpuValue = parsePercentage(cpuStr) {
-                updateHistory(&cpuUsageHistory, with: cpuValue)
-                cpuUsage = cpuValue
-            }
-            
-            // Update Memory
-            if let memStr = parsed["mem"], let memValue = parsePercentage(memStr) {
-                updateHistory(&memoryUsageHistory, with: memValue)
-                memoryUsage = memValue
-            }
-            
-            // Update Disk
-            if let diskStr = parsed["disk"], let diskValue = parsePercentage(diskStr) {
-                updateHistory(&diskUsageHistory, with: diskValue)
-                diskUsage = diskValue
-            }
-            
-            // Update Uptime
-            if let uptimeStr = parsed["uptime"] {
-                uptime = uptimeStr.trimmingCharacters(in: .whitespacesAndNewlines)
-            }
-            
-            // Update Load Average
-            if let loadStr = parsed["load"] {
-                loadAverage = loadStr.trimmingCharacters(in: .whitespacesAndNewlines)
-            }
-            
-            // Update Temperature
-            if let tempStr = parsed["temp"], let temp = parseTemperature(tempStr) {
-                updateHistory(&temperatureHistory, with: temp)
-                cpuTemperature = temp
-            }
-            
-            // Update Website Count
-            if let websiteStr = parsed["websites"], let count = Int(websiteStr.trimmingCharacters(in: .whitespacesAndNewlines)) {
-                websiteCount = count
-            }
-            
-            // Update Service Count
-            if let serviceStr = parsed["services"], let count = Int(serviceStr.trimmingCharacters(in: .whitespacesAndNewlines)) {
-                serviceCount = count
-            }
-            
-        } catch {
-            CoreLogger.shared.warning("Failed to refresh stats: \(error.localizedDescription)", module: "ServerStats")
+        // Fetch stats via Go Core (SSH + parsing happens in Go)
+        let resultJSON = await StatsBridge.shared.fetchStatsAsync(serverID: serverId)
+        
+        // Parse Go response
+        guard let data = resultJSON.data(using: .utf8),
+              let result = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              result["success"] as? Bool == true,
+              let stats = result["data"] as? [String: Any] else {
+            CoreLogger.shared.warning("Failed to fetch stats via Go Core", module: "ServerStats")
+            return
+        }
+        
+        // Update CPU
+        if let cpu = stats["cpu"] as? Double {
+            updateHistory(&cpuUsageHistory, with: cpu)
+            cpuUsage = cpu
+        }
+        
+        // Update Memory
+        if let mem = stats["memory"] as? Double {
+            updateHistory(&memoryUsageHistory, with: mem)
+            memoryUsage = mem
+        }
+        
+        // Update Disk
+        if let disk = stats["disk"] as? Double {
+            updateHistory(&diskUsageHistory, with: disk)
+            diskUsage = disk
+        }
+        
+        // Update Uptime
+        if let uptimeStr = stats["uptime"] as? String {
+            uptime = uptimeStr
+        }
+        
+        // Update Load Average
+        if let loadStr = stats["load_average"] as? String {
+            loadAverage = loadStr
+        }
+        
+        // Update Temperature
+        if let hasTemp = stats["has_temp"] as? Bool, hasTemp,
+           let temp = stats["temperature"] as? Double {
+            updateHistory(&temperatureHistory, with: temp)
+            cpuTemperature = temp
+        }
+        
+        // Update Website Count
+        if let websites = stats["websites"] as? Int {
+            websiteCount = websites
+        }
+        
+        // Update Service Count
+        if let services = stats["services"] as? Int {
+            serviceCount = services
         }
     }
+
     
     /// Reset all stats to defaults.
     func reset() {
@@ -223,21 +214,7 @@ public class ServerStatsViewModel: ObservableObject {
         temperatureHistory = Array(repeating: 0.0, count: maxHistoryPoints)
     }
     
-    // MARK: - Parsing Helpers
-    
-    private func parsePercentage(_ output: String) -> Double? {
-        let cleaned = output.trimmingCharacters(in: .whitespacesAndNewlines)
-            .replacingOccurrences(of: "%", with: "")
-        return Double(cleaned)
-    }
-    
-    private func parseTemperature(_ output: String) -> Double? {
-        let cleaned = output.trimmingCharacters(in: .whitespacesAndNewlines)
-            .replacingOccurrences(of: "°C", with: "")
-            .replacingOccurrences(of: "C", with: "")
-        if cleaned == "N/A" || cleaned.isEmpty { return nil }
-        return Double(cleaned)
-    }
+    // MARK: - History Helper
     
     private func updateHistory(_ history: inout [Double], with value: Double) {
         history.append(value)
