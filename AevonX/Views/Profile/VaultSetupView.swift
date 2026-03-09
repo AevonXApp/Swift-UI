@@ -7,6 +7,7 @@
 
 import SwiftUI
 import AevonXCore
+import AevonXCoreBridge
 import Combine
 
 struct VaultSetupView: View {
@@ -672,20 +673,24 @@ class VaultSetupViewModel: ObservableObject {
             return
         }
         
-        // 2. No local key — check server for key hash
-        do {
-            let status = try await VaultAPIService.shared.checkRecoveryKeyStatus()
-            if status.hasRecoveryKey {
-                // Server has key hash → existing account, needs key entry
+        // 2. No local key — check server for key hash via Go HTTP
+        let token = await AuthService.shared.getToken() ?? ""
+        let baseURL = ConfigurationManager.shared.currentConfiguration.fullBaseURL
+        let resultJSON = await APIBridge.shared.checkRecoveryKeyStatusAsync(baseURL: baseURL, token: token)
+        
+        if let data = resultJSON.data(using: .utf8),
+           let result = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+           result["success"] as? Bool == true,
+           let respData = result["data"] as? [String: Any],
+           let hasKey = respData["has_recovery_key"] as? Bool {
+            if hasKey {
                 self.mode = .recover
             } else {
-                // No key anywhere → new account, generate
                 self.mode = .generate
                 await generateKey()
             }
-        } catch {
-            // Fallback to recover — safer to ask for existing key than generate a new one
-            // that would make old encrypted data unrecoverable
+        } else {
+            // Fallback to recover — safer to ask for existing key
             self.mode = .recover
         }
         isLoading = false
@@ -711,10 +716,21 @@ class VaultSetupViewModel: ObservableObject {
             // Compute hash of entered key
             let keyHash = await EncryptionKeyStore.shared.hashKey(normalizedKey)
             
-            // Verify against server hash
-            let verification = try await VaultAPIService.shared.verifyRecoveryKey(verifierHash: keyHash)
+            // Verify against server hash via Go HTTP
+            let token = await AuthService.shared.getToken() ?? ""
+            let baseURL = ConfigurationManager.shared.currentConfiguration.fullBaseURL
+            let resultJSON = await APIBridge.shared.verifyRecoveryKeyAsync(baseURL: baseURL, token: token, verifierHash: keyHash)
             
-            if verification.verified {
+            var verified = false
+            if let data = resultJSON.data(using: .utf8),
+               let result = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+               result["success"] as? Bool == true,
+               let respData = result["data"] as? [String: Any],
+               let v = respData["verified"] as? Bool {
+                verified = v
+            }
+            
+            if verified {
                 // Save to Keychain
                 try await EncryptionKeyStore.shared.saveKey(normalizedKey)
                 
@@ -757,12 +773,21 @@ class VaultSetupViewModel: ObservableObject {
             // 1. Save key to Keychain
             try await EncryptionKeyStore.shared.saveKey(recoveryKey)
             
-            // 2. Register key hash with server (for future verification)
+            // 2. Register key hash with server via Go HTTP
             let keyHash = await EncryptionKeyStore.shared.hashKey(recoveryKey)
-            _ = try await VaultAPIService.shared.registerRecoveryKey(
-                verifierHash: keyHash,
-                salt: "" // Not needed in new system
+            let token = await AuthService.shared.getToken() ?? ""
+            let baseURL = ConfigurationManager.shared.currentConfiguration.fullBaseURL
+            let resultJSON = await APIBridge.shared.registerRecoveryKeyAsync(
+                baseURL: baseURL, token: token,
+                verifierHash: keyHash, salt: ""
             )
+            
+            if let data = resultJSON.data(using: .utf8),
+               let result = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+               result["success"] as? Bool != true {
+                let msg = (result["error"] as? [String: Any])?["message"] as? String ?? "Unknown error"
+                throw NSError(domain: "VaultSetup", code: -1, userInfo: [NSLocalizedDescriptionKey: msg])
+            }
             
             self.mode = .success
             isComplete = true

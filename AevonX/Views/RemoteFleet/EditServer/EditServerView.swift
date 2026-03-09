@@ -5,6 +5,7 @@
 
 import SwiftUI
 import AevonXCore
+import AevonXCoreBridge
 
 struct EditServerView: View {
     @Environment(\.dismiss) private var dismiss
@@ -521,18 +522,39 @@ struct EditServerView: View {
                 selectedColor = ServerColor(rawValue: hex) ?? .blue
             }
             
-            // Load existing credentials from encrypted payload
+            // Load existing credentials from encrypted payload via Go HTTP
             Task {
                 do {
-                    let serverResponse = try await ServerAPIService.shared.fetchServer(id: server.id)
-                    let payload = serverResponse.toEncryptedPayload()
+                    let token = await AuthService.shared.getToken() ?? ""
+                    let baseURL = ConfigurationManager.shared.currentConfiguration.fullBaseURL
+                    let resultJSON = await APIBridge.shared.fetchServerAsync(baseURL: baseURL, token: token, serverID: server.id)
+                    
+                    guard let rawData = resultJSON.data(using: .utf8),
+                          let result = try? JSONSerialization.jsonObject(with: rawData) as? [String: Any],
+                          result["success"] as? Bool == true,
+                          let responseData = result["data"] as? [String: Any],
+                          let encryptedPayload = responseData["encrypted_payload"] as? String,
+                          let nonce = responseData["payload_nonce"] as? String,
+                          let authTag = responseData["payload_auth_tag"] as? String,
+                          let metadataDict = responseData["encryption_metadata"] as? [String: Any],
+                          let metadataJSON = try? JSONSerialization.data(withJSONObject: metadataDict),
+                          let metadata = try? JSONDecoder().decode(EncryptionMetadata.self, from: metadataJSON) else {
+                        await MainActor.run { isLoadingCredentials = false }
+                        return
+                    }
+                    
+                    let payload = EncryptedServerPayload(
+                        encryptedData: encryptedPayload,
+                        nonce: nonce,
+                        authTag: authTag,
+                        metadata: metadata
+                    )
                     let serverData = try await ServerEncryptionService.shared.decryptServer(
                         EncryptedServerData.self,
                         from: payload
                     )
                     
                     await MainActor.run {
-                        // Store original credentials for preservation
                         originalPassword = serverData.authentication.password
                         originalPrivateKey = serverData.authentication.privateKey
                         originalPassphrase = serverData.authentication.keyPassphrase

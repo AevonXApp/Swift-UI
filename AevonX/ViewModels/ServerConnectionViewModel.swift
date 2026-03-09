@@ -8,6 +8,7 @@
 
 import SwiftUI
 import AevonXCore
+import AevonXCoreBridge
 import Combine
 
 // MARK: - Reconnection Tier
@@ -624,70 +625,87 @@ public class ServerConnectionViewModel: ObservableObject {
     
     // MARK: - Private Methods
     
-    /// Requests CAT token from backend
+    /// Requests CAT token from backend via Go HTTP
     private func requestCATFromBackend() async throws -> String {
-        // Get device fingerprint for CAT binding
         guard let deviceFingerprint = await DeviceIdentifier.shared.getDeviceID() else {
             CoreLogger.shared.error("Failed to get device fingerprint for CAT request", module: "ServerConnection")
             throw ConnectionError.deviceIdentificationFailed
         }
         
-        CoreLogger.shared.info("Requesting CAT for server: \(serverId)", module: "ServerConnection")
-        
-        do {
-            let catResponse = try await ServerAPIService.shared.requestCAT(
-                serverId: serverId,
-                deviceFingerprint: deviceFingerprint
-            )
-            
-            CoreLogger.shared.info("CAT received, expires in \(catResponse.expiresIn)s", module: "ServerConnection")
-            return catResponse.token
-        } catch {
-            CoreLogger.shared.error("CAT request failed: \(error.localizedDescription)", module: "ServerConnection")
-            throw error
+        guard let token = await AuthService.shared.getToken() else {
+            throw ConnectionError.authenticationRequired
         }
+        
+        let baseURL = ConfigurationManager.shared.currentConfiguration.fullBaseURL
+        CoreLogger.shared.info("Requesting CAT for server: \(serverId) via Go", module: "ServerConnection")
+        
+        let resultJSON = await APIBridge.shared.requestCATAsync(
+            baseURL: baseURL, token: token,
+            serverID: serverId, fingerprint: deviceFingerprint
+        )
+        
+        guard let data = resultJSON.data(using: .utf8),
+              let result = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              result["success"] as? Bool == true,
+              let responseData = result["data"] as? [String: Any],
+              let catToken = responseData["token"] as? String else {
+            // Extract error message
+            if let data = resultJSON.data(using: .utf8),
+               let result = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+               let error = result["error"] as? [String: Any],
+               let message = error["message"] as? String {
+                CoreLogger.shared.error("CAT request failed: \(message)", module: "ServerConnection")
+                throw NSError(domain: "ServerConnection", code: -1, userInfo: [NSLocalizedDescriptionKey: message])
+            }
+            throw NSError(domain: "ServerConnection", code: -1, userInfo: [NSLocalizedDescriptionKey: "CAT request failed"])
+        }
+        
+        CoreLogger.shared.info("CAT received via Go", module: "ServerConnection")
+        return catToken
     }
     
-    /// Gets encrypted server payload from Core
+    /// Gets encrypted server payload from Core or Go HTTP fallback
     private func getServerPayload() async throws -> EncryptedServerPayload? {
         print("[ServerConnection] getServerPayload called for serverId: \(serverId)")
         
-        // Try to get from serverListViewModel first
+        // Try to get from serverListViewModel first (already in memory)
         if let serverListVM = serverListViewModel {
-            print("[ServerConnection] Found serverListViewModel, searching for server...")
             if let accessibleServer = serverListVM.servers.first(where: { $0.id == serverId }) {
-                print("[ServerConnection] Found server in list, building payload...")
                 let payload = EncryptedServerPayload(
                     encryptedData: accessibleServer.server.encryptedPayload,
                     nonce: accessibleServer.server.payloadNonce,
                     authTag: accessibleServer.server.payloadAuthTag,
                     metadata: accessibleServer.server.encryptionMetadata
                 )
-                print("[ServerConnection] Payload built successfully")
                 return payload
-            } else {
-                print("[ServerConnection] Server not found in serverListViewModel.servers, trying fetch from API...")
             }
-        } else {
-            print("[ServerConnection] serverListViewModel is nil, trying fetch from API...")
         }
         
-        // Fallback: Fetch from API directly
-        do {
-            print("[ServerConnection] Fetching server from API...")
-            let serverResponse = try await ServerAPIService.shared.fetchServer(id: serverId)
-            let payload = EncryptedServerPayload(
-                encryptedData: serverResponse.encryptedPayload,
-                nonce: serverResponse.payloadNonce,
-                authTag: serverResponse.payloadAuthTag,
-                metadata: serverResponse.encryptionMetadata
-            )
-            print("[ServerConnection] Payload fetched from API successfully")
-            return payload
-        } catch {
-            print("[ServerConnection] ERROR: Failed to fetch server from API: \(error.localizedDescription)")
+        // Fallback: Fetch from API via Go HTTP
+        guard let token = await AuthService.shared.getToken() else { return nil }
+        let baseURL = ConfigurationManager.shared.currentConfiguration.fullBaseURL
+        let resultJSON = await APIBridge.shared.fetchServerAsync(baseURL: baseURL, token: token, serverID: serverId)
+        
+        guard let data = resultJSON.data(using: .utf8),
+              let result = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              result["success"] as? Bool == true,
+              let responseData = result["data"] as? [String: Any],
+              let encryptedPayload = responseData["encrypted_payload"] as? String,
+              let nonce = responseData["payload_nonce"] as? String,
+              let authTag = responseData["payload_auth_tag"] as? String,
+              let metadataDict = responseData["encryption_metadata"] as? [String: Any],
+              let metadataJSON = try? JSONSerialization.data(withJSONObject: metadataDict),
+              let metadata = try? JSONDecoder().decode(EncryptionMetadata.self, from: metadataJSON) else {
+            print("[ServerConnection] ERROR: Failed to fetch server from Go API")
             return nil
         }
+        
+        return EncryptedServerPayload(
+            encryptedData: encryptedPayload,
+            nonce: nonce,
+            authTag: authTag,
+            metadata: metadata
+        )
     }
     
     /// Gets current user ID
@@ -736,7 +754,7 @@ public class ServerConnectionViewModel: ObservableObject {
     }
     
     /// Executes a predefined command via SSH wrapper
-    private func executeCommand(_ command: CommandTemplate) async throws -> SSHCommandResult {
+    private func executeCommand(_ command: CommandTemplate) async throws -> AevonXCore.SSHCommandResult {
         let commandString = command.build()
         return try await sshService.execute(commandString, serverId: serverId)
     }
@@ -993,6 +1011,7 @@ public class ServerConnectionViewModel: ObservableObject {
 enum ConnectionError: Error, LocalizedError {
     case serverPayloadNotFound
     case deviceIdentificationFailed
+    case authenticationRequired
     
     var errorDescription: String? {
         switch self {
@@ -1000,6 +1019,8 @@ enum ConnectionError: Error, LocalizedError {
             return "Server configuration not found"
         case .deviceIdentificationFailed:
             return "Failed to identify device"
+        case .authenticationRequired:
+            return "Authentication required. Please log in."
         }
     }
 }

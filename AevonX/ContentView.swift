@@ -7,6 +7,7 @@
 
 import SwiftUI
 import AevonXCore
+import AevonXCoreBridge
 
 struct ContentView: View {
     @EnvironmentObject var authViewModel: AuthViewModel
@@ -45,6 +46,10 @@ struct ContentView: View {
             }
         }
         .task {
+            // Initialize Go Core engine
+            CoreBridge.shared.initialize()
+            print("🟢 Go Core v\(CoreBridge.shared.version()) initialized")
+            
             await checkEncryptionKey()
         }
     }

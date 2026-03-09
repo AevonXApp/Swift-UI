@@ -38,7 +38,8 @@ func handleFileDrop(_ providers: [NSItemProvider], viewModel: FileManagerViewMod
                     // Folder dropped — collect all files recursively
                     var allFiles: [URL] = []
                     if let enumerator = FileManager.default.enumerator(at: url, includingPropertiesForKeys: [.isRegularFileKey], options: [.skipsHiddenFiles]) {
-                        for case let fileURL as URL in enumerator {
+                        let items = enumerator.allObjects.compactMap { $0 as? URL }
+                        for fileURL in items {
                             if let values = try? fileURL.resourceValues(forKeys: [.isRegularFileKey]),
                                values.isRegularFile == true {
                                 allFiles.append(fileURL)

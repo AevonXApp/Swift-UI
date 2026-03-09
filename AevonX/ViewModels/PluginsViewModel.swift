@@ -5,6 +5,7 @@
 
 import SwiftUI
 import AevonXCore
+import AevonXCoreBridge
 import Combine
 
 @MainActor
@@ -22,37 +23,61 @@ class PluginsViewModel: ObservableObject {
     @Published var installationStatus: [String: String] = [:]   // pluginId: status message
     @Published var installSources: [String: InstallSource] = [:] // slug: source
     
-    private let apiService = PluginAPIService.shared
+    private let apiService = PluginAPIService.shared   // only for downloadPluginFile
     private let pluginManager = PluginManager.shared
+    private let apiBridge = APIBridge.shared
     private var cancellables = Set<AnyCancellable>()
     
-    init() {
-        // Setup search debouncing if needed
+    private var baseURL: String {
+        ConfigurationManager.shared.currentConfiguration.fullBaseURL
     }
+    
+    init() {}
     
     func loadMarketplace() async {
         isLoading = true
         errorMessage = nil
         
-        do {
-            let response = try await apiService.fetchPlugins(
-                search: searchQuery.isEmpty ? nil : searchQuery,
-                pricing: selectedPricing,
-                category: selectedCategory
-            )
-            self.plugins = response.data
-            self.isLoading = false
-        } catch {
-            self.errorMessage = "Failed to load plugins: \(error.localizedDescription)"
-            self.isLoading = false
+        let token = await AuthService.shared.getToken() ?? ""
+        let resultJSON = await apiBridge.fetchPluginsAsync(
+            baseURL: baseURL, token: token,
+            page: 1,
+            search: searchQuery.isEmpty ? "" : searchQuery,
+            pricing: selectedPricing ?? "",
+            category: selectedCategory ?? ""
+        )
+        
+        if let data = parseGoResult(resultJSON),
+           let pluginsData = data["plugins"] as? [String: Any],
+           let pluginsArray = pluginsData["data"] as? [[String: Any]],
+           let pluginsJSON = try? JSONSerialization.data(withJSONObject: pluginsArray) {
+            let decoder = JSONDecoder()
+            let fmt = DateFormatter()
+            fmt.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSZ"
+            fmt.locale = Locale(identifier: "en_US_POSIX")
+            decoder.dateDecodingStrategy = .formatted(fmt)
+            self.plugins = (try? decoder.decode([Plugin].self, from: pluginsJSON)) ?? []
+        } else {
+            self.errorMessage = "Failed to load plugins: \(extractGoError(resultJSON))"
         }
+        self.isLoading = false
     }
     
     func loadCategories() async {
-        do {
-            self.categories = try await apiService.fetchCategories()
-        } catch {
-            CoreLogger.shared.error("Failed to load categories: \(error.localizedDescription)", module: "PluginsViewModel")
+        let token = await AuthService.shared.getToken() ?? ""
+        let resultJSON = await apiBridge.fetchPluginCategoriesAsync(baseURL: baseURL, token: token)
+        
+        if let data = parseGoResult(resultJSON),
+           let catsArray = data["categories"] as? [[String: Any]],
+           let catsJSON = try? JSONSerialization.data(withJSONObject: catsArray) {
+            let decoder = JSONDecoder()
+            let fmt = DateFormatter()
+            fmt.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSZ"
+            fmt.locale = Locale(identifier: "en_US_POSIX")
+            decoder.dateDecodingStrategy = .formatted(fmt)
+            self.categories = (try? decoder.decode([PluginCategory].self, from: catsJSON)) ?? []
+        } else {
+            CoreLogger.shared.error("Failed to load categories via Go", module: "PluginsViewModel")
         }
     }
     
@@ -66,18 +91,25 @@ class PluginsViewModel: ObservableObject {
         installationProgress[plugin.id] = 0.1
         
         do {
-            // 1. Get one-time download token from API
+            // 1. Get one-time download token via Go HTTP
             installationStatus[plugin.id] = "Requesting download..."
-            let downloadInfo = try await apiService.getDownloadInfo(
-                id: plugin.id,
-                versionId: targetVersion?.id,
-                serverId: serverId
+            let token = await AuthService.shared.getToken() ?? ""
+            let downloadJSON = await apiBridge.getPluginDownloadInfoAsync(
+                baseURL: baseURL, token: token,
+                pluginID: plugin.id,
+                versionID: targetVersion?.id ?? "",
+                serverID: serverId
             )
+            
+            guard let dlData = parseGoResult(downloadJSON),
+                  let downloadUrl = dlData["download_url"] as? String else {
+                throw NSError(domain: "PluginsViewModel", code: 400, userInfo: [NSLocalizedDescriptionKey: extractGoError(downloadJSON)])
+            }
             installationProgress[plugin.id] = 0.2
             
-            // 2. Download ZIP locally (Mac can reach the API, remote server may not)
+            // 2. Download ZIP locally (stays in Swift — needs URLSession.download)
             installationStatus[plugin.id] = "Downloading package..."
-            guard let url = URL(string: downloadInfo.downloadUrl) else {
+            guard let url = URL(string: downloadUrl) else {
                 throw NSError(domain: "PluginsViewModel", code: 400, userInfo: [NSLocalizedDescriptionKey: "Invalid download URL"])
             }
             let localZipURL = try await apiService.downloadPluginFile(url: url)
@@ -195,5 +227,25 @@ class PluginsViewModel: ObservableObject {
             installationStatus[plugin.id] = "Failed"
             installationProgress.removeValue(forKey: plugin.id)
         }
+    }
+    
+    // MARK: - Go Bridge Helpers
+    
+    private func parseGoResult(_ json: String) -> [String: Any]? {
+        guard let rawData = json.data(using: .utf8),
+              let result = try? JSONSerialization.jsonObject(with: rawData) as? [String: Any],
+              result["success"] as? Bool == true,
+              let dataVal = result["data"] as? [String: Any] else { return nil }
+        return dataVal
+    }
+    
+    private func extractGoError(_ json: String) -> String {
+        guard let rawData = json.data(using: .utf8),
+              let result = try? JSONSerialization.jsonObject(with: rawData) as? [String: Any],
+              let error = result["error"] as? [String: Any],
+              let message = error["message"] as? String else {
+            return "An unexpected error occurred"
+        }
+        return message
     }
 }

@@ -8,6 +8,7 @@
 
 import SwiftUI
 import AevonXCore
+import AevonXCoreBridge
 import Combine
 
 /// View model for server list management with real-time status updates
@@ -99,19 +100,25 @@ class ServerListViewModel: ObservableObject {
             return
         }
         isAuthenticated = true
+        let baseURL = ConfigurationManager.shared.currentConfiguration.fullBaseURL
 
         do {
-            // Fetch subscription status
+            // Fetch subscription status (still via SubscriptionManager for business logic)
             let status = try await SubscriptionManager.shared.getSubscriptionStatus(forceRefresh: true)
             self.subscriptionStatus = status
             self.canAddServer = await SubscriptionManager.shared.canAddServer()
             self.remainingSlots = await SubscriptionManager.shared.remainingServerSlots()
 
-            // Fetch servers from Core - real data from backend
-            let serverResponses = try await ServerAPIService.shared.fetchServers()
-            self.servers = await SubscriptionManager.shared.getAccessibleServers(from: serverResponses)
+            // Fetch servers via Go HTTP
+            let resultJSON = await APIBridge.shared.fetchServersAsync(baseURL: baseURL, token: token!)
+            guard let serversData = parseGoServers(resultJSON) else {
+                errorMessage = extractGoError(resultJSON)
+                showError = true
+                return
+            }
+            self.servers = await SubscriptionManager.shared.getAccessibleServers(from: serversData)
 
-            // Only decrypt if we have encryption key (simple file check, no actor hops)
+            // Only decrypt if we have encryption key
             let hasKey = EncryptionKeyStore.shared.hasKey()
             if hasKey {
                 await decryptServersForDisplay()
@@ -120,14 +127,6 @@ class ServerListViewModel: ObservableObject {
                 self.decryptedServers = []
             }
             
-        } catch let error as ServerAPIError {
-            if case .serverNotAccessible = error {
-                isAuthenticated = false
-                errorMessage = "Session expired. Please log in again."
-            } else {
-                errorMessage = "Failed to load servers: \(error.localizedDescription)"
-            }
-            showError = true
         } catch {
             errorMessage = "Failed to load servers: \(error.localizedDescription)"
             showError = true
@@ -163,8 +162,12 @@ class ServerListViewModel: ObservableObject {
             self.canAddServer = await SubscriptionManager.shared.canAddServer()
             self.remainingSlots = await SubscriptionManager.shared.remainingServerSlots()
             
-            let serverResponses = try await ServerAPIService.shared.fetchServers()
-            self.servers = await SubscriptionManager.shared.getAccessibleServers(from: serverResponses)
+            let token = await AuthService.shared.getToken() ?? ""
+            let baseURL = ConfigurationManager.shared.currentConfiguration.fullBaseURL
+            let resultJSON = await APIBridge.shared.fetchServersAsync(baseURL: baseURL, token: token)
+            if let serversData = parseGoServers(resultJSON) {
+                self.servers = await SubscriptionManager.shared.getAccessibleServers(from: serversData)
+            }
             
         } catch {
             CoreLogger.shared.warning("Status poll failed: \(error.localizedDescription)", module: "ServerList")
@@ -270,22 +273,39 @@ class ServerListViewModel: ObservableObject {
         defer { isLoading = false }
         
         do {
-            // 1. Convert to encrypted data structure
             let serverData = request.toEncryptedServerData()
-            
-            // 2. Encrypt server data using new ServerEncryptionService
-            //    (biometric is handled by EncryptionKeyStore on first access)
             let encryptedPayload = try await ServerEncryptionService.shared.encryptServer(serverData)
             
-            // 3. Send encrypted payload to backend (with plaintext server_name for tracking)
-            _ = try await ServerAPIService.shared.createServer(payload: encryptedPayload, serverName: request.name)
+            // Encode payload as JSON for Go
+            let payloadDict: [String: Any] = [
+                "server_name": request.name,
+                "encrypted_payload": encryptedPayload.encryptedData,
+                "payload_nonce": encryptedPayload.nonce,
+                "payload_auth_tag": encryptedPayload.authTag,
+                "encryption_metadata": try JSONSerialization.jsonObject(with: JSONEncoder().encode(encryptedPayload.metadata))
+            ]
+            let payloadJSON = String(data: try JSONSerialization.data(withJSONObject: payloadDict), encoding: .utf8) ?? "{}"
             
-            // 4. Refresh list immediately to show new server
+            let token = await AuthService.shared.getToken() ?? ""
+            let baseURL = ConfigurationManager.shared.currentConfiguration.fullBaseURL
+            let resultJSON = await APIBridge.shared.createServerAsync(baseURL: baseURL, token: token, payloadJSON: payloadJSON)
+            
+            // Check for errors
+            if let data = resultJSON.data(using: .utf8),
+               let result = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+               result["success"] as? Bool != true {
+                let errorMsg = extractGoError(resultJSON)
+                if errorMsg.contains("limit") {
+                    errorMessage = "Server limit reached. Upgrade your plan to add more servers."
+                } else {
+                    errorMessage = "Failed to add server: \(errorMsg)"
+                }
+                showError = true
+                return
+            }
+            
             await refresh()
             
-        } catch ServerAPIError.serverLimitReached {
-            errorMessage = "Server limit reached. Upgrade your plan to add more servers."
-            showError = true
         } catch {
             errorMessage = "Failed to add server: \(error.localizedDescription)"
             showError = true
@@ -296,13 +316,19 @@ class ServerListViewModel: ObservableObject {
         isLoading = true
         defer { isLoading = false }
         
-        do {
-            try await ServerAPIService.shared.deleteServer(id: id)
-            await refresh()
-        } catch {
-            errorMessage = "Failed to delete server: \(error.localizedDescription)"
+        let token = await AuthService.shared.getToken() ?? ""
+        let baseURL = ConfigurationManager.shared.currentConfiguration.fullBaseURL
+        let resultJSON = await APIBridge.shared.deleteServerAsync(baseURL: baseURL, token: token, serverID: id)
+        
+        if let data = resultJSON.data(using: .utf8),
+           let result = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+           result["success"] as? Bool != true {
+            errorMessage = "Failed to delete server: \(extractGoError(resultJSON))"
             showError = true
+            return
         }
+        
+        await refresh()
     }
     
     // MARK: - Connection Testing
@@ -371,6 +397,55 @@ class ServerListViewModel: ObservableObject {
             return .offline
         }
         return server.server.isAccessible ? .online : .offline
+    }
+    
+    // MARK: - Go Bridge Helpers
+    
+    /// Parses Go AuthServiceResult → extracts servers array from "data.servers".
+    private func parseGoServers(_ json: String) -> [ServerResponse]? {
+        guard let rawData = json.data(using: .utf8),
+              let result = try? JSONSerialization.jsonObject(with: rawData) as? [String: Any],
+              result["success"] as? Bool == true,
+              let dataVal = result["data"] as? [String: Any],
+              let serversArray = dataVal["servers"] as? [[String: Any]] else {
+            return nil
+        }
+        
+        // Re-encode and decode via JSONDecoder (handles date parsing properly)
+        guard let serversJSON = try? JSONSerialization.data(withJSONObject: serversArray) else {
+            return nil
+        }
+        
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .custom { decoder in
+            let container = try decoder.singleValueContainer()
+            let dateString = try container.decode(String.self)
+            let formatter = ISO8601DateFormatter()
+            formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+            if let date = formatter.date(from: dateString) { return date }
+            formatter.formatOptions = [.withInternetDateTime]
+            if let date = formatter.date(from: dateString) { return date }
+            let laravelFmt = DateFormatter()
+            laravelFmt.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSZ"
+            laravelFmt.locale = Locale(identifier: "en_US_POSIX")
+            if let date = laravelFmt.date(from: dateString) { return date }
+            laravelFmt.dateFormat = "yyyy-MM-dd HH:mm:ss"
+            if let date = laravelFmt.date(from: dateString) { return date }
+            throw DecodingError.dataCorruptedError(in: container, debugDescription: "Invalid date: \(dateString)")
+        }
+        
+        return try? decoder.decode([ServerResponse].self, from: serversJSON)
+    }
+    
+    /// Extracts error message from Go AuthServiceResult.
+    private func extractGoError(_ json: String) -> String {
+        guard let rawData = json.data(using: .utf8),
+              let result = try? JSONSerialization.jsonObject(with: rawData) as? [String: Any],
+              let error = result["error"] as? [String: Any],
+              let message = error["message"] as? String else {
+            return "An unexpected error occurred"
+        }
+        return message
     }
 }
 
