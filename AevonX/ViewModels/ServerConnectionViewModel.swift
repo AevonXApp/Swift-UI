@@ -354,7 +354,7 @@ public class ServerConnectionViewModel: ObservableObject {
     /// 3. Start stats polling
     func connect() async {
         guard !isConnecting && !isConnected else {
-            CoreLogger.shared.warning("Connection already in progress or established", module: "ServerConnection")
+            AevonXCoreBridge.CoreLogger.shared.warning("Connection already in progress or established", module: "ServerConnection")
             return
         }
         
@@ -371,7 +371,7 @@ public class ServerConnectionViewModel: ObservableObject {
             // Key = HKDF(device_secret + server_id + recovery_key)
             connectionStage = .decryptingCAT
             connectionProgress = 0.2
-            let encryptedCAT = try await CATEncryption.shared.encrypt(
+            let _ = try await CATEncryption.shared.encrypt(
                 signedToken: signedCATToken,
                 serverId: serverId
             )
@@ -418,7 +418,7 @@ public class ServerConnectionViewModel: ObservableObject {
             connectionStage = .connected
             connectionProgress = 1.0
             
-            CoreLogger.shared.info("Connected to server: \(server.name)", module: "ServerConnection")
+            AevonXCoreBridge.CoreLogger.shared.info("Connected to server: \(server.name)", module: "ServerConnection")
             
             // Start health monitoring for this server
             await ConnectionHealthMonitor.shared.startMonitoring(serverId: serverId)
@@ -433,7 +433,7 @@ public class ServerConnectionViewModel: ObservableObject {
                         self.serviceStrategy = ServiceStrategyFactory.strategy(for: profile, sshService: sshService)
                         self.packageStrategy = PackageStrategyFactory.strategy(for: profile, sshService: sshService)
                     }
-                    CoreLogger.shared.info(
+                    AevonXCoreBridge.CoreLogger.shared.info(
                         "Server profile: \(profile.distro.rawValue), init=\(profile.initSystem.rawValue), pkg=\(profile.packageManager.rawValue)",
                         module: "ServerConnection"
                     )
@@ -446,7 +446,7 @@ public class ServerConnectionViewModel: ObservableObject {
                         // Do NOT assign to self yet — wait for scan result
                         Task { @MainActor in
                             await qi.scanServer()
-                            CoreLogger.shared.info(
+                            AevonXCoreBridge.CoreLogger.shared.info(
                                 "QuickInstall scan — installed: \(qi.serverScan?.keys.sorted().joined(separator: ", ") ?? "nil"), isFresh: \(qi.serverScan?.isEmpty ?? true)",
                                 module: "QuickInstall"
                             )
@@ -460,7 +460,7 @@ public class ServerConnectionViewModel: ObservableObject {
                         }
                     }
                 } catch {
-                    CoreLogger.shared.warning("Failed to detect server capabilities: \(error.localizedDescription)", module: "ServerConnection")
+                    AevonXCoreBridge.CoreLogger.shared.warning("Failed to detect server capabilities: \(error.localizedDescription)", module: "ServerConnection")
                 }
             }
             
@@ -482,14 +482,14 @@ public class ServerConnectionViewModel: ObservableObject {
             connectionStage = .failed
             connectionError = error.localizedDescription
             showConnectionError = true
-            CoreLogger.shared.error("SSH connection failed: \(error.localizedDescription)", module: "ServerConnection")
+            AevonXCoreBridge.CoreLogger.shared.error("SSH connection failed: \(error.localizedDescription)", module: "ServerConnection")
         } catch {
             isConnecting = false
             isConnected = false
             connectionStage = .failed
             connectionError = error.localizedDescription
             showConnectionError = true
-            CoreLogger.shared.error("Connection failed: \(error.localizedDescription)", module: "ServerConnection")
+            AevonXCoreBridge.CoreLogger.shared.error("Connection failed: \(error.localizedDescription)", module: "ServerConnection")
         }
     }
     
@@ -524,7 +524,7 @@ public class ServerConnectionViewModel: ObservableObject {
         terminalSessions = []
         activeTerminalIndex = 0
         
-        CoreLogger.shared.info("Disconnected from server: \(server.name)", module: "ServerConnection")
+        AevonXCoreBridge.CoreLogger.shared.info("Disconnected from server: \(server.name)", module: "ServerConnection")
     }
     
     // MARK: - Terminal Sessions Management
@@ -582,11 +582,11 @@ public class ServerConnectionViewModel: ObservableObject {
                 if let td = testJSON.data(using: .utf8),
                    let tr = try? JSONSerialization.jsonObject(with: td) as? [String: Any],
                    tr["success"] as? Bool == true {
-                    CoreLogger.shared.info("SSH session survived sleep — no reconnection needed", module: "ServerConnection")
+                    AevonXCoreBridge.CoreLogger.shared.info("SSH session survived sleep — no reconnection needed", module: "ServerConnection")
                     return
                 }
                 
-                CoreLogger.shared.warning("SSH session died during sleep", module: "ServerConnection")
+                AevonXCoreBridge.CoreLogger.shared.warning("SSH session died during sleep", module: "ServerConnection")
                 
                 // Connection is dead — trigger reconnection
                 await ConnectionHealthMonitor.shared.deviceDidWake()
@@ -647,7 +647,7 @@ public class ServerConnectionViewModel: ObservableObject {
     /// Requests CAT token from backend via Go HTTP
     private func requestCATFromBackend() async throws -> String {
         guard let deviceFingerprint = await DeviceIdentifier.shared.getDeviceID() else {
-            CoreLogger.shared.error("Failed to get device fingerprint for CAT request", module: "ServerConnection")
+            AevonXCoreBridge.CoreLogger.shared.error("Failed to get device fingerprint for CAT request", module: "ServerConnection")
             throw ConnectionError.deviceIdentificationFailed
         }
         
@@ -656,7 +656,7 @@ public class ServerConnectionViewModel: ObservableObject {
         }
         
         let baseURL = ConfigurationManager.shared.currentConfiguration.fullBaseURL
-        CoreLogger.shared.info("Requesting CAT for server: \(serverId) via Go", module: "ServerConnection")
+        AevonXCoreBridge.CoreLogger.shared.info("Requesting CAT for server: \(serverId) via Go", module: "ServerConnection")
         
         let resultJSON = await APIBridge.shared.requestCATAsync(
             baseURL: baseURL, token: token,
@@ -673,13 +673,13 @@ public class ServerConnectionViewModel: ObservableObject {
                let result = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
                let error = result["error"] as? [String: Any],
                let message = error["message"] as? String {
-                CoreLogger.shared.error("CAT request failed: \(message)", module: "ServerConnection")
+                AevonXCoreBridge.CoreLogger.shared.error("CAT request failed: \(message)", module: "ServerConnection")
                 throw NSError(domain: "ServerConnection", code: -1, userInfo: [NSLocalizedDescriptionKey: message])
             }
             throw NSError(domain: "ServerConnection", code: -1, userInfo: [NSLocalizedDescriptionKey: "CAT request failed"])
         }
         
-        CoreLogger.shared.info("CAT received via Go", module: "ServerConnection")
+        AevonXCoreBridge.CoreLogger.shared.info("CAT received via Go", module: "ServerConnection")
         return catToken
     }
     
@@ -856,11 +856,11 @@ public class ServerConnectionViewModel: ObservableObject {
                         self.startStatsPolling()
                     }
                     
-                    CoreLogger.shared.info("Reconnection succeeded for server: \(serverId)", module: "ServerConnection")
+                    AevonXCoreBridge.CoreLogger.shared.info("Reconnection succeeded for server: \(serverId)", module: "ServerConnection")
                     return true
                     
                 } catch {
-                    CoreLogger.shared.warning("Reconnection attempt failed: \(error.localizedDescription)", module: "ServerConnection")
+                    AevonXCoreBridge.CoreLogger.shared.warning("Reconnection attempt failed: \(error.localizedDescription)", module: "ServerConnection")
                     return false
                 }
             }

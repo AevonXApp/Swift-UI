@@ -147,7 +147,7 @@ public class ServerStatsViewModel: ObservableObject {
               let result = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
               result["success"] as? Bool == true,
               let stats = result["data"] as? [String: Any] else {
-            CoreLogger.shared.warning("Failed to fetch stats via Go Core", module: "ServerStats")
+            AevonXCoreBridge.CoreLogger.shared.warning("Failed to fetch stats via Go Core", module: "ServerStats")
             return
         }
         

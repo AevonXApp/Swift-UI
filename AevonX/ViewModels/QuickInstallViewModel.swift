@@ -335,27 +335,27 @@ public final class QuickInstallViewModel: ObservableObject {
     // MARK: - Begin Installation (Resilient Queue)
 
     func beginInstallation() async {
-        CoreLogger.shared.info("beginInstallation() called — \(selections.count) packages selected", module: "QuickInstall")
+        AevonXCoreBridge.CoreLogger.shared.info("beginInstallation() called — \(selections.count) packages selected", module: "QuickInstall")
         guard !selections.isEmpty else { return }
 
         let profile: ServerProfile
         if let existing = serverProfile {
             profile = existing
         } else {
-            CoreLogger.shared.info("serverProfile nil — detecting now", module: "QuickInstall")
+            AevonXCoreBridge.CoreLogger.shared.info("serverProfile nil — detecting now", module: "QuickInstall")
             let detector = CapabilityDetector(sshService: SSHBridge.shared)
             do {
                 let detected = try await detector.detect(serverId: serverId)
                 serverProfile = detected
                 profile = detected
             } catch {
-                CoreLogger.shared.error("Profile detection failed: \(error.localizedDescription)", module: "QuickInstall")
+                AevonXCoreBridge.CoreLogger.shared.error("Profile detection failed: \(error.localizedDescription)", module: "QuickInstall")
                 scanError = "Could not detect server OS. Check your connection."
                 return
             }
         }
 
-        CoreLogger.shared.info("Profile: \(profile.distro.rawValue), pkg: \(profile.packageManager.rawValue)", module: "QuickInstall")
+        AevonXCoreBridge.CoreLogger.shared.info("Profile: \(profile.distro.rawValue), pkg: \(profile.packageManager.rawValue)", module: "QuickInstall")
 
         let installed = serverScan ?? [:]
         let pkgMgr = profile.packageManager.rawValue
@@ -374,7 +374,7 @@ public final class QuickInstallViewModel: ObservableObject {
 
         guard let buildData = try? JSONSerialization.data(withJSONObject: buildInput),
               let buildJSON = String(data: buildData, encoding: .utf8) else {
-            CoreLogger.shared.error("Failed to encode build steps input", module: "QuickInstall")
+            AevonXCoreBridge.CoreLogger.shared.error("Failed to encode build steps input", module: "QuickInstall")
             return
         }
 
@@ -382,11 +382,11 @@ public final class QuickInstallViewModel: ObservableObject {
         guard let stepsData = stepsResultJSON.data(using: .utf8),
               let stepsResp = try? JSONDecoder().decode(BridgeResponse<[BridgeQIStep]>.self, from: stepsData),
               let coreSteps = stepsResp.data else {
-            CoreLogger.shared.error("Failed to decode build steps", module: "QuickInstall")
+            AevonXCoreBridge.CoreLogger.shared.error("Failed to decode build steps", module: "QuickInstall")
             return
         }
 
-        CoreLogger.shared.info("Built \(coreSteps.count) steps", module: "QuickInstall")
+        AevonXCoreBridge.CoreLogger.shared.info("Built \(coreSteps.count) steps", module: "QuickInstall")
 
         // Build install command map via Go Core
         var installCommands: [String: String] = [:]
@@ -404,7 +404,7 @@ public final class QuickInstallViewModel: ObservableObject {
                 installCommands[step.title] = cmd
             }
         }
-        CoreLogger.shared.info("Built \(installCommands.count) shell commands", module: "QuickInstall")
+        AevonXCoreBridge.CoreLogger.shared.info("Built \(installCommands.count) shell commands", module: "QuickInstall")
 
         // Convert to AXInstallStep for UI
         let axSteps: [AXInstallStep] = coreSteps.map {
@@ -418,7 +418,7 @@ public final class QuickInstallViewModel: ObservableObject {
         isComplete = false
         isFailed = false
 
-        CoreLogger.shared.info("isInstalling=true, uploading script...", module: "QuickInstall")
+        AevonXCoreBridge.CoreLogger.shared.info("isInstalling=true, uploading script...", module: "QuickInstall")
 
         // Generate queue script via Go Core
         let stepEntries = coreSteps.enumerated().map { (i, step) -> [String: String] in
@@ -432,7 +432,7 @@ public final class QuickInstallViewModel: ObservableObject {
 
         guard let scriptData = try? JSONSerialization.data(withJSONObject: scriptInput),
               let scriptJSON = String(data: scriptData, encoding: .utf8) else {
-            CoreLogger.shared.error("Failed to encode script input", module: "QuickInstall")
+            AevonXCoreBridge.CoreLogger.shared.error("Failed to encode script input", module: "QuickInstall")
             return
         }
 
@@ -440,7 +440,7 @@ public final class QuickInstallViewModel: ObservableObject {
         guard let sData = scriptResultJSON.data(using: .utf8),
               let sResp = try? JSONDecoder().decode(BridgeResponse<String>.self, from: sData),
               let script = sResp.data else {
-            CoreLogger.shared.error("Failed to generate queue script", module: "QuickInstall")
+            AevonXCoreBridge.CoreLogger.shared.error("Failed to generate queue script", module: "QuickInstall")
             return
         }
 
@@ -493,9 +493,9 @@ public final class QuickInstallViewModel: ObservableObject {
             guard launch.isSuccess && launch.stdout.contains("OK") else {
                 throw NSError(domain: "QI", code: 6, userInfo: [NSLocalizedDescriptionKey: "Launch failed: \(launch.stderr)"])
             }
-            CoreLogger.shared.info("Script launched in background on server", module: "QuickInstall")
+            AevonXCoreBridge.CoreLogger.shared.info("Script launched in background on server", module: "QuickInstall")
         } catch {
-            CoreLogger.shared.error("uploadAndLaunch failed: \(error.localizedDescription)", module: "QuickInstall")
+            AevonXCoreBridge.CoreLogger.shared.error("uploadAndLaunch failed: \(error.localizedDescription)", module: "QuickInstall")
             isFailed = true
             isInstalling = false
             vm.isRunning = false
@@ -517,7 +517,7 @@ public final class QuickInstallViewModel: ObservableObject {
         guard let pollData = pollCmdJSON.data(using: .utf8),
               let pollResp = try? JSONDecoder().decode(BridgeResponse<String>.self, from: pollData),
               let pollCmd = pollResp.data else {
-            CoreLogger.shared.error("Failed to get poll command", module: "QuickInstall")
+            AevonXCoreBridge.CoreLogger.shared.error("Failed to get poll command", module: "QuickInstall")
             return
         }
 
@@ -539,7 +539,7 @@ public final class QuickInstallViewModel: ObservableObject {
 
                     if state.is_done {
                         let hasFails = state.is_done_with_errors
-                        CoreLogger.shared.info("Install done — hasFails: \(hasFails)", module: "QuickInstall")
+                        AevonXCoreBridge.CoreLogger.shared.info("Install done — hasFails: \(hasFails)", module: "QuickInstall")
                         self.isInstalling = false
                         self.isComplete = !hasFails
                         self.isFailed = hasFails
@@ -561,7 +561,7 @@ public final class QuickInstallViewModel: ObservableObject {
                     }
                 } catch {
                     consecutiveErrors += 1
-                    CoreLogger.shared.warning("Poll error #\(consecutiveErrors): \(error.localizedDescription)", module: "QuickInstall")
+                    AevonXCoreBridge.CoreLogger.shared.warning("Poll error #\(consecutiveErrors): \(error.localizedDescription)", module: "QuickInstall")
                     if consecutiveErrors >= 30 {
                         self.isInstalling = false
                         self.isFailed = true

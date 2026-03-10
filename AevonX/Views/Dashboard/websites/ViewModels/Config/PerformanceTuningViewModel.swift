@@ -19,6 +19,8 @@ class PerformanceTuningViewModel: ObservableObject {
     let serverId: String
     let domain: String
     private let bridge = WebsitesBridge.shared
+    private var serverPaths: ServerPaths = .defaults
+    private var pathsDetected = false
 
     init(serverId: String, domain: String) {
         self.serverId = serverId
@@ -28,7 +30,8 @@ class PerformanceTuningViewModel: ObservableObject {
     func loadSettings() async {
         isLoading = true; defer { isLoading = false }
         do {
-            let configPath = "/etc/nginx/sites-available/\(domain)"
+            await detectPathsIfNeeded()
+            let configPath = "\(serverPaths.nginxSitesAvailable)/\(domain)"
             let cmd = bridge.readPerfCmd(configPath: configPath)
             let result = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
             let parsedJSON = bridge.parsePerfSettings(content: result)
@@ -65,7 +68,7 @@ class PerformanceTuningViewModel: ObservableObject {
     func applyDirective(_ name: String, value: String) async {
         isLoading = true; defer { isLoading = false }
         do {
-            let configPath = "/etc/nginx/sites-available/\(domain)"
+            let configPath = "\(serverPaths.nginxSitesAvailable)/\(domain)"
             let cmd = bridge.applyPerfSettingCmd(configPath: configPath, directive: name, value: value)
             _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
             _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.restartNginxCmd())
@@ -79,7 +82,7 @@ class PerformanceTuningViewModel: ObservableObject {
     func applyPreset() async {
         isLoading = true; defer { isLoading = false }
         do {
-            let configPath = "/etc/nginx/sites-available/\(domain)"
+            let configPath = "\(serverPaths.nginxSitesAvailable)/\(domain)"
             let cmds = bridge.applyPresetCmds(configPath: configPath, preset: selectedPreset)
             for cmd in cmds {
                 _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
@@ -100,6 +103,14 @@ class PerformanceTuningViewModel: ObservableObject {
             GlobalToastManager.shared.showSuccess(enable ? "Gzip enabled" : "Gzip disabled")
             await loadSettings()
         } catch { GlobalToastManager.shared.showError(error.localizedDescription) }
+    }
+
+    private func detectPathsIfNeeded() async {
+        guard !pathsDetected else { return }
+        let cmd = PathResolverBridge.shared.detectCmd()
+        let output = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
+        serverPaths = PathResolverBridge.shared.parse(output: output)
+        pathsDetected = true
     }
 }
 

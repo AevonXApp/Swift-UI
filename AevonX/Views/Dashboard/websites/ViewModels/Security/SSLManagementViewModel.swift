@@ -55,6 +55,8 @@ public final class SSLManagementViewModel: ObservableObject {
     private let serverId: String?
     private let bridge = WebsitesBridge.shared
     private let toastManager = GlobalToastManager.shared
+    private var serverPaths: ServerPaths = .defaults
+    private var pathsDetected = false
 
     // MARK: - Computed Properties
 
@@ -81,7 +83,8 @@ public final class SSLManagementViewModel: ObservableObject {
 
         // Detect Force SSL state via config check
         do {
-            let configPath = "/etc/nginx/sites-available/\(website.domain)"
+            await detectPathsIfNeeded()
+            let configPath = "\(serverPaths.nginxSitesAvailable)/\(website.domain)"
             let result = await SSHBridge.shared.executeAsync(serverID: serverId, command: "grep -c 'return 301 https' \(configPath) 2>/dev/null")
             isForceSSLEnabled = (Int(result.trimmingCharacters(in: .whitespacesAndNewlines)) ?? 0) > 0
         } catch {
@@ -397,5 +400,13 @@ public final class SSLManagementViewModel: ObservableObject {
 
     public var isExpired: Bool {
         certificateDetails?.isExpired ?? false
+    }
+
+    private func detectPathsIfNeeded() async {
+        guard !pathsDetected, let serverId = serverId else { return }
+        let cmd = PathResolverBridge.shared.detectCmd()
+        let output = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
+        serverPaths = PathResolverBridge.shared.parse(output: output)
+        pathsDetected = true
     }
 }

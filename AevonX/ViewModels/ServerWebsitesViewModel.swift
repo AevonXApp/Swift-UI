@@ -85,9 +85,9 @@ public class ServerWebsitesViewModel: ObservableObject {
                 }
             }
             
-            CoreLogger.shared.info("Loaded \(websites.count) websites via Go Core", module: "ServerWebsites")
+            AevonXCoreBridge.CoreLogger.shared.info("Loaded \(websites.count) websites via Go Core", module: "ServerWebsites")
         } catch {
-            CoreLogger.shared.error("Failed to load websites: \(error.localizedDescription)", module: "ServerWebsites")
+            AevonXCoreBridge.CoreLogger.shared.error("Failed to load websites: \(error.localizedDescription)", module: "ServerWebsites")
             websites = []
             self.error = error.localizedDescription
         }

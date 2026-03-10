@@ -77,7 +77,7 @@ class PluginsViewModel: ObservableObject {
             decoder.dateDecodingStrategy = .formatted(fmt)
             self.categories = (try? decoder.decode([PluginCategory].self, from: catsJSON)) ?? []
         } else {
-            CoreLogger.shared.error("Failed to load categories via Go", module: "PluginsViewModel")
+            AevonXCoreBridge.CoreLogger.shared.error("Failed to load categories via Go", module: "PluginsViewModel")
         }
     }
     
@@ -138,7 +138,7 @@ class PluginsViewModel: ObservableObject {
             installationStatus.removeValue(forKey: plugin.id)
             
         } catch {
-            CoreLogger.shared.error("Plugin installation failed: \(error.localizedDescription)", module: "PluginsViewModel")
+            AevonXCoreBridge.CoreLogger.shared.error("Plugin installation failed: \(error.localizedDescription)", module: "PluginsViewModel")
             errorMessage = "Installation failed: \(error.localizedDescription)"
             installationStatus[plugin.id] = "Failed"
             installationProgress.removeValue(forKey: plugin.id)
@@ -186,15 +186,15 @@ class PluginsViewModel: ObservableObject {
                     if self.installSources[slug] == nil {
                         self.installSources[slug] = .devBuild
                     }
-                    CoreLogger.shared.info("Installed plugin \(slug) not in marketplace — showing as dev build.", module: "PluginsViewModel")
+                    AevonXCoreBridge.CoreLogger.shared.info("Installed plugin \(slug) not in marketplace — showing as dev build.", module: "PluginsViewModel")
                 }
             }
             
             self.installedPlugins = matchedPlugins
-            CoreLogger.shared.info("Loaded \(matchedPlugins.count) installed plugins for server \(serverId)", module: "PluginsViewModel")
+            AevonXCoreBridge.CoreLogger.shared.info("Loaded \(matchedPlugins.count) installed plugins for server \(serverId)", module: "PluginsViewModel")
             
         } catch {
-            CoreLogger.shared.error("Failed to load installed plugins: \(error.localizedDescription)", module: "PluginsViewModel")
+            AevonXCoreBridge.CoreLogger.shared.error("Failed to load installed plugins: \(error.localizedDescription)", module: "PluginsViewModel")
         }
     }
     
@@ -222,7 +222,7 @@ class PluginsViewModel: ObservableObject {
             installationStatus.removeValue(forKey: plugin.id)
             
         } catch {
-            CoreLogger.shared.error("Plugin uninstallation failed: \(error.localizedDescription)", module: "PluginsViewModel")
+            AevonXCoreBridge.CoreLogger.shared.error("Plugin uninstallation failed: \(error.localizedDescription)", module: "PluginsViewModel")
             errorMessage = "Uninstallation failed: \(error.localizedDescription)"
             installationStatus[plugin.id] = "Failed"
             installationProgress.removeValue(forKey: plugin.id)

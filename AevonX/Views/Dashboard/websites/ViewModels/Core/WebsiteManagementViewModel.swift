@@ -15,7 +15,6 @@ import Foundation
 import SwiftUI
 import Combine
 import AevonXCoreBridge
-import AevonXCore
 
 // MARK: - Website Management ViewModel
 
@@ -75,7 +74,12 @@ public final class WebsiteManagementViewModel: ObservableObject {
 
     // NOTE: All website operations now go through Go Core via WebsitesBridge
     private let bridge = WebsitesBridge.shared
+    private let pathResolver = PathResolverBridge.shared
     private var cancellables = Set<AnyCancellable>()
+
+    /// Auto-detected server paths (web root, nginx dirs, etc.)
+    private(set) var serverPaths: ServerPaths = .defaults
+    private var pathsDetected = false
 
     // MARK: - Server Properties
 
@@ -121,6 +125,11 @@ public final class WebsiteManagementViewModel: ObservableObject {
             isLoading = false
             errorMessage = "Not connected to server. Please connect first."
             return
+        }
+
+        // Detect server paths if not yet done
+        if !pathsDetected {
+            await detectServerPaths(serverId: serverId)
         }
 
         // Load websites from Core layer
@@ -169,7 +178,7 @@ public final class WebsiteManagementViewModel: ObservableObject {
                             status: site.enabled ? .online : .offline,
                             sslEnabled: site.ssl_enabled ?? false,
                             phpVersion: site.php_version,
-                            documentRoot: site.document_root ?? "/var/www/\(site.domain)",
+                            documentRoot: site.document_root ?? "\(serverPaths.webRoot)/\(site.domain)",
                             configPath: site.config_path,
                             isReachable: site.enabled
                         )
@@ -221,7 +230,7 @@ public final class WebsiteManagementViewModel: ObservableObject {
         // Build config JSON for Go Core bridge
         var config: [String: Any] = [
             "domain": domain,
-            "document_root": documentRoot ?? "/var/www/\(domain)"
+            "document_root": documentRoot ?? "\(serverPaths.webRoot)/\(domain)"
         ]
         if let phpVersion = phpVersion { config["php_version"] = phpVersion }
         let configJSON = String(data: try JSONSerialization.data(withJSONObject: config), encoding: .utf8) ?? "{}"
@@ -315,7 +324,7 @@ public final class WebsiteManagementViewModel: ObservableObject {
 
         let repo = website.gitRepository ?? ""
         let branch = website.gitBranch ?? "main"
-        let docRoot = website.documentRoot ?? "/var/www/\(website.domain)"
+        let docRoot = website.documentRoot ?? "\(serverPaths.webRoot)/\(website.domain)"
         let cmds = bridge.gitDeployCmds(repo: repo, branch: branch, docRoot: docRoot)
         for cmd in cmds {
             _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
@@ -409,13 +418,13 @@ public final class WebsiteManagementViewModel: ObservableObject {
         isCloning = true
         defer { isCloning = false }
         
-        let docRoot = website.documentRoot ?? "/var/www/\(website.domain)"
+        let docRoot = website.documentRoot ?? "\(serverPaths.webRoot)/\(website.domain)"
         let cmds = bridge.cloneSiteCmds(
             source: website.domain,
             target: newDomain,
             docRoot: docRoot,
-            sitesAvailable: "/etc/nginx/sites-available",
-            sitesEnabled: "/etc/nginx/sites-enabled"
+            sitesAvailable: serverPaths.nginxSitesAvailable,
+            sitesEnabled: serverPaths.nginxSitesEnabled
         )
         for cmd in cmds {
             _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
@@ -443,14 +452,25 @@ public final class WebsiteManagementViewModel: ObservableObject {
         isBackingUp = true
         defer { isBackingUp = false }
         
-        let docRoot = website.documentRoot ?? "/var/www/\(website.domain)"
+        let docRoot = website.documentRoot ?? "\(serverPaths.webRoot)/\(website.domain)"
         let cmds = bridge.backupSiteCmds(domain: website.domain, docRoot: docRoot)
         for cmd in cmds {
             _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
         }
         
-        lastBackupPath = "/var/backups/aevonx/\(website.domain)_backup.tar.gz"
+        lastBackupPath = "\(serverPaths.backupDir)/\(website.domain)_backup.tar.gz"
         GlobalToastManager.shared.showSuccess("Backup saved")
+    }
+
+    // MARK: - Path Detection
+
+    /// Detects server paths (web root, nginx dirs, etc.) via SSH
+    private func detectServerPaths(serverId: String) async {
+        let cmd = pathResolver.detectCmd()
+        let output = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
+        serverPaths = pathResolver.parse(output: output)
+        pathsDetected = true
+        CoreLogger.shared.debug("Detected server paths: \(serverPaths.serverType) webRoot=\(serverPaths.webRoot)", module: "WebsiteManagement")
     }
 }
 

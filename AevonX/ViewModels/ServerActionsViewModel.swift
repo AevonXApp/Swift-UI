@@ -51,17 +51,17 @@ public class ServerActionsViewModel: ObservableObject {
     func restartServices() async {
         guard isConnected else { return }
         
-        CoreLogger.shared.info("Restarting services...", module: "ServerActions")
+        AevonXCoreBridge.CoreLogger.shared.info("Restarting services...", module: "ServerActions")
         
         do {
             _ = try await executeCommand(CommandTemplate.services(.restartNginx))
             _ = try? await executeCommand(CommandTemplate.services(.restartMySQL))
             _ = try? await executeCommand(CommandTemplate.services(.restartPHPFPM))
             
-            CoreLogger.shared.info("Services restarted successfully", module: "ServerActions")
+            AevonXCoreBridge.CoreLogger.shared.info("Services restarted successfully", module: "ServerActions")
             await onRefreshStats?()
         } catch {
-            CoreLogger.shared.error("Failed to restart services: \(error.localizedDescription)", module: "ServerActions")
+            AevonXCoreBridge.CoreLogger.shared.error("Failed to restart services: \(error.localizedDescription)", module: "ServerActions")
         }
     }
     
@@ -69,13 +69,13 @@ public class ServerActionsViewModel: ObservableObject {
     func rebootServer() async {
         guard isConnected else { return }
         
-        CoreLogger.shared.warning("Initiating server reboot...", module: "ServerActions")
+        AevonXCoreBridge.CoreLogger.shared.warning("Initiating server reboot...", module: "ServerActions")
         
         do {
             try await SystemControlService.shared.reboot(serverId: serverId)
             await onDisconnectNeeded?()
         } catch {
-            CoreLogger.shared.error("Failed to reboot server: \(error.localizedDescription)", module: "ServerActions")
+            AevonXCoreBridge.CoreLogger.shared.error("Failed to reboot server: \(error.localizedDescription)", module: "ServerActions")
             onError?("Reboot failed: \(error.localizedDescription)")
         }
     }
@@ -84,13 +84,13 @@ public class ServerActionsViewModel: ObservableObject {
     func shutdownServer() async {
         guard isConnected else { return }
         
-        CoreLogger.shared.warning("Initiating server shutdown...", module: "ServerActions")
+        AevonXCoreBridge.CoreLogger.shared.warning("Initiating server shutdown...", module: "ServerActions")
         
         do {
             try await SystemControlService.shared.shutdown(serverId: serverId)
             await onDisconnectNeeded?()
         } catch {
-            CoreLogger.shared.error("Failed to shutdown server: \(error.localizedDescription)", module: "ServerActions")
+            AevonXCoreBridge.CoreLogger.shared.error("Failed to shutdown server: \(error.localizedDescription)", module: "ServerActions")
             onError?("Shutdown failed: \(error.localizedDescription)")
         }
     }

@@ -10,7 +10,6 @@ import Foundation
 import SwiftUI
 import Combine
 import AevonXCoreBridge
-import AevonXCore
 
 // MARK: - Add Website ViewModel
 
@@ -36,7 +35,7 @@ public final class AddWebsiteViewModel: ObservableObject {
     @Published public var phpVersions: [String] = []
     @Published public var nodeVersions: [String] = []
     @Published public var pythonVersions: [String] = []
-    @Published public var detectedWebRoot = "/var/www"
+    @Published public var detectedWebRoot = ServerPaths.defaults.webRoot
 
     // Directory browser
     @Published public var isShowingDirectoryBrowser = false
@@ -94,9 +93,11 @@ public final class AddWebsiteViewModel: ObservableObject {
                 runtime = first
             }
 
-            // Detect web root
-            let webRootResult = await SSHBridge.shared.executeAsync(serverID: serverId, command: "[ -d /var/www/html ] && echo /var/www/html || echo /var/www")
-            detectedWebRoot = webRootResult.trimmingCharacters(in: .whitespacesAndNewlines)
+            // Detect web root using PathResolver
+            let pathCmd = PathResolverBridge.shared.detectCmd()
+            let pathOutput = await SSHBridge.shared.executeAsync(serverID: serverId, command: pathCmd)
+            let detectedPaths = PathResolverBridge.shared.parse(output: pathOutput)
+            detectedWebRoot = detectedPaths.webRoot
 
             // Load versions for the selected runtime
             await loadVersionsForRuntime(runtime)
@@ -279,7 +280,7 @@ public final class AddWebsiteViewModel: ObservableObject {
             // Build config JSON for Go Core bridge
             var config: [String: Any] = [
                 "domain": domain,
-                "document_root": documentRoot.isEmpty ? "/var/www/\(domain)" : documentRoot
+                "document_root": documentRoot.isEmpty ? "\(detectedWebRoot)/\(domain)" : documentRoot
             ]
             if let phpVersion = phpVersion { config["php_version"] = phpVersion }
             let configJSON = String(data: try JSONSerialization.data(withJSONObject: config), encoding: .utf8) ?? "{}"

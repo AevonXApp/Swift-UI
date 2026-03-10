@@ -9,7 +9,6 @@
 import SwiftUI
 import Combine
 import AevonXCoreBridge
-import AevonXCore
 
 @MainActor
 public final class WebsiteDetailViewModel: ObservableObject {
@@ -64,6 +63,11 @@ public final class WebsiteDetailViewModel: ObservableObject {
     // MARK: - Services
 
     private let bridge = WebsitesBridge.shared
+    private let pathResolver = PathResolverBridge.shared
+
+    /// Auto-detected server paths
+    private(set) var serverPaths: ServerPaths = .defaults
+    private var pathsDetected = false
 
     // MARK: - Initialization
 
@@ -99,7 +103,7 @@ public final class WebsiteDetailViewModel: ObservableObject {
             let findCmd = bridge.findAccessLogCmd(domain: website.domain)
             let findResult = await SSHBridge.shared.executeAsync(serverID: serverId, command: findCmd)
             let logPath = findResult.trimmingCharacters(in: .whitespacesAndNewlines)
-            let readCmd = bridge.readAccessLogCmd(logPath: logPath.isEmpty ? "/var/log/nginx/access.log" : logPath, lines: 100)
+            let readCmd = bridge.readAccessLogCmd(logPath: logPath.isEmpty ? "\(serverPaths.logDir)/access.log" : logPath, lines: 100)
             let logResult = await SSHBridge.shared.executeAsync(serverID: serverId, command: readCmd)
             logs = logResult
         } catch {
@@ -125,7 +129,7 @@ public final class WebsiteDetailViewModel: ObservableObject {
 
         do {
             // Load config from Go Core bridge
-            let configCmd = bridge.loadNginxConfigCmd(configPath: website.configPath ?? "/etc/nginx/sites-available/\(website.domain)")
+            let configCmd = bridge.loadNginxConfigCmd(configPath: website.configPath ?? "\(serverPaths.nginxSitesAvailable)/\(website.domain)")
             let configResult = await SSHBridge.shared.executeAsync(serverID: serverId, command: configCmd)
             let configContent = configResult
 
@@ -162,6 +166,15 @@ public final class WebsiteDetailViewModel: ObservableObject {
 
     /// Load all section data in parallel (NEW)
     public func loadAllSections() async {
+        // Detect server paths if not yet done
+        if !pathsDetected, let sid = serverId {
+            let cmd = pathResolver.detectCmd()
+            let output = await SSHBridge.shared.executeAsync(serverID: sid, command: cmd)
+            serverPaths = pathResolver.parse(output: output)
+            pathsDetected = true
+            CoreLogger.shared.debug("Detected paths: \(serverPaths.serverType) webRoot=\(serverPaths.webRoot)", module: "WebsiteDetail")
+        }
+
         await withTaskGroup(of: Void.self) { group in
             group.addTask { await self.urlRewriteVM.load() }
             group.addTask { await self.sslManagementVM.load() }
@@ -198,7 +211,7 @@ public final class WebsiteDetailViewModel: ObservableObject {
         do {
             let repo = website.gitRepository ?? ""
             let branch = website.gitBranch ?? "main"
-            let docRoot = website.documentRoot ?? "/var/www/\(website.domain)"
+            let docRoot = website.documentRoot ?? "\(serverPaths.webRoot)/\(website.domain)"
             let cmds = bridge.gitDeployCmds(repo: repo, branch: branch, docRoot: docRoot)
             for cmd in cmds {
                 let result = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
@@ -224,7 +237,7 @@ public final class WebsiteDetailViewModel: ObservableObject {
         CoreLogger.shared.debug("Saving config - PHP: \(phpVersion), Root: \(documentRoot)", module: "WebsiteDetail")
 
         do {
-            let configPath = website.configPath ?? "/etc/nginx/sites-available/\(website.domain)"
+            let configPath = website.configPath ?? "\(serverPaths.nginxSitesAvailable)/\(website.domain)"
             
             // Update PHP version in config via sed
             if let oldPHP = website.phpVersion, oldPHP != phpVersion {
@@ -328,7 +341,7 @@ public final class WebsiteDetailViewModel: ObservableObject {
         isUpdatingPort = true
         
         do {
-            let configPath = website.configPath ?? "/etc/nginx/sites-available/\(website.domain)"
+            let configPath = website.configPath ?? "\(serverPaths.nginxSitesAvailable)/\(website.domain)"
             let cmd = "sudo sed -i 's/listen [0-9]*/listen \(customPort)/g' \(configPath)"
             _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
             _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.restartNginxCmd())
@@ -388,7 +401,7 @@ public final class WebsiteDetailViewModel: ObservableObject {
     public func startBrowsing(initialPath: String? = nil) {
         currentBrowsingPath = initialPath ?? documentRoot
         if currentBrowsingPath.isEmpty {
-            currentBrowsingPath = "/var/www"
+            currentBrowsingPath = serverPaths.webRoot
         }
         isBrowsingPath = true
         Task {
@@ -492,7 +505,7 @@ public final class WebsiteDetailViewModel: ObservableObject {
         isSavingConfig = true
         
         do {
-            let configPath = website.configPath ?? "/etc/nginx/sites-available/\(website.domain)"
+            let configPath = website.configPath ?? "\(serverPaths.nginxSitesAvailable)/\(website.domain)"
             
             // Update PHP-FPM socket in nginx config
             if let oldVersion = website.phpVersion {

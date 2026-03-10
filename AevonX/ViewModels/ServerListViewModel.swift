@@ -47,37 +47,37 @@ class ServerListViewModel: ObservableObject {
     // MARK: - Initialization
     
     func initialize() async {
-        CoreLogger.shared.info("🔵 initialize() called - isInitialized: \(isInitialized)", module: "ServerList")
+        AevonXCoreBridge.CoreLogger.shared.info("🔵 initialize() called - isInitialized: \(isInitialized)", module: "ServerList")
 
         guard !isInitialized else {
-            CoreLogger.shared.warning("⚠️ Already initialized — skipping", module: "ServerList")
+            AevonXCoreBridge.CoreLogger.shared.warning("⚠️ Already initialized — skipping", module: "ServerList")
             return
         }
 
-        CoreLogger.shared.info("🟢 Starting initialization...", module: "ServerList")
+        AevonXCoreBridge.CoreLogger.shared.info("🟢 Starting initialization...", module: "ServerList")
         isInitialized = true
 
         await setupEncryption()
         await refresh()
         startStatusPolling()
         
-        CoreLogger.shared.info("✅ Initialization complete", module: "ServerList")
+        AevonXCoreBridge.CoreLogger.shared.info("✅ Initialization complete", module: "ServerList")
     }
 
     private func setupEncryption() async {
         let hasKey = EncryptionKeyStore.shared.hasKey()
         
         if !hasKey {
-            CoreLogger.shared.warning("⚠️ No encryption key — user needs to set up", module: "ServerList")
+            AevonXCoreBridge.CoreLogger.shared.warning("⚠️ No encryption key — user needs to set up", module: "ServerList")
             return
         }
         
         // Load key into memory cache (instant file read, no prompts)
         do {
             _ = try await EncryptionKeyStore.shared.getKey()
-            CoreLogger.shared.info("✅ Encryption key ready", module: "ServerList")
+            AevonXCoreBridge.CoreLogger.shared.info("✅ Encryption key ready", module: "ServerList")
         } catch {
-            CoreLogger.shared.error("Failed to load encryption key: \(error.localizedDescription)", module: "ServerList")
+            AevonXCoreBridge.CoreLogger.shared.error("Failed to load encryption key: \(error.localizedDescription)", module: "ServerList")
         }
     }
     
@@ -123,7 +123,7 @@ class ServerListViewModel: ObservableObject {
             if hasKey {
                 await decryptServersForDisplay()
             } else {
-                CoreLogger.shared.warning("Encryption key not available, skipping server decryption", module: "ServerList")
+                AevonXCoreBridge.CoreLogger.shared.warning("Encryption key not available, skipping server decryption", module: "ServerList")
                 self.decryptedServers = []
             }
             
@@ -170,7 +170,7 @@ class ServerListViewModel: ObservableObject {
             }
             
         } catch {
-            CoreLogger.shared.warning("Status poll failed: \(error.localizedDescription)", module: "ServerList")
+            AevonXCoreBridge.CoreLogger.shared.warning("Status poll failed: \(error.localizedDescription)", module: "ServerList")
         }
     }
     
@@ -215,10 +215,10 @@ class ServerListViewModel: ObservableObject {
                 )
                 
                 decrypted.append(viewModel)
-                CoreLogger.shared.info("Decrypted server: \(serverData.serverIdentity.name)", module: "ServerList")
+                AevonXCoreBridge.CoreLogger.shared.info("Decrypted server: \(serverData.serverIdentity.name)", module: "ServerList")
                 
             } catch {
-                CoreLogger.shared.error("Failed to decrypt server \(accessibleServer.id): \(error.localizedDescription)", module: "ServerList")
+                AevonXCoreBridge.CoreLogger.shared.error("Failed to decrypt server \(accessibleServer.id): \(error.localizedDescription)", module: "ServerList")
                 hasDecryptionErrors = true
                 failedServerIds.insert(accessibleServer.id)
                 
@@ -246,7 +246,7 @@ class ServerListViewModel: ObservableObject {
     
     /// Retry decryption after entering encryption key
     func retryDecryptionWithKey(_ key: String) async {
-        CoreLogger.shared.info("Retrying decryption with provided key...", module: "ServerList")
+        AevonXCoreBridge.CoreLogger.shared.info("Retrying decryption with provided key...", module: "ServerList")
         
         do {
             try await EncryptionKeyStore.shared.saveKey(key)
@@ -256,7 +256,7 @@ class ServerListViewModel: ObservableObject {
             // Retry decryption
             await decryptServersForDisplay()
         } catch {
-            CoreLogger.shared.error("Failed to save key: \(error.localizedDescription)", module: "ServerList")
+            AevonXCoreBridge.CoreLogger.shared.error("Failed to save key: \(error.localizedDescription)", module: "ServerList")
             encryptionError = "Failed to save encryption key: \(error.localizedDescription)"
         }
     }

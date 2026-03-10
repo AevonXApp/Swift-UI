@@ -8,7 +8,6 @@
 import SwiftUI
 import Combine
 import AevonXCoreBridge
-import AevonXCore
 
 @MainActor
 public final class TrafficAnalyticsViewModel: ObservableObject {
@@ -27,6 +26,8 @@ public final class TrafficAnalyticsViewModel: ObservableObject {
     private let serverId: String?
     private let bridge = WebsitesBridge.shared
     private let toastManager = GlobalToastManager.shared
+    private var serverPaths: ServerPaths = .defaults
+    private var pathsDetected = false
 
     private var autoRefreshTimer: Timer?
 
@@ -52,6 +53,8 @@ public final class TrafficAnalyticsViewModel: ObservableObject {
         isLoading = true
         error = nil
 
+        await detectPathsIfNeeded()
+
         await withTaskGroup(of: Void.self) { group in
             // Load statistics
             group.addTask { @MainActor in
@@ -72,7 +75,7 @@ public final class TrafficAnalyticsViewModel: ObservableObject {
             // Load bandwidth data
             group.addTask { @MainActor in
                 do {
-                    let logPath = "/var/log/nginx/\(self.website.domain).access.log"
+                    let logPath = "\(self.serverPaths.logDir)/\(self.website.domain).access.log"
                     let cmd = self.bridge.bandwidthCmd(logPath: logPath)
                     let result = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
                     let parsedJSON = self.bridge.parseBandwidth(output: result)
@@ -187,5 +190,13 @@ public final class TrafficAnalyticsViewModel: ObservableObject {
 
     public func refresh() async {
         await load()
+    }
+
+    private func detectPathsIfNeeded() async {
+        guard !pathsDetected, let serverId = serverId else { return }
+        let cmd = PathResolverBridge.shared.detectCmd()
+        let output = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
+        serverPaths = PathResolverBridge.shared.parse(output: output)
+        pathsDetected = true
     }
 }

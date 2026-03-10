@@ -31,6 +31,8 @@ class AdvancedDomainViewModel: ObservableObject {
     let domain: String
     let docRoot: String
     private let bridge = WebsitesBridge.shared
+    private var serverPaths: ServerPaths = .defaults
+    private var pathsDetected = false
 
     init(serverId: String, domain: String, docRoot: String) {
         self.serverId = serverId
@@ -78,7 +80,8 @@ class AdvancedDomainViewModel: ObservableObject {
     func loadSubdomains() async {
         isLoading = true; defer { isLoading = false }
         do {
-            let cmd = bridge.listSubdomainsCmd(domain: domain, sitesEnabled: "/etc/nginx/sites-enabled")
+            await detectPathsIfNeeded()
+            let cmd = bridge.listSubdomainsCmd(domain: domain, sitesEnabled: serverPaths.nginxSitesEnabled)
             let output = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
             let lines = output.components(separatedBy: "\n").filter { !$0.isEmpty }
             subdomains = lines.map { name in
@@ -128,6 +131,14 @@ class AdvancedDomainViewModel: ObservableObject {
             _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.restartNginxCmd())
             GlobalToastManager.shared.showSuccess(toWWW ? "Redirecting to www" : "Redirecting to non-www")
         } catch { GlobalToastManager.shared.showError(error.localizedDescription) }
+    }
+
+    private func detectPathsIfNeeded() async {
+        guard !pathsDetected else { return }
+        let cmd = PathResolverBridge.shared.detectCmd()
+        let output = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
+        serverPaths = PathResolverBridge.shared.parse(output: output)
+        pathsDetected = true
     }
 }
 

@@ -21,6 +21,8 @@ class SiteSecurityViewModel: ObservableObject {
     let domain: String
     let docRoot: String
     private let bridge = WebsitesBridge.shared
+    private var serverPaths: ServerPaths = .defaults
+    private var pathsDetected = false
 
     init(serverId: String, domain: String, docRoot: String) {
         self.serverId = serverId
@@ -56,7 +58,8 @@ class SiteSecurityViewModel: ObservableObject {
         isScanning = true; scanProgress = "Toggling hotlink protection..."
         defer { isScanning = false; scanProgress = "" }
         do {
-            let configPath = "/etc/nginx/sites-available/\(domain)"
+            await detectPathsIfNeeded()
+            let configPath = "\(serverPaths.nginxSitesAvailable)/\(domain)"
             let cmd = bridge.toggleHotlinkCmd(enable: enable, domain: domain, configPath: configPath)
             _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
             _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.restartNginxCmd())
@@ -152,5 +155,13 @@ class SiteSecurityViewModel: ObservableObject {
         } catch {
             GlobalToastManager.shared.showError(error.localizedDescription)
         }
+    }
+
+    private func detectPathsIfNeeded() async {
+        guard !pathsDetected else { return }
+        let cmd = PathResolverBridge.shared.detectCmd()
+        let output = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
+        serverPaths = PathResolverBridge.shared.parse(output: output)
+        pathsDetected = true
     }
 }

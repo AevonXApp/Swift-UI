@@ -18,6 +18,8 @@ class HeadersViewModel: ObservableObject {
     let serverId: String
     let domain: String
     private let bridge = WebsitesBridge.shared
+    private var serverPaths: ServerPaths = .defaults
+    private var pathsDetected = false
 
     init(serverId: String, domain: String) {
         self.serverId = serverId
@@ -26,7 +28,8 @@ class HeadersViewModel: ObservableObject {
 
     func loadHeaders() async {
         do {
-            let configPath = "/etc/nginx/sites-available/\(domain)"
+            await detectPathsIfNeeded()
+            let configPath = "\(serverPaths.nginxSitesAvailable)/\(domain)"
             let cmd = bridge.loadHeadersCmd(configPath: configPath)
             let result = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
             let parsedJSON = bridge.parseHeaders(output: result)
@@ -82,7 +85,7 @@ class HeadersViewModel: ObservableObject {
 
     func applyRecommendedHeaders() async {
         do {
-            let configPath = "/etc/nginx/sites-available/\(domain)"
+            let configPath = "\(serverPaths.nginxSitesAvailable)/\(domain)"
             let cmd = bridge.applyRecommendedHeadersCmd(configPath: configPath)
             _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
             _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.restartNginxCmd())
@@ -92,5 +95,13 @@ class HeadersViewModel: ObservableObject {
         } catch {
             GlobalToastManager.shared.showError(error.localizedDescription)
         }
+    }
+
+    private func detectPathsIfNeeded() async {
+        guard !pathsDetected else { return }
+        let cmd = PathResolverBridge.shared.detectCmd()
+        let output = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
+        serverPaths = PathResolverBridge.shared.parse(output: output)
+        pathsDetected = true
     }
 }

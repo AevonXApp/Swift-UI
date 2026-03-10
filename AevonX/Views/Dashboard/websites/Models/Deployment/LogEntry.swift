@@ -8,7 +8,6 @@
 
 import Foundation
 import AevonXCoreBridge
-import AevonXCore
 
 // MARK: - Log Types (local definitions)
 

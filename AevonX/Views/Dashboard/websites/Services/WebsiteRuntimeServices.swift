@@ -8,13 +8,22 @@
 
 import Foundation
 import AevonXCoreBridge
-import AevonXCore
 
 // MARK: - NodeJS Config Service
 
 public actor NodeJSConfigService {
     public static let shared = NodeJSConfigService()
+    private var serverPaths: ServerPaths = .defaults
+    private var pathsDetected = false
     public init() {}
+
+    private func detectPathsIfNeeded(serverId: String) async {
+        guard !pathsDetected else { return }
+        let cmd = PathResolverBridge.shared.detectCmd()
+        let output = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
+        serverPaths = PathResolverBridge.shared.parse(output: output)
+        pathsDetected = true
+    }
 
     public func readPackageJSON(appPath: String, serverId: String) async throws -> PackageJSON? {
         let output = await SSHBridge.shared.executeAsync(serverID: serverId, command: "cat \(appPath)/package.json 2>/dev/null")
@@ -121,10 +130,11 @@ public actor NodeJSConfigService {
     }
 
     public func applyNginxReverseProxy(domain: String, port: Int, sslEnabled: Bool, serverId: String) async throws {
+        await detectPathsIfNeeded(serverId: serverId)
         let config = generateNginxConfig(domain: domain, port: port, sslEnabled: sslEnabled)
         let escaped = config.replacingOccurrences(of: "'", with: "'\\''")
-        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: "printf '%s\\n' '\(escaped)' | sudo tee /etc/nginx/sites-available/\(domain) > /dev/null")
-        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: "sudo ln -sf /etc/nginx/sites-available/\(domain) /etc/nginx/sites-enabled/\(domain)")
+        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: "printf '%s\\n' '\(escaped)' | sudo tee \(serverPaths.nginxSitesAvailable)/\(domain) > /dev/null")
+        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: "sudo ln -sf \(serverPaths.nginxSitesAvailable)/\(domain) \(serverPaths.nginxSitesEnabled)/\(domain)")
         let testOutput = await SSHBridge.shared.executeAsync(serverID: serverId, command: "sudo nginx -t 2>&1")
         guard testOutput.contains("successful") || testOutput.contains("ok") else {
             throw NSError(domain: "NodeJSConfig", code: 3, userInfo: [NSLocalizedDescriptionKey: "Nginx config test failed: \(testOutput)"])
@@ -425,23 +435,36 @@ public actor SiteQuickActionsService {
 
 public actor WebsiteLifecycleService {
     public static let shared = WebsiteLifecycleService()
+    private var serverPaths: ServerPaths = .defaults
+    private var pathsDetected = false
     public init() {}
 
+    private func detectPathsIfNeeded(serverId: String) async {
+        guard !pathsDetected else { return }
+        let cmd = PathResolverBridge.shared.detectCmd()
+        let output = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
+        serverPaths = PathResolverBridge.shared.parse(output: output)
+        pathsDetected = true
+    }
+
     public func deleteWebsite(websiteId: String, serverId: String) async throws {
+        await detectPathsIfNeeded(serverId: serverId)
         CoreLogger.shared.info("Deleting website: \(websiteId)", module: "WebsiteLifecycleService")
-        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: "sudo rm -f /etc/nginx/sites-enabled/\(websiteId)")
-        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: "sudo rm -f /etc/nginx/sites-available/\(websiteId)")
+        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: "sudo rm -f \(serverPaths.nginxSitesEnabled)/\(websiteId)")
+        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: "sudo rm -f \(serverPaths.nginxSitesAvailable)/\(websiteId)")
         _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: "sudo nginx -t && sudo systemctl reload nginx")
         CoreLogger.shared.info("Website deleted successfully", module: "WebsiteLifecycleService")
     }
 
     public func startWebsite(websiteId: String, serverId: String) async throws {
-        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: "sudo ln -sf /etc/nginx/sites-available/\(websiteId) /etc/nginx/sites-enabled/\(websiteId)")
+        await detectPathsIfNeeded(serverId: serverId)
+        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: "sudo ln -sf \(serverPaths.nginxSitesAvailable)/\(websiteId) \(serverPaths.nginxSitesEnabled)/\(websiteId)")
         _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: "sudo nginx -t && sudo systemctl reload nginx")
     }
 
     public func stopWebsite(websiteId: String, serverId: String) async throws {
-        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: "sudo rm -f /etc/nginx/sites-enabled/\(websiteId)")
+        await detectPathsIfNeeded(serverId: serverId)
+        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: "sudo rm -f \(serverPaths.nginxSitesEnabled)/\(websiteId)")
         _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: "sudo nginx -t && sudo systemctl reload nginx")
     }
 }

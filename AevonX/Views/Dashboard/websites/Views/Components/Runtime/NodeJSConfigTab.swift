@@ -9,7 +9,6 @@
 import SwiftUI
 import Combine
 import AevonXCoreBridge
-import AevonXCore
 
 // MARK: - ViewModel
 

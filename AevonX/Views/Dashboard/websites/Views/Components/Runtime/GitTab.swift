@@ -6,8 +6,8 @@
 //
 
 import SwiftUI
-import AevonXCoreBridge
 import AevonXCore
+import AevonXCoreBridge
 
 struct GitTab: View {
     @ObservedObject var vm: GitViewModel

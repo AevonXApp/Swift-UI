@@ -20,6 +20,8 @@ class BackupViewModel: ObservableObject {
     let domain: String
     let docRoot: String
     private let bridge = WebsitesBridge.shared
+    private var serverPaths: ServerPaths = .defaults
+    private var pathsDetected = false
 
     init(serverId: String, domain: String, docRoot: String) {
         self.serverId = serverId
@@ -102,12 +104,21 @@ class BackupViewModel: ObservableObject {
 
     func deleteOldBackups(olderThanDays: Int) async {
         do {
-            let cmd = "find /var/backups/aevonx -name '\(domain)_*' -mtime +\(olderThanDays) -delete 2>/dev/null; echo 'done'"
+            await detectPathsIfNeeded()
+            let cmd = "find \(serverPaths.backupDir) -name '\(domain)_*' -mtime +\(olderThanDays) -delete 2>/dev/null; echo 'done'"
             _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
             GlobalToastManager.shared.showSuccess("Old backups deleted")
             await loadBackups()
         } catch {
             errorMessage = error.localizedDescription
         }
+    }
+
+    private func detectPathsIfNeeded() async {
+        guard !pathsDetected else { return }
+        let cmd = PathResolverBridge.shared.detectCmd()
+        let output = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
+        serverPaths = PathResolverBridge.shared.parse(output: output)
+        pathsDetected = true
     }
 }
