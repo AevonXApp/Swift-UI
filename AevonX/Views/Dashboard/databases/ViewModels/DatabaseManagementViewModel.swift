@@ -189,23 +189,22 @@ public final class DatabaseManagementViewModel: ObservableObject {
         for state in installationStates where state.isInstalled {
             do {
                 let coreDatabases = try await DatabaseManagementService.shared.listDatabases(
-                    type: state.type,
+                    type: state.type.rawValue,
                     serverId: serverId
                 )
 
                 // Convert Core models to UI models
                 let uiDatabases = coreDatabases.map { coreDB in
                     DatabaseInfo(
-                        id: coreDB.id,
                         name: coreDB.name,
-                        type: coreDB.type,
-                        version: coreDB.version,
-                        status: DatabaseStatus(rawValue: coreDB.status.rawValue) ?? .unknown,
+                        type: state.type,
+                        version: state.installedVersion,
+                        status: .online,
                         size: coreDB.size,
                         tables: coreDB.tables,
-                        connections: coreDB.connections,
-                        host: coreDB.host,
-                        port: coreDB.port
+                        connections: 0,
+                        host: "localhost",
+                        port: state.type.defaultPort
                     )
                 }
 
@@ -296,7 +295,7 @@ public final class DatabaseManagementViewModel: ObservableObject {
 
         try await DatabaseManagementService.shared.createDatabase(
             name: name,
-            type: type,
+            type: type.rawValue,
             characterSet: characterSet,
             collation: collation,
             serverId: serverId
@@ -312,7 +311,7 @@ public final class DatabaseManagementViewModel: ObservableObject {
             throw DatabaseOperationError.serverNotConfigured
         }
 
-        try await DatabaseManagementService.shared.deleteDatabase(name: name, type: type, serverId: serverId)
+        try await DatabaseManagementService.shared.deleteDatabase(name: name, type: type.rawValue, serverId: serverId)
 
         // Reload data
         await loadData()

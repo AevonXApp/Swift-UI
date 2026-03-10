@@ -240,7 +240,7 @@ public final class AddDatabaseViewModel: ObservableObject {
             // Step 1: Create the database
             try await DatabaseManagementService.shared.createDatabase(
                 name: databaseName,
-                type: type,
+                type: type.rawValue,
                 characterSet: selectedCharset == "default" ? nil : selectedCharset,
                 collation: selectedCollation == "default" ? nil : selectedCollation,
                 serverId: serverId

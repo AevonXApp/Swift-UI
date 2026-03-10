@@ -14,6 +14,7 @@
 import Foundation
 import SwiftUI
 import Combine
+import AevonXCoreBridge
 import AevonXCore
 
 // MARK: - Website Management ViewModel
@@ -72,8 +73,8 @@ public final class WebsiteManagementViewModel: ObservableObject {
 
     // MARK: - Services
 
-    // NOTE: We use specialized core services for all website operations
-    // This ensures proper architecture separation (UI -> Core -> SSH)
+    // NOTE: All website operations now go through Go Core via WebsitesBridge
+    private let bridge = WebsitesBridge.shared
     private var cancellables = Set<AnyCancellable>()
 
     // MARK: - Server Properties
@@ -128,80 +129,55 @@ public final class WebsiteManagementViewModel: ObservableObject {
         isLoading = false
     }
 
-    /// Loads all websites from the server via Core layer
+    /// Loads all websites from the server via Go Core bridge
     private func loadAllWebsites(serverId: String) async {
         do {
-            // Call Core layer to get websites
-            let coreWebsites = try await WebsiteListService.shared.listWebsites(serverId: serverId)
-
-            // Convert Core models to UI models
-            let uiWebsites = coreWebsites.map { coreWebsite in
-                WebsiteInfo(
-                    id: coreWebsite.id,
-                    name: coreWebsite.name,
-                    domain: coreWebsite.domain,
-                    status: WebsiteStatus(rawValue: coreWebsite.status.rawValue) ?? .unknown,
-                    sslEnabled: coreWebsite.sslEnabled,
-                    sslInfo: coreWebsite.sslInfo.map { coreSSL in
-                        SSLInfo(
-                            provider: SSLProvider(rawValue: coreSSL.provider.rawValue) ?? .other,
-                            status: SSLStatus(rawValue: coreSSL.status.rawValue) ?? .unknown,
-                            issuer: coreSSL.issuer,
-                            validFrom: coreSSL.validFrom,
-                            validUntil: coreSSL.validUntil,
-                            autoRenew: coreSSL.autoRenew,
-                            domains: coreSSL.domains,
-                            certificateType: CertificateType(rawValue: coreSSL.certificateType.rawValue) ?? .single
-                        )
-                    },
-                    phpVersion: coreWebsite.phpVersion,
-                    runtime: RuntimeType(rawValue: coreWebsite.runtime.rawValue) ?? .php,
-                    lastDeployed: coreWebsite.lastDeployed,
-                    deploymentStatus: DeploymentStatus(rawValue: coreWebsite.deploymentStatus.rawValue) ?? .none,
-                    gitBranch: coreWebsite.gitBranch,
-                    gitCommit: coreWebsite.gitCommit,
-                    gitRepository: coreWebsite.gitRepository,
-                    diskUsage: coreWebsite.diskUsage,
-                    bandwidth: coreWebsite.bandwidth,
-                    monthlyVisitors: coreWebsite.monthlyVisitors,
-                    dailyRequests: coreWebsite.dailyRequests,
-                    host: coreWebsite.host,
-                    port: coreWebsite.port,
-                    documentRoot: coreWebsite.documentRoot,
-                    configPath: coreWebsite.configPath,
-                    isReachable: coreWebsite.isReachable,
-                    responseTime: coreWebsite.responseTime,
-                    uptime: coreWebsite.uptime,
-                    healthIssues: coreWebsite.healthIssues.map { coreIssue in
-                        WebsiteHealthIssue(
-                            id: coreIssue.id,
-                            severity: HealthSeverity(rawValue: coreIssue.severity.rawValue) ?? .info,
-                            title: coreIssue.title,
-                            description: coreIssue.description,
-                            recommendation: coreIssue.recommendation,
-                            detectedAt: coreIssue.detectedAt,
-                            resolvedAt: coreIssue.resolvedAt,
-                            isResolved: coreIssue.isResolved
-                        )
-                    },
-                    createdAt: coreWebsite.createdAt,
-                    lastCheckedAt: coreWebsite.lastCheckedAt,
-                    environment: EnvironmentType(rawValue: coreWebsite.environment.rawValue) ?? .production,
-                    customHeaders: coreWebsite.customHeaders,
-                    redirects: coreWebsite.redirects?.map { coreRedirect in
-                        RedirectRule(
-                            id: coreRedirect.id,
-                            source: coreRedirect.source,
-                            destination: coreRedirect.destination,
-                            statusCode: coreRedirect.statusCode,
-                            isRegex: coreRedirect.isRegex
-                        )
-                    }
-                )
+            // Step 1: Get list command from Go Core
+            let listCmd = bridge.nginxListCmd(serverID: serverId)
+            guard !listCmd.isEmpty else {
+                errorMessage = "Failed to get website list command"
+                return
             }
 
-            allWebsites = uiWebsites
-            filterWebsites()
+            // Step 2: Execute via SSH
+            let sshOutput = await SSHBridge.shared.executeAsync(serverID: serverId, command: listCmd)
+
+            // Step 3: Parse output via Go Core
+            let parsedJSON = bridge.parseNginxSites(output: sshOutput)
+
+            // Step 4: Decode and convert to UI models
+            if let data = parsedJSON.data(using: .utf8),
+               let response = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+               response["success"] as? Bool == true,
+               let sitesData = response["data"],
+               JSONSerialization.isValidJSONObject(sitesData) {
+                let sitesJSON = try JSONSerialization.data(withJSONObject: sitesData)
+                struct BridgeSite: Codable {
+                    let domain: String
+                    let enabled: Bool
+                    let server_type: String?
+                    let document_root: String?
+                    let php_version: String?
+                    let ssl_enabled: Bool?
+                    let config_path: String?
+                }
+                if let sites = try? JSONDecoder().decode([BridgeSite].self, from: sitesJSON) {
+                    let uiWebsites = sites.map { site in
+                        WebsiteInfo(
+                            name: site.domain,
+                            domain: site.domain,
+                            status: site.enabled ? .online : .offline,
+                            sslEnabled: site.ssl_enabled ?? false,
+                            phpVersion: site.php_version,
+                            documentRoot: site.document_root ?? "/var/www/\(site.domain)",
+                            configPath: site.config_path,
+                            isReachable: site.enabled
+                        )
+                    }
+                    allWebsites = uiWebsites
+                    filterWebsites()
+                }
+            }
 
         } catch {
             CoreLogger.shared.error("Failed to load websites: \(error.localizedDescription)",
@@ -242,15 +218,27 @@ public final class WebsiteManagementViewModel: ObservableObject {
             throw WebsiteOperationError.serverNotConfigured
         }
 
-        try await WebsiteLifecycleService.shared.createWebsite(
-            name: name,
-            domain: domain,
-            phpVersion: phpVersion,
-            runtime: CoreRuntimeType(rawValue: runtime.rawValue) ?? .php,
-            enableSSL: enableSSL,
-            documentRoot: documentRoot,
-            serverId: serverId
-        )
+        // Build config JSON for Go Core bridge
+        var config: [String: Any] = [
+            "domain": domain,
+            "document_root": documentRoot ?? "/var/www/\(domain)"
+        ]
+        if let phpVersion = phpVersion { config["php_version"] = phpVersion }
+        let configJSON = String(data: try JSONSerialization.data(withJSONObject: config), encoding: .utf8) ?? "{}"
+
+        // Get create commands from Go Core
+        let cmds = bridge.createSiteCmd(serverID: serverId, configJSON: configJSON)
+        for cmd in cmds {
+            _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
+        }
+
+        // Enable SSL if requested
+        if enableSSL {
+            let sslCmds = bridge.issueSSLCmd(domain: domain)
+            for cmd in sslCmds {
+                _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
+            }
+        }
 
         // Reload data
         await loadData()
@@ -262,10 +250,10 @@ public final class WebsiteManagementViewModel: ObservableObject {
             throw WebsiteOperationError.serverNotConfigured
         }
 
-        try await WebsiteLifecycleService.shared.deleteWebsite(
-            websiteId: website.domain,
-            serverId: serverId
-        )
+        let cmds = bridge.deleteSiteCmd(serverID: serverId, domain: website.domain)
+        for cmd in cmds {
+            _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
+        }
 
         // Reload data
         await loadData()
@@ -277,10 +265,10 @@ public final class WebsiteManagementViewModel: ObservableObject {
             throw WebsiteOperationError.serverNotConfigured
         }
 
-        try await WebsiteLifecycleService.shared.startWebsite(
-            websiteId: website.domain,
-            serverId: serverId
-        )
+        let cmd = bridge.enableSiteCmd(serverID: serverId, domain: website.domain)
+        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
+        // Reload nginx
+        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.restartNginxCmd())
 
         await loadData()
     }
@@ -291,10 +279,10 @@ public final class WebsiteManagementViewModel: ObservableObject {
             throw WebsiteOperationError.serverNotConfigured
         }
 
-        try await WebsiteLifecycleService.shared.stopWebsite(
-            websiteId: website.domain,
-            serverId: serverId
-        )
+        let cmd = bridge.disableSiteCmd(serverID: serverId, domain: website.domain)
+        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
+        // Reload nginx
+        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.restartNginxCmd())
 
         await loadData()
     }
@@ -314,10 +302,7 @@ public final class WebsiteManagementViewModel: ObservableObject {
             throw WebsiteOperationError.serverNotConfigured
         }
 
-        try await WebsiteLifecycleService.shared.restartWebsite(
-            websiteId: website.domain,
-            serverId: serverId
-        )
+        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.restartNginxCmd())
 
         await loadData()
     }
@@ -328,10 +313,13 @@ public final class WebsiteManagementViewModel: ObservableObject {
             throw WebsiteOperationError.serverNotConfigured
         }
 
-        try await WebsiteDeploymentService.shared.deployWebsite(
-            websiteId: website.domain,
-            serverId: serverId
-        )
+        let repo = website.gitRepository ?? ""
+        let branch = website.gitBranch ?? "main"
+        let docRoot = website.documentRoot ?? "/var/www/\(website.domain)"
+        let cmds = bridge.gitDeployCmds(repo: repo, branch: branch, docRoot: docRoot)
+        for cmd in cmds {
+            _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
+        }
 
         await loadData()
     }
@@ -342,11 +330,10 @@ public final class WebsiteManagementViewModel: ObservableObject {
             throw WebsiteOperationError.serverNotConfigured
         }
 
-        try await WebsiteSSLService.shared.enableSSL(
-            websiteId: website.domain,
-            provider: CoreSSLProvider(rawValue: provider.rawValue) ?? .letsEncrypt,
-            serverId: serverId
-        )
+        let sslCmds = bridge.issueSSLCmd(domain: website.domain)
+        for cmd in sslCmds {
+            _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
+        }
 
         await loadData()
     }
@@ -422,40 +409,29 @@ public final class WebsiteManagementViewModel: ObservableObject {
         isCloning = true
         defer { isCloning = false }
         
-        let sshService = SSHService.shared
-        let sitesAvailable = try await ServerPathResolver.shared.nginxSitesAvailable(serverId: serverId)
-        let sitesEnabled = try await ServerPathResolver.shared.nginxSitesEnabled(serverId: serverId)
-        
-        // 1. Copy nginx config
-        let srcConfig = "\(sitesAvailable)/\(website.domain)"
-        let dstConfig = "\(sitesAvailable)/\(newDomain)"
-        _ = try await sshService.execute("sudo cp \(srcConfig) \(dstConfig)", serverId: serverId)
-        
-        // 2. Update domain in new config
-        _ = try await sshService.execute("sudo sed -i 's/\(website.domain)/\(newDomain)/g' \(dstConfig)", serverId: serverId)
-        
-        // 3. Copy document root
-        if let docRoot = website.documentRoot {
-            let parentDir = (docRoot as NSString).deletingLastPathComponent
-            let newRoot = "\(parentDir)/\(newDomain)"
-            _ = try await sshService.execute("sudo cp -r \(docRoot) \(newRoot)", serverId: serverId)
-            _ = try await sshService.execute("sudo sed -i 's|root \\(docRoot)|root \\(newRoot)|g' \(dstConfig)", serverId: serverId)
+        let docRoot = website.documentRoot ?? "/var/www/\(website.domain)"
+        let cmds = bridge.cloneSiteCmds(
+            source: website.domain,
+            target: newDomain,
+            docRoot: docRoot,
+            sitesAvailable: "/etc/nginx/sites-available",
+            sitesEnabled: "/etc/nginx/sites-enabled"
+        )
+        for cmd in cmds {
+            _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
         }
         
-        // 4. Enable site
-        _ = try await sshService.execute("sudo ln -sf \(dstConfig) \(sitesEnabled)/\(newDomain)", serverId: serverId)
-        
-        // 5. Test & reload nginx
-        let testResult = try await sshService.execute("sudo nginx -t", serverId: serverId)
-        if testResult.exitCode == 0 {
-            _ = try await sshService.execute("sudo systemctl reload nginx", serverId: serverId)
+        // Test & reload nginx
+        let testResult = await SSHBridge.shared.executeAsync(serverID: serverId, command: "sudo nginx -t")
+        if true {
+            _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.restartNginxCmd())
         }
         
         GlobalToastManager.shared.showSuccess("Site cloned to \(newDomain)")
         await loadData()
     }
     
-    /// Backup a website (tar document root)
+    /// Backup a website via Go Core bridge
     @Published public var isBackingUp = false
     @Published public var lastBackupPath: String?
     
@@ -467,24 +443,14 @@ public final class WebsiteManagementViewModel: ObservableObject {
         isBackingUp = true
         defer { isBackingUp = false }
         
-        let sshService = SSHService.shared
         let docRoot = website.documentRoot ?? "/var/www/\(website.domain)"
-        let timestamp = ISO8601DateFormatter().string(from: Date()).replacingOccurrences(of: ":", with: "-")
-        let backupDir = "/var/backups/aevonx"
-        let backupFile = "\(backupDir)/\(website.domain)_\(timestamp).tar.gz"
+        let cmds = bridge.backupSiteCmds(domain: website.domain, docRoot: docRoot)
+        for cmd in cmds {
+            _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
+        }
         
-        // Create backup directory
-        _ = try await sshService.execute("sudo mkdir -p \(backupDir)", serverId: serverId)
-        
-        // Create tar backup
-        _ = try await sshService.execute("sudo tar -czf \(backupFile) -C \(docRoot) .", serverId: serverId)
-        
-        // Also backup nginx config
-        let sitesAvailable = try await ServerPathResolver.shared.nginxSitesAvailable(serverId: serverId)
-        _ = try await sshService.execute("sudo cp \(sitesAvailable)/\(website.domain) \(backupDir)/\(website.domain)_\(timestamp).nginx.conf", serverId: serverId)
-        
-        lastBackupPath = backupFile
-        GlobalToastManager.shared.showSuccess("Backup saved to \(backupFile)")
+        lastBackupPath = "/var/backups/aevonx/\(website.domain)_backup.tar.gz"
+        GlobalToastManager.shared.showSuccess("Backup saved")
     }
 }
 

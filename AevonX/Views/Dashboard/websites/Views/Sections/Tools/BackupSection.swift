@@ -6,7 +6,7 @@
 //
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 struct BackupSection: View {
     @ObservedObject var viewModel: BackupViewModel

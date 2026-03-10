@@ -7,7 +7,7 @@
 //
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 struct DomainSection: View {
     @ObservedObject var viewModel: AdvancedDomainViewModel

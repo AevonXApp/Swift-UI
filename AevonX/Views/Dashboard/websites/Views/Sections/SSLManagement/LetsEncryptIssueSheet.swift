@@ -7,7 +7,7 @@
 //
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 struct LetsEncryptIssueSheet: View {
     @ObservedObject var viewModel: SSLManagementViewModel

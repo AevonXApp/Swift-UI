@@ -2,12 +2,12 @@
 //  BackupViewModel.swift
 //  AevonX
 //
-//  ViewModel for per-site backup/restore — delegates to SiteBackupService
+//  ViewModel for per-site backup/restore — uses Go Core bridge
 //
 
 import SwiftUI
 import Combine
-import AevonXCore
+import AevonXCoreBridge
 
 @MainActor
 class BackupViewModel: ObservableObject {
@@ -19,7 +19,7 @@ class BackupViewModel: ObservableObject {
     let serverId: String
     let domain: String
     let docRoot: String
-    private let service = SiteBackupService.shared
+    private let bridge = WebsitesBridge.shared
 
     init(serverId: String, domain: String, docRoot: String) {
         self.serverId = serverId
@@ -29,23 +29,32 @@ class BackupViewModel: ObservableObject {
 
     func loadBackups() async {
         do {
-            let entries = try await service.listBackups(domain: domain, serverId: serverId)
-            backups = entries.map { entry in
-                let backupType: SiteBackupType
-                switch entry.type {
-                case "full": backupType = .full
-                case "files": backupType = .filesOnly
-                case "database": backupType = .databaseOnly
-                default: backupType = .full
+            let cmd = bridge.listBackupsCmd(domain: domain)
+            let result = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
+            let parsedJSON = bridge.parseBackupList(output: result)
+
+            if let data = parsedJSON.data(using: .utf8),
+               let resp = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+               resp["success"] as? Bool == true,
+               let entries = resp["data"] as? [[String: Any]] {
+                backups = entries.compactMap { entry in
+                    guard let filename = entry["filename"] as? String else { return nil }
+                    let typeStr = entry["type"] as? String ?? "full"
+                    let backupType: SiteBackupType
+                    switch typeStr {
+                    case "files": backupType = .filesOnly
+                    case "database": backupType = .databaseOnly
+                    default: backupType = .full
+                    }
+                    return SiteBackupInfo(
+                        filename: filename,
+                        type: backupType,
+                        date: Date(),
+                        size: entry["size"] as? String ?? "Unknown",
+                        path: filename,
+                        includesDatabase: typeStr == "full" || typeStr == "database"
+                    )
                 }
-                return SiteBackupInfo(
-                    filename: entry.filename,
-                    type: backupType,
-                    date: Date(),
-                    size: entry.size,
-                    path: entry.filename,
-                    includesDatabase: entry.type == "full" || entry.type == "database"
-                )
             }
         } catch {
             errorMessage = error.localizedDescription
@@ -57,13 +66,11 @@ class BackupViewModel: ObservableObject {
         backupProgress = "Creating \(type.rawValue) backup..."
         defer { isCreatingBackup = false; backupProgress = "" }
         do {
-            let filename = try await service.createBackup(
-                type: type.rawValue.lowercased(),
-                domain: domain,
-                docRoot: docRoot,
-                serverId: serverId
-            )
-            GlobalToastManager.shared.showSuccess("Backup created: \(filename)")
+            let cmds = bridge.backupSiteCmds(domain: domain, docRoot: docRoot)
+            for cmd in cmds {
+                _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
+            }
+            GlobalToastManager.shared.showSuccess("Backup created")
             await loadBackups()
         } catch {
             errorMessage = error.localizedDescription
@@ -73,12 +80,8 @@ class BackupViewModel: ObservableObject {
     func restoreBackup(_ backup: SiteBackupInfo) async {
         backupProgress = "Restoring from \(backup.filename)..."
         do {
-            try await service.restoreBackup(
-                filename: backup.filename,
-                domain: domain,
-                docRoot: docRoot,
-                serverId: serverId
-            )
+            let cmd = bridge.restoreBackupCmd(filename: backup.filename, docRoot: docRoot)
+            _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
             GlobalToastManager.shared.showSuccess("Restored from \(backup.filename)")
             await loadBackups()
         } catch {
@@ -89,7 +92,8 @@ class BackupViewModel: ObservableObject {
 
     func deleteBackup(_ backup: SiteBackupInfo) async {
         do {
-            try await service.deleteBackup(filename: backup.filename, domain: domain, serverId: serverId)
+            let cmd = bridge.deleteBackupCmd(filename: backup.filename)
+            _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
             await loadBackups()
         } catch {
             errorMessage = error.localizedDescription
@@ -98,8 +102,9 @@ class BackupViewModel: ObservableObject {
 
     func deleteOldBackups(olderThanDays: Int) async {
         do {
-            let count = try await service.deleteOldBackups(domain: domain, olderThanDays: olderThanDays, serverId: serverId)
-            GlobalToastManager.shared.showSuccess("Deleted \(count) old backups")
+            let cmd = "find /var/backups/aevonx -name '\(domain)_*' -mtime +\(olderThanDays) -delete 2>/dev/null; echo 'done'"
+            _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
+            GlobalToastManager.shared.showSuccess("Old backups deleted")
             await loadBackups()
         } catch {
             errorMessage = error.localizedDescription

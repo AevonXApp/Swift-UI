@@ -2,12 +2,12 @@
 //  ScheduledBackupViewModel.swift
 //  AevonX
 //
-//  ViewModel for scheduled backup management — delegates to SiteScheduledBackupService
+//  ViewModel for scheduled backup management — uses Go Core bridge
 //
 
 import SwiftUI
 import Combine
-import AevonXCore
+import AevonXCoreBridge
 
 @MainActor
 class ScheduledBackupViewModel: ObservableObject {
@@ -20,7 +20,7 @@ class ScheduledBackupViewModel: ObservableObject {
     let serverId: String
     let domain: String
     let docRoot: String
-    private let service = SiteScheduledBackupService.shared
+    private let bridge = WebsitesBridge.shared
 
     init(serverId: String, domain: String, docRoot: String) {
         self.serverId = serverId
@@ -31,15 +31,38 @@ class ScheduledBackupViewModel: ObservableObject {
     func loadSchedules() async {
         isLoading = true; defer { isLoading = false }
         do {
-            let list = try await service.listScheduledBackups(domain: domain, serverId: serverId)
-            schedules = list.map { ScheduledBackupItem(frequency: $0.frequency, cronExpression: $0.cronExpression, includesDatabase: $0.includesDatabase, displayText: $0.frequencyDisplay) }
+            let cmd = bridge.listScheduledBackupsCmd(domain: domain)
+            let result = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
+            let parsedJSON = bridge.parseScheduledBackups(output: result)
+
+            if let data = parsedJSON.data(using: .utf8),
+               let resp = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+               resp["success"] as? Bool == true,
+               let list = resp["data"] as? [[String: Any]] {
+                schedules = list.compactMap { dict in
+                    guard let freq = dict["frequency"] as? String else { return nil }
+                    return ScheduledBackupItem(
+                        frequency: freq,
+                        cronExpression: dict["cron_expression"] as? String ?? "",
+                        includesDatabase: dict["includes_database"] as? Bool ?? false,
+                        displayText: dict["display_text"] as? String ?? freq.capitalized
+                    )
+                }
+            }
         } catch { schedules = [] }
     }
 
     func createSchedule() async {
         isLoading = true; defer { isLoading = false }
         do {
-            try await service.createSchedule(domain: domain, docRoot: docRoot, frequency: selectedFrequency, retentionDays: retentionDays, includeDB: includeDatabase, serverId: serverId)
+            let cmd = bridge.createScheduledBackupCmd(
+                domain: domain,
+                docRoot: docRoot,
+                frequency: selectedFrequency,
+                retentionDays: retentionDays,
+                includeDB: includeDatabase
+            )
+            _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
             GlobalToastManager.shared.showSuccess("Scheduled \(selectedFrequency) backup created")
             await loadSchedules()
         } catch { GlobalToastManager.shared.showError(error.localizedDescription) }
@@ -47,7 +70,8 @@ class ScheduledBackupViewModel: ObservableObject {
 
     func deleteSchedule(_ schedule: ScheduledBackupItem) async {
         do {
-            try await service.deleteSchedule(domain: domain, frequency: schedule.frequency, serverId: serverId)
+            let cmd = bridge.deleteScheduledBackupCmd(domain: domain, frequency: schedule.frequency)
+            _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
             schedules.removeAll { $0.id == schedule.id }
             GlobalToastManager.shared.showSuccess("Schedule removed")
         } catch { GlobalToastManager.shared.showError(error.localizedDescription) }
@@ -56,8 +80,11 @@ class ScheduledBackupViewModel: ObservableObject {
     func runBackupNow() async {
         isLoading = true; defer { isLoading = false }
         do {
-            let filename = try await service.runNow(domain: domain, docRoot: docRoot, serverId: serverId)
-            GlobalToastManager.shared.showSuccess("Backup created: \(filename)")
+            let cmds = bridge.backupSiteCmds(domain: domain, docRoot: docRoot)
+            for cmd in cmds {
+                _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
+            }
+            GlobalToastManager.shared.showSuccess("Backup created")
         } catch { GlobalToastManager.shared.showError(error.localizedDescription) }
     }
 }

@@ -7,14 +7,70 @@
 //
 
 import Foundation
+import AevonXCoreBridge
 import AevonXCore
 
-// MARK: - Type Aliases (Re-export from Core)
+// MARK: - Traffic Analytics Types (local definitions)
 
-public typealias TimeRange = AevonXCore.TimeRange
-public typealias RequestStatistics = AevonXCore.RequestStatistics
-public typealias BandwidthDataPoint = AevonXCore.BandwidthDataPoint
-public typealias EndpointStat = AevonXCore.EndpointStat
+public enum TimeRange: String, Codable, Sendable {
+    case lastHour = "Last Hour"
+    case last24Hours = "Last 24 Hours"
+    case last7Days = "Last 7 Days"
+    case last30Days = "Last 30 Days"
+    case custom = "Custom Range"
+}
+
+public struct RequestStatistics: Codable, Sendable {
+    public var totalRequests: Int
+    public var requestsByMethod: [String: Int]
+    public var requestsByStatus: [String: Int]
+    public var averageResponseTime: Double
+    public var errorRate: Double
+    public var timeRange: TimeRange
+    public var timestamp: Date
+
+    public init(totalRequests: Int = 0, requestsByMethod: [String: Int] = [:], requestsByStatus: [String: Int] = [:], averageResponseTime: Double = 0, errorRate: Double = 0, timeRange: TimeRange = .lastHour, timestamp: Date = Date()) {
+        self.totalRequests = totalRequests
+        self.requestsByMethod = requestsByMethod
+        self.requestsByStatus = requestsByStatus
+        self.averageResponseTime = averageResponseTime
+        self.errorRate = errorRate
+        self.timeRange = timeRange
+        self.timestamp = timestamp
+    }
+}
+
+public struct BandwidthDataPoint: Codable, Sendable, Identifiable {
+    public let id: UUID
+    public var timestamp: Date
+    public var bytesIn: Int
+    public var bytesOut: Int
+
+    public init(id: UUID = UUID(), timestamp: Date, bytesIn: Int, bytesOut: Int) {
+        self.id = id
+        self.timestamp = timestamp
+        self.bytesIn = bytesIn
+        self.bytesOut = bytesOut
+    }
+}
+
+public struct EndpointStat: Codable, Sendable, Identifiable {
+    public let id: UUID
+    public var endpoint: String
+    public var requestCount: Int
+    public var averageResponseTime: Double
+    public var errorCount: Int
+    public var lastAccessed: Date?
+
+    public init(id: UUID = UUID(), endpoint: String, requestCount: Int, averageResponseTime: Double, errorCount: Int, lastAccessed: Date? = nil) {
+        self.id = id
+        self.endpoint = endpoint
+        self.requestCount = requestCount
+        self.averageResponseTime = averageResponseTime
+        self.errorCount = errorCount
+        self.lastAccessed = lastAccessed
+    }
+}
 
 // MARK: - UI Layer Extensions
 

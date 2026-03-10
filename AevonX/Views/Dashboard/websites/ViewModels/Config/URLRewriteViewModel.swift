@@ -2,12 +2,12 @@
 //  URLRewriteViewModel.swift
 //  AevonX
 //
-//  ViewModel for URL Rewrite management section
+//  ViewModel for URL Rewrite management section — uses Go Core bridge
 //
 
 import SwiftUI
 import Combine
-import AevonXCore
+import AevonXCoreBridge
 
 @MainActor
 public final class URLRewriteViewModel: ObservableObject {
@@ -29,7 +29,7 @@ public final class URLRewriteViewModel: ObservableObject {
 
     private let website: WebsiteInfo
     private let serverId: String?
-    private let rewriteService = WebsiteRewriteService.shared
+    private let bridge = WebsitesBridge.shared
     private let toastManager = GlobalToastManager.shared
 
     // MARK: - Initialization
@@ -51,7 +51,21 @@ public final class URLRewriteViewModel: ObservableObject {
         error = nil
 
         do {
-            rules = try await rewriteService.getRewriteRules(domain: website.domain, serverId: serverId)
+            let cmd = bridge.getRewriteRulesCmd(domain: website.domain)
+            let result = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
+            let parsedJSON = bridge.parseRewriteRules(output: result)
+
+            if let data = parsedJSON.data(using: .utf8),
+               let resp = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+               resp["success"] as? Bool == true,
+               let rulesData = resp["data"] {
+                // Guard: rulesData must be an Array or Dict for JSONSerialization
+                if JSONSerialization.isValidJSONObject(rulesData),
+                   let rulesJSON = try? JSONSerialization.data(withJSONObject: rulesData),
+                   let decoded = try? JSONDecoder().decode([URLRewriteRule].self, from: rulesJSON) {
+                    rules = decoded
+                }
+            }
         } catch {
             self.error = "Failed to load rewrite rules: \(error.localizedDescription)"
             toastManager.showError(self.error!)
@@ -68,8 +82,10 @@ public final class URLRewriteViewModel: ObservableObject {
         isLoading = true
 
         do {
-            try await rewriteService.addRewriteRule(domain: website.domain, rule: rule, serverId: serverId)
-            await load() // Reload rules
+            let cmd = bridge.addRewriteRuleCmd(domain: website.domain, source: rule.sourcePattern, destination: rule.destination, flags: rule.flags.joined(separator: ","))
+            _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
+            _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.restartNginxCmd())
+            await load()
             toastManager.showSuccess("Rewrite rule added successfully")
         } catch {
             self.error = "Failed to add rule: \(error.localizedDescription)"
@@ -85,8 +101,13 @@ public final class URLRewriteViewModel: ObservableObject {
         isLoading = true
 
         do {
-            try await rewriteService.updateRewriteRule(domain: website.domain, ruleId: ruleId, rule: newRule, serverId: serverId)
-            await load() // Reload rules
+            // Delete old and add new
+            let deleteCmd = bridge.deleteRewriteRuleCmd(domain: website.domain, ruleIndex: rules.firstIndex(where: { $0.id == ruleId }) ?? 0)
+            _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: deleteCmd)
+            let addCmd = bridge.addRewriteRuleCmd(domain: website.domain, source: newRule.sourcePattern, destination: newRule.destination, flags: newRule.flags.joined(separator: ","))
+            _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: addCmd)
+            _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.restartNginxCmd())
+            await load()
             toastManager.showSuccess("Rewrite rule updated successfully")
         } catch {
             self.error = "Failed to update rule: \(error.localizedDescription)"
@@ -102,7 +123,10 @@ public final class URLRewriteViewModel: ObservableObject {
         isLoading = true
 
         do {
-            try await rewriteService.deleteRewriteRule(domain: website.domain, ruleId: ruleId, serverId: serverId)
+            let idx = rules.firstIndex(where: { $0.id == ruleId }) ?? 0
+            let cmd = bridge.deleteRewriteRuleCmd(domain: website.domain, ruleIndex: idx)
+            _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
+            _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.restartNginxCmd())
             rules.removeAll { $0.id == ruleId }
             toastManager.showSuccess("Rewrite rule deleted successfully")
         } catch {
@@ -142,12 +166,18 @@ public final class URLRewriteViewModel: ObservableObject {
         testResult = nil
 
         do {
-            testResult = try await rewriteService.testRewriteRule(domain: website.domain, testURL: testURL, serverId: serverId)
+            let cmd = bridge.testRewriteCmd(domain: website.domain, testURL: testURL)
+            let result = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
+            let parsedJSON = bridge.parseTestRewrite(output: result)
 
-            if testResult?.wasRewritten == true {
-                toastManager.showSuccess("URL was rewritten")
-            } else {
-                toastManager.showInfo("URL was not rewritten")
+            if let data = parsedJSON.data(using: .utf8),
+               let resp = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+               resp["success"] as? Bool == true,
+               let testData = resp["data"] as? [String: Any] {
+                let wasRewritten = testData["was_rewritten"] as? Bool ?? false
+                let resultURL = testData["result_url"] as? String
+                testResult = RewriteTestResult(inputURL: testURL, finalURL: resultURL ?? testURL, wasRewritten: wasRewritten)
+                toastManager.showSuccess(wasRewritten ? "URL was rewritten" : "URL was not rewritten")
             }
         } catch {
             self.error = "Failed to test rule: \(error.localizedDescription)"

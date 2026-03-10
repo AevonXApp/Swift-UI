@@ -6,7 +6,7 @@
 //
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 struct URLRewriteRuleEditor: View {
     @Binding var rule: URLRewriteRule?

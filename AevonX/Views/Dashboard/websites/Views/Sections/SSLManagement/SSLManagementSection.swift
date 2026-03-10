@@ -7,7 +7,7 @@
 //
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 struct SSLManagementSection: View {
     @ObservedObject var viewModel: SSLManagementViewModel

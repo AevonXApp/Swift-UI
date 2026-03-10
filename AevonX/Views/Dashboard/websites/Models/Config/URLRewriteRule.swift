@@ -7,13 +7,75 @@
 //
 
 import Foundation
-import AevonXCore
 
-// MARK: - Type Aliases (Re-export from Core)
 
-public typealias URLRewriteRule = AevonXCore.URLRewriteRule
-public typealias RewriteCondition = AevonXCore.RewriteCondition
-public typealias RewriteTestResult = AevonXCore.RewriteTestResult
+// MARK: - URL Rewrite Rule (local definition)
+
+public struct URLRewriteRule: Codable, Sendable, Hashable, Equatable, Identifiable {
+    public let id: UUID
+    public var sourcePattern: String
+    public var destination: String
+    public var statusCode: Int
+    public var flags: [String]
+    public var conditions: [RewriteCondition]
+    public var isEnabled: Bool
+    public var order: Int
+    public var notes: String?
+
+    public init(
+        id: UUID = UUID(),
+        sourcePattern: String,
+        destination: String,
+        statusCode: Int = 301,
+        flags: [String] = [],
+        conditions: [RewriteCondition] = [],
+        isEnabled: Bool = true,
+        order: Int = 0,
+        notes: String? = nil
+    ) {
+        self.id = id
+        self.sourcePattern = sourcePattern
+        self.destination = destination
+        self.statusCode = statusCode
+        self.flags = flags
+        self.conditions = conditions
+        self.isEnabled = isEnabled
+        self.order = order
+        self.notes = notes
+    }
+}
+
+public struct RewriteCondition: Codable, Sendable, Hashable, Equatable, Identifiable {
+    public let id: UUID
+    public var test: String
+    public var pattern: String
+    public var flags: [String]
+
+    public init(id: UUID = UUID(), test: String, pattern: String, flags: [String] = []) {
+        self.id = id
+        self.test = test
+        self.pattern = pattern
+        self.flags = flags
+    }
+}
+
+public struct RewriteTestResult: Codable, Sendable {
+    public var inputURL: String
+    public var matchedRule: URLRewriteRule?
+    public var finalURL: String
+    public var wasRewritten: Bool
+    public var statusCode: Int?
+    public var executionTime: Double
+
+    public init(inputURL: String, matchedRule: URLRewriteRule? = nil, finalURL: String, wasRewritten: Bool, statusCode: Int? = nil, executionTime: Double = 0) {
+        self.inputURL = inputURL
+        self.matchedRule = matchedRule
+        self.finalURL = finalURL
+        self.wasRewritten = wasRewritten
+        self.statusCode = statusCode
+        self.executionTime = executionTime
+    }
+}
 
 // MARK: - UI Layer Extensions
 

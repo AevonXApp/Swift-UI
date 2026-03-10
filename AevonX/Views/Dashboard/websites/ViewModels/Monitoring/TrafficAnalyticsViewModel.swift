@@ -2,11 +2,12 @@
 //  TrafficAnalyticsViewModel.swift
 //  AevonX
 //
-//  ViewModel for Traffic Analytics section
+//  ViewModel for Traffic Analytics section — uses Go Core bridge
 //
 
 import SwiftUI
 import Combine
+import AevonXCoreBridge
 import AevonXCore
 
 @MainActor
@@ -24,7 +25,7 @@ public final class TrafficAnalyticsViewModel: ObservableObject {
 
     private let website: WebsiteInfo
     private let serverId: String?
-    private let analyticsService = WebsiteAnalyticsService.shared
+    private let bridge = WebsitesBridge.shared
     private let toastManager = GlobalToastManager.shared
 
     private var autoRefreshTimer: Timer?
@@ -55,11 +56,14 @@ public final class TrafficAnalyticsViewModel: ObservableObject {
             // Load statistics
             group.addTask { @MainActor in
                 do {
-                    self.statistics = try await self.analyticsService.getRequestStatistics(
-                        domain: self.website.domain,
-                        serverId: serverId,
-                        timeRange: self.selectedTimeRange
-                    )
+                    let cmd = self.bridge.requestStatsCmd(domain: self.website.domain, timeRange: self.selectedTimeRange.rawValue)
+                    let result = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
+                    let parsedJSON = self.bridge.parseRequestStats(output: result)
+
+                    if let data = parsedJSON.data(using: .utf8),
+                       let json = try? JSONDecoder().decode(RequestStatistics.self, from: data) {
+                        self.statistics = json
+                    }
                 } catch {
                     CoreLogger.shared.debug("Failed to load statistics: \(error)", module: "TrafficAnalytics")
                 }
@@ -68,11 +72,15 @@ public final class TrafficAnalyticsViewModel: ObservableObject {
             // Load bandwidth data
             group.addTask { @MainActor in
                 do {
-                    self.bandwidthData = try await self.analyticsService.getBandwidthUsage(
-                        domain: self.website.domain,
-                        serverId: serverId,
-                        timeRange: self.selectedTimeRange
-                    )
+                    let logPath = "/var/log/nginx/\(self.website.domain).access.log"
+                    let cmd = self.bridge.bandwidthCmd(logPath: logPath)
+                    let result = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
+                    let parsedJSON = self.bridge.parseBandwidth(output: result)
+
+                    if let data = parsedJSON.data(using: .utf8),
+                       let points = try? JSONDecoder().decode([BandwidthDataPoint].self, from: data) {
+                        self.bandwidthData = points
+                    }
                 } catch {
                     CoreLogger.shared.debug("Failed to load bandwidth data: \(error)", module: "TrafficAnalytics")
                 }
@@ -81,11 +89,14 @@ public final class TrafficAnalyticsViewModel: ObservableObject {
             // Load top endpoints
             group.addTask { @MainActor in
                 do {
-                    self.topEndpoints = try await self.analyticsService.getTopEndpoints(
-                        domain: self.website.domain,
-                        serverId: serverId,
-                        limit: 10
-                    )
+                    let cmd = self.bridge.topEndpointsCmd(domain: self.website.domain, limit: 10)
+                    let result = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
+                    let parsedJSON = self.bridge.parseTopEndpoints(output: result)
+
+                    if let data = parsedJSON.data(using: .utf8),
+                       let endpoints = try? JSONDecoder().decode([EndpointStat].self, from: data) {
+                        self.topEndpoints = endpoints
+                    }
                 } catch {
                     CoreLogger.shared.debug("Failed to load top endpoints: \(error)", module: "TrafficAnalytics")
                 }
@@ -105,7 +116,6 @@ public final class TrafficAnalyticsViewModel: ObservableObject {
     // MARK: - Auto Refresh
 
     public func startAutoRefresh() {
-        // Invalidate existing timer to prevent stacking (P3-1)
         autoRefreshTimer?.invalidate()
         autoRefreshTimer = nil
         

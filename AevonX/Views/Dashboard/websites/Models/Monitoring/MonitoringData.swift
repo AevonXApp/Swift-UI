@@ -7,6 +7,7 @@
 
 import Foundation
 import SwiftUI
+import AevonXCoreBridge
 import AevonXCore
 
 // MARK: - Site Health Check

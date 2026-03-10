@@ -2,12 +2,12 @@
 //  CacheViewModel.swift
 //  AevonX
 //
-//  ViewModel for per-site cache management — delegates to SiteCacheService
+//  ViewModel for per-site cache management — uses Go Core bridge
 //
 
 import SwiftUI
 import Combine
-import AevonXCore
+import AevonXCoreBridge
 
 @MainActor
 class CacheViewModel: ObservableObject {
@@ -18,7 +18,7 @@ class CacheViewModel: ObservableObject {
 
     let serverId: String
     let domain: String
-    private let service = SiteCacheService.shared
+    private let bridge = WebsitesBridge.shared
 
     init(serverId: String, domain: String) {
         self.serverId = serverId
@@ -27,14 +27,15 @@ class CacheViewModel: ObservableObject {
 
     func loadCacheStatus() async {
         do {
-            let statuses = try await service.detectCacheStatus(domain: domain, serverId: serverId)
-            cacheStatuses = statuses.map {
-                SiteCacheStatus(
-                    type: SiteCacheType(rawValue: $0.type.capitalized) ?? .browser,
-                    enabled: $0.enabled
-                )
-            }
-            // Default browser rules
+            // Check if FastCGI cache exists
+            let fcgiResult = await SSHBridge.shared.executeAsync(serverID: serverId, command: "[ -d /var/cache/nginx/fastcgi ] && echo enabled || echo disabled")
+            let fcgiEnabled = fcgiResult.trimmingCharacters(in: .whitespacesAndNewlines) == "enabled"
+            
+            cacheStatuses = [
+                SiteCacheStatus(type: .fastcgi, enabled: fcgiEnabled),
+                SiteCacheStatus(type: .browser, enabled: true),
+            ]
+            
             browserCacheRules = [
                 BrowserCacheRule(fileTypes: "*.jpg, *.png, *.gif, *.webp", duration: "30 days", cacheControl: "public"),
                 BrowserCacheRule(fileTypes: "*.css, *.js", duration: "7 days", cacheControl: "public, no-transform"),
@@ -50,8 +51,15 @@ class CacheViewModel: ObservableObject {
         isPurging = true
         defer { isPurging = false }
         do {
-            let message = try await service.purgeCache(type: type.rawValue.lowercased(), domain: domain, serverId: serverId)
-            GlobalToastManager.shared.showSuccess(message)
+            let cmd: String
+            switch type {
+            case .fastcgi:
+                cmd = bridge.purgeFastCGICmd()
+            default:
+                cmd = bridge.purgeAllCachesCmd()
+            }
+            _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
+            GlobalToastManager.shared.showSuccess("\(type.rawValue) cache purged")
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -61,8 +69,8 @@ class CacheViewModel: ObservableObject {
         isPurging = true
         defer { isPurging = false }
         do {
-            let message = try await service.purgeAllCaches(domain: domain, serverId: serverId)
-            GlobalToastManager.shared.showSuccess(message)
+            _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.purgeAllCachesCmd())
+            GlobalToastManager.shared.showSuccess("All caches purged")
         } catch {
             errorMessage = error.localizedDescription
         }

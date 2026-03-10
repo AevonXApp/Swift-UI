@@ -2,12 +2,12 @@
 //  MonitoringViewModel.swift
 //  AevonX
 //
-//  ViewModel for per-site monitoring — delegates to SiteMonitoringService
+//  ViewModel for per-site monitoring — uses Go Core bridge
 //
 
 import SwiftUI
 import Combine
-import AevonXCore
+import AevonXCoreBridge
 
 @MainActor
 class MonitoringViewModel: ObservableObject {
@@ -22,7 +22,7 @@ class MonitoringViewModel: ObservableObject {
 
     let serverId: String
     let domain: String
-    private let service = SiteMonitoringService.shared
+    private let bridge = WebsitesBridge.shared
 
     init(serverId: String, domain: String) {
         self.serverId = serverId
@@ -38,15 +38,23 @@ class MonitoringViewModel: ObservableObject {
 
     func runHealthCheck() async {
         do {
-            let result = try await service.runHealthCheck(domain: domain, serverId: serverId)
-            healthCheck = SiteHealthCheck(
-                timestamp: Date(),
-                httpStatus: result.httpStatus,
-                responseTime: result.responseTime,
-                sslDaysRemaining: result.sslDaysRemaining,
-                dnsResolved: result.dnsResolved,
-                isUp: result.isUp
-            )
+            let cmd = bridge.healthCheckCmd(domain: domain)
+            let result = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
+            let parsedJSON = bridge.parseHealthCheck(output: result)
+
+            if let data = parsedJSON.data(using: .utf8),
+               let resp = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+               resp["success"] as? Bool == true,
+               let hc = resp["data"] as? [String: Any] {
+                healthCheck = SiteHealthCheck(
+                    timestamp: Date(),
+                    httpStatus: hc["http_status"] as? Int,
+                    responseTime: hc["response_time"] as? Double,
+                    sslDaysRemaining: hc["ssl_days_remaining"] as? Int,
+                    dnsResolved: hc["dns_resolved"] as? Bool ?? false,
+                    isUp: hc["is_up"] as? Bool ?? false
+                )
+            }
         } catch {
             healthCheck = SiteHealthCheck(timestamp: Date(), httpStatus: nil, responseTime: nil, sslDaysRemaining: nil, dnsResolved: false, isUp: false)
         }
@@ -54,27 +62,55 @@ class MonitoringViewModel: ObservableObject {
 
     private func loadTraffic() async {
         do {
-            let analytics = try await service.analyzeTraffic(domain: domain, serverId: serverId)
-            let totalRequests = analytics.topURLs.reduce(0) { $0 + $1.count }
+            let cmd = bridge.analyzeTrafficCmd(domain: domain)
+            let result = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
+            let parsedJSON = bridge.parseTrafficAnalysis(output: result)
 
-            topURLs = analytics.topURLs.map { entry in
-                TopURLEntry(url: entry.value, count: entry.count, percentage: totalRequests > 0 ? Double(entry.count) / Double(totalRequests) * 100 : 0)
+            if let data = parsedJSON.data(using: .utf8),
+               let resp = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+               resp["success"] as? Bool == true,
+               let analytics = resp["data"] as? [String: Any] {
+
+                // Top URLs
+                if let urls = analytics["top_urls"] as? [[String: Any]] {
+                    let totalReqs = urls.reduce(0) { $0 + ($1["count"] as? Int ?? 0) }
+                    topURLs = urls.compactMap { dict in
+                        guard let url = dict["value"] as? String, let count = dict["count"] as? Int else { return nil }
+                        return TopURLEntry(url: url, count: count, percentage: totalReqs > 0 ? Double(count) / Double(totalReqs) * 100 : 0)
+                    }
+                }
+
+                // Top IPs
+                if let ips = analytics["top_ips"] as? [[String: Any]] {
+                    topIPs = ips.compactMap { dict in
+                        guard let ip = dict["value"] as? String, let count = dict["count"] as? Int else { return nil }
+                        return TopIPEntry(ip: ip, count: count, country: nil)
+                    }
+                }
+
+                // Status codes
+                if let codes = analytics["status_codes"] as? [[String: Any]] {
+                    let totalStatus = codes.reduce(0) { $0 + ($1["count"] as? Int ?? 0) }
+                    statusCodes = codes.compactMap { dict in
+                        guard let codeStr = dict["value"] as? String, let count = dict["count"] as? Int else { return nil }
+                        let code = Int(codeStr) ?? 0
+                        return StatusCodeEntry(code: code, count: count, percentage: totalStatus > 0 ? Double(count) / Double(totalStatus) * 100 : 0)
+                    }
+                }
+
+                // Bot traffic
+                if let bots = analytics["bot_traffic"] as? [[String: Any]] {
+                    botTraffic = bots.compactMap { dict in
+                        guard let bot = dict["value"] as? String, let count = dict["count"] as? Int else { return nil }
+                        return BotTrafficEntry(botName: bot, requestCount: count, percentage: 0, isKnownGood: bot.lowercased().contains("google") || bot.lowercased().contains("bing"))
+                    }
+                }
+
+                // Bandwidth
+                if let totalBytes = analytics["total_bandwidth_bytes"] as? Int64 {
+                    bandwidth = SiteBandwidthData(totalBytes: totalBytes, period: "Total")
+                }
             }
-            topIPs = analytics.topIPs.map { TopIPEntry(ip: $0.value, count: $0.count, country: nil) }
-
-            let totalStatus = analytics.statusCodes.reduce(0) { $0 + $1.count }
-            statusCodes = analytics.statusCodes.map { entry in
-                let code = Int(entry.value) ?? 0
-                return StatusCodeEntry(
-                    code: code,
-                    count: entry.count,
-                    percentage: totalStatus > 0 ? Double(entry.count) / Double(totalStatus) * 100 : 0
-                )
-            }
-
-            botTraffic = analytics.botTraffic.map { BotTrafficEntry(botName: $0.value, requestCount: $0.count, percentage: 0, isKnownGood: $0.value.lowercased().contains("google") || $0.value.lowercased().contains("bing")) }
-
-            bandwidth = SiteBandwidthData(totalBytes: analytics.totalBandwidthBytes, period: "Total")
         } catch {
             // Silent fail for analytics
         }

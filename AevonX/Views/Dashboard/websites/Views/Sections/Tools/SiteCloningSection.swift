@@ -6,7 +6,7 @@
 //
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 struct SiteCloningSection: View {
     @ObservedObject var viewModel: SiteCloningViewModel

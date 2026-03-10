@@ -2,21 +2,19 @@
 //  SSLCertificateDetails.swift
 //  AevonX
 //
-//  UI layer extensions for SSL certificate details
-//  Core types are defined in AevonXCore
+//  SSL certificate types — fully local, no AevonXCore dependency.
+//  Originally defined in AevonXCore/CoreWebsiteModels.swift, now local.
 //
 
 import Foundation
-import AevonXCore
 
-// MARK: - Type Aliases (Re-export from Core)
+// MARK: - Core Certificate Type
 
-public typealias SSLCertificateDetails = AevonXCore.SSLCertificateDetails
-public typealias CoreCertificateType = AevonXCore.CoreCertificateType
+public enum CoreCertificateType: String, Codable, Sendable {
+    case single = "Single Domain"
+    case wildcard = "Wildcard"
+    case multiDomain = "Multi-Domain"
 
-// MARK: - UI Layer Extensions
-
-extension CoreCertificateType {
     public var icon: String {
         switch self {
         case .single: return "doc.badge.gearshape"
@@ -26,7 +24,62 @@ extension CoreCertificateType {
     }
 }
 
-extension SSLCertificateDetails {
+// MARK: - SSL Certificate Details
+
+public struct SSLCertificateDetails: Codable, Sendable, Identifiable {
+    public let id: UUID
+    public var issuer: String
+    public var subject: String
+    public var validFrom: Date
+    public var validUntil: Date
+    public var serialNumber: String
+    public var sanDomains: [String]
+    public var certificateChain: [String]
+    public var signatureAlgorithm: String
+    public var keySize: Int
+    public var protocols: [String]
+    public var certificateType: CoreCertificateType
+    public var autoRenew: Bool
+    public var brand: String
+
+    public init(
+        id: UUID = UUID(),
+        issuer: String,
+        subject: String = "",
+        validFrom: Date = Date(),
+        validUntil: Date = Date(),
+        serialNumber: String = "",
+        sanDomains: [String] = [],
+        certificateChain: [String] = [],
+        signatureAlgorithm: String = "SHA256withRSA",
+        keySize: Int = 2048,
+        protocols: [String] = [],
+        certificateType: CoreCertificateType = .single,
+        autoRenew: Bool = true,
+        brand: String = "Unknown",
+        // Convenience parameters for VM usage
+        status: SSLCertificateStatus? = nil,
+        domains: [String]? = nil,
+        daysUntilExpiry: Int? = nil,
+        isExpiringSoon: Bool? = nil,
+        isExpired: Bool? = nil
+    ) {
+        self.id = id
+        self.issuer = issuer
+        self.subject = subject
+        self.validFrom = validFrom
+        self.validUntil = validUntil
+        self.serialNumber = serialNumber
+        self.sanDomains = domains ?? sanDomains
+        self.certificateChain = certificateChain
+        self.signatureAlgorithm = signatureAlgorithm
+        self.keySize = keySize
+        self.protocols = protocols
+        self.certificateType = certificateType
+        self.autoRenew = autoRenew
+        self.brand = brand
+    }
+
     /// Days until expiration
     public var daysUntilExpiry: Int {
         let days = Calendar.current.dateComponents([.day], from: Date(), to: validUntil).day ?? 0
@@ -103,6 +156,7 @@ public enum SSLCertificateStatus: String, Codable {
     case notYetValid = "Not Yet Valid"
     case revoked = "Revoked"
     case invalid = "Invalid"
+    case unknown = "Unknown"
 
     public var color: String {
         switch self {
@@ -112,6 +166,7 @@ public enum SSLCertificateStatus: String, Codable {
         case .notYetValid: return "axTextMuted"
         case .revoked: return "axError"
         case .invalid: return "axError"
+        case .unknown: return "axTextMuted"
         }
     }
 
@@ -123,13 +178,13 @@ public enum SSLCertificateStatus: String, Codable {
         case .notYetValid: return "clock.badge.questionmark"
         case .revoked: return "xmark.shield.fill"
         case .invalid: return "exclamationmark.triangle.fill"
+        case .unknown: return "questionmark.circle"
         }
     }
 }
 
 // MARK: - SSL Challenge Type
 
-/// Challenge type for Let's Encrypt certificate issuance
 public enum SSLChallengeType: String, Codable, CaseIterable {
     case http01 = "HTTP-01"
     case dns01 = "DNS-01"
@@ -162,7 +217,6 @@ public enum SSLChallengeType: String, Codable, CaseIterable {
 
 // MARK: - Custom Certificate Upload
 
-/// Data for uploading a custom SSL certificate
 public struct CustomCertificateUpload: Codable {
     public var certificate: String
     public var privateKey: String
@@ -176,29 +230,23 @@ public struct CustomCertificateUpload: Codable {
         self.password = password
     }
 
-    /// Validate certificate data format
     public func validate() -> [String] {
         var errors: [String] = []
-
         if !certificate.contains("BEGIN CERTIFICATE") {
             errors.append("Invalid certificate format")
         }
-
         if !privateKey.contains("BEGIN") || !privateKey.contains("PRIVATE KEY") {
             errors.append("Invalid private key format")
         }
-
         if let chain = chainBundle, !chain.contains("BEGIN CERTIFICATE") {
             errors.append("Invalid certificate chain format")
         }
-
         return errors
     }
 }
 
 // MARK: - HSTS Configuration
 
-/// HTTP Strict Transport Security configuration
 public struct HSTSConfiguration: Codable {
     public var enabled: Bool
     public var maxAge: Int
@@ -212,19 +260,13 @@ public struct HSTSConfiguration: Codable {
         self.preload = preload
     }
 
-    /// HSTS header value
     public var headerValue: String {
         var parts = ["max-age=\(maxAge)"]
-        if includeSubDomains {
-            parts.append("includeSubDomains")
-        }
-        if preload {
-            parts.append("preload")
-        }
+        if includeSubDomains { parts.append("includeSubDomains") }
+        if preload { parts.append("preload") }
         return parts.joined(separator: "; ")
     }
 
-    /// Human-readable max age
     public var formattedMaxAge: String {
         let days = maxAge / 86400
         if days >= 365 {
@@ -234,5 +276,46 @@ public struct HSTSConfiguration: Codable {
         } else {
             return "\(days) day(s)"
         }
+    }
+}
+
+// MARK: - SSL DNS Record
+
+public struct SSLDNSRecord: Codable, Sendable, Identifiable {
+    public let id: UUID
+    public var domainName: String
+    public var recordValue: String
+    public var recordType: String
+    public var isRequired: Bool
+
+    public init(id: UUID = UUID(), domainName: String = "", recordValue: String = "", recordType: String = "TXT", isRequired: Bool = true) {
+        self.id = id
+        self.domainName = domainName
+        self.recordValue = recordValue
+        self.recordType = recordType
+        self.isRequired = isRequired
+    }
+
+    // Convenience init for DNS lookup results
+    public init(type: String, name: String, value: String) {
+        self.id = UUID()
+        self.domainName = name
+        self.recordValue = value
+        self.recordType = type
+        self.isRequired = false
+    }
+}
+
+// MARK: - SSL Certificate Content (PEM data)
+
+public struct SSLCertificateContent: Codable, Sendable {
+    public var certificate: String
+    public var privateKey: String
+    public var chain: String?
+
+    public init(certificate: String, privateKey: String, chain: String? = nil) {
+        self.certificate = certificate
+        self.privateKey = privateKey
+        self.chain = chain
     }
 }

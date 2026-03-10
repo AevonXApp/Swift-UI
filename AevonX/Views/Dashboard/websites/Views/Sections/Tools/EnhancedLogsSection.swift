@@ -7,6 +7,7 @@
 //
 
 import SwiftUI
+import AevonXCoreBridge
 import AevonXCore
 
 struct EnhancedLogsSection: View {

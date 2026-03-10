@@ -4,10 +4,12 @@
 //
 //  Manages website listing and operations.
 //  Extracted from ServerConnectionViewModel for single-responsibility.
+//  Now uses Go Core via AevonXCoreBridge.
 //
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
+import AevonXCore   // Still needed for CoreWebsiteInfo (used by parent VM) and CoreLogger
 import Combine
 
 // MARK: - Server Websites ViewModel
@@ -33,6 +35,7 @@ public class ServerWebsitesViewModel: ObservableObject {
     // MARK: - Private Properties
     
     private let serverId: String
+    private let bridge = WebsitesBridge.shared
     
     // MARK: - Initialization
     
@@ -42,16 +45,47 @@ public class ServerWebsitesViewModel: ObservableObject {
     
     // MARK: - Website Loading
     
-    /// Load all websites from the server.
+    /// Load all websites from the server via Go Core bridge.
     func loadWebsites() async {
         isLoading = true
         error = nil
         
         do {
-            let loadedWebsites = try await WebsiteListService.shared.listWebsites(serverId: serverId)
-            websites = loadedWebsites
+            // Step 1: Get the list command from Go Core
+            let listCmd = bridge.nginxListCmd(serverID: serverId)
+            guard !listCmd.isEmpty else {
+                throw NSError(domain: "Websites", code: 1, userInfo: [NSLocalizedDescriptionKey: "Failed to get list command"])
+            }
             
-            CoreLogger.shared.info("Loaded \(websites.count) websites", module: "ServerWebsites")
+            // Step 2: Execute via SSH (executeAsync now returns plain stdout)
+            let stdout = await SSHBridge.shared.executeAsync(serverID: serverId, command: listCmd)
+            
+            // Step 3: Parse output via Go Core
+            let parsedJSON = bridge.parseNginxSites(output: stdout)
+            
+            // Step 4: Decode into CoreWebsiteInfo array
+            if let data = parsedJSON.data(using: .utf8),
+               let response = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+               response["success"] as? Bool == true,
+               let sitesData = response["data"],
+               JSONSerialization.isValidJSONObject(sitesData) {
+                let sitesJSON = try JSONSerialization.data(withJSONObject: sitesData)
+                if let sites = try? JSONDecoder().decode([SimpleSiteInfo].self, from: sitesJSON) {
+                    // Convert to CoreWebsiteInfo for compatibility with parent VM
+                    websites = sites.map { site in
+                        CoreWebsiteInfo(
+                            name: site.domain,
+                            domain: site.domain,
+                            status: site.enabled ? .online : .offline,
+                            sslEnabled: site.sslEnabled ?? false,
+                            phpVersion: site.phpVersion,
+                            documentRoot: site.documentRoot ?? "/var/www/\(site.domain)"
+                        )
+                    }
+                }
+            }
+            
+            CoreLogger.shared.info("Loaded \(websites.count) websites via Go Core", module: "ServerWebsites")
         } catch {
             CoreLogger.shared.error("Failed to load websites: \(error.localizedDescription)", module: "ServerWebsites")
             websites = []
@@ -66,5 +100,26 @@ public class ServerWebsitesViewModel: ObservableObject {
         websites = []
         error = nil
         isLoading = false
+    }
+}
+
+// MARK: - Simple Site Info (bridge decode helper)
+
+/// Lightweight struct to decode Go Core parsed site output.
+private struct SimpleSiteInfo: Codable {
+    let domain: String
+    let enabled: Bool
+    let serverType: String?
+    let documentRoot: String?
+    let phpVersion: String?
+    let sslEnabled: Bool?
+    
+    enum CodingKeys: String, CodingKey {
+        case domain
+        case enabled
+        case serverType = "server_type"
+        case documentRoot = "document_root"
+        case phpVersion = "php_version"
+        case sslEnabled = "ssl_enabled"
     }
 }

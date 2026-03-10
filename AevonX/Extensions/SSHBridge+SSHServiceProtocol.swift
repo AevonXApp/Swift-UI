@@ -17,7 +17,7 @@ extension SSHBridge: @retroactive SSHServiceProtocol {
 
     /// Execute a command via Go SSH, returning AevonXCore.SSHCommandResult.
     public func execute(_ command: String, serverId: String) async throws -> AevonXCore.SSHCommandResult {
-        let json = await executeAsync(serverID: serverId, command: command)
+        let json = await executeAsyncJSON(serverID: serverId, command: command)
 
         guard let data = json.data(using: .utf8),
               let result = try? JSONSerialization.jsonObject(with: data) as? [String: Any],

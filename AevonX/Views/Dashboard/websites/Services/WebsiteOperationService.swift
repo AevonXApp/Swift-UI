@@ -12,6 +12,7 @@
 
 import Foundation
 import SwiftUI
+import AevonXCoreBridge
 import AevonXCore
 import Combine
 

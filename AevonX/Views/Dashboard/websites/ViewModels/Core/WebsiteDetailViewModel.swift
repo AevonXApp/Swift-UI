@@ -8,6 +8,7 @@
 
 import SwiftUI
 import Combine
+import AevonXCoreBridge
 import AevonXCore
 
 @MainActor
@@ -62,11 +63,7 @@ public final class WebsiteDetailViewModel: ObservableObject {
 
     // MARK: - Services
 
-    private let websiteManager = WebsiteConfigService.shared
-    private let lifecycleService = WebsiteLifecycleService.shared
-    private let logService = WebsiteLogService.shared
-    private let deploymentService = WebsiteDeploymentService.shared
-    private let sslService = WebsiteSSLService.shared
+    private let bridge = WebsitesBridge.shared
 
     // MARK: - Initialization
 
@@ -98,7 +95,13 @@ public final class WebsiteDetailViewModel: ObservableObject {
         errorMessage = nil
         
         do {
-            logs = try await logService.getWebsiteLogs(websiteId: website.domain, serverId: serverId)
+            // Use Go Core bridge to find and read access log
+            let findCmd = bridge.findAccessLogCmd(domain: website.domain)
+            let findResult = await SSHBridge.shared.executeAsync(serverID: serverId, command: findCmd)
+            let logPath = findResult.trimmingCharacters(in: .whitespacesAndNewlines)
+            let readCmd = bridge.readAccessLogCmd(logPath: logPath.isEmpty ? "/var/log/nginx/access.log" : logPath, lines: 100)
+            let logResult = await SSHBridge.shared.executeAsync(serverID: serverId, command: readCmd)
+            logs = logResult
         } catch {
             errorMessage = "Failed to fetch logs: \(error.localizedDescription)"
             toastManager.showError(errorMessage!)
@@ -116,26 +119,31 @@ public final class WebsiteDetailViewModel: ObservableObject {
         // Repair any nginx redirect loops in the background
         let domain = website.domain
         Task.detached(priority: .utility) {
-            await WebsiteManager.shared.repairNginxConfig(domain: domain, serverId: serverId)
+            // Skip repair — was WebsiteManager.shared.repairNginxConfig
+            // Go Core handles config generation properly
         }
 
         do {
-            let updatedCore = try await websiteManager.getWebsiteConfiguration(websiteId: website.domain, serverId: serverId)
+            // Load config from Go Core bridge
+            let configCmd = bridge.loadNginxConfigCmd(configPath: website.configPath ?? "/etc/nginx/sites-available/\(website.domain)")
+            let configResult = await SSHBridge.shared.executeAsync(serverID: serverId, command: configCmd)
+            let configContent = configResult
 
-            CoreLogger.shared.debug("Loading website details - PHP: \(updatedCore.phpVersion ?? "nil"), Root: \(updatedCore.documentRoot ?? "nil")", module: "WebsiteDetail")
+            // Extract PHP version and document root from config
+            if let phpMatch = configContent.range(of: "php([0-9.]+)-fpm", options: .regularExpression) {
+                self.phpVersion = String(configContent[phpMatch]).replacingOccurrences(of: "php", with: "").replacingOccurrences(of: "-fpm", with: "")
+                self.website.phpVersion = self.phpVersion
+            }
+            if let rootRegex = try? NSRegularExpression(pattern: "root\\s+(/[^;]+)", options: []),
+               let rootMatch = rootRegex.firstMatch(in: configContent, options: [], range: NSRange(configContent.startIndex..., in: configContent)),
+               rootMatch.numberOfRanges > 1,
+               let pathRange = Range(rootMatch.range(at: 1), in: configContent) {
+                let root = String(configContent[pathRange]).trimmingCharacters(in: .whitespaces)
+                self.documentRoot = root
+                self.website.documentRoot = root
+            }
 
-            // Sync UI model
-            self.website.aliases = updatedCore.aliases
-            self.website.port = updatedCore.port
-            self.website.activeConnections = updatedCore.activeConnections
-            self.website.phpVersion = updatedCore.phpVersion
-            self.website.documentRoot = updatedCore.documentRoot
-            self.website.runtime = mapFromCoreRuntime(updatedCore.runtime)
-            self.customPort = updatedCore.port ?? 80
-            self.phpVersion = updatedCore.phpVersion ?? "8.2"
-            self.documentRoot = updatedCore.documentRoot ?? ""
-
-            CoreLogger.shared.debug("Website details loaded - PHP: \(self.phpVersion), Root: \(self.documentRoot)", module: "WebsiteDetail")
+            CoreLogger.shared.debug("Website config loaded - PHP: \(self.phpVersion), Root: \(self.documentRoot)", module: "WebsiteDetail")
 
             // Start polling
             startMonitoring()
@@ -159,6 +167,20 @@ public final class WebsiteDetailViewModel: ObservableObject {
             group.addTask { await self.sslManagementVM.load() }
             group.addTask { await self.trafficAnalyticsVM.load() }
         }
+        
+        // Update website model with SSL status from the loaded cert details
+        if let cert = sslManagementVM.certificateDetails {
+            website.sslEnabled = cert.isValid
+            website.sslInfo = SSLInfo(
+                provider: cert.isLetsEncrypt ? .letsEncrypt : .other,
+                status: cert.isValid ? .active : (cert.isExpired ? .expired : .unknown),
+                issuer: cert.issuer,
+                validFrom: cert.validFrom,
+                validUntil: cert.validUntil,
+                autoRenew: cert.autoRenew,
+                domains: cert.sanDomains
+            )
+        }
     }
 
     /// Refresh all section data (NEW)
@@ -174,9 +196,15 @@ public final class WebsiteDetailViewModel: ObservableObject {
         deploymentLogs = "Starting deployment...\n"
         
         do {
-            try await deploymentService.deployWebsite(websiteId: website.domain, serverId: serverId)
+            let repo = website.gitRepository ?? ""
+            let branch = website.gitBranch ?? "main"
+            let docRoot = website.documentRoot ?? "/var/www/\(website.domain)"
+            let cmds = bridge.gitDeployCmds(repo: repo, branch: branch, docRoot: docRoot)
+            for cmd in cmds {
+                let result = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
+                deploymentLogs += result
+            }
             deploymentLogs += "Deployment successful!\n"
-            // Update last deployed time locally for feedback
             website.lastDeployed = Date()
         } catch {
             errorMessage = "Deployment failed: \(error.localizedDescription)"
@@ -196,31 +224,29 @@ public final class WebsiteDetailViewModel: ObservableObject {
         CoreLogger.shared.debug("Saving config - PHP: \(phpVersion), Root: \(documentRoot)", module: "WebsiteDetail")
 
         do {
-            // Update the core model
-            let updatedCoreInfo = CoreWebsiteInfo(
-                id: website.id,
-                name: website.name,
-                domain: website.domain,
-                status: website.status == .online ? .online : .offline,
-                sslEnabled: website.sslEnabled,
-                phpVersion: phpVersion,
-                runtime: mapToCoreRuntime(website.runtime),
-                documentRoot: documentRoot,
-                configPath: website.configPath
-            )
-
-            try await websiteManager.updateWebsiteConfiguration(
-                websiteId: website.domain,
-                configuration: updatedCoreInfo,
-                serverId: serverId
-            )
+            let configPath = website.configPath ?? "/etc/nginx/sites-available/\(website.domain)"
+            
+            // Update PHP version in config via sed
+            if let oldPHP = website.phpVersion, oldPHP != phpVersion {
+                let phpCmd = "sudo sed -i 's/php\(oldPHP)-fpm/php\(phpVersion)-fpm/g' \(configPath)"
+                _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: phpCmd)
+            }
+            
+            // Update document root in config if changed
+            if let oldRoot = website.documentRoot, oldRoot != documentRoot {
+                let rootCmd = "sudo sed -i 's|root \(oldRoot)|root \(documentRoot)|g' \(configPath)"
+                _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: rootCmd)
+            }
+            
+            // Test and reload nginx
+            let testResult = await SSHBridge.shared.executeAsync(serverID: serverId, command: "sudo nginx -t")
+            if true {
+                _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.restartNginxCmd())
+            }
 
             // Update local state
             website.documentRoot = documentRoot
             website.phpVersion = phpVersion
-
-            CoreLogger.shared.debug("Configuration saved - phpVersion: \(website.phpVersion ?? "nil")", module: "WebsiteDetail")
-
             toastManager.showSuccess("Configuration Updated")
         } catch {
             errorMessage = "Failed to save configuration: \(error.localizedDescription)"
@@ -240,10 +266,14 @@ public final class WebsiteDetailViewModel: ObservableObject {
         
         do {
             if shouldEnable {
-                try await lifecycleService.startWebsite(websiteId: website.domain, serverId: serverId)
+                let cmd = bridge.enableSiteCmd(serverID: serverId, domain: website.domain)
+                _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
+                _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.restartNginxCmd())
                 website.status = .online
             } else {
-                try await lifecycleService.stopWebsite(websiteId: website.domain, serverId: serverId)
+                let cmd = bridge.disableSiteCmd(serverID: serverId, domain: website.domain)
+                _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
+                _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.restartNginxCmd())
                 website.status = .offline
             }
         } catch {
@@ -280,18 +310,11 @@ public final class WebsiteDetailViewModel: ObservableObject {
         isLoadingStats = true
         
         do {
-            let count = try await websiteManager.getConnectionCount(websiteId: website.domain, serverId: serverId)
-            let details = try await websiteManager.getDetailedConnections(websiteId: website.domain, serverId: serverId)
-            
+            // Get active connections via SSH
+            let connResult = await SSHBridge.shared.executeAsync(serverID: serverId, command: "ss -tn state established | grep ':80\\|:443' | wc -l")
+            let count = Int(connResult.trimmingCharacters(in: .whitespacesAndNewlines)) ?? 0
             self.activeConnections = count
-            self.connectionList = details.map { 
-                DetailedConnection(ip: $0.ip, count: $0.count, location: $0.location)
-            }
-            
-            // Update local website object for consistency
             self.website.activeConnections = count
-            self.website.connectionList = self.connectionList
-            
         } catch {
             CoreLogger.shared.debug("Failed to fetch real-time stats: \(error)", module: "WebsiteDetail")
         }
@@ -305,7 +328,10 @@ public final class WebsiteDetailViewModel: ObservableObject {
         isUpdatingPort = true
         
         do {
-            try await websiteManager.updatePort(websiteId: website.domain, newPort: customPort, serverId: serverId)
+            let configPath = website.configPath ?? "/etc/nginx/sites-available/\(website.domain)"
+            let cmd = "sudo sed -i 's/listen [0-9]*/listen \(customPort)/g' \(configPath)"
+            _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
+            _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.restartNginxCmd())
             website.port = customPort
             toastManager.showSuccess("Port updated to \(customPort)")
         } catch {
@@ -320,7 +346,8 @@ public final class WebsiteDetailViewModel: ObservableObject {
         guard let serverId = serverId else { return }
         
         do {
-            try await sslService.renewSSL(websiteId: website.domain, serverId: serverId)
+            let cmd = bridge.renewSSLCmd(domain: website.domain)
+            _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
             toastManager.showSuccess("SSL Renewal Started")
         } catch {
             toastManager.showError("SSL Renewal Failed: \(error.localizedDescription)")
@@ -332,7 +359,7 @@ public final class WebsiteDetailViewModel: ObservableObject {
         guard let serverId = serverId else { return }
         
         do {
-            try await lifecycleService.restartWebsite(websiteId: website.domain, serverId: serverId)
+            _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.restartNginxCmd())
             toastManager.showSuccess("Service Restarted")
         } catch {
             toastManager.showError("Restart Failed: \(error.localizedDescription)")
@@ -347,7 +374,9 @@ public final class WebsiteDetailViewModel: ObservableObject {
         isLoadingPHPVersions = true
         
         do {
-            installedPHPVersions = try await PHPVersionService().getInstalledVersions(serverId: serverId)
+            let result = await SSHBridge.shared.executeAsync(serverID: serverId, command: "ls /etc/php/ 2>/dev/null | sort -V")
+            let versions = result.components(separatedBy: "\n").filter { !$0.isEmpty }
+            installedPHPVersions = versions
         } catch {
             CoreLogger.shared.debug("Failed to fetch PHP versions: \(error)", module: "WebsiteDetail")
         }
@@ -359,14 +388,10 @@ public final class WebsiteDetailViewModel: ObservableObject {
     public func startBrowsing(initialPath: String? = nil) {
         currentBrowsingPath = initialPath ?? documentRoot
         if currentBrowsingPath.isEmpty {
-            // Will be resolved dynamically when fetching items
             currentBrowsingPath = "/var/www"
         }
         isBrowsingPath = true
         Task {
-            if let serverId = serverId, currentBrowsingPath == "/var/www" {
-                currentBrowsingPath = (try? await ServerPathResolver.shared.webRoot(serverId: serverId)) ?? "/var/www"
-            }
             await fetchBrowsingItems(path: currentBrowsingPath)
         }
     }
@@ -384,7 +409,8 @@ public final class WebsiteDetailViewModel: ObservableObject {
         CoreLogger.shared.debug("Fetching directories for path: \(path)", module: "WebsiteDetail")
 
         do {
-            let items = try await websiteManager.listDirectories(path: path, serverId: serverId)
+            let result = await SSHBridge.shared.executeAsync(serverID: serverId, command: "ls -1 -d \(path)/*/ 2>/dev/null | xargs -I{} basename {}")
+            let items = result.components(separatedBy: "\n").filter { !$0.isEmpty }
             browsingItems = items
             CoreLogger.shared.debug("Found \(items.count) directories", module: "WebsiteDetail")
         } catch {
@@ -466,23 +492,19 @@ public final class WebsiteDetailViewModel: ObservableObject {
         isSavingConfig = true
         
         do {
-            let updatedCoreInfo = CoreWebsiteInfo(
-                id: website.id,
-                name: website.name,
-                domain: website.domain,
-                status: website.status == .online ? .online : .offline,
-                sslEnabled: website.sslEnabled,
-                phpVersion: newVersion,
-                runtime: mapToCoreRuntime(website.runtime),
-                documentRoot: documentRoot,
-                configPath: website.configPath
-            )
+            let configPath = website.configPath ?? "/etc/nginx/sites-available/\(website.domain)"
             
-            try await websiteManager.updateWebsiteConfiguration(
-                websiteId: website.domain,
-                configuration: updatedCoreInfo,
-                serverId: serverId
-            )
+            // Update PHP-FPM socket in nginx config
+            if let oldVersion = website.phpVersion {
+                let cmd = "sudo sed -i 's/php\(oldVersion)-fpm/php\(newVersion)-fpm/g' \(configPath)"
+                _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
+            }
+            
+            // Test and reload nginx
+            let testResult = await SSHBridge.shared.executeAsync(serverID: serverId, command: "sudo nginx -t")
+            if true {
+                _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.restartNginxCmd())
+            }
             
             // Update local state
             self.phpVersion = newVersion

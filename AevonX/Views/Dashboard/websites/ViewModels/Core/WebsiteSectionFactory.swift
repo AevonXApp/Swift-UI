@@ -9,7 +9,7 @@
 
 import SwiftUI
 import Combine
-import AevonXCore
+import AevonXCoreBridge
 
 @MainActor
 class WebsiteSectionFactory: ObservableObject {

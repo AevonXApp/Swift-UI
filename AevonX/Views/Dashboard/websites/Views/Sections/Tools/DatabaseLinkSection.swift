@@ -6,7 +6,7 @@
 //
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 struct DatabaseLinkSection: View {
     let serverId: String
@@ -155,8 +155,8 @@ struct DatabaseLinkSection: View {
 
         // Use DatabaseManagementService from Core to list and find matching DB
         do {
-            let dbType: DatabaseType = db.databaseType == .postgresql ? .postgresql : .mysql
-            let databases = try await DatabaseManagementService.shared.listDatabases(type: dbType, serverId: serverId)
+            let dbTypeStr = db.databaseType == .postgresql ? "postgresql" : "mysql"
+            let databases = try await DatabaseManagementService.shared.listDatabases(type: dbTypeStr, serverId: serverId)
             if let match = databases.first(where: { $0.name == db.databaseName }) {
                 let sizeBytes = Int64(match.size * 1_048_576)
                 dbStats = DatabaseStats(

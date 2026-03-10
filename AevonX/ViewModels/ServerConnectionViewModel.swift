@@ -578,7 +578,7 @@ public class ServerConnectionViewModel: ObservableObject {
             // If it survived sleep, no reconnection is needed.
             // Verify SSH via Go Core — quick echo test
             Task {
-                let testJSON = await SSHBridge.shared.executeAsync(serverID: serverId, command: "echo 1")
+                let testJSON = await SSHBridge.shared.executeAsyncJSON(serverID: serverId, command: "echo 1")
                 if let td = testJSON.data(using: .utf8),
                    let tr = try? JSONSerialization.jsonObject(with: td) as? [String: Any],
                    tr["success"] as? Bool == true {
@@ -775,7 +775,7 @@ public class ServerConnectionViewModel: ObservableObject {
     /// Executes a predefined command via Go SSH Bridge
     private func executeCommand(_ command: CommandTemplate) async throws -> AevonXCore.SSHCommandResult {
         let commandString = command.build()
-        let resultJSON = await SSHBridge.shared.executeAsync(serverID: serverId, command: commandString)
+        let resultJSON = await SSHBridge.shared.executeAsyncJSON(serverID: serverId, command: commandString)
         
         guard let data = resultJSON.data(using: .utf8),
               let result = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
@@ -1017,44 +1017,26 @@ public class ServerConnectionViewModel: ObservableObject {
         }
         
         // Count websites — lightweight ls | wc -l via Go SSH
-        let websiteJSON = await SSHBridge.shared.executeAsync(
+        let websiteStdout = await SSHBridge.shared.executeAsync(
             serverID: serverId,
             command: "ls -1 /etc/nginx/sites-enabled/ 2>/dev/null | grep -v default | wc -l"
         )
-        if let wd = websiteJSON.data(using: .utf8),
-           let wr = try? JSONSerialization.jsonObject(with: wd) as? [String: Any],
-           wr["success"] as? Bool == true,
-           let wData = wr["data"] as? [String: Any],
-           let stdout = wData["stdout"] as? String {
-            websiteInventoryCount = parseCount(stdout) ?? 0
-        }
+        websiteInventoryCount = parseCount(websiteStdout) ?? 0
         
         // Count databases — quick queries via Go SSH
         var dbCount = 0
         // MySQL databases
-        let mysqlJSON = await SSHBridge.shared.executeAsync(
+        let mysqlStdout = await SSHBridge.shared.executeAsync(
             serverID: serverId,
             command: "mysql -N -e 'SHOW DATABASES;' 2>/dev/null | grep -vcE '^(information_schema|performance_schema|mysql|sys)$' || echo '0'"
         )
-        if let md = mysqlJSON.data(using: .utf8),
-           let mr = try? JSONSerialization.jsonObject(with: md) as? [String: Any],
-           mr["success"] as? Bool == true,
-           let mData = mr["data"] as? [String: Any],
-           let stdout = mData["stdout"] as? String {
-            dbCount += parseCount(stdout) ?? 0
-        }
+        dbCount += parseCount(mysqlStdout) ?? 0
         // PostgreSQL databases
-        let pgJSON = await SSHBridge.shared.executeAsync(
+        let pgStdout = await SSHBridge.shared.executeAsync(
             serverID: serverId,
             command: "sudo -u postgres psql -t -c 'SELECT count(*) FROM pg_database WHERE NOT datistemplate;' 2>/dev/null || echo '0'"
         )
-        if let pd = pgJSON.data(using: .utf8),
-           let pr = try? JSONSerialization.jsonObject(with: pd) as? [String: Any],
-           pr["success"] as? Bool == true,
-           let pData = pr["data"] as? [String: Any],
-           let stdout = pData["stdout"] as? String {
-            dbCount += parseCount(stdout) ?? 0
-        }
+        dbCount += parseCount(pgStdout) ?? 0
         databaseInventoryCount = dbCount
     }
     

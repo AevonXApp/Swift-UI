@@ -2,12 +2,12 @@
 //  SSLManagementViewModel.swift
 //  AevonX
 //
-//  ViewModel for SSL Management section
+//  ViewModel for SSL Management section — uses Go Core bridge
 //
 
 import SwiftUI
 import Combine
-import AevonXCore
+import AevonXCoreBridge
 
 @MainActor
 public final class SSLManagementViewModel: ObservableObject {
@@ -53,7 +53,7 @@ public final class SSLManagementViewModel: ObservableObject {
 
     private let website: WebsiteInfo
     private let serverId: String?
-    private let sslService = WebsiteSSLService.shared
+    private let bridge = WebsitesBridge.shared
     private let toastManager = GlobalToastManager.shared
 
     // MARK: - Computed Properties
@@ -79,23 +79,96 @@ public final class SSLManagementViewModel: ObservableObject {
         isLoading = true
         error = nil
 
-        // Detect Force SSL state
-        isForceSSLEnabled = await sslService.isForceSSLEnabled(domain: website.domain, serverId: serverId)
-
-        // Always try to fetch certificate details from the server.
-        // We cannot rely on website.sslEnabled because it's a stale snapshot
-        // that doesn't update after issuing/uploading a certificate.
+        // Detect Force SSL state via config check
         do {
-            certificateDetails = try await sslService.getSSLCertificateDetails(domain: website.domain, serverId: serverId)
-            print("[SSLManagementVM] ✅ certificateDetails loaded: issuer=\(certificateDetails?.issuer ?? "nil"), brand=\(certificateDetails?.brand ?? "nil")")
+            let configPath = "/etc/nginx/sites-available/\(website.domain)"
+            let result = await SSHBridge.shared.executeAsync(serverID: serverId, command: "grep -c 'return 301 https' \(configPath) 2>/dev/null")
+            isForceSSLEnabled = (Int(result.trimmingCharacters(in: .whitespacesAndNewlines)) ?? 0) > 0
         } catch {
-            // No certificate found or unable to read — this is normal for sites without SSL
+            isForceSSLEnabled = false
+        }
+
+        // Fetch certificate details
+        do {
+            let cmd = bridge.sslStatusCmd(domain: website.domain)
+            let result = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
+            let parsedJSON = bridge.parseSSLStatus(domain: website.domain, output: result)
+
+            if let data = parsedJSON.data(using: .utf8),
+               let resp = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+               resp["success"] as? Bool == true,
+               let certData = resp["data"] as? [String: Any] {
+                
+                // Parse date strings from Go (e.g. "Mar 10 12:00:00 2026 GMT")
+                let dateFormatter = DateFormatter()
+                dateFormatter.locale = Locale(identifier: "en_US_POSIX")
+                dateFormatter.dateFormat = "MMM  d HH:mm:ss yyyy z"
+                let altFormatter = DateFormatter()
+                altFormatter.locale = Locale(identifier: "en_US_POSIX")
+                altFormatter.dateFormat = "MMM d HH:mm:ss yyyy z"
+                
+                let validFromStr = certData["valid_from"] as? String ?? ""
+                let validToStr = certData["valid_to"] as? String ?? ""
+                
+                let validFrom = dateFormatter.date(from: validFromStr) ?? altFormatter.date(from: validFromStr) ?? Date()
+                let validUntil = dateFormatter.date(from: validToStr) ?? altFormatter.date(from: validToStr) ?? Date()
+                
+                // Compute expiry info
+                let daysUntilExpiry = Calendar.current.dateComponents([.day], from: Date(), to: validUntil).day ?? 0
+                let isExpired = validUntil < Date()
+                let isExpiringSoon = daysUntilExpiry <= 30 && !isExpired
+                
+                // Compute status
+                let status: SSLCertificateStatus
+                if isExpired {
+                    status = .expired
+                } else if isExpiringSoon {
+                    status = .expiringSoon
+                } else {
+                    status = .valid
+                }
+                
+                // Parse brand from issuer (e.g. "C = US, O = Let's Encrypt, CN = E7")
+                let issuerStr = certData["issuer"] as? String ?? "Unknown"
+                let brand = parseBrandFromIssuer(issuerStr)
+                
+                let details = SSLCertificateDetails(
+                    issuer: issuerStr,
+                    validFrom: validFrom,
+                    validUntil: validUntil,
+                    brand: brand,
+                    status: status,
+                    domains: [website.domain],
+                    daysUntilExpiry: daysUntilExpiry,
+                    isExpiringSoon: isExpiringSoon,
+                    isExpired: isExpired
+                )
+                certificateDetails = details
+            }
+        } catch {
             certificateDetails = nil
-            print("[SSLManagementVM] ⚠️ certificateDetails set to nil: \(error.localizedDescription)")
         }
 
         isLoading = false
-        print("[SSLManagementVM] 🔄 isLoading=false, certificateDetails is \(certificateDetails != nil ? "SET" : "NIL")")
+    }
+    
+    // MARK: - Brand Parsing
+    
+    /// Parse certificate brand/authority from issuer string.
+    private func parseBrandFromIssuer(_ issuer: String) -> String {
+        // Try O= first (e.g. "C = US, O = Let's Encrypt, CN = E7")
+        if let oRange = issuer.range(of: "O = ") ?? issuer.range(of: "O=") {
+            let afterO = issuer[oRange.upperBound...]
+            let brand = afterO.components(separatedBy: ",").first?.trimmingCharacters(in: .whitespaces) ?? String(afterO)
+            return brand.trimmingCharacters(in: .whitespaces)
+        }
+        // Fallback: try CN=
+        if let cnRange = issuer.range(of: "CN = ") ?? issuer.range(of: "CN=") {
+            let afterCN = issuer[cnRange.upperBound...]
+            let brand = afterCN.components(separatedBy: ",").first?.trimmingCharacters(in: .whitespaces) ?? String(afterCN)
+            return brand.trimmingCharacters(in: .whitespaces)
+        }
+        return "Unknown"
     }
 
     // MARK: - Certificate Content
@@ -106,7 +179,15 @@ public final class SSLManagementViewModel: ObservableObject {
         isLoadingContent = true
 
         do {
-            certificateContent = try await sslService.getSSLCertificateContent(domain: website.domain, serverId: serverId)
+            let certPath = "/etc/letsencrypt/live/\(website.domain)/fullchain.pem"
+            let keyPath = "/etc/letsencrypt/live/\(website.domain)/privkey.pem"
+            let certResult = await SSHBridge.shared.executeAsync(serverID: serverId, command: "sudo cat \(certPath) 2>/dev/null")
+            let keyResult = await SSHBridge.shared.executeAsync(serverID: serverId, command: "sudo cat \(keyPath) 2>/dev/null")
+            certificateContent = SSLCertificateContent(
+                certificate: certResult,
+                privateKey: keyResult,
+                chain: nil
+            )
         } catch {
             self.error = "Failed to load certificate content: \(error.localizedDescription)"
             toastManager.showError(self.error!)
@@ -123,7 +204,19 @@ public final class SSLManagementViewModel: ObservableObject {
         isLoadingDNSRecords = true
 
         do {
-            dnsRecords = try await sslService.getDNSChallengeRecords(domain: website.domain, serverId: serverId)
+            let cmd = bridge.dnsLookupCmd(domain: website.domain)
+            let result = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
+            let parsedJSON = bridge.parseDNSRecords(domain: website.domain, output: result)
+
+            if let data = parsedJSON.data(using: .utf8),
+               let resp = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+               resp["success"] as? Bool == true,
+               let records = resp["data"] as? [[String: String]] {
+                dnsRecords = records.compactMap { dict in
+                    guard let type = dict["type"], let name = dict["name"], let value = dict["value"] else { return nil }
+                    return SSLDNSRecord(type: type, name: name, value: value)
+                }
+            }
         } catch {
             self.error = "Failed to load DNS records: \(error.localizedDescription)"
             toastManager.showError(self.error!)
@@ -141,17 +234,14 @@ public final class SSLManagementViewModel: ObservableObject {
         error = nil
 
         do {
-            try await sslService.issueNewLetsEncryptCert(
-                domain: website.domain,
-                email: letsEncryptEmail,
-                challengeType: selectedChallengeType.rawValue,
-                serverId: serverId
-            )
+            let cmds = bridge.issueSSLCmd(domain: website.domain)
+            for cmd in cmds {
+                _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
+            }
 
             showLetsEncryptSheet = false
             toastManager.showSuccess("Let's Encrypt certificate issued successfully")
 
-            // Reload certificate details
             await load()
         } catch {
             self.error = "Failed to issue certificate: \(error.localizedDescription)"
@@ -183,23 +273,24 @@ public final class SSLManagementViewModel: ObservableObject {
         isUploadingCertificate = true
 
         do {
-            try await sslService.uploadCustomCertificate(
+            let cmds = bridge.uploadCustomCertCmds(
                 domain: website.domain,
                 cert: customCertificate,
                 key: customPrivateKey,
-                chain: customChain.isEmpty ? nil : customChain,
-                serverId: serverId
+                chain: customChain.isEmpty ? nil : customChain
             )
+            for cmd in cmds {
+                _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
+            }
+            _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.restartNginxCmd())
 
             showCustomCertSheet = false
             toastManager.showSuccess("Custom certificate uploaded successfully")
 
-            // Clear fields
             customCertificate = ""
             customPrivateKey = ""
             customChain = ""
 
-            // Reload certificate details
             await load()
         } catch {
             self.error = "Failed to upload certificate: \(error.localizedDescription)"
@@ -218,11 +309,15 @@ public final class SSLManagementViewModel: ObservableObject {
 
         do {
             if !isForceSSLEnabled {
-                try await sslService.enableForceSSL(domain: website.domain, serverId: serverId)
+                let cmd = bridge.enableForceSSLCmd(domain: website.domain)
+                _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
+                _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.restartNginxCmd())
                 isForceSSLEnabled = true
                 toastManager.showSuccess("Force HTTPS enabled — all HTTP traffic will redirect to HTTPS")
             } else {
-                try await sslService.disableForceSSL(domain: website.domain, serverId: serverId)
+                let cmd = bridge.disableForceSSLCmd(domain: website.domain)
+                _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
+                _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.restartNginxCmd())
                 isForceSSLEnabled = false
                 toastManager.showSuccess("Force HTTPS disabled")
             }
@@ -242,12 +337,13 @@ public final class SSLManagementViewModel: ObservableObject {
         isConfiguringHSTS = true
 
         do {
-            try await WebsiteSSLService.shared.configureHSTS(
+            let cmd = bridge.configureHSTSCmd(
                 domain: website.domain,
                 maxAge: hstsConfig.maxAge,
-                includeSubdomains: hstsConfig.includeSubDomains,
-                serverId: serverId
+                includeSubdomains: hstsConfig.includeSubDomains
             )
+            _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
+            _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.restartNginxCmd())
 
             showHSTSSheet = false
             toastManager.showSuccess("HSTS configured successfully")
@@ -267,10 +363,10 @@ public final class SSLManagementViewModel: ObservableObject {
         isRenewing = true
 
         do {
-            try await sslService.renewSSL(websiteId: website.domain, serverId: serverId)
+            let cmd = bridge.renewSSLCmd(domain: website.domain)
+            _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
             toastManager.showSuccess("Certificate renewal started")
 
-            // Reload certificate details
             await load()
         } catch {
             self.error = "Failed to renew certificate: \(error.localizedDescription)"

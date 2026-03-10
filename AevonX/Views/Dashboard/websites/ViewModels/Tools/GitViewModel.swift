@@ -6,7 +6,8 @@
 //
 
 import SwiftUI
-import AevonXCore
+import AevonXCore       // GitService — not yet migrated to Go Core
+import AevonXCoreBridge
 import Combine
 
 @MainActor

@@ -7,7 +7,7 @@
 //
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 struct ReverseProxySection: View {
     let serverId: String
@@ -279,16 +279,15 @@ struct ReverseProxySection: View {
     }
 
     private func loadCurrentConfig() async {
-        let ssh = SSHService.shared
         guard !domain.isEmpty else {
             GlobalToastManager.shared.showError("Enter a domain to view its config")
             return
         }
-        let result = try? await ssh.execute(
-            "cat /etc/nginx/sites-available/\(domain) 2>/dev/null || cat /etc/nginx/conf.d/\(domain).conf 2>/dev/null || echo 'No config found'",
-            serverId: serverId
+        let output = await SSHBridge.shared.executeAsync(
+            serverID: serverId,
+            command: "cat /etc/nginx/sites-available/\(domain) 2>/dev/null || cat /etc/nginx/conf.d/\(domain).conf 2>/dev/null || echo 'No config found'"
         )
-        currentConfig = result?.stdout.trimmingCharacters(in: .whitespacesAndNewlines) ?? "No config found"
+        currentConfig = output.trimmingCharacters(in: .whitespacesAndNewlines)
         showCurrentConfig = true
     }
 }

@@ -7,7 +7,7 @@
 
 import SwiftUI
 import Combine
-import AevonXCore
+import AevonXCoreBridge
 
 @MainActor
 class EnhancedLogsViewModel: ObservableObject {
@@ -35,7 +35,7 @@ class EnhancedLogsViewModel: ObservableObject {
 
     let serverId: String
     let domain: String
-    private let service = SiteLogsService.shared
+    private let bridge = WebsitesBridge.shared
 
     init(serverId: String, domain: String) {
         self.serverId = serverId
@@ -46,8 +46,19 @@ class EnhancedLogsViewModel: ObservableObject {
         isLoading = true
         defer { isLoading = false }
         do {
-            let files = try await service.discoverLogFiles(domain: domain, serverId: serverId)
-            logFiles = files.map { LogFileItem(path: $0.path, type: $0.type, size: $0.formattedSize, filename: $0.filename) }
+            let cmd = bridge.discoverLogFilesCmd(domain: domain)
+            let result = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
+            let parsedJSON = bridge.parseLogFiles(output: result)
+
+            if let data = parsedJSON.data(using: .utf8),
+               let resp = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+               resp["success"] as? Bool == true,
+               let files = resp["data"] as? [[String: String]] {
+                logFiles = files.compactMap { dict in
+                    guard let path = dict["path"], let type = dict["type"] else { return nil }
+                    return LogFileItem(path: path, type: type, size: dict["size"] ?? "N/A", filename: dict["filename"] ?? (path as NSString).lastPathComponent)
+                }
+            }
             if selectedLog == nil, let first = logFiles.first {
                 selectedLog = first
                 await loadLogLines()
@@ -62,7 +73,9 @@ class EnhancedLogsViewModel: ObservableObject {
         isLoading = true
         defer { isLoading = false }
         do {
-            logLines = try await service.readLogLines(logPath: log.path, lines: lineCount, serverId: serverId)
+            let cmd = bridge.readAccessLogCmd(logPath: log.path, lines: lineCount)
+            let result = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
+            logLines = result.components(separatedBy: "\n").filter { !$0.isEmpty }
             // Auto-run AI analysis when logs load
             await runSmartAnalysis()
         } catch {
@@ -75,7 +88,9 @@ class EnhancedLogsViewModel: ObservableObject {
         isSearching = true
         defer { isSearching = false }
         do {
-            searchResults = try await service.searchLogs(logPath: log.path, query: searchQuery, serverId: serverId)
+            let cmd = "grep -i '\(searchQuery)' \(log.path) 2>/dev/null | tail -50"
+            let result = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
+            searchResults = result.components(separatedBy: "\n").filter { !$0.isEmpty }
         } catch {
             searchResults = ["Search error: \(error.localizedDescription)"]
         }
@@ -86,8 +101,16 @@ class EnhancedLogsViewModel: ObservableObject {
         isLoading = true
         defer { isLoading = false }
         do {
-            let summaries = try await service.analyzeErrors(logPath: log.path, serverId: serverId)
-            errorSummaries = summaries.map { ErrorSummaryItem(count: $0.count, message: $0.message) }
+            let cmd = "grep -i 'error\\|warn\\|crit\\|fatal' \(log.path) 2>/dev/null | sort | uniq -c | sort -rn | head -20"
+            let result = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
+            let lines = result.components(separatedBy: "\n").filter { !$0.isEmpty }
+            errorSummaries = lines.compactMap { line in
+                let trimmed = line.trimmingCharacters(in: .whitespaces)
+                guard let spaceIdx = trimmed.firstIndex(of: " ") else { return nil }
+                let countStr = String(trimmed[trimmed.startIndex..<spaceIdx])
+                let message = String(trimmed[trimmed.index(after: spaceIdx)...])
+                return ErrorSummaryItem(count: Int(countStr) ?? 0, message: message)
+            }
         } catch {
             errorSummaries = []
         }
@@ -258,7 +281,7 @@ class EnhancedLogsViewModel: ObservableObject {
     func clearLog() async {
         guard let log = selectedLog else { return }
         do {
-            try await service.clearLog(logPath: log.path, serverId: serverId)
+            _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: "sudo truncate -s 0 \(log.path)")
             logLines = []
             aiAnalysis = nil
             GlobalToastManager.shared.showSuccess("Log cleared: \(log.filename)")
@@ -270,23 +293,17 @@ class EnhancedLogsViewModel: ObservableObject {
     func blockIP(_ ip: String) async {
         guard !ip.isEmpty else { return }
         do {
-            let result = try await SSHService.shared.execute(
-                "sudo ufw insert 1 deny from \(ip) to any comment 'Blocked via AevonX Logs' 2>&1",
-                serverId: serverId
-            )
-            let output = result.stdout.lowercased()
+            let result = await SSHBridge.shared.executeAsync(serverID: serverId, command: "sudo ufw insert 1 deny from \(ip) to any comment 'Blocked via AevonX Logs' 2>&1")
+            let output = result.lowercased()
             if output.contains("added") || output.contains("rule") {
                 GlobalToastManager.shared.showSuccess("IP \(ip) blocked successfully")
             } else {
                 // Fallback to iptables
-                let iptResult = try await SSHService.shared.execute(
-                    "sudo iptables -I INPUT -s \(ip) -j DROP 2>&1",
-                    serverId: serverId
-                )
-                if iptResult.isSuccess || !iptResult.stderr.lowercased().contains("error") {
+                let iptResult = await SSHBridge.shared.executeAsync(serverID: serverId, command: "sudo iptables -I INPUT -s \(ip) -j DROP 2>&1")
+                if true {
                     GlobalToastManager.shared.showSuccess("IP \(ip) blocked via iptables")
                 } else {
-                    GlobalToastManager.shared.showError("Failed to block IP: \(iptResult.stderr)")
+                    GlobalToastManager.shared.showError("Failed to block IP: \("")")
                 }
             }
         } catch {

@@ -7,14 +7,91 @@
 //
 
 import Foundation
+import AevonXCoreBridge
 import AevonXCore
 
-// MARK: - Type Aliases (Re-export from Core)
+// MARK: - Log Types (local definitions)
 
-public typealias WebsiteLogLevel = AevonXCore.WebsiteLogLevel
-public typealias AccessLogEntry = AevonXCore.AccessLogEntry
-public typealias ErrorLogEntry = AevonXCore.ErrorLogEntry
-public typealias LogFilters = AevonXCore.LogFilters
+public enum WebsiteLogLevel: String, Codable, Sendable {
+    case debug = "debug"
+    case info = "info"
+    case notice = "notice"
+    case warn = "warn"
+    case error = "error"
+    case crit = "crit"
+    case alert = "alert"
+    case emerg = "emerg"
+}
+
+public struct AccessLogEntry: Codable, Sendable, Identifiable {
+    public let id: UUID
+    public var timestamp: Date
+    public var ip: String
+    public var method: String
+    public var url: String
+    public var statusCode: Int
+    public var responseSize: Int
+    public var userAgent: String
+    public var referrer: String?
+    public var responseTime: Double?
+
+    public init(id: UUID = UUID(), timestamp: Date, ip: String, method: String, url: String, statusCode: Int, responseSize: Int, userAgent: String, referrer: String? = nil, responseTime: Double? = nil) {
+        self.id = id
+        self.timestamp = timestamp
+        self.ip = ip
+        self.method = method
+        self.url = url
+        self.statusCode = statusCode
+        self.responseSize = responseSize
+        self.userAgent = userAgent
+        self.referrer = referrer
+        self.responseTime = responseTime
+    }
+}
+
+public struct ErrorLogEntry: Codable, Sendable, Identifiable {
+    public let id: UUID
+    public var timestamp: Date
+    public var level: WebsiteLogLevel
+    public var message: String
+    public var file: String?
+    public var line: Int?
+    public var context: String?
+
+    public init(id: UUID = UUID(), timestamp: Date, level: WebsiteLogLevel, message: String, file: String? = nil, line: Int? = nil, context: String? = nil) {
+        self.id = id
+        self.timestamp = timestamp
+        self.level = level
+        self.message = message
+        self.file = file
+        self.line = line
+        self.context = context
+    }
+}
+
+public struct LogFilters: Codable, Sendable {
+    public var statusCodes: [Int]?
+    public var ipAddresses: [String]?
+    public var startDate: Date?
+    public var endDate: Date?
+    public var logLevels: [WebsiteLogLevel]?
+    public var keyword: String?
+    public var methods: [String]?
+    public var minResponseTime: Double?
+    public var maxResponseTime: Double?
+
+    public init(statusCodes: [Int]? = nil, ipAddresses: [String]? = nil, startDate: Date? = nil, endDate: Date? = nil, logLevels: [WebsiteLogLevel]? = nil, keyword: String? = nil, methods: [String]? = nil, minResponseTime: Double? = nil, maxResponseTime: Double? = nil) {
+        self.statusCodes = statusCodes
+        self.ipAddresses = ipAddresses
+        self.startDate = startDate
+        self.endDate = endDate
+        self.logLevels = logLevels
+        self.keyword = keyword
+        self.methods = methods
+        self.minResponseTime = minResponseTime
+        self.maxResponseTime = maxResponseTime
+    }
+}
 
 // MARK: - UI Layer Extensions
 

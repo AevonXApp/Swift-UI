@@ -6,7 +6,7 @@
 //
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 struct SiteSecuritySection: View {
     @ObservedObject var viewModel: SiteSecurityViewModel

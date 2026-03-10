@@ -2,12 +2,12 @@
 //  SiteCloningViewModel.swift
 //  AevonX
 //
-//  ViewModel for site cloning and migration — delegates to SiteCloningService
+//  ViewModel for site cloning and migration — uses Go Core bridge
 //
 
 import SwiftUI
 import Combine
-import AevonXCore
+import AevonXCoreBridge
 
 @MainActor
 class SiteCloningViewModel: ObservableObject {
@@ -21,7 +21,7 @@ class SiteCloningViewModel: ObservableObject {
     let serverId: String
     let domain: String
     let docRoot: String
-    private let service = SiteCloningService.shared
+    private let bridge = WebsitesBridge.shared
 
     init(serverId: String, domain: String, docRoot: String) {
         self.serverId = serverId
@@ -34,9 +34,22 @@ class SiteCloningViewModel: ObservableObject {
         isCloning = true; cloningProgress = "Cloning files..."
         defer { isCloning = false; cloningProgress = "" }
         do {
-            let result = try await service.cloneSite(sourceDomain: domain, targetDomain: targetDomain, sourceDocRoot: docRoot, serverId: serverId)
-            lastCloneResult = CloneResultItem(domain: result.targetDomain, docRoot: result.targetDocRoot, size: result.size)
-            GlobalToastManager.shared.showSuccess("Site cloned to \(result.targetDomain)")
+            let cmds = bridge.cloneSiteCmds(
+                source: domain,
+                target: targetDomain,
+                docRoot: docRoot,
+                sitesAvailable: "/etc/nginx/sites-available",
+                sitesEnabled: "/etc/nginx/sites-enabled"
+            )
+            for cmd in cmds {
+                _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
+            }
+            _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.restartNginxCmd())
+
+            let sizeResult = await SSHBridge.shared.executeAsync(serverID: serverId, command: "du -sh /var/www/\(targetDomain) 2>/dev/null | awk '{print $1}'")
+            let size = sizeResult.trimmingCharacters(in: .whitespacesAndNewlines)
+            lastCloneResult = CloneResultItem(domain: targetDomain, docRoot: "/var/www/\(targetDomain)", size: size.isEmpty ? "N/A" : size)
+            GlobalToastManager.shared.showSuccess("Site cloned to \(targetDomain)")
         } catch { GlobalToastManager.shared.showError(error.localizedDescription) }
     }
 
@@ -44,9 +57,21 @@ class SiteCloningViewModel: ObservableObject {
         isCloning = true; cloningProgress = "Creating staging..."
         defer { isCloning = false; cloningProgress = "" }
         do {
-            let result = try await service.createStaging(domain: domain, docRoot: docRoot, serverId: serverId)
-            lastCloneResult = CloneResultItem(domain: result.targetDomain, docRoot: result.targetDocRoot, size: result.size)
-            GlobalToastManager.shared.showSuccess("Staging created: staging.\(domain)")
+            let stagingDomain = "staging.\(domain)"
+            let cmds = bridge.cloneSiteCmds(
+                source: domain,
+                target: stagingDomain,
+                docRoot: docRoot,
+                sitesAvailable: "/etc/nginx/sites-available",
+                sitesEnabled: "/etc/nginx/sites-enabled"
+            )
+            for cmd in cmds {
+                _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
+            }
+            _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.restartNginxCmd())
+
+            lastCloneResult = CloneResultItem(domain: stagingDomain, docRoot: "/var/www/\(stagingDomain)", size: "N/A")
+            GlobalToastManager.shared.showSuccess("Staging created: \(stagingDomain)")
         } catch { GlobalToastManager.shared.showError(error.localizedDescription) }
     }
 
@@ -54,7 +79,11 @@ class SiteCloningViewModel: ObservableObject {
         isCloning = true; cloningProgress = "Exporting for migration..."
         defer { isCloning = false; cloningProgress = "" }
         do {
-            exportPath = try await service.exportForMigration(domain: domain, docRoot: docRoot, includeDB: includeDBInExport, serverId: serverId)
+            let ts = ISO8601DateFormatter().string(from: Date()).replacingOccurrences(of: ":", with: "-")
+            let exportFile = "/var/backups/aevonx/\(domain)_migration_\(ts).tar.gz"
+            _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: "sudo mkdir -p /var/backups/aevonx")
+            _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: "sudo tar -czf \(exportFile) -C \(docRoot) . /etc/nginx/sites-available/\(domain) 2>/dev/null")
+            exportPath = exportFile
             GlobalToastManager.shared.showSuccess("Migration export ready")
         } catch { GlobalToastManager.shared.showError(error.localizedDescription) }
     }

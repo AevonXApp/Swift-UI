@@ -7,7 +7,7 @@
 //
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 struct AIAnalysisSheet: View {
     @ObservedObject var viewModel: EnhancedLogsViewModel
