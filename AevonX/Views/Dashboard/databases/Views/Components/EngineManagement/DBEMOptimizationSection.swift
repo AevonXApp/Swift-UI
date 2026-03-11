@@ -25,7 +25,7 @@ struct DBEMOptimizationSection: View {
                 }
 
                 // AI Analysis Card
-                AXGlassCard(accentColor: viewModel.databaseType.brandColor) {
+                AXGlassCard(accentColor: .axAccentBlue) {
                     VStack(alignment: .leading, spacing: AXSpacing.lg) {
                         Text("Performance Analysis")
                             .font(AXTypography.headline)
@@ -43,7 +43,7 @@ struct DBEMOptimizationSection: View {
                         .foregroundColor(.axBackground)
                         .padding(.horizontal, AXSpacing.lg)
                         .padding(.vertical, AXSpacing.md)
-                        .background(viewModel.databaseType.brandColor)
+                        .background(Color.axAccentBlue)
                         .cornerRadius(AXCornerRadius.md)
                         .disabled(viewModel.isOperationInProgress)
                     }
@@ -51,7 +51,7 @@ struct DBEMOptimizationSection: View {
                 }
 
                 // Quick Presets
-                AXGlassCard(accentColor: viewModel.databaseType.brandColor) {
+                AXGlassCard(accentColor: .axAccentBlue) {
                     VStack(alignment: .leading, spacing: AXSpacing.lg) {
                         Text("Quick Presets")
                             .font(AXTypography.headline)

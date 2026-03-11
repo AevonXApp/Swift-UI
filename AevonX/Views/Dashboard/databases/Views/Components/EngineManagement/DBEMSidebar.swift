@@ -29,7 +29,7 @@ struct DBEMSidebar: View {
                                 title: section.rawValue,
                                 icon: section.icon,
                                 isSelected: viewModel.currentSection == section,
-                                themeColor: viewModel.databaseType.brandColor
+                                themeColor: .axAccentBlue
                             ) {
                                 withAnimation(.easeInOut(duration: 0.2)) {
                                     viewModel.currentSection = section
@@ -69,12 +69,12 @@ struct DBEMSidebar: View {
             HStack(spacing: AXSpacing.md) {
                 ZStack {
                     RoundedRectangle(cornerRadius: AXCornerRadius.lg)
-                        .fill(viewModel.databaseType.brandColor.opacity(0.15))
+                        .fill(Color.axAccentBlue.opacity(0.15))
                         .frame(width: 48, height: 48)
 
                     Image(systemName: viewModel.databaseType.iconName)
                         .font(.system(size: 24))
-                        .foregroundColor(viewModel.databaseType.brandColor)
+                        .foregroundColor(.axAccentBlue)
                 }
 
                 VStack(alignment: .leading, spacing: AXSpacing.xxs) {

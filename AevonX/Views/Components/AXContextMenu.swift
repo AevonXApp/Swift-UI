@@ -59,20 +59,19 @@ struct AXActionMenu: View {
     }
     
     var body: some View {
-        Button(action: {
-            isOpen.toggle()
-        }) {
-            Image(systemName: triggerIcon)
-                .font(.system(size: triggerSize * 0.55, weight: .semibold))
-                .foregroundColor(isOpen ? .axAccentBlue : .axTextSecondary)
-                .frame(width: triggerSize, height: triggerSize)
-                .background(isOpen ? Color.axAccentBlue.opacity(0.12) : Color.clear)
-                .cornerRadius(triggerSize * 0.28)
-        }
-        .buttonStyle(.plain)
-        .popover(isPresented: $isOpen, arrowEdge: .bottom) {
-            AXMenuContent(sections: sections, isPresented: $isOpen)
-        }
+        Image(systemName: triggerIcon)
+            .font(.system(size: triggerSize * 0.55, weight: .semibold))
+            .foregroundColor(isOpen ? .axAccentBlue : .axTextSecondary)
+            .frame(width: triggerSize, height: triggerSize)
+            .background(isOpen ? Color.axAccentBlue.opacity(0.12) : Color.axSurface.opacity(0.01))
+            .cornerRadius(triggerSize * 0.28)
+            .contentShape(Rectangle())
+            .onTapGesture {
+                isOpen.toggle()
+            }
+            .popover(isPresented: $isOpen, arrowEdge: .bottom) {
+                AXMenuContent(sections: sections, isPresented: $isOpen)
+            }
     }
 }
 
@@ -259,5 +258,38 @@ extension AXActionMenu {
         }
         
         return AXActionMenu(sections: sections, triggerIcon: "ellipsis", triggerSize: 32)
+    }
+    
+    /// Database table action menu
+    static func databaseTableActions(
+        onRename: @escaping () -> Void,
+        onShowCreate: @escaping () -> Void,
+        onOptimize: @escaping () -> Void,
+        onCheck: @escaping () -> Void,
+        onRepair: @escaping () -> Void,
+        onCopySelect: @escaping () -> Void,
+        onDescribe: @escaping () -> Void,
+        onTruncate: @escaping () -> Void,
+        onDrop: @escaping () -> Void
+    ) -> AXActionMenu {
+        AXActionMenu(sections: [
+            AXMenuSection("Configuration", items: [
+                AXMenuItem("Rename Table", icon: "pencil", color: .axAccentBlue, action: onRename),
+                AXMenuItem("Show Create Table", icon: "text.alignleft", color: .cyan, action: onShowCreate),
+            ]),
+            AXMenuSection("Maintenance", items: [
+                AXMenuItem("Optimize Table", icon: "wand.and.stars", color: .orange, action: onOptimize),
+                AXMenuItem("Check Table", icon: "checkmark.shield", color: .axSuccess, action: onCheck),
+                AXMenuItem("Repair Table", icon: "wrench.and.screwdriver", color: .purple, action: onRepair),
+            ]),
+            AXMenuSection("Utilities", items: [
+                AXMenuItem("Copy SELECT Query", icon: "doc.on.doc", color: .axAccentBlue, action: onCopySelect),
+                AXMenuItem("Describe Table", icon: "info.circle", color: .mint, action: onDescribe),
+            ]),
+            AXMenuSection(items: [
+                AXMenuItem("Truncate Table", icon: "trash.slash", color: .axError, isDestructive: true, action: onTruncate),
+                AXMenuItem("Drop Table", icon: "trash", isDestructive: true, action: onDrop),
+            ]),
+        ], triggerIcon: "ellipsis.circle.fill", triggerSize: 26)
     }
 }

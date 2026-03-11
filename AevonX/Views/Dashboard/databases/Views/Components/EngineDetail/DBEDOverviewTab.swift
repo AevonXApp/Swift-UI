@@ -64,7 +64,7 @@ struct DBEDOverviewTab: View {
                 icon: "clock",
                 label: "Uptime",
                 value: AXFormatter.formatUptime(metrics.uptime),
-                color: viewModel.databaseType.brandColor
+                color: .axAccentBlue
             )
 
             AXStatCard(

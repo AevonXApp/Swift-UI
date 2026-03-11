@@ -168,7 +168,7 @@ public struct ServerOSInfo: Codable, Sendable {
     public let kernelVersion: String
     public let architecture: String
 
-    public init(id: String = "", idLike: String = "", versionId: String = "", version: String = "",
+    nonisolated public init(id: String = "", idLike: String = "", versionId: String = "", version: String = "",
                 prettyName: String = "", kernelVersion: String = "", architecture: String = "") {
         self.id = id; self.idLike = idLike; self.versionId = versionId
         self.version = version; self.prettyName = prettyName
@@ -193,7 +193,7 @@ public struct ServerResources: Codable, Sendable {
     public var cpuCount: Int
     public var cpuArchitecture: String
 
-    public init(totalMemoryMB: Int = 0, availableMemoryMB: Int = 0, totalDiskGB: Int = 0,
+    nonisolated public init(totalMemoryMB: Int = 0, availableMemoryMB: Int = 0, totalDiskGB: Int = 0,
                 availableDiskGB: Int = 0, cpuCount: Int = 0, cpuArchitecture: String = "") {
         self.totalMemoryMB = totalMemoryMB; self.availableMemoryMB = availableMemoryMB
         self.totalDiskGB = totalDiskGB; self.availableDiskGB = availableDiskGB
@@ -406,8 +406,8 @@ public final class AIInstallationAPIService: @unchecked Sendable {
     public func getInstallationRecommendations(
         databaseType: DatabaseType,
         serverId: String,
-        serverOSInfo: ServerOSInfo = ServerOSInfo(),
-        serverResources: ServerResources = ServerResources(),
+        serverOSInfo: ServerOSInfo = .init(),
+        serverResources: ServerResources = .init(),
         existingDatabases: [DatabaseType] = [],
         useCase: DatabaseUseCase? = nil,
         preferredVersion: String? = nil

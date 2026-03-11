@@ -65,6 +65,8 @@ public struct DatabaseDetailView: View {
             DBBackupSection(viewModel: viewModel)
         case .activityLog:
             DBActivityLogSection(viewModel: viewModel)
+        case .importSQL:
+            DBBackupSection(viewModel: viewModel)
         }
     }
 
@@ -133,6 +135,24 @@ public struct DatabaseDetailView: View {
                 message: Text("Are you sure you want to delete this backup file?"),
                 primaryButton: .destructive(Text("Delete")) {
                     Task { await viewModel.deleteBackup(id) }
+                },
+                secondaryButton: .cancel()
+            )
+        case .confirmDropIndex(let name):
+            return Alert(
+                title: Text("Drop Index"),
+                message: Text("Are you sure you want to drop index '\(name)'? This may affect query performance."),
+                primaryButton: .destructive(Text("Drop Index")) {
+                    Task { await viewModel.dropIndex(name) }
+                },
+                secondaryButton: .cancel()
+            )
+        case .confirmRestoreBackup(let id):
+            return Alert(
+                title: Text("Restore Backup"),
+                message: Text("Are you sure you want to restore from this backup? This will overwrite the current database data."),
+                primaryButton: .destructive(Text("Restore")) {
+                    Task { await viewModel.restoreBackup(id) }
                 },
                 secondaryButton: .cancel()
             )

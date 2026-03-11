@@ -21,6 +21,7 @@ public enum DatabaseDetailSection: String, CaseIterable, Identifiable {
     case queryConsole = "SQL Console"
     case backup = "Backup"
     case activityLog = "Activity Log"
+    case importSQL = "Import SQL"
 
     public var id: String { rawValue }
 
@@ -31,6 +32,7 @@ public enum DatabaseDetailSection: String, CaseIterable, Identifiable {
         case .queryConsole: return "terminal"
         case .backup: return "arrow.down.doc"
         case .activityLog: return "list.bullet.clipboard"
+        case .importSQL: return "arrow.up.doc"
         }
     }
 }
@@ -53,6 +55,8 @@ public enum DatabaseDetailAlert: Identifiable {
     case confirmDeleteRow(Int)
     case confirmDeleteSelectedRows
     case confirmDeleteBackup(String)
+    case confirmDropIndex(String)
+    case confirmRestoreBackup(String)
 
     public var id: String {
         switch self {
@@ -63,6 +67,8 @@ public enum DatabaseDetailAlert: Identifiable {
         case .confirmDeleteRow(let idx): return "deleterow_\(idx)"
         case .confirmDeleteSelectedRows: return "delete_selected_rows"
         case .confirmDeleteBackup(let id): return "deletebak_\(id)"
+        case .confirmDropIndex(let name): return "dropidx_\(name)"
+        case .confirmRestoreBackup(let id): return "restorebak_\(id)"
         }
     }
 }
@@ -161,6 +167,7 @@ public final class DatabaseDetailViewModel: ObservableObject {
 
     @Published public var queryText = ""
     @Published public var queryResult: QueryResult?
+    @Published public var queryError: String?
     @Published public var queryHistory: [QueryHistoryEntry] = []
     @Published public var isExecutingQuery = false
 
@@ -318,6 +325,7 @@ public final class DatabaseDetailViewModel: ObservableObject {
         guard !query.isEmpty else { return }
 
         isExecutingQuery = true
+        queryError = nil
         let startTime = Date()
 
         do {
@@ -338,7 +346,8 @@ public final class DatabaseDetailViewModel: ObservableObject {
             log(action: "Execute Query", detail: query.prefix(100) + (query.count > 100 ? "..." : ""), success: true)
 
         } catch {
-            GlobalToastManager.shared.showError(error.localizedDescription)
+            queryError = error.localizedDescription
+            queryResult = nil
 
             queryHistory.insert(QueryHistoryEntry(
                 query: query,
@@ -517,6 +526,8 @@ public final class DatabaseDetailViewModel: ObservableObject {
     // MARK: - Edit Table Structure
 
     @Published public var showAddColumn = false
+    @Published public var showCreateIndex = false
+    @Published public var showRenameTable = false
 
     public func addColumn(_ column: CreateTableColumnDefinition, afterColumn: String?) async {
         guard let table = selectedTable else { return }
@@ -858,6 +869,121 @@ public final class DatabaseDetailViewModel: ObservableObject {
         activeAlert = .confirmDeleteBackup(backupId)
     }
 
+    // MARK: - Advanced Operations
+
+    /// Duplicate a row by primary key
+    public func duplicateRow(at index: Int) async {
+        guard let pk = primaryKeyValues(forRowAt: index), let table = selectedTable else {
+            GlobalToastManager.shared.showError("Cannot determine primary key for this row")
+            return
+        }
+        guard let serverId = serverId else { return }
+
+        guard let pkData = try? JSONSerialization.data(withJSONObject: pk),
+              let pkJSON = String(data: pkData, encoding: .utf8) else {
+            GlobalToastManager.shared.showError("Failed to encode primary key")
+            return
+        }
+        let cmd = DatabasesBridge.shared.duplicateRowCmd(
+            engine: database.type.rawValue,
+            database: database.name,
+            table: table.name,
+            primaryKeyJSON: pkJSON
+        )
+        guard !cmd.isEmpty else {
+            GlobalToastManager.shared.showError("Duplicate row not supported")
+            return
+        }
+        let result = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
+        if result.lowercased().contains("error") {
+            GlobalToastManager.shared.showError("Duplicate failed: \(result)")
+            log(action: "Duplicate Row", detail: "Table '\(table.name)'", success: false, error: result)
+        } else {
+            GlobalToastManager.shared.showSuccess("Row duplicated")
+            log(action: "Duplicate Row", detail: "Table '\(table.name)'", success: true)
+            await loadTableData()
+            await loadTables()
+        }
+    }
+
+    /// Drop an index by name
+    public func dropIndex(_ indexName: String) async {
+        guard let table = selectedTable, let serverId = serverId else { return }
+
+        let cmd = DatabasesBridge.shared.dropIndexCmd(
+            engine: database.type.rawValue,
+            database: database.name,
+            table: table.name,
+            indexName: indexName
+        )
+        guard !cmd.isEmpty else {
+            GlobalToastManager.shared.showError("Drop index not supported")
+            return
+        }
+
+        let result = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
+        if result.lowercased().contains("error") {
+            GlobalToastManager.shared.showError("Drop index failed: \(result)")
+            log(action: "Drop Index", detail: "Index '\(indexName)'", success: false, error: result)
+        } else {
+            GlobalToastManager.shared.showSuccess("Index '\(indexName)' dropped")
+            log(action: "Drop Index", detail: "Index '\(indexName)' from '\(table.name)'", success: true)
+            await loadTableStructure()
+        }
+    }
+
+    /// Rename a table
+    public func renameTable(from oldName: String, to newName: String) async {
+        guard let serverId = serverId else { return }
+
+        let cmd = DatabasesBridge.shared.renameTableCmd(
+            engine: database.type.rawValue,
+            database: database.name,
+            oldName: oldName,
+            newName: newName
+        )
+        guard !cmd.isEmpty else {
+            GlobalToastManager.shared.showError("Rename table not supported")
+            return
+        }
+
+        let result = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
+        if result.lowercased().contains("error") {
+            GlobalToastManager.shared.showError("Rename failed: \(result)")
+            log(action: "Rename Table", detail: "'\(oldName)' → '\(newName)'", success: false, error: result)
+        } else {
+            GlobalToastManager.shared.showSuccess("Table renamed to '\(newName)'")
+            log(action: "Rename Table", detail: "'\(oldName)' → '\(newName)'", success: true)
+            if selectedTable?.name == oldName {
+                deselectTable()
+            }
+            await loadTables()
+        }
+    }
+
+    /// Restore from a backup
+    public func restoreBackup(_ backupId: String) async {
+        guard let serverId = serverId else { return }
+
+        let progressId = GlobalToastManager.shared.showProgress("Restoring backup...")
+        do {
+            try await DatabaseBackupService.shared.restoreBackup(
+                backupPath: backupId,
+                database: database.name,
+                type: database.type,
+                serverId: serverId
+            )
+            GlobalToastManager.shared.dismiss(id: progressId)
+            GlobalToastManager.shared.showSuccess("Backup restored successfully")
+            log(action: "Restore Backup", detail: backupId, success: true)
+            await loadTables()
+        } catch {
+            GlobalToastManager.shared.dismiss(id: progressId)
+            GlobalToastManager.shared.showError("Restore failed: \(error.localizedDescription)")
+            log(action: "Restore Backup", detail: backupId, success: false, error: error.localizedDescription)
+        }
+    }
+
     // MARK: - Helpers
 
     public func dismissResult() {
@@ -879,7 +1005,7 @@ public final class DatabaseDetailViewModel: ObservableObject {
                 let isUnique = parts.count > 1 ? parts[1] == "0" : false
                 let existing = indexes.firstIndex { $0.name == name }
                 if let idx = existing {
-                    var updated = indexes[idx]
+                    let updated = indexes[idx]
                     var cols = updated.columns
                     cols.append(colName)
                     indexes[idx] = TableIndex(name: updated.name, columns: cols, isUnique: updated.isUnique, type: updated.type)

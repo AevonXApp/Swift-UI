@@ -32,7 +32,7 @@ struct DBEDOptimizationTab: View {
                         .foregroundColor(.axBackground)
                         .padding(.horizontal, AXSpacing.lg)
                         .padding(.vertical, AXSpacing.md)
-                        .background(viewModel.databaseType.brandColor)
+                        .background(Color.axAccentBlue)
                         .cornerRadius(AXCornerRadius.md)
                         .disabled(viewModel.isOperationInProgress)
                     }

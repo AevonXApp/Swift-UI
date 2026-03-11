@@ -25,7 +25,7 @@ struct DBEMConfigurationSection: View {
                 }
 
                 // Config File Path
-                AXGlassCard(accentColor: viewModel.databaseType.brandColor) {
+                AXGlassCard(accentColor: .axAccentBlue) {
                     VStack(alignment: .leading, spacing: AXSpacing.lg) {
                         HStack {
                             Text("Configuration File")
@@ -42,7 +42,7 @@ struct DBEMConfigurationSection: View {
                                 }
                             }
                             .font(AXTypography.subheadline)
-                            .foregroundColor(viewModel.databaseType.brandColor)
+                            .foregroundColor(.axAccentBlue)
                             .disabled(viewModel.isOperationInProgress)
                         }
 
@@ -56,7 +56,7 @@ struct DBEMConfigurationSection: View {
                 }
 
                 // Version Management
-                AXGlassCard(accentColor: viewModel.databaseType.brandColor) {
+                AXGlassCard(accentColor: .axAccentBlue) {
                     VStack(alignment: .leading, spacing: AXSpacing.lg) {
                         HStack {
                             Text("Version Management")
@@ -69,7 +69,7 @@ struct DBEMConfigurationSection: View {
                                 viewModel.showVersionSwitcher = true
                             }
                             .font(AXTypography.subheadline)
-                            .foregroundColor(viewModel.databaseType.brandColor)
+                            .foregroundColor(.axAccentBlue)
                             .disabled(viewModel.isOperationInProgress)
                         }
 
@@ -98,7 +98,7 @@ struct DBEMConfigurationSection: View {
 
                 // Redis Security Section
                 if viewModel.databaseType == .redis {
-                    AXGlassCard(accentColor: viewModel.databaseType.brandColor) {
+                    AXGlassCard(accentColor: .axAccentBlue) {
                         VStack(alignment: .leading, spacing: AXSpacing.lg) {
                             HStack {
                                 Text("Security")
@@ -108,7 +108,7 @@ struct DBEMConfigurationSection: View {
                                 Spacer()
                                 
                                 Image(systemName: "lock.shield")
-                                    .foregroundColor(viewModel.databaseType.brandColor)
+                                    .foregroundColor(.axAccentBlue)
                             }
                             
                             Divider()
@@ -142,7 +142,7 @@ struct DBEMConfigurationSection: View {
                                             .foregroundColor(.axBackground)
                                             .padding(.horizontal, AXSpacing.lg)
                                             .padding(.vertical, AXSpacing.md)
-                                            .background(viewModel.databaseType.brandColor)
+                                            .background(Color.axAccentBlue)
                                             .cornerRadius(AXCornerRadius.md)
                                     }
                                     .buttonStyle(.plain)

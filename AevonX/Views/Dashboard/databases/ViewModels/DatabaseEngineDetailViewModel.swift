@@ -409,8 +409,8 @@ public final class DatabaseEngineDetailViewModel: ObservableObject {
             // Fallback: try to parse from raw content if not in settings map
             let pattern = #"^requirepass\s+(.+)$"#
             if let regex = try? NSRegularExpression(pattern: pattern, options: .anchorsMatchLines) {
-                let nsString = (config.rawContent ?? "") as NSString
-                let results = regex.matches(in: config.rawContent ?? "", options: [], range: NSRange(location: 0, length: nsString.length))
+                let nsString = config.rawContent as NSString
+                let results = regex.matches(in: config.rawContent, options: [], range: NSRange(location: 0, length: nsString.length))
                 if let match = results.first {
                     redisPassword = nsString.substring(with: match.range(at: 1)).trimmingCharacters(in: .whitespacesAndNewlines)
                 }
@@ -428,7 +428,7 @@ public final class DatabaseEngineDetailViewModel: ObservableObject {
         do {
             // Reload config to ensure we have latest
             let currentConfig = try await DatabaseEngineService.shared.getConfiguration(type: databaseType, serverId: serverId)
-            var newContent = currentConfig.rawContent ?? ""
+            var newContent = currentConfig.rawContent
             
             // Check if requirepass exists
             let pattern = #"^requirepass\s+(.+)$"#

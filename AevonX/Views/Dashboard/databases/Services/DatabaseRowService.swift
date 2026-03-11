@@ -106,12 +106,27 @@ public actor DatabaseRowService {
         }
 
         if isSelect {
+            // First line = column headers, remaining lines = data rows
+            let columns = lines[0].components(separatedBy: "\t").map { $0.trimmingCharacters(in: .whitespaces) }
             var rows: [[String]] = []
-            for line in lines {
-                let cols = line.components(separatedBy: "\t")
-                rows.append(cols)
+            for line in lines.dropFirst() {
+                // Skip PostgreSQL separator lines (e.g. "----+----+----")
+                let trimmed = line.trimmingCharacters(in: .whitespaces)
+                if trimmed.allSatisfy({ $0 == "-" || $0 == "+" || $0 == "|" }) { continue }
+                // Skip PostgreSQL footer lines (e.g. "(3 rows)")
+                if trimmed.hasPrefix("(") && trimmed.hasSuffix("rows)") { continue }
+                if trimmed.hasPrefix("(") && trimmed.hasSuffix("row)") { continue }
+                
+                let cols = line.components(separatedBy: "\t").map { $0.trimmingCharacters(in: .whitespaces) }
+                // For PostgreSQL pipe-separated output, try splitting by |
+                if cols.count == 1 && line.contains("|") {
+                    let pipeCols = line.components(separatedBy: "|").map { $0.trimmingCharacters(in: .whitespaces) }
+                    rows.append(pipeCols)
+                } else {
+                    rows.append(cols)
+                }
             }
-            return BridgeQueryResult(rows: rows, isSelect: true)
+            return BridgeQueryResult(columns: columns, rows: rows, isSelect: true)
         } else {
             return BridgeQueryResult(affectedRows: Int64(lines.count), isSelect: false)
         }

@@ -51,16 +51,16 @@ struct DBEMOverviewSection: View {
 
                     // Metrics Grid
                     if let metrics = viewModel.metrics {
-                        MetricsGrid(metrics: metrics, themeColor: viewModel.databaseType.brandColor)
+                        MetricsGrid(metrics: metrics, themeColor: .axAccentBlue)
                     }
 
                     // Performance Stats
                     if let stats = viewModel.performanceStats {
-                        PerformanceCard(stats: stats, themeColor: viewModel.databaseType.brandColor)
+                        PerformanceCard(stats: stats, themeColor: .axAccentBlue)
                     }
 
                     // Danger Zone
-                    AXGlassCard(accentColor: viewModel.databaseType.brandColor) {
+                    AXGlassCard(accentColor: .axAccentBlue) {
                         VStack(alignment: .leading, spacing: AXSpacing.lg) {
                             HStack {
                                 Text("Danger Zone")
@@ -115,7 +115,7 @@ struct EngineInfoCard: View {
     @ObservedObject var viewModel: DatabaseEngineDetailViewModel
 
     var body: some View {
-        AXGlassCard(accentColor: viewModel.databaseType.brandColor) {
+        AXGlassCard(accentColor: .axAccentBlue) {
             VStack(alignment: .leading, spacing: AXSpacing.lg) {
                 Text("Engine Information")
                     .font(AXTypography.headline)

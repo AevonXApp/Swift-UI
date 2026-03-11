@@ -32,7 +32,7 @@ struct DBEDConfigurationTab: View {
                                 }
                             }
                             .buttonStyle(.plain)
-                            .foregroundColor(viewModel.databaseType.brandColor)
+                            .foregroundColor(.axAccentBlue)
                             .disabled(viewModel.isOperationInProgress)
                         }
 
@@ -60,7 +60,7 @@ struct DBEDConfigurationTab: View {
                                 viewModel.showVersionSwitcher = true
                             }
                             .buttonStyle(.plain)
-                            .foregroundColor(viewModel.databaseType.brandColor)
+                            .foregroundColor(.axAccentBlue)
                             .disabled(viewModel.isOperationInProgress)
                         }
 
@@ -107,7 +107,7 @@ struct DBEDConfigurationTab: View {
                                 Spacer()
                                 
                                 Image(systemName: "lock.shield")
-                                    .foregroundColor(viewModel.databaseType.brandColor)
+                                    .foregroundColor(.axAccentBlue)
                             }
                             
                             Divider()
@@ -141,7 +141,7 @@ struct DBEDConfigurationTab: View {
                                             .foregroundColor(.axBackground)
                                             .padding(.horizontal, AXSpacing.lg)
                                             .padding(.vertical, AXSpacing.md)
-                                            .background(viewModel.databaseType.brandColor)
+                                            .background(Color.axAccentBlue)
                                             .cornerRadius(AXCornerRadius.md)
                                     }
                                     .buttonStyle(.plain)

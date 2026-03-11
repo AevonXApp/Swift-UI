@@ -30,14 +30,14 @@ struct DBEMVersionsSection: View {
                             Text("Refresh")
                                 .font(AXTypography.subheadline)
                         }
-                        .foregroundColor(viewModel.databaseType.brandColor)
+                        .foregroundColor(.axAccentBlue)
                     }
                     .buttonStyle(.plain)
                     .disabled(viewModel.isOperationInProgress)
                 }
 
                 // Current Version
-                AXGlassCard(accentColor: viewModel.databaseType.brandColor) {
+                AXGlassCard(accentColor: .axAccentBlue) {
                     VStack(alignment: .leading, spacing: AXSpacing.lg) {
                         Text("Current Version")
                             .font(AXTypography.headline)
@@ -63,7 +63,7 @@ struct DBEMVersionsSection: View {
                 }
 
                 // Available Versions
-                AXGlassCard(accentColor: viewModel.databaseType.brandColor) {
+                AXGlassCard(accentColor: .axAccentBlue) {
                     VStack(alignment: .leading, spacing: AXSpacing.lg) {
                         HStack {
                             Text("Available Versions")
@@ -80,7 +80,7 @@ struct DBEMVersionsSection: View {
                             .foregroundColor(.axBackground)
                             .padding(.horizontal, AXSpacing.md)
                             .padding(.vertical, AXSpacing.sm)
-                            .background(viewModel.databaseType.brandColor)
+                            .background(Color.axAccentBlue)
                             .cornerRadius(AXCornerRadius.md)
                             .disabled(viewModel.isOperationInProgress)
                         }
@@ -104,7 +104,7 @@ struct DBEMVersionsSection: View {
                                     Task { await viewModel.fetchAvailableVersions() }
                                 }
                                 .font(AXTypography.subheadline)
-                                .foregroundColor(viewModel.databaseType.brandColor)
+                                .foregroundColor(.axAccentBlue)
                             }
                             .frame(maxWidth: .infinity)
                             .padding(AXSpacing.lg)
@@ -122,10 +122,10 @@ struct DBEMVersionsSection: View {
                                                 Text("LTS")
                                                     .font(AXTypography.caption2)
                                                     .fontWeight(.bold)
-                                                    .foregroundColor(viewModel.databaseType.brandColor)
+                                                    .foregroundColor(.axAccentBlue)
                                                     .padding(.horizontal, AXSpacing.xs)
                                                     .padding(.vertical, AXSpacing.xxxs)
-                                                    .background(viewModel.databaseType.brandColor.opacity(0.15))
+                                                    .background(Color.axAccentBlue.opacity(0.15))
                                                     .cornerRadius(AXCornerRadius.xs)
                                             }
 
@@ -167,10 +167,10 @@ struct DBEMVersionsSection: View {
                                         }
                                         .font(AXTypography.caption)
                                         .fontWeight(.semibold)
-                                        .foregroundColor(viewModel.databaseType.brandColor)
+                                        .foregroundColor(.axAccentBlue)
                                         .padding(.horizontal, AXSpacing.md)
                                         .padding(.vertical, AXSpacing.xs)
-                                        .background(viewModel.databaseType.brandColor.opacity(0.1))
+                                        .background(Color.axAccentBlue.opacity(0.1))
                                         .cornerRadius(AXCornerRadius.md)
                                         .buttonStyle(.plain)
                                         .disabled(viewModel.isOperationInProgress)

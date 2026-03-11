@@ -46,7 +46,7 @@ struct DBEDLogsTab: View {
                 columns: logColumns,
                 rows: buildRows(currentLogLines),
                 isLoading: viewModel.isOperationInProgress,
-                accentColor: viewModel.databaseType.brandColor,
+                accentColor: .axAccentBlue,
                 onRefresh: {
                     switch viewModel.selectedLogType {
                     case .error: await viewModel.loadErrorLog()

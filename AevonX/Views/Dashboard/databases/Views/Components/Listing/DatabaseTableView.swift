@@ -41,37 +41,10 @@ struct DatabaseTableView: View {
                         onBackup: { onBackup(database) },
                         onDelete: { onDelete(database) }
                     )
-                    .contextMenu {
-                        databaseContextMenu(database)
-                    }
                 }
             }
             .padding(.horizontal, AXSpacing.xl)
             .padding(.top, AXSpacing.lg)
-        }
-    }
-    
-    private func databaseContextMenu(_ database: DatabaseInfo) -> some View {
-        Group {
-            Button {
-                onOpen(database)
-            } label: {
-                Label("Open Detail", systemImage: "arrow.right.circle")
-            }
-
-            Button {
-                onBackup(database)
-            } label: {
-                Label("Create Backup", systemImage: "arrow.down.doc")
-            }
-
-            Divider()
-
-            Button(role: .destructive) {
-                onDelete(database)
-            } label: {
-                Label("Delete Database", systemImage: "trash")
-            }
         }
     }
 }

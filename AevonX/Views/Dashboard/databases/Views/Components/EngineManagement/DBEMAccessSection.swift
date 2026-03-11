@@ -30,14 +30,14 @@ struct DBEMAccessSection: View {
                             Text("Refresh")
                                 .font(AXTypography.subheadline)
                         }
-                        .foregroundColor(viewModel.databaseType.brandColor)
+                        .foregroundColor(.axAccentBlue)
                     }
                     .buttonStyle(.plain)
                     .disabled(viewModel.isOperationInProgress)
                 }
 
                 // Users Management
-                AXGlassCard(accentColor: viewModel.databaseType.brandColor) {
+                AXGlassCard(accentColor: .axAccentBlue) {
                     VStack(alignment: .leading, spacing: AXSpacing.lg) {
                         HStack {
                             Text("Database Users")
@@ -69,7 +69,7 @@ struct DBEMAccessSection: View {
                                 HStack(spacing: AXSpacing.md) {
                                     Image(systemName: "person.circle.fill")
                                         .font(.system(size: 20))
-                                        .foregroundColor(viewModel.databaseType.brandColor)
+                                        .foregroundColor(.axAccentBlue)
 
                                     VStack(alignment: .leading, spacing: AXSpacing.xxs) {
                                         Text(user.username)
