@@ -6,7 +6,7 @@
 //
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 struct DatabaseToolbar: View {
     @ObservedObject var viewModel: DatabaseManagementViewModel
@@ -46,21 +46,9 @@ struct DatabaseToolbar: View {
                     .frame(width: 160)
             }
 
-            Button(action: { Task { await viewModel.loadData() } }) {
-                Image(systemName: "arrow.clockwise")
-                    .font(.system(size: 14))
-                    .foregroundColor(.axTextSecondary)
-                    .rotationEffect(.degrees(viewModel.isLoading ? 360 : 0))
-                    .animation(viewModel.isLoading ? Animation.linear(duration: 1).repeatForever(autoreverses: false) : .default, value: viewModel.isLoading)
-                    .frame(width: 36, height: 36)
-                    .background(Color.axSurface)
-                    .cornerRadius(AXCornerRadius.md)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: AXCornerRadius.md)
-                            .stroke(Color.axBorder, lineWidth: 1)
-                    )
+            AXRefreshIconButton(isLoading: viewModel.isLoading) {
+                await viewModel.loadData()
             }
-            .buttonStyle(PlainButtonStyle())
         }
         .padding(.horizontal, AXSpacing.xl)
         .padding(.bottom, AXSpacing.lg)

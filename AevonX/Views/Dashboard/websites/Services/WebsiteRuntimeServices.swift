@@ -489,21 +489,34 @@ public actor DatabaseManagementService {
 
     public func listDatabases(type: String, serverId: String) async throws -> [CoreDatabaseInfo] {
         let typeLower = type.lowercased()
+        let systemMySQL = ["information_schema", "performance_schema", "mysql", "sys"]
+        let systemPG = ["postgres"]
+        
         if typeLower == "mysql" || typeLower == "mariadb" {
-            let output = await SSHBridge.shared.executeAsync(serverID: serverId, command: "mysql -NBe \"SELECT table_schema, ROUND(SUM(data_length + index_length) / 1024 / 1024, 2), COUNT(*) FROM information_schema.tables GROUP BY table_schema\" 2>/dev/null")
+            // Use schemata LEFT JOIN tables so empty databases (0 tables) also appear
+            let cmd = "mysql -NBe \"SELECT s.schema_name, COALESCE(ROUND(SUM(t.data_length + t.index_length)/1024/1024, 2), 0), COUNT(t.table_name) FROM information_schema.schemata s LEFT JOIN information_schema.tables t ON s.schema_name = t.table_schema GROUP BY s.schema_name\" 2>/dev/null"
+            print("[DatabaseManagementService] MySQL cmd: \(cmd)")
+            let output = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
+            print("[DatabaseManagementService] MySQL raw output: '\(output)'")
             return output.components(separatedBy: "\n").filter { !$0.isEmpty }.compactMap { line in
                 let parts = line.split(separator: "\t")
                 guard parts.count >= 3 else { return nil }
                 let name = String(parts[0])
-                guard !["information_schema", "performance_schema", "mysql", "sys"].contains(name) else { return nil }
+                guard !systemMySQL.contains(name) else { return nil }
                 return CoreDatabaseInfo(name: name, size: Double(parts[1]) ?? 0, tables: Int(parts[2]) ?? 0)
             }
         } else if typeLower == "postgresql" {
-            let output = await SSHBridge.shared.executeAsync(serverID: serverId, command: "sudo -u postgres psql -tAc \"SELECT datname, pg_database_size(datname)/1024/1024 FROM pg_database WHERE datistemplate = false\" 2>/dev/null")
+            // Filter system databases in SQL for efficiency
+            let cmd = "sudo -u postgres psql -tAc \"SELECT datname, pg_database_size(datname)/1024/1024 FROM pg_database WHERE datistemplate = false AND datname != 'postgres'\" 2>/dev/null"
+            print("[DatabaseManagementService] PG cmd: \(cmd)")
+            let output = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
+            print("[DatabaseManagementService] PG raw output: '\(output)'")
             return output.components(separatedBy: "\n").filter { !$0.isEmpty }.compactMap { line in
                 let parts = line.split(separator: "|")
                 guard parts.count >= 2 else { return nil }
-                return CoreDatabaseInfo(name: String(parts[0]), size: Double(parts[1]) ?? 0, tables: 0)
+                let name = String(parts[0]).trimmingCharacters(in: .whitespaces)
+                guard !systemPG.contains(name) else { return nil }
+                return CoreDatabaseInfo(name: name, size: Double(parts[1]) ?? 0, tables: 0)
             }
         } else {
             return []

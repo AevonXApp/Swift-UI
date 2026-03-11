@@ -9,7 +9,7 @@
 //
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 // MARK: - Modern Databases Tab
 
@@ -79,7 +79,6 @@ struct ModernDatabasesTab: View {
         .sheet(isPresented: $viewModel.showEngineDetail) {
             if let type = viewModel.selectedDatabaseType {
                 UnifiedDatabaseDetailView(
-                    application: applicationInstance(for: type),
                     databaseType: type,
                     serverId: viewModel.serverId ?? ""
                 )
@@ -88,7 +87,6 @@ struct ModernDatabasesTab: View {
         .sheet(isPresented: $showEngineManagement) {
             if let type = engineManagementType {
                 UnifiedDatabaseDetailView(
-                    application: applicationInstance(for: type),
                     databaseType: type,
                     serverId: viewModel.serverId ?? "",
                     onBack: {
@@ -185,29 +183,7 @@ struct ModernDatabasesTab: View {
         showEngineManagement = true
     }
 
-    private func applicationInstance(for type: DatabaseType) -> ApplicationInstance {
-        let appType: ApplicationType
-        switch type {
-        case .mysql: appType = .mysql
-        case .postgresql: appType = .postgresql
-        case .redis: appType = .redis
-        case .mongodb: appType = .mongodb
-        case .mariadb: appType = .mariadb
-        case .cockroachdb: appType = .cockroachdb
-        case .elasticsearch: appType = .elasticsearch
-        case .cassandra: appType = .cassandra
-        default: appType = .unknown
-        }
 
-        return ApplicationInstance(
-            id: UUID(),
-            name: type.displayName,
-            type: appType,
-            status: .active,
-            isRunning: true
-        )
-    }
-    
     // MARK: - Legacy Loading/Error Views
     
     private var loadingView: some View {

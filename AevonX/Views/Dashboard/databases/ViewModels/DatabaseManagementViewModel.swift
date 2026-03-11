@@ -14,7 +14,7 @@
 import Foundation
 import SwiftUI
 import Combine
-import AevonXCore
+import AevonXCoreBridge
 
 // MARK: - Database Management ViewModel
 
@@ -164,21 +164,35 @@ public final class DatabaseManagementViewModel: ObservableObject {
         // Call Core layer to detect installed databases
         let coreStates = await DatabaseEngineService.shared.detectInstalledDatabases(serverId: serverId)
 
-        // Convert Core models to UI models
-        let uiStates = coreStates.map { coreState in
-            DatabaseInstallationState(
-                id: coreState.id,
-                type: coreState.type,
+        // coreStates are in fixed order: mysql, mariadb, postgresql, redis, mongodb, cassandra, cockroachdb, elasticsearch, sqlite
+        // Map them to our UI DatabaseType enum
+        let engineOrder: [DatabaseType] = [.mysql, .mariadb, .postgresql, .redis, .mongodb, .cassandra, .cockroachdb, .elasticsearch]
+        
+        var uiStates: [DatabaseInstallationState] = []
+        for (index, dbType) in engineOrder.enumerated() {
+            guard index < coreStates.count else { break }
+            let coreState = coreStates[index]
+            uiStates.append(DatabaseInstallationState(
+                id: UUID(),
+                type: dbType,
                 isInstalled: coreState.isInstalled,
-                installedVersion: coreState.installedVersion,
+                installedVersion: coreState.version,
                 installPath: coreState.installPath,
-                serviceStatus: ServiceStatus(rawValue: coreState.serviceStatus.rawValue) ?? .unknown,
-                isRunning: coreState.isRunning,
-                lastCheckedAt: coreState.lastCheckedAt
-            )
+                serviceStatus: .unknown,
+                isRunning: false,
+                lastCheckedAt: Date()
+            ))
+        }
+        
+        // For installed engines, also check service status
+        for i in 0..<uiStates.count where uiStates[i].isInstalled {
+            let status = await DatabaseEngineService.shared.getServiceStatus(type: uiStates[i].type, serverId: serverId)
+            uiStates[i].serviceStatus = ServiceStatus(rawValue: status.rawValue) ?? .unknown
+            uiStates[i].isRunning = status == .active
         }
 
         installationStates = uiStates
+        print("[DatabaseManagementVM] Detected engines: \(uiStates.filter { $0.isInstalled }.map { "\($0.type.displayName) v\($0.installedVersion ?? "?")" })")
     }
 
     /// Loads all databases from the server via Core layer
@@ -187,11 +201,13 @@ public final class DatabaseManagementViewModel: ObservableObject {
 
         // Get databases for each installed engine type
         for state in installationStates where state.isInstalled {
+            print("[DatabaseManagementVM] Listing databases for \(state.type.displayName) (rawValue=\(state.type.rawValue))")
             do {
                 let coreDatabases = try await DatabaseManagementService.shared.listDatabases(
                     type: state.type.rawValue,
                     serverId: serverId
                 )
+                print("[DatabaseManagementVM] \(state.type.displayName): found \(coreDatabases.count) databases: \(coreDatabases.map { $0.name })")
 
                 // Convert Core models to UI models
                 let uiDatabases = coreDatabases.map { coreDB in
@@ -211,11 +227,11 @@ public final class DatabaseManagementViewModel: ObservableObject {
                 allDBs.append(contentsOf: uiDatabases)
 
             } catch {
-                CoreLogger.shared.debug("\(state.type.displayName) databases not available: \(error.localizedDescription)",
-                                       module: "DatabaseManagementViewModel")
+                print("[DatabaseManagementVM] ERROR listing \(state.type.displayName): \(error.localizedDescription)")
             }
         }
 
+        print("[DatabaseManagementVM] Total databases loaded: \(allDBs.count)")
         allDatabases = allDBs
         filterDatabases()
     }
@@ -233,7 +249,7 @@ public final class DatabaseManagementViewModel: ObservableObject {
             // Convert Core models to UI models
             let uiUsers = coreUsers.map { coreUser in
                 DatabaseUserInfo(
-                    id: coreUser.id,
+                    id: UUID(uuidString: coreUser.id) ?? UUID(),
                     username: coreUser.username,
                     host: coreUser.host
                 )
@@ -241,8 +257,7 @@ public final class DatabaseManagementViewModel: ObservableObject {
 
             databaseUsers = uiUsers
         } catch {
-            CoreLogger.shared.debug("Could not load database users: \(error.localizedDescription)",
-                                   module: "DatabaseManagementViewModel")
+            print("[DatabaseManagementVM] Could not load database users: \(error.localizedDescription)")
         }
     }
 
@@ -364,7 +379,7 @@ public final class DatabaseManagementViewModel: ObservableObject {
             username: username,
             password: password,
             host: host,
-            databaseType: databaseType,
+            type: databaseType,
             serverId: serverId
         )
 
@@ -389,7 +404,7 @@ public final class DatabaseManagementViewModel: ObservableObject {
             host: host,
             database: database,
             privileges: privileges,
-            databaseType: databaseType,
+            type: databaseType,
             serverId: serverId
         )
 

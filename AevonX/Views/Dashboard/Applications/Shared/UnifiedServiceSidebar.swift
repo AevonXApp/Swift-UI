@@ -8,6 +8,7 @@
 
 import SwiftUI
 import AevonXCore
+import AevonXCoreBridge
 
 /// Generic sidebar that works for ANY service engine
 /// Supports PHP, Nginx, MySQL, PostgreSQL, Redis, MongoDB, etc.
@@ -187,17 +188,44 @@ extension UnifiedServiceSidebar {
 
     /// Create sidebar for any database type
     static func database(
-        databaseType: DatabaseType,
+        databaseType: AevonXCoreBridge.DatabaseType,
         application: ApplicationInstance,
         selectedSection: Binding<Section>,
         sections: [Section],
         onBack: @escaping () -> Void,
         onControl: @escaping (ServiceControlButtons.ServiceAction) -> Void
     ) -> UnifiedServiceSidebar {
-        UnifiedServiceSidebar(
+        let color: Color = {
+            switch databaseType {
+            case .mysql: return Color(hex: "#00758F")
+            case .postgresql: return Color(hex: "#336791")
+            case .redis: return Color(hex: "#DC382D")
+            case .mongodb: return Color(hex: "#47A248")
+            case .sqlite: return Color(hex: "#003B57")
+            case .mariadb: return Color(hex: "#003545")
+            case .cockroachdb: return Color(hex: "#6933FF")
+            case .cassandra: return Color(hex: "#1287B1")
+            case .elasticsearch: return Color(hex: "#FEC514")
+            default: return .gray
+            }
+        }()
+        let icon: String = {
+            switch databaseType {
+            case .mysql, .mariadb: return "cylinder.split.1x2"
+            case .postgresql: return "cylinder"
+            case .redis: return "memorychip"
+            case .mongodb: return "leaf"
+            case .sqlite: return "doc"
+            case .cockroachdb: return "network"
+            case .cassandra: return "square.grid.3x3"
+            case .elasticsearch: return "magnifyingglass"
+            default: return "questionmark.circle"
+            }
+        }()
+        return UnifiedServiceSidebar(
             application: application,
-            brandColor: databaseType.brandColor,
-            iconName: databaseType.iconName,
+            brandColor: color,
+            iconName: icon,
             selectedSection: selectedSection,
             sections: sections,
             onBack: onBack,

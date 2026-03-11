@@ -8,7 +8,7 @@
 
 import Foundation
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 import Combine
 import AppKit
 import UniformTypeIdentifiers
@@ -250,8 +250,10 @@ public final class DatabaseDetailViewModel: ObservableObject {
                 serverId: serverId
             )
 
-            tableStructure = try await structure
-            tableIndexes = try await indexes
+            let cols = try await structure
+            tableStructure = TableStructure(columns: cols)
+            let indexStr = try await indexes
+            tableIndexes = parseIndexString(indexStr)
         } catch {
             GlobalToastManager.shared.showError("Failed to load table structure: \(error.localizedDescription)")
         }
@@ -259,21 +261,27 @@ public final class DatabaseDetailViewModel: ObservableObject {
     }
 
     public func loadTableData() async {
-        guard let serverId = serverId, let table = selectedTable else { return }
+        guard let serverId = serverId, let table = selectedTable else {
+            print("[DBDetailVM] loadTableData: no serverId or selectedTable")
+            return
+        }
 
         isLoading = true
         do {
+            print("[DBDetailVM] loadTableData: browsing \(database.name).\(table.name) page=\(currentPage) pageSize=\(pageSize)")
             browseResult = try await DatabaseRowService.shared.browseRows(
                 database: database.name,
                 table: table.name,
-                page: currentPage,
-                pageSize: pageSize,
-                orderBy: sortColumn,
-                ascending: sortAscending,
                 type: database.type,
-                serverId: serverId
+                serverId: serverId,
+                page: currentPage + 1,
+                pageSize: pageSize,
+                orderBy: sortColumn ?? "",
+                ascending: sortAscending
             )
+            print("[DBDetailVM] loadTableData: browseResult rows=\(browseResult?.rows.count ?? -1) columns=\(browseResult?.columns.count ?? -1)")
         } catch {
+            print("[DBDetailVM] loadTableData ERROR: \(error)")
             GlobalToastManager.shared.showError("Failed to load data: \(error.localizedDescription)")
         }
         isLoading = false
@@ -354,14 +362,15 @@ public final class DatabaseDetailViewModel: ObservableObject {
         operationResult = .inProgress(message: "Creating backup of '\(database.name)'...", progress: nil)
 
         do {
-            let backup = try await DatabaseBackupService.shared.createBackup(
+            try await DatabaseBackupService.shared.createBackup(
                 database: database.name,
                 type: database.type,
                 serverId: serverId
             )
-            backups.insert(backup, at: 0)
-            GlobalToastManager.shared.showSuccess("Backup created successfully (\(String(format: "%.1f", backup.size)) MB)")
-            log(action: "Create Backup", detail: "Database '\(database.name)' — \(String(format: "%.1f", backup.size)) MB", success: true)
+            // Reload backups list after creation
+            await loadBackups()
+            GlobalToastManager.shared.showSuccess("Backup created successfully")
+            log(action: "Create Backup", detail: "Database '\(database.name)'", success: true)
         } catch {
             GlobalToastManager.shared.showError("Backup failed: \(error.localizedDescription)")
             log(action: "Create Backup", detail: "Database '\(database.name)'", success: false, error: error.localizedDescription)
@@ -518,8 +527,17 @@ public final class DatabaseDetailViewModel: ObservableObject {
             execute: {
                 try await DatabaseTableService.shared.addColumn(
                     database: database.name, table: table.name,
-                    column: column, afterColumn: afterColumn,
-                    type: database.type, serverId: serverId!
+                    name: column.name,
+                    type: column.type,
+                    length: column.length ?? "",
+                    nullable: column.isNullable,
+                    primaryKey: column.isPrimaryKey,
+                    autoIncrement: column.isAutoIncrement,
+                    unique: column.isUnique,
+                    defaultValue: column.defaultValue,
+                    afterColumn: afterColumn ?? "",
+                    engineType: database.type.rawValue,
+                    serverId: serverId!
                 )
             },
             onSuccess: {
@@ -538,7 +556,7 @@ public final class DatabaseDetailViewModel: ObservableObject {
             execute: {
                 try await DatabaseTableService.shared.dropColumn(
                     database: database.name, table: table.name,
-                    columnName: columnName,
+                    column: columnName,
                     type: database.type, serverId: serverId!
                 )
             },
@@ -552,10 +570,11 @@ public final class DatabaseDetailViewModel: ObservableObject {
         guard let serverId = serverId, let table = selectedTable else { return }
 
         do {
+            let nonNilValues = values.compactMapValues { $0 }
             try await DatabaseRowService.shared.insertRow(
                 database: database.name,
                 table: table.name,
-                values: values,
+                values: nonNilValues,
                 type: database.type,
                 serverId: serverId
             )
@@ -574,11 +593,12 @@ public final class DatabaseDetailViewModel: ObservableObject {
         guard let serverId = serverId, let table = selectedTable else { return }
 
         do {
+            let nonNilValues = values.compactMapValues { $0 }
             try await DatabaseRowService.shared.updateRow(
                 database: database.name,
                 table: table.name,
                 primaryKey: primaryKey,
-                values: values,
+                values: nonNilValues,
                 type: database.type,
                 serverId: serverId
             )
@@ -689,14 +709,13 @@ public final class DatabaseDetailViewModel: ObservableObject {
             browseResult = try await DatabaseRowService.shared.searchRows(
                 database: database.name,
                 table: table.name,
-                searchText: search,
-                columns: columns,
-                page: currentPage,
-                pageSize: pageSize,
-                orderBy: sortColumn,
-                ascending: sortAscending,
+                search: search,
                 type: database.type,
-                serverId: serverId
+                serverId: serverId,
+                page: currentPage + 1,
+                pageSize: pageSize,
+                orderBy: sortColumn ?? "",
+                ascending: sortAscending
             )
             selectedRows.removeAll()
         } catch {
@@ -734,9 +753,8 @@ public final class DatabaseDetailViewModel: ObservableObject {
         guard !pkColumns.isEmpty else {
             // Fallback: use first column as pseudo-PK
             if let firstCol = result.columns.first, !result.rows[index].isEmpty {
-                if let val = result.rows[index].first, let v = val {
-                    return [firstCol: v]
-                }
+                let val = result.rows[index][0]
+                return [firstCol: val]
             }
             return nil
         }
@@ -744,9 +762,8 @@ public final class DatabaseDetailViewModel: ObservableObject {
         var pk: [String: String] = [:]
         for pkCol in pkColumns {
             if let colIdx = result.columns.firstIndex(of: pkCol),
-               colIdx < result.rows[index].count,
-               let val = result.rows[index][colIdx] {
-                pk[pkCol] = val
+               colIdx < result.rows[index].count {
+                pk[pkCol] = result.rows[index][colIdx]
             }
         }
 
@@ -760,7 +777,7 @@ public final class DatabaseDetailViewModel: ObservableObject {
 
         do {
             try await DatabaseBackupService.shared.deleteBackup(
-                backupId: backupId,
+                backupPath: backupId,
                 type: database.type,
                 serverId: serverId
             )
@@ -781,7 +798,7 @@ public final class DatabaseDetailViewModel: ObservableObject {
 
         do {
             let data = try await DatabaseBackupService.shared.downloadBackup(
-                backupId: backupId,
+                backupPath: backupId,
                 type: database.type,
                 serverId: serverId
             )
@@ -845,5 +862,32 @@ public final class DatabaseDetailViewModel: ObservableObject {
 
     public func dismissResult() {
         operationResult = .idle
+    }
+
+    /// Parse raw index string from SSH into TableIndex array
+    private func parseIndexString(_ raw: String) -> [TableIndex] {
+        guard !raw.isEmpty else { return [] }
+        var indexes: [TableIndex] = []
+        let lines = raw.components(separatedBy: .newlines)
+        for line in lines {
+            let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !trimmed.isEmpty else { continue }
+            let parts = trimmed.components(separatedBy: "\t").filter { !$0.isEmpty }
+            if parts.count >= 2 {
+                let name = parts.count > 2 ? parts[2] : parts[0]
+                let colName = parts.count > 4 ? parts[4] : parts.last ?? ""
+                let isUnique = parts.count > 1 ? parts[1] == "0" : false
+                let existing = indexes.firstIndex { $0.name == name }
+                if let idx = existing {
+                    var updated = indexes[idx]
+                    var cols = updated.columns
+                    cols.append(colName)
+                    indexes[idx] = TableIndex(name: updated.name, columns: cols, isUnique: updated.isUnique, type: updated.type)
+                } else {
+                    indexes.append(TableIndex(name: name, columns: [colName], isUnique: isUnique))
+                }
+            }
+        }
+        return indexes
     }
 }

@@ -6,7 +6,7 @@
 //
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 struct AIInstallProgressView: View {
     let databaseType: DatabaseType

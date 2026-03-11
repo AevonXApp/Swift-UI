@@ -7,7 +7,7 @@
 //
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 struct DatabaseEngineInstallCard: View {
     let type: DatabaseType

@@ -8,12 +8,13 @@
 
 import SwiftUI
 import AevonXCore
+import AevonXCoreBridge
 
 // MARK: - Overview Tab
 
 struct DatabaseOverviewTab: View {
     let application: ApplicationInstance
-    let databaseType: DatabaseType
+    let databaseType: AevonXCoreBridge.DatabaseType
     @Binding var dbConfig: DatabaseConfigData
     let serverId: String
     let onReload: () -> Void
@@ -76,7 +77,7 @@ struct DatabaseOverviewTab: View {
 
 struct DatabaseConfigurationTab: View {
     let application: ApplicationInstance
-    let databaseType: DatabaseType
+    let databaseType: AevonXCoreBridge.DatabaseType
     @Binding var dbConfig: DatabaseConfigData
     let serverId: String
     let onSave: (String) async -> Void
@@ -148,7 +149,7 @@ struct DatabaseConfigurationTab: View {
 
 struct DatabaseLogsTab: View {
     let application: ApplicationInstance
-    let databaseType: DatabaseType
+    let databaseType: AevonXCoreBridge.DatabaseType
     let serverId: String
     let onSuccess: (String) -> Void
     let onError: (String) -> Void
@@ -207,7 +208,7 @@ struct DatabaseLogsTab: View {
 
 struct DatabaseVersionsTab: View {
     let application: ApplicationInstance
-    let databaseType: DatabaseType
+    let databaseType: AevonXCoreBridge.DatabaseType
     let serverId: String
 
     var body: some View {
@@ -236,7 +237,7 @@ struct DatabaseVersionsTab: View {
 
 struct DatabaseOptimizationTab: View {
     let application: ApplicationInstance
-    let databaseType: DatabaseType
+    let databaseType: AevonXCoreBridge.DatabaseType
     let serverId: String
 
     var body: some View {
@@ -260,7 +261,7 @@ struct DatabaseOptimizationTab: View {
 
 struct DatabaseAccessTab: View {
     let application: ApplicationInstance
-    let databaseType: DatabaseType
+    let databaseType: AevonXCoreBridge.DatabaseType
     let serverId: String
 
     var body: some View {

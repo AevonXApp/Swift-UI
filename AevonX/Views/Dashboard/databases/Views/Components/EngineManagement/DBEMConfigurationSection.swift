@@ -6,7 +6,7 @@
 //
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 struct DBEMConfigurationSection: View {
     @ObservedObject var viewModel: DatabaseEngineDetailViewModel

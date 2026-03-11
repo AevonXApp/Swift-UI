@@ -6,36 +6,24 @@
 //
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 struct DatabaseTabSwitcher: View {
     @Binding var activeTabIndex: Int
     let availableDatabaseTypes: [DatabaseType]
     
+    private var tabs: [AXTabItem] {
+        var items = [AXTabItem(label: "All", icon: "square.grid.2x2")]
+        items += availableDatabaseTypes.map {
+            AXTabItem(label: $0.displayName, icon: $0.iconName)
+        }
+        return items
+    }
+    
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: AXSpacing.sm) {
-                // All tab
-                AXDatabaseTabButton(
-                    title: "All",
-                    icon: "square.grid.2x2",
-                    isSelected: activeTabIndex == 0
-                ) {
-                    activeTabIndex = 0
-                }
-                
-                // Individual database type tabs
-                ForEach(Array(availableDatabaseTypes.enumerated()), id: \.element) { index, type in
-                    AXDatabaseTabButton(
-                        title: type.displayName,
-                        icon: type.iconName,
-                        isSelected: activeTabIndex == index + 1
-                    ) {
-                        activeTabIndex = index + 1
-                    }
-                }
-            }
-            .padding(.horizontal, AXSpacing.xl)
+            AXTabSwitcher(tabs: tabs, selected: $activeTabIndex)
+                .padding(.horizontal, AXSpacing.xl)
         }
         .padding(.bottom, AXSpacing.lg)
     }

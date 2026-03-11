@@ -6,7 +6,7 @@
 //
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 struct DBDetailSidebar: View {
     @ObservedObject var viewModel: DatabaseDetailViewModel

@@ -6,7 +6,7 @@
 //
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 import Combine
 
 public struct AIInstallationView: View {
@@ -185,8 +185,8 @@ private class AIInstallationViewModel: ObservableObject {
             try await service.startInstallation(
                 databaseType: databaseType,
                 version: version.version,
-                serverId: serverId,
-                recommendation: recommendation
+                recommendation: recommendation,
+                serverId: serverId
             )
         } catch {
             self.errorMessage = error.localizedDescription

@@ -8,7 +8,7 @@
 
 import Foundation
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 // MARK: - Database Type UI Extensions
 
@@ -321,82 +321,3 @@ public enum DatabaseCategory: String, CaseIterable, Identifiable {
     }
 }
 
-// MARK: - Package Manager UI Extensions
-
-extension PackageManager {
-
-    public var displayName: String {
-        switch self {
-        case .apt: return "APT (Debian/Ubuntu)"
-        case .yum: return "YUM (RHEL/CentOS 7)"
-        case .dnf: return "DNF (RHEL/CentOS 8+)"
-        case .pacman: return "Pacman (Arch)"
-        case .brew: return "Homebrew (macOS)"
-        case .apk: return "APK (Alpine)"
-        case .zypper: return "Zypper (openSUSE)"
-        case .unknown: return "Unknown"
-        @unknown default: return "Unknown"
-        }
-    }
-    
-    /// Detect package manager from OS information
-    public static func detect(from osInfo: ServerOSInfo) -> PackageManager {
-        let id = osInfo.id.lowercased()
-        let idLike = osInfo.idLike.lowercased()
-        
-        if id.contains("debian") || id.contains("ubuntu") || idLike.contains("debian") {
-            return .apt
-        } else if id.contains("fedora") || id.contains("centos") || id.contains("rhel") && id.contains("8") {
-            return .dnf
-        } else if id.contains("centos") || id.contains("rhel") || idLike.contains("rhel") {
-            return .yum
-        } else if id.contains("arch") || idLike.contains("arch") {
-            return .pacman
-        } else if id.contains("alpine") {
-            return .apk
-        } else if id.contains("opensuse") || id.contains("suse") {
-            return .zypper
-        } else if id.contains("darwin") || id.contains("macos") {
-            return .brew
-        }
-        
-        return .unknown
-    }
-}
-
-// MARK: - Server OS Info UI Extensions
-
-extension ServerOSInfo {
-
-    /// Full display name combining pretty name and version
-    public var fullDisplayName: String {
-        if prettyName.isEmpty {
-            return "\(id) \(version)"
-        }
-        return prettyName
-    }
-    
-    /// Whether this is a Debian-based system
-    public var isDebianBased: Bool {
-        let idLower = id.lowercased()
-        let idLikeLower = idLike.lowercased()
-        return idLower.contains("debian") || idLower.contains("ubuntu") || 
-               idLikeLower.contains("debian")
-    }
-    
-    /// Whether this is a RHEL-based system
-    public var isRHELBased: Bool {
-        let idLower = id.lowercased()
-        let idLikeLower = idLike.lowercased()
-        return idLower.contains("rhel") || idLower.contains("centos") || 
-               idLower.contains("fedora") || idLikeLower.contains("rhel") ||
-               idLikeLower.contains("fedora")
-    }
-    
-    /// Whether this is an Arch-based system
-    public var isArchBased: Bool {
-        let idLower = id.lowercased()
-        let idLikeLower = idLike.lowercased()
-        return idLower.contains("arch") || idLikeLower.contains("arch")
-    }
-}

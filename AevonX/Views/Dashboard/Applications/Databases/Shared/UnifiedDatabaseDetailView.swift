@@ -8,11 +8,12 @@
 
 import SwiftUI
 import AevonXCore
+import AevonXCoreBridge
 
 struct UnifiedDatabaseDetailView: View {
 
     let application: ApplicationInstance
-    let databaseType: DatabaseType
+    let databaseType: AevonXCoreBridge.DatabaseType
     let serverId: String
     let onBack: (() -> Void)?
 
@@ -32,12 +33,35 @@ struct UnifiedDatabaseDetailView: View {
         }
     }
 
-    init(application: ApplicationInstance, databaseType: DatabaseType, serverId: String, onBack: (() -> Void)? = nil) {
+    init(application: ApplicationInstance, databaseType: AevonXCoreBridge.DatabaseType, serverId: String, onBack: (() -> Void)? = nil) {
         self.application = application
         self.databaseType = databaseType
         self.serverId = serverId
         self.onBack = onBack
         _viewModel = StateObject(wrappedValue: DatabaseEngineDetailViewModel(databaseType: databaseType, serverId: serverId))
+    }
+
+    /// Convenience init — constructs ApplicationInstance internally so callers
+    /// don't need to import AevonXCore.
+    init(databaseType: AevonXCoreBridge.DatabaseType, serverId: String, onBack: (() -> Void)? = nil) {
+        let appType: ApplicationType
+        switch databaseType {
+        case .mysql: appType = .mysql
+        case .postgresql: appType = .postgresql
+        case .redis: appType = .redis
+        case .mongodb: appType = .mongodb
+        case .mariadb: appType = .mariadb
+        case .cockroachdb: appType = .cockroachdb
+        case .elasticsearch: appType = .elasticsearch
+        case .cassandra: appType = .cassandra
+        default: appType = .unknown
+        }
+        self.init(
+            application: ApplicationInstance(id: UUID(), name: databaseType.displayName, type: appType, status: .active, isRunning: true),
+            databaseType: databaseType,
+            serverId: serverId,
+            onBack: onBack
+        )
     }
 
     var body: some View {
@@ -486,7 +510,7 @@ struct UnifiedDatabaseDetailView: View {
             version: "8.0.35",
             isRunning: true
         ),
-        databaseType: .mysql,
+        databaseType: AevonXCoreBridge.DatabaseType.mysql,
         serverId: "test"
     )
     .frame(width: 1200, height: 800)

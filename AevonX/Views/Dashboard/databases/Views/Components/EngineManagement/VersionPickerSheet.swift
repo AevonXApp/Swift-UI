@@ -1,6 +1,6 @@
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 struct VersionPickerSheet: View {
     @ObservedObject var viewModel: DatabaseEngineDetailViewModel

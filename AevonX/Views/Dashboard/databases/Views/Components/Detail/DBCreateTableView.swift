@@ -6,7 +6,7 @@
 //
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 struct DBCreateTableView: View {
     @ObservedObject var viewModel: DatabaseDetailViewModel
@@ -96,14 +96,14 @@ struct DBCreateTableView: View {
                             .font(AXTypography.caption)
                             .fontWeight(.semibold)
                     }
-                    .foregroundColor(viewModel.database.type.brandColor)
+                    .foregroundColor(.axAccentBlue)
                 }
                 .buttonStyle(.plain)
             }
 
             columnHeaderRow
 
-            ForEach(Array(columns.enumerated()), id: \.element.id) { index, _ in
+            ForEach(columns.indices, id: \.self) { index in
                 columnRow(index: index)
             }
         }
@@ -231,7 +231,7 @@ struct DBCreateTableView: View {
                 .foregroundColor(.axBackground)
                 .padding(.horizontal, AXSpacing.xl)
                 .padding(.vertical, AXSpacing.md)
-                .background(isFormValid && !isSubmitting ? viewModel.database.type.brandColor : Color.axTextMuted.opacity(0.5))
+                .background(isFormValid && !isSubmitting ? Color.axAccentBlue : Color.axTextMuted.opacity(0.5))
                 .cornerRadius(AXCornerRadius.md)
             }
             .buttonStyle(.plain)

@@ -7,6 +7,7 @@
 
 import SwiftUI
 import AevonXCore
+import AevonXCoreBridge
 
 extension UnifiedDatabaseDetailView {
 
@@ -27,7 +28,7 @@ extension UnifiedDatabaseDetailView {
         }
     }
 
-    func logSourceForDatabaseType(_ type: DatabaseType) -> AXLogSource {
+    func logSourceForDatabaseType(_ type: AevonXCoreBridge.DatabaseType) -> AXLogSource {
         switch type {
         case .mysql: return .mysqlService
         case .postgresql: return .postgresqlService

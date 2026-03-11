@@ -2,27 +2,21 @@
 //  DatabaseInstallationService.swift
 //  AevonX
 //
-//  UI Layer service for managing database installations
-//  Coordinates between UI, Core (AIInstallationAPIService), and server commands
-//
-//  ARCHITECTURE: UI Layer Service
-//  - Uses CoreDatabaseService from Core layer for all server operations
-//  - Uses AIInstallationAPIService from Core layer for AI recommendations
-//  - NEVER executes SSH commands directly
+//  UI Layer service for managing database installations.
+//  Uses AevonXCoreBridge ONLY — no AevonXCore dependency.
+//  All SSH operations go through SSHBridge.
 //
 
 import Foundation
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 import Combine
 
 // MARK: - Database Installation Service
 
-/// Service for managing database installations in the UI layer
-/// Coordinates between AI recommendations and actual server installation
-///
-/// IMPORTANT: This service does NOT execute SSH commands directly.
-/// All server operations go through CoreDatabaseService in the Core layer.
+/// Service for managing database installations in the UI layer.
+/// Coordinates between AI recommendations and actual server installation.
+/// All server operations go through SSHBridge (Go Core).
 @MainActor
 public final class DatabaseInstallationService: ObservableObject {
 
@@ -30,10 +24,10 @@ public final class DatabaseInstallationService: ObservableObject {
 
     public static let shared = DatabaseInstallationService()
 
-    // MARK: - Properties (Core Layer Services)
+    // MARK: - Properties
 
     private let aiAPIService = AIInstallationAPIService.shared
-    // NOTE: All SSH operations go through CoreDatabaseService
+    private let ssh = SSHBridge.shared
 
     // MARK: - Published State
 
@@ -42,7 +36,7 @@ public final class DatabaseInstallationService: ObservableObject {
     @Published public var installationError: InstallationError?
     @Published public var lastRecommendation: AIInstallationResponse?
     @Published public var errorResolutionContext: ErrorResolutionContext?
-    
+
     public struct ErrorResolutionContext {
         public let databaseType: DatabaseType
         public let serverId: String
@@ -57,12 +51,6 @@ public final class DatabaseInstallationService: ObservableObject {
     // MARK: - AI Recommendations
 
     /// Gets AI-powered installation recommendations
-    /// - Parameters:
-    ///   - databaseType: Type of database to install
-    ///   - serverId: Server identifier
-    ///   - useCase: Intended use case
-    ///   - preferredVersion: Optional preferred version
-    /// - Returns: AI installation response with recommendations
     public func getInstallationRecommendations(
         databaseType: DatabaseType,
         serverId: String,
@@ -70,54 +58,47 @@ public final class DatabaseInstallationService: ObservableObject {
         preferredVersion: String? = nil
     ) async throws -> AIInstallationResponse {
 
-        CoreLogger.shared.info("Starting getInstallationRecommendations for \(databaseType.displayName)",
-                              module: "DatabaseInstallationService")
+        print("[DB Install] Starting getInstallationRecommendations for \(databaseType.displayName)")
 
-        // Gather server information via Core layer
+        // Gather server information via Bridge
         let osInfo: ServerOSInfo
         do {
             osInfo = try await DatabaseResourceService.shared.getServerOSInfo(serverId: serverId)
-            CoreLogger.shared.debug("OS Info: \(osInfo.prettyName) (\(osInfo.id))",
-                                   module: "DatabaseInstallationService")
+            print("[DB Install] OS Info: \(osInfo.prettyName) (\(osInfo.id))")
         } catch {
-            CoreLogger.shared.error("ERROR getting OS info: \(error.localizedDescription)",
-                                   module: "DatabaseInstallationService")
+            print("[DB Install ERROR] Getting OS info: \(error.localizedDescription)")
             throw DatabaseInstallationError.stepFailed(step: "Get OS Info", reason: error.localizedDescription)
         }
 
         let resources: ServerResources
         do {
             resources = try await DatabaseResourceService.shared.getServerResources(serverId: serverId)
-            CoreLogger.shared.debug("Resources: \(resources.totalMemoryMB)MB RAM, \(resources.availableDiskGB)GB disk",
-                                   module: "DatabaseInstallationService")
+            print("[DB Install] Resources: \(resources.totalMemoryMB)MB RAM, \(resources.availableDiskGB)GB disk")
         } catch {
-            CoreLogger.shared.error("ERROR getting resources: \(error.localizedDescription)",
-                                   module: "DatabaseInstallationService")
+            print("[DB Install ERROR] Getting resources: \(error.localizedDescription)")
             throw DatabaseInstallationError.stepFailed(step: "Get Resources", reason: error.localizedDescription)
         }
 
-        // Detect existing installations via Core layer
+        // Detect existing installations via Bridge
         let existingInstallations = await DatabaseEngineService.shared.detectInstalledDatabases(serverId: serverId)
-        let existingTypes = existingInstallations.filter { $0.isInstalled }.map { $0.type }
-        CoreLogger.shared.debug("Found \(existingTypes.count) installed database types",
-                               module: "DatabaseInstallationService")
+        let existingTypes = existingInstallations.filter { $0.isInstalled }.compactMap { _ in databaseType }
+        print("[DB Install] Found \(existingTypes.count) installed database types")
 
-        // Call Core layer API service for AI recommendations
+        // Call AI API service for recommendations
         let response: AIInstallationResponse
         do {
             response = try await aiAPIService.getInstallationRecommendations(
                 databaseType: databaseType,
+                serverId: serverId,
                 serverOSInfo: osInfo,
                 serverResources: resources,
                 existingDatabases: existingTypes,
                 useCase: useCase,
                 preferredVersion: preferredVersion
             )
-            CoreLogger.shared.info("Received \(response.recommendations.count) recommendations from AI",
-                                  module: "DatabaseInstallationService")
+            print("[DB Install] Received \(response.recommendations.count) recommendations from AI")
         } catch {
-            CoreLogger.shared.error("ERROR from AI API: \(error.localizedDescription)",
-                                   module: "DatabaseInstallationService")
+            print("[DB Install ERROR] AI API: \(error.localizedDescription)")
             throw error
         }
 
@@ -128,103 +109,51 @@ public final class DatabaseInstallationService: ObservableObject {
     // MARK: - Installation Execution
 
     /// Starts a database installation
-    /// - Parameters:
-    ///   - databaseType: Type of database to install
-    ///   - version: Selected version to install
-    ///   - serverId: Server identifier
-    ///   - recommendation: AI recommendation containing installation steps
     public func startInstallation(
         databaseType: DatabaseType,
         version: String,
-        serverId: String,
-        recommendation: AIInstallationResponse
+        recommendation: AIInstallationResponse,
+        serverId: String
     ) async throws {
-
-        guard !isInstalling else {
-            throw DatabaseInstallationError.alreadyInProgress
-        }
-
-        // Find the selected version recommendation to get specific commands
-        guard let selectedVersion = recommendation.recommendations.first(where: { $0.version == version }) else {
-             throw DatabaseInstallationError.stepFailed(step: "Initialization", reason: "Selected version not found in recommendations")
-        }
-        
-        // Get the install commands (Backend filters for the correct package manager, so taking first is safe)
-        guard let cmdSet = selectedVersion.installCommands.first else {
-            throw DatabaseInstallationError.stepFailed(step: "Initialization", reason: "No installation commands available for this version")
-        }
+        guard !isInstalling else { return }
 
         isInstalling = true
         installationError = nil
 
         do {
-            // Generate steps dynamically from the commands
-            var dynamicSteps: [InstallationStep] = []
-            var orderId = 1
-            
-            // Pre-install steps
-            for cmd in cmdSet.preInstallCommands {
+            // Build dynamic steps from recommendation + base install
+            var dynamicSteps: [InstallationStep] = recommendation.installationSteps
+
+            // Add recommended version install step if not already present
+            if dynamicSteps.isEmpty {
+                let installCmd = DatabasesBridge.shared.installCmd(engine: databaseType.rawValue, version: version)
                 dynamicSteps.append(InstallationStep(
-                    order: orderId,
-                    title: "Pre-install: Prepare Environment",
-                    description: "Executing pre-installation task",
-                    command: cmd,
-                    isManual: false,
-                    estimatedDuration: 10,
-                    canRollback: false,
-                    rollbackCommand: nil,
-                    validationCommand: nil
-                ))
-                orderId += 1
-            }
-            
-            // Install commands
-            for cmd in cmdSet.commands {
-                dynamicSteps.append(InstallationStep(
-                    order: orderId,
+                    order: 1,
                     title: "Install \(databaseType.displayName) \(version)",
-                    description: "Installing database package",
-                    command: cmd,
-                    isManual: false,
+                    description: "Installing database engine",
+                    command: installCmd,
                     estimatedDuration: 120,
                     canRollback: true,
-                    rollbackCommand: nil, // We don't have this info from simplified AI
-                    validationCommand: nil
+                    rollbackCommand: DatabasesBridge.shared.uninstallCmd(engine: databaseType.rawValue)
                 ))
-                orderId += 1
             }
-            
-            // Post-install steps
-            for cmd in cmdSet.postInstallCommands {
+
+            // Add post-install config steps
+            var orderId = dynamicSteps.count + 1
+            for configRec in recommendation.postInstallationConfig {
+                guard let cmd = configRec.configKey else { continue }
                 dynamicSteps.append(InstallationStep(
                     order: orderId,
                     title: "Post-install: Configuration",
                     description: "Configuring database service",
                     command: cmd,
-                    isManual: false,
-                    estimatedDuration: 10,
-                    canRollback: false,
-                    rollbackCommand: nil,
-                    validationCommand: nil
+                    estimatedDuration: 10
                 ))
                 orderId += 1
             }
-            
-            // Start tracking with backend
-            let installationId: String
-            do {
-                installationId = try await aiAPIService.startInstallationTracking(
-                    serverId: serverId,
-                    databaseType: databaseType,
-                    selectedVersion: version,
-                    totalSteps: dynamicSteps.count
-                )
-            } catch {
-                CoreLogger.shared.error("Failed to start installation tracking: \(error.localizedDescription)",
-                                       module: "DatabaseInstallationService")
-                // Generate a local ID if backend tracking fails
-                installationId = UUID().uuidString
-            }
+
+            // Start tracking
+            let installationId = UUID().uuidString
 
             // Initialize progress tracking
             let progress = InstallationProgress(
@@ -234,13 +163,12 @@ public final class DatabaseInstallationService: ObservableObject {
                 totalSteps: dynamicSteps.count,
                 status: .analyzing,
                 currentStepTitle: "Preparing installation",
-                currentStepDescription: "Analyzing server environment...",
-                progressPercentage: 0
+                currentStepDescription: "Analyzing server environment..."
             )
 
             currentInstallation = progress
 
-            // Execute installation steps via Core layer
+            // Execute installation steps via SSHBridge
             try await executeInstallationSteps(
                 steps: dynamicSteps,
                 recommendation: recommendation,
@@ -254,18 +182,15 @@ public final class DatabaseInstallationService: ObservableObject {
             currentInstallation?.currentStepTitle = "Installation Complete"
             currentInstallation?.currentStepDescription = "\(databaseType.displayName) has been installed successfully."
             currentInstallation?.completedAt = Date()
-            
-            // Add final success log
-            let finalLog = InstallationLog(
+
+            currentInstallation?.logs.append(InstallationLog(
                 level: .success,
                 message: "Successfully installed \(databaseType.displayName) \(version)"
-            )
-            currentInstallation?.logs.append(finalLog)
-            
-            isInstalling = false
+            ))
 
-            CoreLogger.shared.info("Installation completed successfully for \(databaseType.displayName)",
-                                  module: "DatabaseInstallationService")
+            isInstalling = false
+            print("[DB Install] Installation completed successfully for \(databaseType.displayName)")
+
         } catch {
             isInstalling = false
             installationError = InstallationError(
@@ -273,52 +198,37 @@ public final class DatabaseInstallationService: ObservableObject {
                 message: error.localizedDescription,
                 isRecoverable: true
             )
-            CoreLogger.shared.error("Installation failed: \(error.localizedDescription)",
-                                   module: "DatabaseInstallationService")
-            
+            print("[DB Install ERROR] Installation failed: \(error.localizedDescription)")
+
             // Trigger Error Resolution Service
             if let stepError = error as? DatabaseInstallationError {
                 if case .stepFailed(_, let reason) = stepError {
-                    // Create a log entry for context
                     let errorLog = InstallationLog(
                         level: .error,
                         message: reason,
                         step: currentInstallation?.currentStep
                     )
-                    
-                    // Set context for UI to pick up
                     self.errorResolutionContext = ErrorResolutionContext(
                         databaseType: databaseType,
                         serverId: serverId,
-                        step: nil, // We don't have the failed step object easily matching generic steps
+                        step: nil,
                         log: errorLog
                     )
                 }
             }
-            
+
             throw error
         }
     }
 
     /// Cancels the current installation
     public func cancelInstallation() async {
-        guard let installation = currentInstallation else { return }
+        guard currentInstallation != nil else { return }
 
         currentInstallation?.status = .cancelled
         isInstalling = false
 
-        // Notify backend (best effort)
-        try? await aiAPIService.updateInstallationProgress(
-            installationId: installation.installationId.uuidString,
-            currentStep: installation.currentStep,
-            status: .cancelled,
-            stepTitle: "Installation cancelled",
-            stepDescription: "User cancelled the installation",
-            progressPercentage: installation.progressPercentage
-        )
-
-        CoreLogger.shared.info("Installation cancelled by user",
-                              module: "DatabaseInstallationService")
+        print("[DB Install] Installation cancelled by user")
     }
 
     // MARK: - Private Helpers
@@ -345,64 +255,41 @@ public final class DatabaseInstallationService: ObservableObject {
             currentInstallation?.currentStepDescription = step.description
             currentInstallation?.progressPercentage = progressPercentage
 
-            // Report progress to backend (best effort)
-            try? await aiAPIService.updateInstallationProgress(
-                installationId: installationId,
-                currentStep: index + 1,
-                status: .installing,
-                stepTitle: step.title,
-                stepDescription: step.description,
-                progressPercentage: progressPercentage,
-                logs: currentInstallation?.logs ?? []
-            )
-
-            // Execute step command via Core layer
+            // Execute step command via SSHBridge
             if let command = step.command {
-                CoreLogger.shared.debug("Executing step \(index + 1): \(step.title)",
-                                       module: "DatabaseInstallationService")
+                print("[DB Install] Executing step \(index + 1): \(step.title)")
 
-                // Add log for command start
                 currentInstallation?.logs.append(InstallationLog(
                     level: .info,
                     message: "Executing: \(command)",
                     step: index + 1
                 ))
 
-                let result = try await SSHService.shared.execute(
-                    command,
-                    serverId: serverId
-                )
+                let result = await ssh.executeAsync(serverID: serverId, command: command)
 
-                // Add output logs
-                if !result.stdout.isEmpty {
+                // Log output
+                if !result.isEmpty {
                     currentInstallation?.logs.append(InstallationLog(
                         level: .debug,
-                        message: result.stdout,
-                        step: index + 1
-                    ))
-                }
-                
-                if !result.stderr.isEmpty {
-                    currentInstallation?.logs.append(InstallationLog(
-                        level: .warning,
-                        message: result.stderr,
+                        message: result,
                         step: index + 1
                     ))
                 }
 
-                guard result.exitCode == 0 else {
-                    let errorMessage = result.stderr.isEmpty ? "Command failed with exit code \(result.exitCode)" : result.stderr
+                // Check for errors in output
+                let lowerResult = result.lowercased()
+                if lowerResult.contains("error") && !lowerResult.contains("already") && !lowerResult.contains("warning") {
                     currentInstallation?.logs.append(InstallationLog(
                         level: .error,
-                        message: "Step failed: \(errorMessage)",
+                        message: "Step may have failed: \(result)",
                         step: index + 1
                     ))
                     throw DatabaseInstallationError.stepFailed(
                         step: step.title,
-                        reason: errorMessage
+                        reason: result
                     )
                 }
-                
+
                 currentInstallation?.logs.append(InstallationLog(
                     level: .success,
                     message: "Step completed successfully",
@@ -412,25 +299,20 @@ public final class DatabaseInstallationService: ObservableObject {
 
             // Validate step if validation command exists
             if let validationCommand = step.validationCommand {
-                CoreLogger.shared.debug("Validating step \(index + 1)",
-                                       module: "DatabaseInstallationService")
+                print("[DB Install] Validating step \(index + 1)")
 
-                let validationResult = try await SSHService.shared.execute(
-                    validationCommand,
-                    serverId: serverId
-                )
+                let validationResult = await ssh.executeAsync(serverID: serverId, command: validationCommand)
 
-                guard validationResult.exitCode == 0 else {
-                    let errorMessage = validationResult.stderr.isEmpty ? "Validation failed" : validationResult.stderr
+                if validationResult.lowercased().contains("error") || validationResult.lowercased().contains("failed") {
                     throw DatabaseInstallationError.validationFailed(
                         step: step.title,
-                        reason: errorMessage
+                        reason: validationResult.isEmpty ? "Validation failed" : validationResult
                     )
                 }
             }
 
             // Small delay to show progress in UI
-            try? await Task.sleep(nanoseconds: 300_000_000) // 0.3 seconds
+            try? await Task.sleep(nanoseconds: 300_000_000)
         }
     }
 }
@@ -438,30 +320,21 @@ public final class DatabaseInstallationService: ObservableObject {
 // MARK: - Database Installation Error
 
 public enum DatabaseInstallationError: LocalizedError {
-    case alreadyInProgress
-    case cancelled
     case stepFailed(step: String, reason: String)
     case validationFailed(step: String, reason: String)
-    case unsupportedOS(String)
-    case insufficientResources(requirements: SystemRequirements, available: ServerResources)
-    case connectionFailed
+    case cancelled
+    case missingRecommendation
 
     public var errorDescription: String? {
         switch self {
-        case .alreadyInProgress:
-            return "An installation is already in progress"
-        case .cancelled:
-            return "Installation was cancelled"
         case .stepFailed(let step, let reason):
             return "Step '\(step)' failed: \(reason)"
         case .validationFailed(let step, let reason):
-            return "Validation failed for '\(step)': \(reason)"
-        case .unsupportedOS(let os):
-            return "Operating system '\(os)' is not supported"
-        case .insufficientResources:
-            return "Server does not meet minimum requirements for installation"
-        case .connectionFailed:
-            return "Not connected to server"
+            return "Validation for '\(step)' failed: \(reason)"
+        case .cancelled:
+            return "Installation was cancelled"
+        case .missingRecommendation:
+            return "No installation recommendation available"
         }
     }
 }

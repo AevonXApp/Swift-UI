@@ -8,6 +8,7 @@
 
 import SwiftUI
 import AevonXCore
+import AevonXCoreBridge
 
 struct ApplicationDetailView: View {
     let application: ApplicationInstance
@@ -39,7 +40,7 @@ struct ApplicationDetailView: View {
 
             // ✅ NEW: Route database engines to unified detail view
             case .mysql, .postgresql, .redis, .mongodb, .mariadb, .sqlite, .cockroachdb, .cassandra, .elasticsearch:
-                if let dbType = DatabaseType(rawValue: application.type.rawValue) {
+                if let dbType = AevonXCoreBridge.DatabaseType(rawValue: application.type.rawValue) {
                     UnifiedDatabaseDetailView(
                         application: application,
                         databaseType: dbType,

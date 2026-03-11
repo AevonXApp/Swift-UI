@@ -6,7 +6,7 @@
 //
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 struct DBEditRowView: View {
     @ObservedObject var viewModel: DatabaseDetailViewModel

@@ -7,7 +7,7 @@
 //
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 import Combine
 
 struct DatabasesTab: View {
@@ -18,8 +18,8 @@ struct DatabasesTab: View {
     @State private var showAddUser = false
     @State private var activeTab = 0 // 0 = Databases, 1 = Users
     
-    init(server: Server? = nil, serverId: String? = nil, viewModel: ServerConnectionViewModel? = nil) {
-        _viewModel = StateObject(wrappedValue: DatabasesTabViewModel(server: server, serverId: serverId, connectionViewModel: viewModel))
+    init(serverId: String? = nil, isConnected: Bool = false) {
+        _viewModel = StateObject(wrappedValue: DatabasesTabViewModel(serverId: serverId, isConnected: isConnected))
     }
     
     var filteredDatabases: [DatabaseInfo] {
@@ -57,12 +57,7 @@ struct DatabasesTab: View {
                 
                 Spacer()
                 
-                // Connection status indicator
-                if let connectionViewModel = viewModel.connectionViewModel {
-                    ConnectionStatusIndicator(viewModel: connectionViewModel)
-                } else {
-                    DatabasesConnectionStatusIndicator(viewModel: viewModel)
-                }
+                DatabasesConnectionStatusIndicator(viewModel: viewModel)
             }
             .padding(.horizontal, AXSpacing.xl)
             .padding(.top, AXSpacing.xl)
@@ -397,17 +392,14 @@ class DatabasesTabViewModel: ObservableObject {
     
     // MARK: - Private Properties
     
-    private let server: Server?
     private let serverId: String?
-    private let sshService = SSHService.shared
-    weak var connectionViewModel: ServerConnectionViewModel?
+    private let ssh = SSHBridge.shared
     
     // MARK: - Initialization
     
-    init(server: Server? = nil, serverId: String? = nil, connectionViewModel: ServerConnectionViewModel? = nil) {
-        self.server = server
+    init(serverId: String? = nil, isConnected: Bool = false) {
         self.serverId = serverId
-        self.connectionViewModel = connectionViewModel
+        self.isConnected = isConnected
     }
     
     // MARK: - Data Loading
@@ -421,28 +413,13 @@ class DatabasesTabViewModel: ObservableObject {
         isLoading = true
         errorMessage = nil
         
-        if let connectionViewModel = connectionViewModel {
-            isConnected = connectionViewModel.isConnected
-            print("[DatabasesTab] Using parent connectionViewModel - isConnected: \(isConnected)")
-        } else {
-            // No connection view model available
-            print("[DatabasesTab] No connectionViewModel available")
-            isConnected = false
-            errorMessage = "Not connected to server"
-            isLoading = false
-            return
-        }
-        
         if !isConnected {
             print("[DatabasesTab] Not connected, skipping data load")
             isLoading = false
             return
         }
         
-        // Load databases using CommandTemplates only
         await loadDatabases(serverId: serverId)
-        
-        // Load users
         await loadUsers(serverId: serverId)
         
         isLoading = false
@@ -451,58 +428,36 @@ class DatabasesTabViewModel: ObservableObject {
     private func loadDatabases(serverId: String) async {
         var loadedDatabases: [DatabaseInfo] = []
         
-        // Use CommandTemplates.Databases commands only - no raw commands
-        
-        // Try MySQL
-        do {
-            let mysqlResult = try await executeCommand(.databases(.listMySQL), serverId: serverId)
-            let mysqlDBs = parseMySQLDatabases(mysqlResult.stdout)
-            loadedDatabases.append(contentsOf: mysqlDBs)
-        } catch {
-            CoreLogger.shared.debug("MySQL not available: \(error.localizedDescription)", module: "DatabasesTab")
+        // MySQL
+        let mysqlOutput = await ssh.executeAsync(serverID: serverId, command: "mysql -N -e 'SHOW DATABASES' 2>/dev/null")
+        if !mysqlOutput.isEmpty && !mysqlOutput.lowercased().contains("error") {
+            loadedDatabases.append(contentsOf: parseMySQLDatabases(mysqlOutput))
         }
         
-        // Try PostgreSQL
-        do {
-            let pgResult = try await executeCommand(.databases(.listPostgreSQL), serverId: serverId)
-            let pgDBs = parsePostgreSQLDatabases(pgResult.stdout)
-            loadedDatabases.append(contentsOf: pgDBs)
-        } catch {
-            CoreLogger.shared.debug("PostgreSQL not available: \(error.localizedDescription)", module: "DatabasesTab")
+        // PostgreSQL
+        let pgOutput = await ssh.executeAsync(serverID: serverId, command: "sudo -u postgres psql -t -c 'SELECT datname FROM pg_database WHERE NOT datistemplate' 2>/dev/null")
+        if !pgOutput.isEmpty && !pgOutput.lowercased().contains("error") {
+            loadedDatabases.append(contentsOf: parsePostgreSQLDatabases(pgOutput))
         }
         
-        // Try Redis
-        do {
-            let redisResult = try await executeCommand(.databases(.listRedis), serverId: serverId)
-            if let redisDB = parseRedisInfo(redisResult.stdout) {
+        // Redis
+        let redisOutput = await ssh.executeAsync(serverID: serverId, command: "redis-cli INFO 2>/dev/null")
+        if !redisOutput.isEmpty && !redisOutput.lowercased().contains("error") {
+            if let redisDB = parseRedisInfo(redisOutput) {
                 loadedDatabases.append(redisDB)
             }
-        } catch {
-            CoreLogger.shared.debug("Redis not available: \(error.localizedDescription)", module: "DatabasesTab")
         }
         
         databases = loadedDatabases
     }
     
     private func loadUsers(serverId: String) async {
-        var loadedUsers: [DatabaseUserInfo] = []
-        
-        // Use CommandTemplates only
-        do {
-            let usersResult = try await executeCommand(.databases(.listMySQLUsers), serverId: serverId)
-            loadedUsers = parseMySQLUsers(usersResult.stdout)
-        } catch {
-            CoreLogger.shared.debug("Could not load MySQL users: \(error.localizedDescription)", module: "DatabasesTab")
+        let output = await ssh.executeAsync(serverID: serverId, command: "mysql -N -e \"SELECT User, Host FROM mysql.user\" 2>/dev/null")
+        if !output.isEmpty && !output.lowercased().contains("error") {
+            users = parseMySQLUsers(output)
+        } else {
+            users = []
         }
-        
-        users = loadedUsers
-    }
-    
-    // MARK: - Private Helpers
-    
-    private func executeCommand(_ command: CommandTemplate, serverId: String) async throws -> SSHCommandResult {
-        let commandString = command.build()
-        return try await sshService.execute(commandString, serverId: serverId)
     }
     
     // MARK: - Parsing
@@ -816,7 +771,7 @@ struct DatabaseUserRow: View {
     }
     
     private func timeAgo(_ date: Date) -> String {
-        AXFormatter.formatTimeAgo(date)
+        AevonXCoreBridge.AXFormatter.formatTimeAgo(date)
     }
 }
 
@@ -1000,7 +955,7 @@ struct DatabaseInfoCard: View {
     }
     
     private func formatSize(_ mb: Double) -> String {
-        AXFormatter.formatSizeMB(mb)
+        AevonXCoreBridge.AXFormatter.formatSizeMB(mb)
     }
 }
 

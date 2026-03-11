@@ -8,7 +8,7 @@
 //
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 struct NotInstalledView: View {
     let type: DatabaseType

@@ -8,7 +8,7 @@
 
 import Foundation
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 import Combine
 
 @MainActor
@@ -254,7 +254,7 @@ public final class AddDatabaseViewModel: ObservableObject {
                     username: username,
                     password: password,
                     host: host,
-                    databaseType: type,
+                    type: type,
                     serverId: serverId
                 )
 
@@ -267,7 +267,7 @@ public final class AddDatabaseViewModel: ObservableObject {
                         host: host,
                         database: databaseName,
                         privileges: ["ALL PRIVILEGES"],
-                        databaseType: type,
+                        type: type,
                         serverId: serverId
                     )
                 }

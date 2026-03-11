@@ -2,11 +2,12 @@
 //  ModernAddDatabaseView.swift
 //  AevonX
 //
-//  Created by Automation on 2026-02-08.
+//  Premium "Create Database" sheet with glassmorphism,
+//  animated engine selector, and step indicators.
 //
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 struct ModernAddDatabaseView: View {
     @Environment(\.dismiss) private var dismiss
@@ -21,161 +22,568 @@ struct ModernAddDatabaseView: View {
         self.onCreated = onCreated
     }
 
+    @State private var appear = false
+
     var body: some View {
         ZStack {
+            Color.axBackground
+                .ignoresSafeArea()
+
             VStack(spacing: 0) {
-                headerSection
-                Divider()
-                ScrollView {
-                    VStack(alignment: .leading, spacing: AXSpacing.xl) {
-                        engineSelectorSection
-                        databaseNameSection
-                        encodingSection
-                        Divider()
-                        userCreationSection
+                headerBar
+                
+                ScrollView(.vertical, showsIndicators: false) {
+                    VStack(spacing: AXSpacing.xxl) {
+                        engineSelector
+                        databaseNameField
+                        encodingRow
+                        
+                        if viewModel.selectedType?.supportsUserManagement == true {
+                            userSection
+                        }
                     }
-                    .padding(AXSpacing.xl)
+                    .padding(.horizontal, AXSpacing.xxl)
+                    .padding(.top, AXSpacing.xl)
+                    .padding(.bottom, AXSpacing.xxl + 80)
                 }
-                Divider()
-                footerSection
+
+                footerBar
             }
-            errorOverlay
+
+            errorToast
         }
-        .frame(width: 520)
+        .frame(width: 560)
         .fixedSize(horizontal: false, vertical: true)
-        .background(Color.axBackground)
+        .onAppear { withAnimation(.spring(response: 0.5)) { appear = true } }
     }
 
     // MARK: - Header
 
-    private var headerSection: some View {
-        HStack {
-            Text("Create Database")
-                .font(AXTypography.title2)
-                .fontWeight(.bold)
-                .foregroundColor(.axTextPrimary)
+    private var headerBar: some View {
+        HStack(spacing: AXSpacing.md) {
+            ZStack {
+                RoundedRectangle(cornerRadius: AXCornerRadius.md)
+                    .fill(
+                        LinearGradient(
+                            colors: [Color.axAccentBlue.opacity(0.3), Color.axAccentBlue.opacity(0.1)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .frame(width: 38, height: 38)
+
+                Image(systemName: "plus.circle.fill")
+                    .font(AXTypography.headline)
+                    .foregroundColor(.axAccentBlue)
+            }
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Create Database")
+                    .font(AXTypography.headline)
+                    .foregroundColor(.axTextPrimary)
+                Text(viewModel.selectedType?.displayName ?? "Select an engine")
+                    .font(AXTypography.caption2)
+                    .foregroundColor(.axTextMuted)
+            }
+
             Spacer()
+
+            stepIndicator
+
             Button(action: { dismiss() }) {
                 Image(systemName: "xmark")
-                    .font(.system(size: 14))
-                    .foregroundColor(.axTextSecondary)
+                    .font(AXTypography.caption2)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.axTextMuted)
                     .frame(width: 28, height: 28)
                     .background(Color.axSurface)
-                    .cornerRadius(AXCornerRadius.sm)
+                    .cornerRadius(AXCornerRadius.full)
+                    .overlay(
+                        Circle()
+                            .stroke(Color.axBorder, lineWidth: 1)
+                    )
             }
             .buttonStyle(.plain)
         }
-        .padding(AXSpacing.xl)
+        .padding(.horizontal, AXSpacing.xxl)
+        .padding(.vertical, AXSpacing.lg)
+        .background(
+            Color.axSurface.opacity(0.6)
+                .background(.ultraThinMaterial)
+        )
+        .overlay(
+            Rectangle()
+                .fill(Color.axBorder.opacity(0.5))
+                .frame(height: 1),
+            alignment: .bottom
+        )
+    }
+
+    private var stepIndicator: some View {
+        HStack(spacing: AXSpacing.xs) {
+            stepDot(filled: true)
+            stepDot(filled: !viewModel.databaseName.isEmpty)
+            stepDot(filled: viewModel.shouldCreateUser && !viewModel.username.isEmpty)
+        }
+    }
+
+    private func stepDot(filled: Bool) -> some View {
+        Circle()
+            .fill(filled ? Color.axAccentBlue : Color.axBorder)
+            .frame(width: 6, height: 6)
+            .animation(.easeInOut(duration: 0.3), value: filled)
     }
 
     // MARK: - Engine Selector
 
     @ViewBuilder
-    private var engineSelectorSection: some View {
-        if !viewModel.installedEngines.isEmpty {
+    private var engineSelector: some View {
+        if viewModel.installedEngines.isEmpty {
+            noEnginesView
+        } else {
             VStack(alignment: .leading, spacing: AXSpacing.sm) {
-                Text("Database Engine")
-                    .font(AXTypography.caption)
-                    .fontWeight(.semibold)
-                    .foregroundColor(.axTextSecondary)
+                sectionLabel("Database Engine", icon: "server.rack")
 
-                HStack(spacing: AXSpacing.sm) {
+                HStack(spacing: AXSpacing.md) {
                     ForEach(viewModel.installedEngines) { engine in
-                        engineCard(engine)
+                        enginePill(engine)
                     }
                 }
-            }
-        } else {
-            HStack {
-                Image(systemName: "exclamationmark.triangle")
-                    .foregroundColor(.axWarning)
-                Text("No database engines installed on this server.")
-                    .font(AXTypography.subheadline)
-                    .foregroundColor(.axTextMuted)
             }
         }
     }
 
-    private func engineCard(_ engine: DatabaseInstallationState) -> some View {
+    private func enginePill(_ engine: DatabaseInstallationState) -> some View {
         let isSelected = viewModel.selectedType == engine.type
-        return Button {
-            viewModel.selectEngine(engine.type)
-        } label: {
-            VStack(spacing: AXSpacing.xs) {
-                Image(systemName: engine.type.iconName)
-                    .font(.system(size: 20))
-                Text(engine.type.displayName)
-                    .font(AXTypography.caption2)
-                    .fontWeight(.medium)
+        let color = engine.type.brandColor
+
+        return Button { withAnimation(.spring(response: 0.3)) { viewModel.selectEngine(engine.type) } } label: {
+            VStack(spacing: AXSpacing.sm) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: AXCornerRadius.md)
+                        .fill(
+                            isSelected
+                            ? LinearGradient(colors: [color.opacity(0.25), color.opacity(0.08)], startPoint: .topLeading, endPoint: .bottomTrailing)
+                            : LinearGradient(colors: [Color.axSurface, Color.axSurface], startPoint: .top, endPoint: .bottom)
+                        )
+                        .frame(width: 48, height: 48)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: AXCornerRadius.md)
+                                .stroke(isSelected ? color.opacity(0.6) : Color.axBorder, lineWidth: isSelected ? 1.5 : 1)
+                        )
+                        .shadow(color: isSelected ? color.opacity(0.15) : .clear, radius: 8, y: 2)
+
+                    Image(systemName: engine.type.iconName)
+                        .font(AXTypography.title3)
+                        .foregroundColor(isSelected ? color : .axTextMuted)
+                }
+
+                VStack(spacing: 1) {
+                    Text(engine.type.displayName)
+                        .font(AXTypography.caption2)
+                        .fontWeight(isSelected ? .bold : .medium)
+                        .foregroundColor(isSelected ? color : .axTextSecondary)
+
+                    if let v = engine.installedVersion, !v.isEmpty {
+                        Text("v\(v)")
+                            .font(AXTypography.caption2)
+                            .foregroundColor(.axTextMuted)
+                    }
+                }
             }
-            .foregroundColor(isSelected ? engine.type.brandColor : .axTextSecondary)
             .frame(maxWidth: .infinity)
-            .frame(height: 60)
-            .background(isSelected ? engine.type.brandColor.opacity(0.1) : Color.axSurface)
-            .cornerRadius(AXCornerRadius.md)
-            .overlay(
-                RoundedRectangle(cornerRadius: AXCornerRadius.md)
-                    .stroke(isSelected ? engine.type.brandColor : Color.axBorder, lineWidth: 1)
-            )
+            .scaleEffect(isSelected ? 1.04 : 1.0)
+            .animation(.spring(response: 0.25), value: isSelected)
         }
         .buttonStyle(.plain)
     }
 
+    private var noEnginesView: some View {
+        HStack(spacing: AXSpacing.md) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .font(AXTypography.title3)
+                .foregroundColor(.axWarning)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("No Database Engines")
+                    .font(AXTypography.subheadline)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.axTextPrimary)
+                Text("Install MySQL or PostgreSQL from the Applications tab first.")
+                    .font(AXTypography.caption)
+                    .foregroundColor(.axTextMuted)
+            }
+        }
+        .padding(AXSpacing.lg)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.axWarning.opacity(0.08))
+        .cornerRadius(AXCornerRadius.lg)
+        .overlay(
+            RoundedRectangle(cornerRadius: AXCornerRadius.lg)
+                .stroke(Color.axWarning.opacity(0.25), lineWidth: 1)
+        )
+    }
+
     // MARK: - Database Name
 
-    private var databaseNameSection: some View {
+    private var databaseNameField: some View {
         VStack(alignment: .leading, spacing: AXSpacing.sm) {
-            Text("Database Name")
-                .font(AXTypography.caption)
-                .fontWeight(.semibold)
-                .foregroundColor(.axTextSecondary)
+            sectionLabel("Database Name", icon: "cylinder")
 
-            TextField("my_database", text: $viewModel.databaseName)
-                .font(AXTypography.body)
-                .foregroundColor(.axTextPrimary)
-                .padding(AXSpacing.md)
-                .background(Color.axSurface)
-                .cornerRadius(AXCornerRadius.md)
-                .overlay(
-                    RoundedRectangle(cornerRadius: AXCornerRadius.md)
-                        .stroke(viewModel.nameError != nil ? Color.axError : Color.axBorder, lineWidth: 1)
-                )
-                .onChange(of: viewModel.databaseName) { _, _ in
-                    viewModel.validateDatabaseName()
-                }
+            styledTextField(
+                placeholder: "my_database",
+                text: $viewModel.databaseName,
+                hasError: viewModel.nameError != nil
+            )
+            .onChange(of: viewModel.databaseName) { _, _ in viewModel.validateDatabaseName() }
 
-            if let error = viewModel.nameError {
-                inlineError(error)
+            if let err = viewModel.nameError {
+                errorHint(err)
             }
         }
     }
 
-    // MARK: - Encoding + Collation
+    // MARK: - Encoding Row
 
-    private var encodingSection: some View {
+    private var encodingRow: some View {
         HStack(spacing: AXSpacing.lg) {
-            pickerField(title: "Encoding", selection: $viewModel.selectedCharset, options: viewModel.availableCharsets)
-                .onChange(of: viewModel.selectedCharset) { _, _ in
-                    let collations = viewModel.availableCollations
-                    if !collations.contains(viewModel.selectedCollation) {
-                        viewModel.selectedCollation = collations.first ?? "default"
-                    }
+            styledPicker(
+                label: "Encoding",
+                icon: "textformat",
+                selection: $viewModel.selectedCharset,
+                options: viewModel.availableCharsets
+            )
+            .onChange(of: viewModel.selectedCharset) { _, _ in
+                let collations = viewModel.availableCollations
+                if !collations.contains(viewModel.selectedCollation) {
+                    viewModel.selectedCollation = collations.first ?? "default"
                 }
+            }
 
-            pickerField(title: "Collation", selection: $viewModel.selectedCollation, options: viewModel.availableCollations)
+            styledPicker(
+                label: "Collation",
+                icon: "arrow.left.arrow.right",
+                selection: $viewModel.selectedCollation,
+                options: viewModel.availableCollations
+            )
         }
     }
 
-    private func pickerField(title: String, selection: Binding<String>, options: [String]) -> some View {
-        VStack(alignment: .leading, spacing: AXSpacing.sm) {
-            Text(title)
-                .font(AXTypography.caption)
+    // MARK: - User Section
+
+    private var userSection: some View {
+        VStack(alignment: .leading, spacing: AXSpacing.lg) {
+            Toggle(isOn: $viewModel.shouldCreateUser) {
+                HStack(spacing: AXSpacing.sm) {
+                    Image(systemName: "person.badge.plus")
+                        .font(AXTypography.subheadline)
+                        .foregroundColor(.axAccentBlue)
+                    Text("Create database user")
+                        .font(AXTypography.subheadline)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.axTextPrimary)
+                }
+            }
+            .toggleStyle(.switch)
+            .tint(.axAccentBlue)
+
+            if viewModel.shouldCreateUser {
+                VStack(spacing: AXSpacing.lg) {
+                    // Username
+                    VStack(alignment: .leading, spacing: AXSpacing.sm) {
+                        sectionLabel("Username", icon: "person")
+                        styledTextField(
+                            placeholder: "db_user",
+                            text: $viewModel.username,
+                            hasError: viewModel.usernameError != nil
+                        )
+                        .onChange(of: viewModel.username) { _, _ in viewModel.validateUsername() }
+                        if let err = viewModel.usernameError { errorHint(err) }
+                    }
+
+                    // Password
+                    VStack(alignment: .leading, spacing: AXSpacing.sm) {
+                        sectionLabel("Password", icon: "lock")
+                        passwordRow
+                        if let err = viewModel.passwordError { errorHint(err) }
+                    }
+
+                    // Host + SSL
+                    HStack(spacing: AXSpacing.lg) {
+                        styledPicker(
+                            label: "Host Access",
+                            icon: "network",
+                            selection: $viewModel.host,
+                            options: viewModel.hostOptions,
+                            displayTransform: { $0 == "%" ? "Any Host (%)" : $0 }
+                        )
+
+                        VStack(alignment: .leading, spacing: AXSpacing.sm) {
+                            sectionLabel("Security", icon: "lock.shield")
+                            Toggle(isOn: $viewModel.forceSSL) {
+                                Text("Require SSL")
+                                    .font(AXTypography.caption)
+                                    .fontWeight(.medium)
+                                    .foregroundColor(.axTextPrimary)
+                            }
+                            .toggleStyle(.switch)
+                            .tint(.axAccentBlue)
+                        }
+                    }
+                }
+                .padding(AXSpacing.lg)
+                .background(
+                    RoundedRectangle(cornerRadius: AXCornerRadius.lg)
+                        .fill(Color.axGlassBackground)
+                        .background(
+                            RoundedRectangle(cornerRadius: AXCornerRadius.lg)
+                                .fill(.ultraThinMaterial)
+                        )
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: AXCornerRadius.lg)
+                        .stroke(
+                            LinearGradient(
+                                colors: [Color.axGlassBorder, Color.axBorder],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            ),
+                            lineWidth: 1
+                        )
+                )
+                .transition(.opacity.combined(with: .move(edge: .top)))
+            }
+        }
+        .animation(.spring(response: 0.35), value: viewModel.shouldCreateUser)
+    }
+
+    private var passwordRow: some View {
+        HStack(spacing: AXSpacing.sm) {
+            Group {
+                if viewModel.showPassword {
+                    TextField("Password", text: $viewModel.password)
+                } else {
+                    SecureField("Password", text: $viewModel.password)
+                }
+            }
+            .font(.system(.body, design: .monospaced))
+            .foregroundColor(.axTextPrimary)
+            .onChange(of: viewModel.password) { _, _ in viewModel.validatePassword() }
+
+            Spacer()
+
+            Button { viewModel.showPassword.toggle() } label: {
+                Image(systemName: viewModel.showPassword ? "eye.slash" : "eye")
+                    .font(AXTypography.caption)
+                    .foregroundColor(.axTextMuted)
+                    .frame(width: 28, height: 28)
+                    .background(Color.axBackground.opacity(0.5))
+                    .cornerRadius(AXCornerRadius.sm)
+            }
+            .buttonStyle(.plain)
+
+            Button { viewModel.generatePassword() } label: {
+                Image(systemName: "dice")
+                    .font(AXTypography.caption)
+                    .foregroundColor(.axAccentBlue)
+                    .frame(width: 28, height: 28)
+                    .background(Color.axAccentBlue.opacity(0.1))
+                    .cornerRadius(AXCornerRadius.sm)
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.horizontal, AXSpacing.md)
+        .padding(.vertical, AXSpacing.sm + 2)
+        .background(Color.axSurface)
+        .cornerRadius(AXCornerRadius.md)
+        .overlay(
+            RoundedRectangle(cornerRadius: AXCornerRadius.md)
+                .stroke(viewModel.passwordError != nil ? Color.axError.opacity(0.8) : Color.axBorder, lineWidth: 1)
+        )
+    }
+
+    // MARK: - Footer
+
+    private var footerBar: some View {
+        HStack(spacing: AXSpacing.md) {
+            if viewModel.didSucceed {
+                HStack(spacing: AXSpacing.sm) {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(AXTypography.headline)
+                        .foregroundColor(.axSuccess)
+                    Text("Database created!")
+                        .font(AXTypography.subheadline)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.axSuccess)
+                }
+                Spacer()
+                Button(action: { onCreated(); dismiss() }) {
+                    Text("Done")
+                        .font(AXTypography.subheadline)
+                        .fontWeight(.bold)
+                        .foregroundColor(.white)
+                        .padding(.horizontal, AXSpacing.xl)
+                        .padding(.vertical, AXSpacing.md)
+                        .background(Color.axSuccess)
+                        .cornerRadius(AXCornerRadius.md)
+                }
+                .buttonStyle(.plain)
+            } else {
+                if viewModel.isSubmitting {
+                    HStack(spacing: AXSpacing.sm) {
+                        ProgressView()
+                            .scaleEffect(0.6)
+                            .tint(.axTextMuted)
+                        Text(viewModel.operationResult.message ?? "Creating...")
+                            .font(AXTypography.caption2)
+                            .foregroundColor(.axTextMuted)
+                    }
+                }
+
+                Spacer()
+
+                Button(action: { dismiss() }) {
+                    Text("Cancel")
+                        .font(AXTypography.subheadline)
+                        .foregroundColor(.axTextSecondary)
+                        .padding(.horizontal, AXSpacing.lg)
+                        .padding(.vertical, AXSpacing.md)
+                }
+                .buttonStyle(.plain)
+                .disabled(viewModel.isSubmitting)
+
+                Button(action: { Task { await viewModel.submitForm() } }) {
+                    Text(viewModel.isSubmitting ? "Creating..." : "Create Database")
+                        .font(AXTypography.subheadline)
+                        .fontWeight(.bold)
+                        .foregroundColor(.white)
+                        .padding(.horizontal, AXSpacing.xl)
+                        .padding(.vertical, AXSpacing.md)
+                        .background(
+                            Group {
+                                if viewModel.isFormValid && !viewModel.isSubmitting {
+                                    LinearGradient(
+                                        colors: [Color.axAccentBlue, Color.axAccentBlue.opacity(0.85)],
+                                        startPoint: .leading,
+                                        endPoint: .trailing
+                                    )
+                                } else {
+                                    LinearGradient(
+                                        colors: [Color.axTextMuted.opacity(0.3), Color.axTextMuted.opacity(0.2)],
+                                        startPoint: .leading,
+                                        endPoint: .trailing
+                                    )
+                                }
+                            }
+                        )
+                        .cornerRadius(AXCornerRadius.md)
+                        .shadow(color: viewModel.isFormValid ? Color.axAccentBlue.opacity(0.25) : .clear, radius: 8, y: 2)
+                }
+                .buttonStyle(.plain)
+                .disabled(!viewModel.isFormValid || viewModel.isSubmitting)
+            }
+        }
+        .padding(.horizontal, AXSpacing.xxl)
+        .padding(.vertical, AXSpacing.lg)
+        .background(
+            Color.axSurface.opacity(0.6)
+                .background(.ultraThinMaterial)
+        )
+        .overlay(
+            Rectangle()
+                .fill(Color.axBorder.opacity(0.5))
+                .frame(height: 1),
+            alignment: .top
+        )
+    }
+
+    // MARK: - Error Toast
+
+    @ViewBuilder
+    private var errorToast: some View {
+        if viewModel.operationResult.isFailure {
+            VStack {
+                Spacer()
+                HStack(spacing: AXSpacing.md) {
+                    Image(systemName: "xmark.octagon.fill")
+                        .font(AXTypography.headline)
+                        .foregroundColor(.axError)
+
+                    Text(viewModel.operationResult.message ?? "Something went wrong")
+                        .font(AXTypography.caption)
+                        .fontWeight(.medium)
+                        .foregroundColor(.axError)
+                        .lineLimit(2)
+
+                    Spacer()
+
+                    Button { viewModel.operationResult = .idle } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(AXTypography.subheadline)
+                            .foregroundColor(.axError.opacity(0.6))
+                    }
+                    .buttonStyle(.plain)
+                }
+                .padding(AXSpacing.md)
+                .background(
+                    RoundedRectangle(cornerRadius: AXCornerRadius.md)
+                        .fill(Color.axError.opacity(0.08))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: AXCornerRadius.md)
+                                .stroke(Color.axError.opacity(0.2), lineWidth: 1)
+                        )
+                )
+                .padding(.horizontal, AXSpacing.xl)
+                .padding(.bottom, 80)
+                .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
+            .animation(.spring(response: 0.4), value: viewModel.operationResult.isFailure)
+        }
+    }
+
+    // MARK: - Reusable Building Blocks
+
+    private func sectionLabel(_ title: String, icon: String) -> some View {
+        HStack(spacing: AXSpacing.xs) {
+            Image(systemName: icon)
+                .font(AXTypography.caption2)
                 .fontWeight(.semibold)
-                .foregroundColor(.axTextSecondary)
+                .foregroundColor(.axTextMuted)
+            Text(title)
+                .font(AXTypography.caption2)
+                .fontWeight(.semibold)
+                .foregroundColor(.axTextMuted)
+                .textCase(.uppercase)
+                .tracking(0.5)
+        }
+    }
+
+    private func styledTextField(placeholder: String, text: Binding<String>, hasError: Bool = false) -> some View {
+        TextField(placeholder, text: text)
+            .font(AXTypography.body)
+            .foregroundColor(.axTextPrimary)
+            .padding(.horizontal, AXSpacing.md)
+            .padding(.vertical, AXSpacing.sm + 2)
+            .background(Color.axSurface)
+            .cornerRadius(AXCornerRadius.md)
+            .overlay(
+                RoundedRectangle(cornerRadius: AXCornerRadius.md)
+                    .stroke(hasError ? Color.axError.opacity(0.8) : Color.axBorder, lineWidth: 1)
+            )
+    }
+
+    private func styledPicker(
+        label: String,
+        icon: String,
+        selection: Binding<String>,
+        options: [String],
+        displayTransform: ((String) -> String)? = nil
+    ) -> some View {
+        VStack(alignment: .leading, spacing: AXSpacing.sm) {
+            sectionLabel(label, icon: icon)
 
             Picker("", selection: selection) {
                 ForEach(options, id: \.self) { option in
-                    Text(option).tag(option)
+                    Text(displayTransform?(option) ?? option).tag(option)
                 }
             }
             .labelsHidden()
@@ -191,292 +599,10 @@ struct ModernAddDatabaseView: View {
         }
     }
 
-    // MARK: - User Creation
-
-    @ViewBuilder
-    private var userCreationSection: some View {
-        if let type = viewModel.selectedType, type.supportsUserManagement {
-            VStack(alignment: .leading, spacing: AXSpacing.lg) {
-                Toggle(isOn: $viewModel.shouldCreateUser) {
-                    HStack(spacing: AXSpacing.sm) {
-                        Image(systemName: "person.badge.plus")
-                            .font(.system(size: 14))
-                            .foregroundColor(viewModel.selectedType?.brandColor ?? .axAccentBlue)
-                        Text("Create database user")
-                            .font(AXTypography.subheadline)
-                            .fontWeight(.medium)
-                            .foregroundColor(.axTextPrimary)
-                    }
-                }
-                .toggleStyle(.switch)
-                .tint(viewModel.selectedType?.brandColor ?? .axAccentBlue)
-
-                if viewModel.shouldCreateUser {
-                    userFieldsCard
-                }
-            }
-        }
-    }
-
-    private var userFieldsCard: some View {
-        VStack(alignment: .leading, spacing: AXSpacing.lg) {
-            usernameField
-            passwordField
-            hostAndOptionsRow
-        }
-        .padding(AXSpacing.lg)
-        .background(Color.axSurface.opacity(0.5))
-        .cornerRadius(AXCornerRadius.md)
-        .overlay(
-            RoundedRectangle(cornerRadius: AXCornerRadius.md)
-                .stroke(Color.axBorder.opacity(0.5), lineWidth: 1)
-        )
-    }
-
-    private var usernameField: some View {
-        VStack(alignment: .leading, spacing: AXSpacing.sm) {
-            Text("Username")
-                .font(AXTypography.caption)
-                .fontWeight(.semibold)
-                .foregroundColor(.axTextSecondary)
-
-            TextField("db_user", text: $viewModel.username)
-                .font(AXTypography.body)
-                .foregroundColor(.axTextPrimary)
-                .padding(AXSpacing.md)
-                .background(Color.axSurface)
-                .cornerRadius(AXCornerRadius.md)
-                .overlay(
-                    RoundedRectangle(cornerRadius: AXCornerRadius.md)
-                        .stroke(viewModel.usernameError != nil ? Color.axError : Color.axBorder, lineWidth: 1)
-                )
-                .onChange(of: viewModel.username) { _, _ in
-                    viewModel.validateUsername()
-                }
-
-            if let error = viewModel.usernameError {
-                inlineError(error)
-            }
-        }
-    }
-
-    private var passwordField: some View {
-        VStack(alignment: .leading, spacing: AXSpacing.sm) {
-            Text("Password")
-                .font(AXTypography.caption)
-                .fontWeight(.semibold)
-                .foregroundColor(.axTextSecondary)
-
-            HStack(spacing: AXSpacing.sm) {
-                Group {
-                    if viewModel.showPassword {
-                        TextField("Password", text: $viewModel.password)
-                    } else {
-                        SecureField("Password", text: $viewModel.password)
-                    }
-                }
-                .font(.system(.body, design: .monospaced))
-                .foregroundColor(.axTextPrimary)
-                .onChange(of: viewModel.password) { _, _ in
-                    viewModel.validatePassword()
-                }
-
-                Button {
-                    viewModel.showPassword.toggle()
-                } label: {
-                    Image(systemName: viewModel.showPassword ? "eye.slash" : "eye")
-                        .font(.system(size: 13))
-                        .foregroundColor(.axTextMuted)
-                }
-                .buttonStyle(.plain)
-
-                Button {
-                    viewModel.generatePassword()
-                } label: {
-                    Image(systemName: "arrow.clockwise")
-                        .font(.system(size: 13))
-                        .foregroundColor(.axAccentBlue)
-                }
-                .buttonStyle(.plain)
-            }
-            .padding(AXSpacing.md)
-            .background(Color.axSurface)
-            .cornerRadius(AXCornerRadius.md)
-            .overlay(
-                RoundedRectangle(cornerRadius: AXCornerRadius.md)
-                    .stroke(viewModel.passwordError != nil ? Color.axError : Color.axBorder, lineWidth: 1)
-            )
-
-            if let error = viewModel.passwordError {
-                inlineError(error)
-            }
-        }
-    }
-
-    private var hostAndOptionsRow: some View {
-        HStack(spacing: AXSpacing.lg) {
-            VStack(alignment: .leading, spacing: AXSpacing.sm) {
-                Text("Host Access")
-                    .font(AXTypography.caption)
-                    .fontWeight(.semibold)
-                    .foregroundColor(.axTextSecondary)
-
-                Picker("", selection: $viewModel.host) {
-                    ForEach(viewModel.hostOptions, id: \.self) { option in
-                        Text(option == "%" ? "Any Host (%)" : option).tag(option)
-                    }
-                }
-                .labelsHidden()
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, AXSpacing.xs)
-                .padding(.horizontal, AXSpacing.sm)
-                .background(Color.axSurface)
-                .cornerRadius(AXCornerRadius.md)
-                .overlay(
-                    RoundedRectangle(cornerRadius: AXCornerRadius.md)
-                        .stroke(Color.axBorder, lineWidth: 1)
-                )
-            }
-
-            VStack(alignment: .leading, spacing: AXSpacing.sm) {
-                Text("Options")
-                    .font(AXTypography.caption)
-                    .fontWeight(.semibold)
-                    .foregroundColor(.axTextSecondary)
-
-                Toggle(isOn: $viewModel.forceSSL) {
-                    HStack(spacing: AXSpacing.xs) {
-                        Image(systemName: "lock.shield")
-                            .font(.system(size: 12))
-                        Text("Force SSL")
-                            .font(AXTypography.subheadline)
-                    }
-                    .foregroundColor(.axTextPrimary)
-                }
-                .toggleStyle(.switch)
-                .tint(.axAccentBlue)
-            }
-        }
-    }
-
-    // MARK: - Footer
-
-    @ViewBuilder
-    private var footerSection: some View {
-        HStack(spacing: AXSpacing.md) {
-            if viewModel.didSucceed {
-                successFooter
-            } else {
-                defaultFooter
-            }
-        }
-        .padding(AXSpacing.xl)
-    }
-
-    private var successFooter: some View {
-        Group {
-            HStack(spacing: AXSpacing.sm) {
-                Image(systemName: "checkmark.circle.fill")
-                    .foregroundColor(.axSuccess)
-                Text("Database created successfully!")
-                    .font(AXTypography.subheadline)
-                    .foregroundColor(.axSuccess)
-            }
-            Spacer()
-            Button(action: {
-                onCreated()
-                dismiss()
-            }) {
-                Text("Done")
-                    .font(AXTypography.subheadline)
-                    .fontWeight(.semibold)
-                    .foregroundColor(.axBackground)
-                    .padding(.horizontal, AXSpacing.xl)
-                    .padding(.vertical, AXSpacing.md)
-                    .background(Color.axSuccess)
-                    .cornerRadius(AXCornerRadius.md)
-            }
-            .buttonStyle(.plain)
-        }
-    }
-
-    private var defaultFooter: some View {
-        HStack {
-            Spacer()
-            Button(action: { dismiss() }) {
-                Text("Cancel")
-                    .font(AXTypography.subheadline)
-                    .foregroundColor(.axTextSecondary)
-                    .padding(.horizontal, AXSpacing.lg)
-                    .padding(.vertical, AXSpacing.md)
-            }
-            .buttonStyle(.plain)
-            .disabled(viewModel.isSubmitting)
-
-            Button(action: {
-                Task { await viewModel.submitForm() }
-            }) {
-                HStack(spacing: AXSpacing.sm) {
-                    if viewModel.isSubmitting {
-                        ProgressView()
-                        .scaleEffect(0.7)
-                        .tint(.axBackground)
-                    }
-                    Text(viewModel.isSubmitting ? "Creating..." : "Create Database")
-                }
-                .font(AXTypography.subheadline)
-                .fontWeight(.semibold)
-                .foregroundColor(.axBackground)
-                .padding(.horizontal, AXSpacing.xl)
-                .padding(.vertical, AXSpacing.md)
-                .background(viewModel.isFormValid && !viewModel.isSubmitting ? (viewModel.selectedType?.brandColor ?? .axAccentBlue) : Color.axTextMuted.opacity(0.5))
-                .cornerRadius(AXCornerRadius.md)
-            }
-            .buttonStyle(.plain)
-            .disabled(!viewModel.isFormValid || viewModel.isSubmitting)
-        }
-    }
-
-    // MARK: - Error Overlay
-
-    @ViewBuilder
-    private var errorOverlay: some View {
-        if viewModel.operationResult.isFailure {
-            VStack {
-                Spacer()
-                HStack(spacing: AXSpacing.sm) {
-                    Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: 16))
-                    Text(viewModel.operationResult.message ?? "Operation failed")
-                        .font(AXTypography.subheadline)
-                        .lineLimit(2)
-                    Spacer()
-                    Button {
-                        viewModel.operationResult = .idle
-                    } label: {
-                        Image(systemName: "xmark")
-                            .font(.system(size: 11))
-                            .foregroundColor(.axError)
-                    }
-                    .buttonStyle(.plain)
-                }
-                .foregroundColor(.axError)
-                .padding(AXSpacing.md)
-                .background(
-                    RoundedRectangle(cornerRadius: AXCornerRadius.md)
-                        .fill(Color.axError.opacity(0.1))
-                )
-                .padding(AXSpacing.lg)
-            }
-        }
-    }
-
-    // MARK: - Helpers
-
-    private func inlineError(_ message: String) -> some View {
+    private func errorHint(_ message: String) -> some View {
         HStack(spacing: AXSpacing.xxs) {
             Image(systemName: "exclamationmark.circle")
-                .font(.system(size: 11))
+                .font(AXTypography.caption2)
             Text(message)
                 .font(AXTypography.caption2)
         }

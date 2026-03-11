@@ -7,6 +7,7 @@
 
 import SwiftUI
 import AevonXCore
+import AevonXCoreBridge
 
 extension UnifiedDatabaseDetailView {
 
@@ -70,14 +71,14 @@ extension UnifiedDatabaseDetailView {
         }
     }
 
-    func metricsGrid(metrics: AevonXCore.DatabaseMetrics) -> some View {
+    func metricsGrid(metrics: AevonXCoreBridge.DatabaseMetrics) -> some View {
         LazyVGrid(columns: [
             GridItem(.flexible()),
             GridItem(.flexible()),
             GridItem(.flexible())
         ], spacing: AXSpacing.lg) {
             AXStatCard(icon: "clock", label: "Uptime",
-                       value: AXFormatter.formatDuration(seconds: viewModel.metrics?.uptime ?? 0),
+                       value: AevonXCoreBridge.AXFormatter.formatDuration(seconds: viewModel.metrics?.uptime ?? 0),
                        color: databaseType.brandColor)
 
             AXStatCard(icon: "link", label: "Connections",
@@ -85,12 +86,12 @@ extension UnifiedDatabaseDetailView {
                        color: .axAccentGreen)
 
             AXStatCard(icon: "memorychip", label: "Memory",
-                       value: AXFormatter.formatSizeMB(viewModel.metrics?.memoryUsage ?? 0),
+                       value: AevonXCoreBridge.AXFormatter.formatSizeMB(viewModel.metrics?.memoryUsage ?? 0),
                        color: .axWarning)
         }
     }
 
-    func performanceCard(stats: AevonXCore.PerformanceStatistics) -> some View {
+    func performanceCard(stats: AevonXCoreBridge.PerformanceStatistics) -> some View {
         AXConfigCard(icon: "chart.bar.fill", title: "Performance Statistics") {
             HStack(spacing: AXSpacing.xl) {
                 statColumn(label: "Total Queries", value: "\(stats.totalQueries)")

@@ -8,7 +8,7 @@
 //
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 struct DBEMLogsSection: View {
     @ObservedObject var viewModel: DatabaseManagementViewModel

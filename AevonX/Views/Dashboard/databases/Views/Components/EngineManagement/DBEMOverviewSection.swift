@@ -6,7 +6,7 @@
 //
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 struct DBEMOverviewSection: View {
     @ObservedObject var viewModel: DatabaseEngineDetailViewModel
@@ -137,7 +137,7 @@ struct EngineInfoCard: View {
 }
 
 struct MetricsGrid: View {
-    let metrics: AevonXCore.DatabaseMetrics
+    let metrics: DatabaseMetrics
     let themeColor: Color
 
     var body: some View {
@@ -173,7 +173,7 @@ struct MetricsGrid: View {
 }
 
 struct PerformanceCard: View {
-    let stats: AevonXCore.PerformanceStatistics
+    let stats: PerformanceStatistics
     let themeColor: Color
 
     var body: some View {

@@ -6,7 +6,7 @@
 //
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 public struct ErrorResolutionView: View {
     @StateObject private var viewModel: ErrorResolutionViewModel
@@ -277,9 +277,10 @@ private struct RiskBadge: View {
     
     var color: Color {
         switch level {
-        case .safe: return .axSuccess
+        case .low: return .axSuccess
         case .medium: return .axWarning
         case .high: return .axError
+        case .critical: return .axError
         }
     }
 }

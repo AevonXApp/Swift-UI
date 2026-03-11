@@ -6,7 +6,7 @@
 //
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 struct DBAddRowView: View {
     @ObservedObject var viewModel: DatabaseDetailViewModel
@@ -94,7 +94,7 @@ struct DBAddRowView: View {
                 }
             }
             if !(nullFlags[col.name] ?? false) {
-                TextField(col.extra?.contains("auto_increment") == true ? "(auto)" : "value", text: Binding(
+                TextField(col.extra.contains("auto_increment") ? "(auto)" : "value", text: Binding(
                     get: { values[col.name] ?? "" },
                     set: { values[col.name] = $0 }
                 ))
@@ -105,7 +105,7 @@ struct DBAddRowView: View {
                 .background(Color.axSurface)
                 .cornerRadius(AXCornerRadius.sm)
                 .overlay(RoundedRectangle(cornerRadius: AXCornerRadius.sm).stroke(Color.axBorder, lineWidth: 1))
-                .disabled(col.extra?.contains("auto_increment") == true)
+                .disabled(col.extra.contains("auto_increment"))
             }
         }
     }
@@ -130,7 +130,7 @@ struct DBAddRowView: View {
                 Task {
                     var finalValues: [String: String?] = [:]
                     for col in columns {
-                        if col.extra?.contains("auto_increment") == true { continue }
+                        if col.extra.contains("auto_increment") { continue }
                         if nullFlags[col.name] == true {
                             finalValues[col.name] = nil
                         } else {
@@ -151,7 +151,7 @@ struct DBAddRowView: View {
                 .foregroundColor(.axBackground)
                 .padding(.horizontal, AXSpacing.xl)
                 .padding(.vertical, AXSpacing.md)
-                .background(isSubmitting ? Color.axTextMuted.opacity(0.5) : viewModel.database.type.brandColor)
+                .background(isSubmitting ? Color.axTextMuted.opacity(0.5) : Color.axAccentBlue)
                 .cornerRadius(AXCornerRadius.md)
             }
             .buttonStyle(.plain)

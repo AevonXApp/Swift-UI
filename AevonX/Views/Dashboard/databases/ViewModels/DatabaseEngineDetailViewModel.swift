@@ -9,7 +9,7 @@
 import Foundation
 import SwiftUI
 import Combine
-import AevonXCore
+import AevonXCoreBridge
 
 // MARK: - Operation Result
 
@@ -57,7 +57,7 @@ public enum AlertType: Identifiable {
     case confirmRestart
     case confirmStop
     case confirmStart
-    case confirmInstall(version: AevonX.DatabaseVersion)
+    case confirmInstall(version: DatabaseVersion)
     case confirmUpdate
     case confirmUninstall
     case operationSuccess(message: String)
@@ -97,22 +97,22 @@ public final class DatabaseEngineDetailViewModel: ObservableObject {
     @Published public var errorMessage: String?
     
     /// Current metrics (from Core layer)
-    @Published public var metrics: AevonXCore.DatabaseMetrics?
+    @Published public var metrics: DatabaseMetrics?
     
     /// Performance statistics (from Core layer)
-    @Published public var performanceStats: AevonXCore.PerformanceStatistics?
+    @Published public var performanceStats: PerformanceStatistics?
     
     /// Error log content (from Core layer)
-    @Published public var errorLog: AevonXCore.LogContent?
+    @Published public var errorLog: LogContent?
     
     /// Slow query log content (from Core layer)
-    @Published public var slowQueryLog: AevonXCore.LogContent?
+    @Published public var slowQueryLog: LogContent?
     
     /// Configuration content (from Core layer)
-    @Published public var configuration: AevonXCore.DatabaseConfiguration?
+    @Published public var configuration: DatabaseConfiguration?
     
     /// Available versions for this engine (using UI layer type)
-    @Published public var availableVersions: [AevonX.DatabaseVersion] = []
+    @Published public var availableVersions: [DatabaseVersion] = []
     
     /// Server resources (CPU, Memory, Disk)
     @Published public var serverResources: ServerResources?
@@ -133,7 +133,7 @@ public final class DatabaseEngineDetailViewModel: ObservableObject {
     @Published public var showConfigEditor = false
     
     /// Selected version for installation
-    @Published public var selectedVersion: AevonX.DatabaseVersion?
+    @Published public var selectedVersion: DatabaseVersion?
     
     /// Installation progress (0.0 - 1.0)
     @Published public var installationProgress: Double = 0.0
@@ -330,7 +330,7 @@ public final class DatabaseEngineDetailViewModel: ObservableObject {
             serverOSInfo = try await DatabaseResourceService.shared.getServerOSInfo(serverId: serverId)
             serverResources = try await DatabaseResourceService.shared.getServerResources(serverId: serverId)
         } catch {
-            CoreLogger.shared.debug("Could not load server info: \(error.localizedDescription)", module: "DatabaseEngineDetailViewModel")
+            print("[DatabaseEngineDetailViewModel] Could not load server info: \(error.localizedDescription)")
         }
     }
     
@@ -339,7 +339,7 @@ public final class DatabaseEngineDetailViewModel: ObservableObject {
         do {
             metrics = try await DatabaseMetricsService.shared.getMetrics(type: databaseType, serverId: serverId)
         } catch {
-            CoreLogger.shared.debug("Could not load metrics: \(error.localizedDescription)", module: "DatabaseEngineDetailViewModel")
+            print("[DatabaseEngineDetailViewModel] Could not load metrics: \(error.localizedDescription)")
         }
     }
     
@@ -348,7 +348,7 @@ public final class DatabaseEngineDetailViewModel: ObservableObject {
         do {
             performanceStats = try await DatabaseMetricsService.shared.getPerformanceStats(type: databaseType, serverId: serverId)
         } catch {
-            CoreLogger.shared.debug("Could not load performance stats: \(error.localizedDescription)", module: "DatabaseEngineDetailViewModel")
+            print("[DatabaseEngineDetailViewModel] Could not load performance stats: \(error.localizedDescription)")
         }
     }
     
@@ -450,7 +450,7 @@ public final class DatabaseEngineDetailViewModel: ObservableObject {
             }
             
             // Create updated config object
-            let updatedConfig = AevonXCore.DatabaseConfiguration(
+            let updatedConfig = DatabaseConfiguration(
                 engineType: .redis,
                 settings: currentConfig.settings, // Core will re-parse, so this is fine
                 rawContent: newContent
@@ -482,7 +482,7 @@ public final class DatabaseEngineDetailViewModel: ObservableObject {
         operationResult = .inProgress(message: "Saving configuration...", progress: nil)
         
         do {
-            let newConfig = AevonXCore.DatabaseConfiguration(
+            let newConfig = DatabaseConfiguration(
                 engineType: databaseType,
                 settings: currentConfig.settings,
                 rawContent: configEditContent
@@ -515,23 +515,14 @@ public final class DatabaseEngineDetailViewModel: ObservableObject {
         errorMessage = nil
         
         do {
-            let coreVersions = try await DatabaseEngineService.shared.getAvailableVersions(type: databaseType, serverId: serverId)
+            let versionStrings = try await DatabaseEngineService.shared.getAvailableVersions(type: databaseType, serverId: serverId)
             
-            // Convert Core versions to UI versions
-            let normalized = coreVersions
-                .filter { !$0.version.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
-                .map { coreVersion in
-                AevonX.DatabaseVersion(
-                    id: UUID(),
-                    version: coreVersion.version,
-                    releaseDate: coreVersion.releaseDate,
-                    isLTS: coreVersion.isLTS,
-                    isStable: coreVersion.isStable,
-                    isRecommended: coreVersion.isRecommended,
-                    changelog: coreVersion.changelog,
-                    downloadSize: coreVersion.downloadSize,
-                    installCommand: nil,
-                    requirements: coreVersion.requirements
+            // Convert version strings to DatabaseVersion objects
+            let normalized = versionStrings
+                .filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+                .map { versionStr in
+                DatabaseVersion(
+                    version: versionStr.trimmingCharacters(in: .whitespacesAndNewlines)
                 )
             }
             availableVersions = normalized
@@ -544,7 +535,7 @@ public final class DatabaseEngineDetailViewModel: ObservableObject {
     }
     
     /// Install a specific version
-    public func installVersion(_ version: AevonX.DatabaseVersion) async {
+    public func installVersion(_ version: DatabaseVersion) async {
         guard let serverId = serverId else { return }
         
         isPerformingServiceAction = true
@@ -556,16 +547,7 @@ public final class DatabaseEngineDetailViewModel: ObservableObject {
             try await DatabaseEngineService.shared.installDatabase(
                 type: databaseType,
                 version: version.version,
-                serverId: serverId,
-                progressHandler: { [weak self] progress in
-                    Task { @MainActor [weak self] in
-                        self?.installationProgress = progress
-                        self?.operationResult = .inProgress(
-                            message: "Installing \(self?.databaseType.displayName ?? "database") \(version.version)...",
-                            progress: progress
-                        )
-                    }
-                }
+                serverId: serverId
             )
             
             operationResult = .success(message: "\(databaseType.displayName) \(version.version) installed successfully!")
@@ -594,15 +576,7 @@ public final class DatabaseEngineDetailViewModel: ObservableObject {
             try await DatabaseEngineService.shared.installDatabase(
                 type: databaseType,
                 version: targetVersion,
-                serverId: serverId,
-                progressHandler: { [weak self] progress in
-                    Task { @MainActor [weak self] in
-                        self?.operationResult = .inProgress(
-                            message: "Updating \(self?.databaseType.displayName ?? "database")...",
-                            progress: progress
-                        )
-                    }
-                }
+                serverId: serverId
             )
             
             operationResult = .success(message: "\(databaseType.displayName) updated to \(targetVersion) successfully!")
@@ -627,8 +601,8 @@ public final class DatabaseEngineDetailViewModel: ObservableObject {
         }
 
         let fetched = try await DatabaseEngineService.shared.getAvailableVersions(type: databaseType, serverId: serverId)
-        if let selected = fetched.first(where: { !$0.version.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }) {
-            return selected.version
+        if let selected = fetched.first(where: { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }) {
+            return selected
         }
 
         return "latest"
@@ -747,7 +721,7 @@ public final class DatabaseEngineDetailViewModel: ObservableObject {
     }
     
     /// Show install confirmation
-    public func showInstallConfirmation(version: AevonX.DatabaseVersion) {
+    public func showInstallConfirmation(version: DatabaseVersion) {
         selectedVersion = version
         activeAlert = .confirmInstall(version: version)
     }
@@ -834,16 +808,12 @@ public final class DatabaseEngineDetailViewModel: ObservableObject {
 
     /// Check whether the service is enabled on boot
     private func checkBootStatus(serverId: String) async {
-        do {
-            let serviceName = databaseType.rawValue
-            let result = try await SSHService.shared.execute(
-                "systemctl is-enabled \(serviceName) 2>/dev/null || echo 'disabled'",
-                serverId: serverId
-            )
-            isBootEnabled = result.stdout.trimmingCharacters(in: .whitespacesAndNewlines) == "enabled"
-        } catch {
-            isBootEnabled = false
-        }
+        let serviceName = databaseType.rawValue
+        let result = await SSHBridge.shared.executeAsync(
+            serverID: serverId,
+            command: "systemctl is-enabled \(serviceName) 2>/dev/null || echo 'disabled'"
+        )
+        isBootEnabled = result.trimmingCharacters(in: .whitespacesAndNewlines) == "enabled"
     }
 
     // MARK: - Configuration Management
@@ -857,7 +827,7 @@ public final class DatabaseEngineDetailViewModel: ObservableObject {
             failurePrefix: "Save failed",
             reloadAfterSuccess: false
         ) {
-            let config = AevonXCore.DatabaseConfiguration(engineType: databaseType, settings: [:], rawContent: content)
+            let config = DatabaseConfiguration(engineType: databaseType, settings: [:], rawContent: content)
             try await DatabaseEngineService.shared.updateConfiguration(config, type: databaseType, serverId: serverId!)
             await loadConfiguration()
         }
@@ -900,7 +870,7 @@ public final class DatabaseEngineDetailViewModel: ObservableObject {
             let presetSettings = optimizationPresetSettings(for: preset)
             var merged = currentConfig.settings
             for (key, value) in presetSettings { merged[key] = value }
-            let updated = AevonXCore.DatabaseConfiguration(engineType: databaseType, settings: merged, rawContent: currentConfig.rawContent)
+            let updated = DatabaseConfiguration(engineType: databaseType, settings: merged, rawContent: currentConfig.rawContent)
             try await DatabaseEngineService.shared.updateConfiguration(updated, type: databaseType, serverId: serverId!)
             await loadConfiguration()
         }

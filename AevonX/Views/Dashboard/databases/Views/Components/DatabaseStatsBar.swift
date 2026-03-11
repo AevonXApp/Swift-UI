@@ -6,46 +6,52 @@
 //
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 struct DatabaseStatsBar: View {
     @ObservedObject var viewModel: DatabaseManagementViewModel
     
     var body: some View {
         HStack(spacing: AXSpacing.lg) {
-            // Premium Stats Cards
-            AXDatabaseStatCard(
-                title: "Databases",
-                value: "\(viewModel.totalDatabaseCount)",
+            AXStatCard(
                 icon: "cylinder.split.1x2",
-                color: .axAccentBlue
+                label: "Databases",
+                value: "\(viewModel.totalDatabaseCount)",
+                color: .axAccentBlue,
+                layout: .horizontal,
+                style: .glass
             )
             
-            AXDatabaseStatCard(
-                title: "Total Size",
-                value: viewModel.formattedTotalSize,
+            AXStatCard(
                 icon: "internaldrive",
-                color: .axAccentGreen
+                label: "Total Size",
+                value: viewModel.formattedTotalSize,
+                color: .axAccentGreen,
+                layout: .horizontal,
+                style: .glass
             )
             
-            AXDatabaseStatCard(
-                title: "Users",
-                value: "\(viewModel.totalUserCount)",
+            AXStatCard(
                 icon: "person.2",
-                color: .axWarning
+                label: "Users",
+                value: "\(viewModel.totalUserCount)",
+                color: .axWarning,
+                layout: .horizontal,
+                style: .glass
             )
             
-            AXDatabaseStatCard(
-                title: "Engines",
-                value: "\(viewModel.installedDatabaseTypesCount)/9",
+            AXStatCard(
                 icon: "server.rack",
-                color: .axInfo
+                label: "Engines",
+                value: "\(viewModel.installedDatabaseTypesCount)/9",
+                color: .axInfo,
+                layout: .horizontal,
+                style: .glass
             )
             
             Spacer()
             
-            // Connection status with glow
-            AXConnectionStatus(isConnected: viewModel.isConnected)
+            AXConnectionStatusBadge(isConnected: viewModel.isConnected)
         }
         .padding(.horizontal, AXSpacing.xl)
         .padding(.top, AXSpacing.xl)

@@ -28,7 +28,10 @@ struct AXStatCard: View {
     enum Style {
         case card  // full card with background + border
         case pill  // compact inline pill
+        case glass // glassmorphism with hover glow
     }
+    
+    @State private var isHovered = false
     
     var body: some View {
         Group {
@@ -39,6 +42,10 @@ struct AXStatCard: View {
                 horizontalCard
             case (.vertical, .pill), (.horizontal, .pill):
                 pillView
+            case (.vertical, .glass):
+                verticalGlass
+            case (.horizontal, .glass):
+                horizontalGlass
             }
         }
     }
@@ -128,6 +135,103 @@ struct AXStatCard: View {
             RoundedRectangle(cornerRadius: AXCornerRadius.md)
                 .stroke(color.opacity(0.15), lineWidth: 1)
         )
+    }
+    
+    // MARK: - Vertical Glass
+    
+    private var verticalGlass: some View {
+        VStack(alignment: .leading, spacing: AXSpacing.md) {
+            glassIcon
+            
+            VStack(alignment: .leading, spacing: AXSpacing.xxxs) {
+                Text(value)
+                    .font(.system(size: 20, weight: .bold, design: .rounded))
+                    .foregroundColor(.axTextPrimary)
+                Text(label)
+                    .font(AXTypography.caption)
+                    .foregroundColor(.axTextSecondary)
+            }
+        }
+        .padding(AXSpacing.lg)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .modifier(GlassBackground(color: color, isHovered: isHovered))
+        .onHover { isHovered = $0 }
+    }
+    
+    // MARK: - Horizontal Glass
+    
+    private var horizontalGlass: some View {
+        HStack(spacing: AXSpacing.md) {
+            glassIcon
+            
+            VStack(alignment: .leading, spacing: AXSpacing.xxxs) {
+                Text(value)
+                    .font(.system(size: 20, weight: .bold, design: .rounded))
+                    .foregroundColor(.axTextPrimary)
+                Text(label)
+                    .font(AXTypography.caption)
+                    .foregroundColor(.axTextSecondary)
+            }
+        }
+        .padding(.horizontal, AXSpacing.lg)
+        .padding(.vertical, AXSpacing.md)
+        .modifier(GlassBackground(color: color, isHovered: isHovered))
+        .onHover { isHovered = $0 }
+    }
+    
+    // MARK: - Shared Glass Sub-views
+    
+    private var glassIcon: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: AXCornerRadius.md)
+                .fill(
+                    LinearGradient(
+                        colors: [color.opacity(0.25), color.opacity(0.1)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .frame(width: 44, height: 44)
+            
+            Image(systemName: icon)
+                .font(.system(size: 18, weight: .medium))
+                .foregroundColor(color)
+        }
+    }
+}
+
+// MARK: - Glass Background Modifier
+
+private struct GlassBackground: ViewModifier {
+    let color: Color
+    let isHovered: Bool
+    
+    func body(content: Content) -> some View {
+        content
+            .background(
+                RoundedRectangle(cornerRadius: AXCornerRadius.lg)
+                    .fill(Color.axGlassBackground)
+                    .background(
+                        RoundedRectangle(cornerRadius: AXCornerRadius.lg)
+                            .fill(.ultraThinMaterial)
+                    )
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: AXCornerRadius.lg)
+                    .stroke(
+                        LinearGradient(
+                            colors: isHovered
+                                ? [color.opacity(0.4), color.opacity(0.2)]
+                                : [Color.axGlassBorder, Color.axBorder],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ),
+                        lineWidth: 1
+                    )
+            )
+            .shadow(color: isHovered ? color.opacity(0.1) : .clear, radius: 8, y: 4)
+            .scaleEffect(isHovered ? 1.02 : 1.0)
+            .animation(.spring(response: 0.3), value: isHovered)
     }
 }
 

@@ -6,7 +6,7 @@
 //
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 struct DBTableStructureView: View {
     @ObservedObject var viewModel: DatabaseDetailViewModel
@@ -109,8 +109,8 @@ struct DBTableStructureView: View {
                 if !col.isNullable {
                     badge("NOT NULL", color: .axTextSecondary)
                 }
-                if let extra = col.extra, !extra.isEmpty {
-                    badge(extra.uppercased(), color: .axInfo)
+                if !col.extra.isEmpty {
+                    badge(col.extra.uppercased(), color: .axInfo)
                 }
             }
             .padding(.horizontal, AXSpacing.sm)

@@ -7,7 +7,7 @@
 //
 
 import Foundation
-import AevonXCore
+import AevonXCoreBridge
 
 // MARK: - Database Info
 

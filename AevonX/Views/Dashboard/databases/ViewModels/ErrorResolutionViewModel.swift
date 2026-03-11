@@ -7,7 +7,7 @@
 
 import Foundation
 import Combine
-import AevonXCore
+import AevonXCoreBridge
 
 @MainActor
 public class ErrorResolutionViewModel: ObservableObject {

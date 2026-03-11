@@ -6,7 +6,7 @@
 //
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 import UniformTypeIdentifiers
 
 struct DBBackupSection: View {
@@ -164,14 +164,14 @@ struct DBBackupSection: View {
                     .font(AXTypography.subheadline)
                     .foregroundColor(.axTextPrimary)
                     .lineLimit(1)
-                Text(backup.createdAt.formatted(date: .abbreviated, time: .shortened))
+                Text(backup.date?.formatted(date: .abbreviated, time: .shortened) ?? "Unknown date")
                     .font(AXTypography.caption)
                     .foregroundColor(.axTextMuted)
             }
 
             Spacer()
 
-            Text(String(format: "%.1f MB", backup.size))
+            Text(backup.size)
                 .font(AXTypography.caption)
                 .foregroundColor(.axTextSecondary)
 

@@ -7,7 +7,7 @@
 //
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 struct DBEDLogsTab: View {
     @ObservedObject var viewModel: DatabaseEngineDetailViewModel
@@ -61,7 +61,7 @@ struct DBEDLogsTab: View {
     }
 
     private var currentLogLines: [String] {
-        let logContent: AevonXCore.LogContent? = {
+        let logContent: LogContent? = {
             switch viewModel.selectedLogType {
             case .error: return viewModel.errorLog
             case .slowQuery: return viewModel.slowQueryLog

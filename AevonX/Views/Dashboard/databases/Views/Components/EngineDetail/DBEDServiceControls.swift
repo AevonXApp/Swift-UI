@@ -6,52 +6,55 @@
 //
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 struct DBEDServiceControls: View {
     @ObservedObject var viewModel: DatabaseEngineDetailViewModel
 
     var body: some View {
         HStack(spacing: AXSpacing.md) {
-            // Start Button — triggers confirmation
-            AXServiceControlButton(
-                title: "Start",
+            // Start
+            AXActionButton(
+                label: "Start",
                 icon: "play.fill",
-                color: .axSuccess,
-                isEnabled: !viewModel.isRunning && !viewModel.isOperationInProgress
+                style: .success,
+                size: .regular
             ) {
                 viewModel.showStartConfirmation()
             }
+            .disabled(viewModel.isRunning || viewModel.isOperationInProgress)
 
-            // Stop Button — triggers confirmation
-            AXServiceControlButton(
-                title: "Stop",
+            // Stop
+            AXActionButton(
+                label: "Stop",
                 icon: "stop.fill",
-                color: .axError,
-                isEnabled: viewModel.isRunning && !viewModel.isOperationInProgress
+                style: .destructive,
+                size: .regular
             ) {
                 viewModel.showStopConfirmation()
             }
+            .disabled(!viewModel.isRunning || viewModel.isOperationInProgress)
 
-            // Restart Button — triggers confirmation
-            AXServiceControlButton(
-                title: "Restart",
+            // Restart
+            AXActionButton(
+                label: "Restart",
                 icon: "arrow.clockwise",
-                color: .axWarning,
-                isEnabled: viewModel.isRunning && !viewModel.isOperationInProgress
+                style: .warning,
+                size: .regular
             ) {
                 viewModel.showRestartConfirmation()
             }
+            .disabled(!viewModel.isRunning || viewModel.isOperationInProgress)
 
             Divider()
                 .frame(height: 40)
 
-            // Enable/Disable on Boot — based on actual boot status
-            AXServiceControlButton(
-                title: viewModel.isBootEnabled ? "Disable Boot" : "Enable Boot",
+            // Enable/Disable on Boot
+            AXActionButton(
+                label: viewModel.isBootEnabled ? "Disable Boot" : "Enable Boot",
                 icon: viewModel.isBootEnabled ? "poweroff" : "power",
-                color: viewModel.isBootEnabled ? .axTextMuted : viewModel.databaseType.brandColor,
-                isEnabled: !viewModel.isOperationInProgress
+                style: viewModel.isBootEnabled ? .ghost : .primary,
+                size: .regular
             ) {
                 Task {
                     if viewModel.isBootEnabled {
@@ -61,24 +64,15 @@ struct DBEDServiceControls: View {
                     }
                 }
             }
+            .disabled(viewModel.isOperationInProgress)
 
             Spacer()
 
             // Refresh
-            Button(action: { Task { await viewModel.loadData() } }) {
-                Image(systemName: "arrow.clockwise")
-                    .font(.system(size: 14))
-                    .foregroundColor(.axTextSecondary)
-                    .rotationEffect(.degrees(viewModel.isLoading ? 360 : 0))
-                    .animation(viewModel.isLoading ? Animation.linear(duration: 1).repeatForever(autoreverses: false) : .default, value: viewModel.isLoading)
-                    .frame(width: 36, height: 36)
-                    .background(Color.axBackground)
-                    .cornerRadius(AXCornerRadius.md)
+            AXRefreshButton(isLoading: viewModel.isLoading) {
+                Task { await viewModel.loadData() }
             }
-            .buttonStyle(.plain)
             .disabled(viewModel.isOperationInProgress)
         }
     }
 }
-
-
