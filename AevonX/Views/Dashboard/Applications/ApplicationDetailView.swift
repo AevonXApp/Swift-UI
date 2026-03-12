@@ -8,7 +8,6 @@
 
 import SwiftUI
 import AevonXCoreBridge
-import AevonXCoreBridge
 
 struct ApplicationDetailView: View {
     let application: ApplicationInstance

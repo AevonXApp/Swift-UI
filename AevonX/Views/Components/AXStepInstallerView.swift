@@ -73,9 +73,11 @@ public final class AXStepInstallerViewModel: ObservableObject {
     @Published public var isRunning = false
     @Published public var isComplete = false
     @Published public var hasFailed = false
+    @Published public var isCancelled = false
     @Published public var elapsedSeconds: Int = 0
     
     private var timerTask: Task<Void, Never>?
+    private var runTask: Task<Void, Never>?
     
     public var overallProgress: Double {
         guard !steps.isEmpty else { return 0 }
@@ -107,6 +109,7 @@ public final class AXStepInstallerViewModel: ObservableObject {
         isRunning = true
         isComplete = false
         hasFailed = false
+        isCancelled = false
         elapsedSeconds = 0
         
         // Start elapsed timer
@@ -118,11 +121,24 @@ public final class AXStepInstallerViewModel: ObservableObject {
         }
         
         for i in 0..<steps.count {
+            // Check for cancellation before each step
+            if isCancelled {
+                steps[i].status = .failed("Cancelled")
+                hasFailed = true
+                break
+            }
+            
             currentStepIndex = i
             steps[i].status = .running
             
             do {
                 let output = try await executor(steps[i], serverId)
+                // Check for cancellation after execution
+                if isCancelled {
+                    steps[i].status = .failed("Cancelled")
+                    hasFailed = true
+                    break
+                }
                 steps[i].output = output
                 steps[i].status = .completed
             } catch {
@@ -137,6 +153,13 @@ public final class AXStepInstallerViewModel: ObservableObject {
         timerTask = nil
         isRunning = false
         isComplete = !hasFailed
+    }
+    
+    /// Cancel the currently running execution
+    public func cancel() {
+        isCancelled = true
+        timerTask?.cancel()
+        timerTask = nil
     }
     
     /// Mark a step as skipped
@@ -155,6 +178,7 @@ public final class AXStepInstallerViewModel: ObservableObject {
         isRunning = false
         isComplete = false
         hasFailed = false
+        isCancelled = false
         elapsedSeconds = 0
     }
     
@@ -413,7 +437,22 @@ public struct AXStepInstallerView: View {
             
             Spacer()
             
-            if viewModel.isComplete || viewModel.hasFailed {
+            if viewModel.isRunning {
+                Button(action: { viewModel.cancel() }) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 11, weight: .semibold))
+                        Text("Cancel")
+                            .font(.system(size: 12, weight: .semibold))
+                    }
+                    .foregroundColor(.white)
+                    .padding(.horizontal, AXSpacing.lg)
+                    .padding(.vertical, AXSpacing.sm)
+                    .background(Color.axError.opacity(0.8))
+                    .cornerRadius(AXCornerRadius.sm)
+                }
+                .buttonStyle(.plain)
+            } else if viewModel.isComplete || viewModel.hasFailed {
                 Button(action: { onDismiss?() }) {
                     HStack(spacing: 6) {
                         Image(systemName: viewModel.isComplete ? "checkmark" : "arrow.uturn.backward")

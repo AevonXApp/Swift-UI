@@ -78,10 +78,7 @@ final class PHPDetailViewModel: ObservableObject {
             case .restart: try await GoApplicationService.shared.restartService(type: .phpFpm, serverId: serverId)
             }
             GlobalToastManager.shared.showSuccess("PHP-FPM service \(action.rawValue)ed successfully")
-            Task {
-                try? await Task.sleep(nanoseconds: 1_000_000_000)
-                await loadData()
-            }
+            await loadData()
         } catch {
             GlobalToastManager.shared.showError("Failed to \(action.rawValue) PHP-FPM: \(error.localizedDescription)")
         }

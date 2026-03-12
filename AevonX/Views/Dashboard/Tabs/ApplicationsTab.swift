@@ -52,6 +52,12 @@ struct ApplicationsTab: View {
                 secondaryButton: .cancel()
             )
         }
+        .sheet(item: $viewModel.doctorDiagnosis) { diagnosis in
+            DoctorPanelView(
+                diagnosis: diagnosis,
+                serverId: serverId ?? ""
+            )
+        }
         .keyboardShortcut("r", modifiers: .command)
     }
 

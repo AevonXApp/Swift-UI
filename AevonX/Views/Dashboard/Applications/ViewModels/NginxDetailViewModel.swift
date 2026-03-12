@@ -101,10 +101,7 @@ final class NginxDetailViewModel: ObservableObject {
             case .restart: try await GoApplicationService.shared.restartService(type: .nginx, serverId: serverId)
             }
             GlobalToastManager.shared.showSuccess("Nginx service \(action.rawValue)ed successfully")
-            Task {
-                try? await Task.sleep(nanoseconds: 1_000_000_000)
-                await loadData()
-            }
+            await loadData()
         } catch {
             GlobalToastManager.shared.showError("Failed to \(action.rawValue) Nginx: \(error.localizedDescription)")
         }

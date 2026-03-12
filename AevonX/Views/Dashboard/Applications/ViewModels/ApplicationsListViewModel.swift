@@ -21,6 +21,12 @@ final class ApplicationsListViewModel: ObservableObject {
     @Published var installMessageByAppId: [UUID: String] = [:]
     @Published var appPendingUninstall: ApplicationInstance?
 
+    /// AX Doctor diagnosis — set when a service action fails.
+    @Published var doctorDiagnosis: DoctorDiagnosis?
+
+    /// Currently running action (start/stop/restart) — shows spinner on that card
+    @Published var actionInProgressId: UUID?
+
     // Search & Filter
     @Published var searchText: String = ""
     @Published var statusFilter: StatusFilter = .all
@@ -37,7 +43,7 @@ final class ApplicationsListViewModel: ObservableObject {
 
     // MARK: - Computed
     var runningApps: [ApplicationInstance] { applications.filter { $0.isRunning } }
-    var stoppedApps: [ApplicationInstance] { applications.filter { !$0.isRunning } }
+    var stoppedApps: [ApplicationInstance] { applications.filter { !$0.isRunning && $0.status != .notInstalled } }
 
     var filteredApplications: [ApplicationInstance] {
         var result = applications
@@ -103,48 +109,128 @@ final class ApplicationsListViewModel: ObservableObject {
 
     // MARK: - Service Actions
 
-    func startApplication(_ app: ApplicationInstance) async {
+    /// Optimistic UI: update a specific app's state immediately
+    private func updateAppState(_ id: UUID, isRunning: Bool, status: AevonXCoreBridge.ServiceStatus) {
+        if let index = applications.firstIndex(where: { $0.id == id }) {
+            applications[index].isRunning = isRunning
+            applications[index].status = status
+        }
+    }
+
+    /// Refresh only ONE app's real state instead of re-discovering all 14
+    private func refreshSingleApp(_ type: ApplicationType) async {
         guard let serverId else { return }
         do {
-            try await GoApplicationService.shared.startService(type: app.type, serverId: serverId)
-            await loadApplications(forceRefresh: true)
+            let freshApp = try await GoApplicationService.shared.getApplicationInfo(type: type, serverId: serverId)
+            if let index = applications.firstIndex(where: { $0.type == type }) {
+                applications[index] = freshApp
+            }
         } catch {
-            errorMessage = "Failed to start \(app.name): \(error.localizedDescription)"
+            // Silent — optimistic state remains
         }
+    }
+
+    func startApplication(_ app: ApplicationInstance) async {
+        guard let serverId else { return }
+        actionInProgressId = app.id
+        errorMessage = nil
+        do {
+            try await GoApplicationService.shared.startService(type: app.type, serverId: serverId)
+            // If we get here, the service was started AND verified on the server
+            updateAppState(app.id, isRunning: true, status: .active)
+            await refreshSingleApp(app.type)
+        } catch {
+            let msg = error.localizedDescription
+            if msg.contains("verification failed") {
+                errorMessage = "\(app.name) command was sent but the service is not running. Diagnosing..."
+            } else {
+                errorMessage = "Failed to start \(app.name): \(msg)"
+            }
+            invokeDiagnostics(section: "applications", action: "start", target: app.type.rawValue, error: msg, serverId: serverId)
+        }
+        actionInProgressId = nil
     }
 
     func stopApplication(_ app: ApplicationInstance) async {
         guard let serverId else { return }
+        actionInProgressId = app.id
+        errorMessage = nil
         do {
             try await GoApplicationService.shared.stopService(type: app.type, serverId: serverId)
-            await loadApplications(forceRefresh: true)
+            // If we get here, the service was stopped AND verified on the server
+            updateAppState(app.id, isRunning: false, status: .inactive)
+            await refreshSingleApp(app.type)
         } catch {
-            errorMessage = "Failed to stop \(app.name): \(error.localizedDescription)"
+            let msg = error.localizedDescription
+            if msg.contains("verification failed") {
+                errorMessage = "\(app.name) stop command was sent but the service is still running. Diagnosing..."
+            } else {
+                errorMessage = "Failed to stop \(app.name): \(msg)"
+            }
+            invokeDiagnostics(section: "applications", action: "stop", target: app.type.rawValue, error: msg, serverId: serverId)
         }
+        actionInProgressId = nil
     }
 
     func restartApplication(_ app: ApplicationInstance) async {
         guard let serverId else { return }
+        actionInProgressId = app.id
+        errorMessage = nil
         do {
             try await GoApplicationService.shared.restartService(type: app.type, serverId: serverId)
-            await loadApplications(forceRefresh: true)
+            // If we get here, the service was restarted AND verified on the server
+            updateAppState(app.id, isRunning: true, status: .active)
+            await refreshSingleApp(app.type)
         } catch {
-            errorMessage = "Failed to restart \(app.name): \(error.localizedDescription)"
+            let msg = error.localizedDescription
+            if msg.contains("verification failed") {
+                errorMessage = "\(app.name) restart was sent but the service is not running. Diagnosing..."
+            } else {
+                errorMessage = "Failed to restart \(app.name): \(msg)"
+            }
+            invokeDiagnostics(section: "applications", action: "restart", target: app.type.rawValue, error: msg, serverId: serverId)
+        }
+        actionInProgressId = nil
+    }
+
+    // MARK: - AX Doctor
+
+    /// Invokes AX Doctor to diagnose a service action failure.
+    /// Uses live diagnosis: runs SSH check commands on the server first.
+    private func invokeDiagnostics(section: String, action: String, target: String, error: String, serverId: String) {
+        Task {
+            let diagnosis = await DoctorService.shared.liveDiagnose(
+                section: section, action: action, target: target,
+                error: error, serverId: serverId,
+                sshExecutor: { command in
+                    await withCheckedContinuation { continuation in
+                        Task.detached {
+                            let result = await SSHBridge.shared.executeAsync(serverID: serverId, command: command)
+                            continuation.resume(returning: result)
+                        }
+                    }
+                }
+            )
+            await MainActor.run {
+                self.doctorDiagnosis = diagnosis
+            }
         }
     }
 
     func toggleAutoStart(_ app: ApplicationInstance) async {
         guard let serverId else { return }
+        actionInProgressId = app.id
         do {
             if app.autoStart {
                 try await GoApplicationService.shared.disableOnBoot(type: app.type, serverId: serverId)
             } else {
                 try await GoApplicationService.shared.enableOnBoot(type: app.type, serverId: serverId)
             }
-            await loadApplications(forceRefresh: true)
+            await refreshSingleApp(app.type)
         } catch {
             errorMessage = "Failed to toggle auto-start for \(app.name): \(error.localizedDescription)"
         }
+        actionInProgressId = nil
     }
 
     func installApplication(_ app: ApplicationInstance) async {
