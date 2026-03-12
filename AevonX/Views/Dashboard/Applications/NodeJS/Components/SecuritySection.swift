@@ -7,7 +7,7 @@
 //
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 struct SecuritySection: View {
     let serverId: String

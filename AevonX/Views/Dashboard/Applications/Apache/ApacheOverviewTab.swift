@@ -1,6 +1,6 @@
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 struct ApacheOverviewTab: View {
     let application: ApplicationInstance

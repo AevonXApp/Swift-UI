@@ -7,7 +7,7 @@
 //
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 /// Generic container that provides the standard service detail layout:
 /// Left sidebar (UnifiedServiceSidebar) + Divider + Right content area (ScrollView)

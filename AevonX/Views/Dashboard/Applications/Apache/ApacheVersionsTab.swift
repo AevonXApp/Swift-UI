@@ -7,7 +7,7 @@
 //
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 struct ApacheVersionsTab: View {
     let application: ApplicationInstance
@@ -70,9 +70,9 @@ struct ApacheVersionsTab: View {
         isLoading = true
 
         do {
-            let appInfo = try await ApplicationManager.shared.getApplicationInfo(type: .apache, serverId: serverId)
+            let appInfo = try await GoApplicationService.shared.getApplicationInfo(type: .apache, serverId: serverId)
             currentVersion = appInfo.version
-            let versions = try await ApplicationManager.shared.getAvailableVersions(type: .apache, serverId: serverId)
+            let versions = try await GoApplicationService.shared.getAvailableVersions(type: .apache, serverId: serverId)
             availableVersions = versions.sorted { compareVersions($0, $1) == .orderedDescending }
             if let current = currentVersion {
                 installedVersions = [current]

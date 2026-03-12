@@ -7,7 +7,7 @@
 //
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 struct FrameworksSection: View {
     let serverId: String

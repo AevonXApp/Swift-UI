@@ -7,7 +7,7 @@
 //
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 import AevonXCoreBridge
 
 struct UnifiedDatabaseDetailView: View {

@@ -1,6 +1,6 @@
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 struct PHPFPMPoolsTab: View {
     let application: ApplicationInstance
@@ -122,13 +122,13 @@ struct PHPFPMPoolsTab: View {
     private func savePool(_ pool: PHPFPMPool) async {
         do {
             if editingPool != nil {
-                try await ApplicationManager.shared.updatePHPFPMPool(pool, serverId: serverId)
+                try await GoApplicationService.shared.updatePHPFPMPool(pool, serverId: serverId)
                 GlobalToastManager.shared.showSuccess("FPM pool '\(pool.name)' updated successfully.")
             } else {
-                try await ApplicationManager.shared.createPHPFPMPool(pool, serverId: serverId)
+                try await GoApplicationService.shared.createPHPFPMPool(pool, serverId: serverId)
                 GlobalToastManager.shared.showSuccess("FPM pool '\(pool.name)' created successfully.")
             }
-            let pools = try await ApplicationManager.shared.getPHPFPMPools(serverId: serverId)
+            let pools = try await GoApplicationService.shared.getPHPFPMPools(serverId: serverId)
             phpConfig.fpmPools = pools
         } catch {
             GlobalToastManager.shared.showError(error.localizedDescription)
@@ -139,7 +139,7 @@ struct PHPFPMPoolsTab: View {
         isDeleting = name
         
         do {
-            try await ApplicationManager.shared.deletePHPFPMPool(name: name, serverId: serverId)
+            try await GoApplicationService.shared.deletePHPFPMPool(name: name, serverId: serverId)
             phpConfig.fpmPools.removeAll { $0.name == name }
             GlobalToastManager.shared.showSuccess("FPM pool '\(name)' deleted.")
         } catch {
@@ -316,8 +316,8 @@ private struct PoolEditorSheet: View {
             // Dynamically resolve socket path for new pools
             if pool == nil && listenAddress.isEmpty {
                 Task {
-                    let resolved = try? await ServerPathResolver.shared.phpFpmSocketPath(serverId: serverId)
-                    if let resolved = resolved, !resolved.isEmpty {
+                    let resolved = "/run/php/php-fpm.sock"
+                    if !resolved.isEmpty {
                         await MainActor.run { listenAddress = resolved }
                     }
                 }

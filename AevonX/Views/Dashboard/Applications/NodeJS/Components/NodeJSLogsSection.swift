@@ -7,7 +7,7 @@
 //
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 struct NodeJSLogsSection: View {
     let serverId: String

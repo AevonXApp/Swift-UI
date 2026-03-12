@@ -1,6 +1,6 @@
 
 import Foundation
-import AevonXCore
+import AevonXCoreBridge
 
 public struct NginxConfigData {
     public var rawConfig: String = ""

@@ -6,7 +6,7 @@
 //
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 struct ApacheConfigurationTab: View {
     let application: ApplicationInstance

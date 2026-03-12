@@ -1,6 +1,6 @@
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 struct PHPExtensionsTab: View {
     let application: ApplicationInstance
@@ -98,10 +98,10 @@ struct PHPExtensionsTab: View {
         
         do {
             if `extension`.isInstalled {
-                try await ApplicationManager.shared.uninstallPHPExtension(`extension`.name, serverId: serverId)
+                try await GoApplicationService.shared.uninstallPHPExtension(`extension`.name, serverId: serverId)
                 successMessage = "Extension \(`extension`.name) uninstalled successfully"
             } else {
-                try await ApplicationManager.shared.installPHPExtension(`extension`.name, serverId: serverId)
+                try await GoApplicationService.shared.installPHPExtension(`extension`.name, serverId: serverId)
                 successMessage = "Extension \(`extension`.name) installed successfully"
             }
             
@@ -116,8 +116,8 @@ struct PHPExtensionsTab: View {
     
     private func refreshExtensions() async {
         do {
-            let installedExts = try await ApplicationManager.shared.getInstalledPHPExtensions(serverId: serverId)
-            let availableExts = try await ApplicationManager.shared.getAvailablePHPExtensions(serverId: serverId)
+            let installedExts = try await GoApplicationService.shared.getInstalledPHPExtensions(serverId: serverId)
+            let availableExts = try await GoApplicationService.shared.getAvailablePHPExtensions(serverId: serverId)
             
             await MainActor.run {
                 phpConfig.installedExtensions = installedExts

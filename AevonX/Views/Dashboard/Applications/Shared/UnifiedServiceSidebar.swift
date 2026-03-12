@@ -7,7 +7,7 @@
 //
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 import AevonXCoreBridge
 
 /// Generic sidebar that works for ANY service engine

@@ -1,6 +1,6 @@
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 struct PHPConfigurationTab: View {
     let application: ApplicationInstance

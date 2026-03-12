@@ -6,7 +6,7 @@
 //
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 struct ApacheModulesTab: View {
     let application: ApplicationInstance
@@ -91,17 +91,17 @@ struct ApacheModulesTab: View {
         
         do {
             if module.isEnabled {
-                try await ApplicationManager.shared.disableApacheModule(module.name, serverId: serverId)
+                try await GoApplicationService.shared.disableApacheModule(module.name, serverId: serverId)
                 GlobalToastManager.shared.showSuccess("Module \(module.name) disabled successfully")
             } else {
-                try await ApplicationManager.shared.enableApacheModule(module.name, serverId: serverId)
+                try await GoApplicationService.shared.enableApacheModule(module.name, serverId: serverId)
                 GlobalToastManager.shared.showSuccess("Module \(module.name) enabled successfully")
             }
             
             // Refresh module list
-            let modules = try await ApplicationManager.shared.getInstalledApacheModules(serverId: serverId)
+            let modules = try await GoApplicationService.shared.getInstalledApacheModules(serverId: serverId)
             // Available modules might also change state
-            let available = try await ApplicationManager.shared.getAvailableApacheModules(serverId: serverId)
+            let available = try await GoApplicationService.shared.getAvailableApacheModules(serverId: serverId)
             
             apacheConfig.modules = modules + available
             

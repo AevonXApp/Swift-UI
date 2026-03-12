@@ -7,7 +7,7 @@
 //
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 @MainActor
 public struct NginxVersionsTab: View {
@@ -80,8 +80,8 @@ public struct NginxVersionsTab: View {
     private func loadVersions() async {
         isLoading = true
         do {
-            let appInfo = try await ApplicationManager.shared.getApplicationInfo(type: .nginx, serverId: serverId)
-            let versions = try await ApplicationManager.shared.getAvailableVersions(type: .nginx, serverId: serverId)
+            let appInfo = try await GoApplicationService.shared.getApplicationInfo(type: .nginx, serverId: serverId)
+            let versions = try await GoApplicationService.shared.getAvailableVersions(type: .nginx, serverId: serverId)
             self.currentVersion = appInfo.version
             self.availableVersions = versions
         } catch {

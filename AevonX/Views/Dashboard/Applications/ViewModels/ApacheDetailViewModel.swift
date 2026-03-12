@@ -7,7 +7,7 @@
 
 import SwiftUI
 import Combine
-import AevonXCore
+import AevonXCoreBridge
 
 @MainActor
 final class ApacheDetailViewModel: ObservableObject {
@@ -28,12 +28,12 @@ final class ApacheDetailViewModel: ObservableObject {
     func loadData() async {
         isLoading = true
         do {
-            let configContent = try await ApplicationManager.shared.readConfig(type: .apache, serverId: serverId)
-            let installedModules = (try? await ApplicationManager.shared.getInstalledApacheModules(serverId: serverId)) ?? []
-            let availableModules = (try? await ApplicationManager.shared.getAvailableApacheModules(serverId: serverId)) ?? []
-            let vhosts = (try? await ApplicationManager.shared.getApacheVirtualHosts(serverId: serverId)) ?? []
-            let configPath = (try? await ApplicationManager.shared.getConfigPath(type: .apache, serverId: serverId)) ?? "Not detected"
-            let documentRoot = (try? await ApplicationManager.shared.getDocumentRoot(serverId: serverId)) ?? "Not detected"
+            let configContent = try await GoApplicationService.shared.readConfig(type: .apache, serverId: serverId)
+            let installedModules = (try? await GoApplicationService.shared.getInstalledApacheModules(serverId: serverId)) ?? []
+            let availableModules = (try? await GoApplicationService.shared.getAvailableApacheModules(serverId: serverId)) ?? []
+            let vhosts = (try? await GoApplicationService.shared.getApacheVirtualHosts(serverId: serverId)) ?? []
+            let configPath = (try? await GoApplicationService.shared.getConfigPath(type: .apache, serverId: serverId)) ?? "Not detected"
+            let documentRoot = (try? await GoApplicationService.shared.getDocumentRoot(serverId: serverId)) ?? "Not detected"
 
             apacheConfig = ApacheConfigData(
                 rawConfig: configContent,
@@ -53,7 +53,7 @@ final class ApacheDetailViewModel: ObservableObject {
     func saveConfiguration(_ newConfig: String) {
         Task {
             do {
-                try await ApplicationManager.shared.updateConfig(newConfig, type: .apache, serverId: serverId)
+                try await GoApplicationService.shared.updateConfig(newConfig, type: .apache, serverId: serverId)
                 GlobalToastManager.shared.showSuccess("Apache configuration updated and reloaded successfully")
                 await loadData()
             } catch {
@@ -67,9 +67,9 @@ final class ApacheDetailViewModel: ObservableObject {
     func controlService(action: ServiceControlButtons.ServiceAction) async {
         do {
             switch action {
-            case .start: try await ApplicationManager.shared.startService(type: .apache, serverId: serverId)
-            case .stop: try await ApplicationManager.shared.stopService(type: .apache, serverId: serverId)
-            case .restart: try await ApplicationManager.shared.restartService(type: .apache, serverId: serverId)
+            case .start: try await GoApplicationService.shared.startService(type: .apache, serverId: serverId)
+            case .stop: try await GoApplicationService.shared.stopService(type: .apache, serverId: serverId)
+            case .restart: try await GoApplicationService.shared.restartService(type: .apache, serverId: serverId)
             }
             GlobalToastManager.shared.showSuccess("Apache service \(action.rawValue)ed successfully")
             try? await Task.sleep(nanoseconds: 1_000_000_000)
@@ -81,7 +81,7 @@ final class ApacheDetailViewModel: ObservableObject {
 
     func reloadService() async {
         do {
-            try await ApplicationManager.shared.restartService(type: .apache, serverId: serverId)
+            try await GoApplicationService.shared.restartService(type: .apache, serverId: serverId)
             GlobalToastManager.shared.showSuccess("Apache service reloaded successfully")
         } catch {
             GlobalToastManager.shared.showError("Failed to reload Apache: \(error.localizedDescription)")
@@ -90,7 +90,7 @@ final class ApacheDetailViewModel: ObservableObject {
 
     func testConfiguration() async {
         do {
-            let isValid = try await ApplicationManager.shared.validateConfig(type: .apache, serverId: serverId)
+            let isValid = try await GoApplicationService.shared.validateConfig(type: .apache, serverId: serverId)
             if isValid {
                 GlobalToastManager.shared.showSuccess("Apache configuration is valid")
             } else {

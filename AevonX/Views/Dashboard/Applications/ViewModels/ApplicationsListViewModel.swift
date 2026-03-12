@@ -7,7 +7,7 @@
 
 import SwiftUI
 import Combine
-import AevonXCore
+import AevonXCoreBridge
 
 @MainActor
 final class ApplicationsListViewModel: ObservableObject {
@@ -93,7 +93,7 @@ final class ApplicationsListViewModel: ObservableObject {
         errorMessage = nil
 
         do {
-            applications = try await ApplicationManager.shared.discoverInstalledApplications(serverId: serverId)
+            applications = try await GoApplicationService.shared.discoverInstalledApplications(serverId: serverId)
             lastLoadTime = Date()
         } catch {
             errorMessage = "Failed to load applications: \(error.localizedDescription)"
@@ -106,7 +106,7 @@ final class ApplicationsListViewModel: ObservableObject {
     func startApplication(_ app: ApplicationInstance) async {
         guard let serverId else { return }
         do {
-            try await ApplicationManager.shared.startService(type: app.type, serverId: serverId)
+            try await GoApplicationService.shared.startService(type: app.type, serverId: serverId)
             await loadApplications(forceRefresh: true)
         } catch {
             errorMessage = "Failed to start \(app.name): \(error.localizedDescription)"
@@ -116,7 +116,7 @@ final class ApplicationsListViewModel: ObservableObject {
     func stopApplication(_ app: ApplicationInstance) async {
         guard let serverId else { return }
         do {
-            try await ApplicationManager.shared.stopService(type: app.type, serverId: serverId)
+            try await GoApplicationService.shared.stopService(type: app.type, serverId: serverId)
             await loadApplications(forceRefresh: true)
         } catch {
             errorMessage = "Failed to stop \(app.name): \(error.localizedDescription)"
@@ -126,7 +126,7 @@ final class ApplicationsListViewModel: ObservableObject {
     func restartApplication(_ app: ApplicationInstance) async {
         guard let serverId else { return }
         do {
-            try await ApplicationManager.shared.restartService(type: app.type, serverId: serverId)
+            try await GoApplicationService.shared.restartService(type: app.type, serverId: serverId)
             await loadApplications(forceRefresh: true)
         } catch {
             errorMessage = "Failed to restart \(app.name): \(error.localizedDescription)"
@@ -137,9 +137,9 @@ final class ApplicationsListViewModel: ObservableObject {
         guard let serverId else { return }
         do {
             if app.autoStart {
-                try await ApplicationManager.shared.disableOnBoot(type: app.type, serverId: serverId)
+                try await GoApplicationService.shared.disableOnBoot(type: app.type, serverId: serverId)
             } else {
-                try await ApplicationManager.shared.enableOnBoot(type: app.type, serverId: serverId)
+                try await GoApplicationService.shared.enableOnBoot(type: app.type, serverId: serverId)
             }
             await loadApplications(forceRefresh: true)
         } catch {
@@ -157,13 +157,13 @@ final class ApplicationsListViewModel: ObservableObject {
         do {
             let targetVersion: String
             do {
-                let versions = try await ApplicationManager.shared.getAvailableVersions(type: app.type, serverId: serverId)
+                let versions = try await GoApplicationService.shared.getAvailableVersions(type: app.type, serverId: serverId)
                 targetVersion = versions.first(where: { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }) ?? "latest"
             } catch {
                 targetVersion = "latest"
             }
 
-            try await ApplicationManager.shared.installVersion(targetVersion, type: app.type, serverId: serverId) { [weak self] message, progress in
+            try await GoApplicationService.shared.installVersion(targetVersion, type: app.type, serverId: serverId) { [weak self] message, progress in
                 Task { @MainActor in
                     self?.installMessageByAppId[app.id] = message
                     self?.installProgressByAppId[app.id] = max(0, min(1, progress))
@@ -184,7 +184,7 @@ final class ApplicationsListViewModel: ObservableObject {
         errorMessage = nil
 
         do {
-            try await ApplicationManager.shared.uninstallApplication(type: app.type, serverId: serverId, currentVersion: app.version)
+            try await GoApplicationService.shared.uninstallApplication(type: app.type, serverId: serverId, currentVersion: app.version)
             await loadApplications(forceRefresh: true)
         } catch {
             errorMessage = "Failed to uninstall \(app.name): \(error.localizedDescription)"

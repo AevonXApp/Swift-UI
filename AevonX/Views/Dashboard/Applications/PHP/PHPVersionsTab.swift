@@ -7,7 +7,7 @@
 //
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 struct PHPVersionsTab: View {
     let application: ApplicationInstance
@@ -78,11 +78,11 @@ struct PHPVersionsTab: View {
         isLoading = true
 
         do {
-            let appInfo = try await ApplicationManager.shared.getApplicationInfo(type: .phpFpm, serverId: serverId)
+            let appInfo = try await GoApplicationService.shared.getApplicationInfo(type: .phpFpm, serverId: serverId)
             currentVersion = appInfo.version
-            let versions = try await ApplicationManager.shared.getAvailableVersions(type: .phpFpm, serverId: serverId)
+            let versions = try await GoApplicationService.shared.getAvailableVersions(type: .phpFpm, serverId: serverId)
             availableVersions = versions.sorted { compareVersions($0, $1) == .orderedDescending }
-            installedVersions = try await PHPVersionService().getInstalledVersions(serverId: serverId)
+            installedVersions = try await GoApplicationService.shared.getInstalledVersions(type: .phpFpm, serverId: serverId)
         } catch {
             GlobalToastManager.shared.showError("Failed to load PHP versions: \(error.localizedDescription)")
         }

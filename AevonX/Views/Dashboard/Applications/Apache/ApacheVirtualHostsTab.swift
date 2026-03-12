@@ -6,7 +6,7 @@
 //
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 struct ApacheVirtualHostsTab: View {
     let application: ApplicationInstance
@@ -92,7 +92,7 @@ struct ApacheVirtualHostsTab: View {
     private func addVHost(_ vhost: ApacheVHost) {
         Task {
             do {
-                try await ApplicationManager.shared.createApacheVirtualHost(vhost, serverId: serverId)
+                try await GoApplicationService.shared.createApacheVirtualHost(vhost, serverId: serverId)
                 GlobalToastManager.shared.showSuccess("Virtual Host \(vhost.domain) created successfully")
                 try await refreshData()
             } catch {
@@ -104,7 +104,7 @@ struct ApacheVirtualHostsTab: View {
     private func deleteVHost(_ vhost: ApacheVHost) {
         Task {
             do {
-                try await ApplicationManager.shared.deleteApacheVirtualHost(domain: vhost.domain, serverId: serverId)
+                try await GoApplicationService.shared.deleteApacheVirtualHost(domain: vhost.domain, serverId: serverId)
                 GlobalToastManager.shared.showSuccess("Virtual Host \(vhost.domain) deleted successfully")
                 try await refreshData()
             } catch {
@@ -117,10 +117,10 @@ struct ApacheVirtualHostsTab: View {
         Task {
             do {
                 if vhost.isEnabled {
-                    try await ApplicationManager.shared.disableApacheVirtualHost(domain: vhost.domain, serverId: serverId)
+                    try await GoApplicationService.shared.disableApacheVirtualHost(domain: vhost.domain, serverId: serverId)
                     GlobalToastManager.shared.showSuccess("Virtual Host \(vhost.domain) disabled")
                 } else {
-                    try await ApplicationManager.shared.enableApacheVirtualHost(domain: vhost.domain, serverId: serverId)
+                    try await GoApplicationService.shared.enableApacheVirtualHost(domain: vhost.domain, serverId: serverId)
                     GlobalToastManager.shared.showSuccess("Virtual Host \(vhost.domain) enabled")
                 }
                 try await refreshData()
@@ -131,7 +131,7 @@ struct ApacheVirtualHostsTab: View {
     }
     
     private func refreshData() async throws {
-        let vhosts = try await ApplicationManager.shared.getApacheVirtualHosts(serverId: serverId)
+        let vhosts = try await GoApplicationService.shared.getApacheVirtualHosts(serverId: serverId)
         await MainActor.run {
             apacheConfig.virtualHosts = vhosts
         }

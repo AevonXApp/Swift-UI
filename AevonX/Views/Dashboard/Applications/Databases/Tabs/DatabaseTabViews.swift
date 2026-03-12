@@ -7,7 +7,7 @@
 //
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 import AevonXCoreBridge
 
 // MARK: - Overview Tab
@@ -195,7 +195,7 @@ struct DatabaseLogsTab: View {
         isLoading = true
         defer { isLoading = false }
         do {
-            let content = try await ApplicationManager.shared.readLogs(type: application.type, lines: 200, serverId: serverId)
+            let content = try await GoApplicationService.shared.readLogs(type: application.type, lines: 200, serverId: serverId)
             logLines = content.components(separatedBy: .newlines).filter { !$0.isEmpty }
         } catch {
             logLines = ["Error loading logs: \(error.localizedDescription)"]

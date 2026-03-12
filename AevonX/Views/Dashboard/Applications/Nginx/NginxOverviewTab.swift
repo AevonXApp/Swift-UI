@@ -1,6 +1,6 @@
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 @MainActor
 public struct NginxOverviewTab: View {

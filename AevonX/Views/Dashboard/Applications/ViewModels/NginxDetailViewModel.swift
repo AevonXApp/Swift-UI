@@ -7,7 +7,7 @@
 
 import SwiftUI
 import Combine
-import AevonXCore
+import AevonXCoreBridge
 
 @MainActor
 final class NginxDetailViewModel: ObservableObject {
@@ -28,10 +28,10 @@ final class NginxDetailViewModel: ObservableObject {
     func loadData() async {
         isLoading = true
         do {
-            let configContent = try await ApplicationManager.shared.readConfig(type: .nginx, serverId: serverId)
-            let paths = try? await ApplicationManager.shared.getImportantPaths(type: .nginx, serverId: serverId)
-            let ports = (try? await ApplicationManager.shared.getListeningPorts(type: .nginx, serverId: serverId)) ?? []
-            let blocked = (try? await ApplicationManager.shared.getBlockedIPs(type: .nginx, serverId: serverId)) ?? []
+            let configContent = try await GoApplicationService.shared.readConfig(type: .nginx, serverId: serverId)
+            let paths = try? await GoApplicationService.shared.getImportantPaths(type: .nginx, serverId: serverId)
+            let ports = (try? await GoApplicationService.shared.getListeningPorts(type: .nginx, serverId: serverId)) ?? []
+            let blocked = (try? await GoApplicationService.shared.getBlockedIPs(type: .nginx, serverId: serverId)) ?? []
 
             nginxConfig = NginxConfigData(
                 rawConfig: configContent,
@@ -51,7 +51,7 @@ final class NginxDetailViewModel: ObservableObject {
 
     func saveConfiguration(_ newConfig: String) async {
         do {
-            try await ApplicationManager.shared.updateConfig(newConfig, type: .nginx, serverId: serverId)
+            try await GoApplicationService.shared.updateConfig(newConfig, type: .nginx, serverId: serverId)
             GlobalToastManager.shared.showSuccess("Nginx configuration updated and reloaded successfully")
             await loadData()
         } catch {
@@ -61,7 +61,7 @@ final class NginxDetailViewModel: ObservableObject {
 
     func savePort(_ port: Int) async {
         do {
-            try await ApplicationManager.shared.updatePort(port, type: .nginx, serverId: serverId)
+            try await GoApplicationService.shared.updatePort(port, type: .nginx, serverId: serverId)
             GlobalToastManager.shared.showSuccess("Nginx port updated to \(port)")
             await loadData()
         } catch {
@@ -73,7 +73,7 @@ final class NginxDetailViewModel: ObservableObject {
 
     func blockIP(_ ip: String, reason: String? = nil, duration: String? = nil) async {
         do {
-            try await ApplicationManager.shared.blockIP(ip, reason: reason, duration: duration, type: .nginx, serverId: serverId)
+            try await GoApplicationService.shared.blockIP(ip, reason: reason, duration: duration, type: .nginx, serverId: serverId)
             GlobalToastManager.shared.showSuccess("IP \(ip) blocked successfully")
             await loadData()
         } catch {
@@ -83,7 +83,7 @@ final class NginxDetailViewModel: ObservableObject {
 
     func unblockIP(_ ip: String) async {
         do {
-            try await ApplicationManager.shared.unblockIP(ip, type: .nginx, serverId: serverId)
+            try await GoApplicationService.shared.unblockIP(ip, type: .nginx, serverId: serverId)
             GlobalToastManager.shared.showSuccess("IP \(ip) unblocked successfully")
             await loadData()
         } catch {
@@ -96,9 +96,9 @@ final class NginxDetailViewModel: ObservableObject {
     func controlService(action: ServiceControlButtons.ServiceAction) async {
         do {
             switch action {
-            case .start: try await ApplicationManager.shared.startService(type: .nginx, serverId: serverId)
-            case .stop: try await ApplicationManager.shared.stopService(type: .nginx, serverId: serverId)
-            case .restart: try await ApplicationManager.shared.restartService(type: .nginx, serverId: serverId)
+            case .start: try await GoApplicationService.shared.startService(type: .nginx, serverId: serverId)
+            case .stop: try await GoApplicationService.shared.stopService(type: .nginx, serverId: serverId)
+            case .restart: try await GoApplicationService.shared.restartService(type: .nginx, serverId: serverId)
             }
             GlobalToastManager.shared.showSuccess("Nginx service \(action.rawValue)ed successfully")
             Task {
@@ -112,7 +112,7 @@ final class NginxDetailViewModel: ObservableObject {
 
     func reloadService() async {
         do {
-            try await ApplicationManager.shared.restartService(type: .nginx, serverId: serverId)
+            try await GoApplicationService.shared.restartService(type: .nginx, serverId: serverId)
             GlobalToastManager.shared.showSuccess("Nginx service reloaded successfully")
         } catch {
             GlobalToastManager.shared.showError("Failed to reload Nginx: \(error.localizedDescription)")
@@ -121,7 +121,7 @@ final class NginxDetailViewModel: ObservableObject {
 
     func testConfiguration() async {
         do {
-            let isValid = try await ApplicationManager.shared.validateConfig(type: .nginx, serverId: serverId)
+            let isValid = try await GoApplicationService.shared.validateConfig(type: .nginx, serverId: serverId)
             if isValid {
                 GlobalToastManager.shared.showSuccess("Nginx configuration is valid")
             } else {

@@ -7,7 +7,7 @@
 //
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 /// Unified service control buttons (Start, Stop, Restart)
 struct ServiceControlButtons: View {

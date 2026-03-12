@@ -7,7 +7,7 @@
 //
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 import AevonXCoreBridge
 
 struct ApplicationDetailView: View {
@@ -142,7 +142,7 @@ struct GenericApplicationDetailView: View {
     private func loadLogs() async {
         isLoadingLogs = true
         do {
-            let logContent = try await ApplicationManager.shared.readLogs(type: application.type, lines: 100, serverId: serverId)
+            let logContent = try await GoApplicationService.shared.readLogs(type: application.type, lines: 100, serverId: serverId)
             await MainActor.run {
                 self.logLines = logContent.components(separatedBy: .newlines).filter { !$0.isEmpty }
                 self.isLoadingLogs = false

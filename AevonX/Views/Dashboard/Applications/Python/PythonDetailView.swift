@@ -8,7 +8,7 @@
 //
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 @MainActor
 struct PythonDetailView: View {
@@ -815,12 +815,11 @@ struct PythonDetailView: View {
     // MARK: - Service Control
 
     private func controlService(action: ServiceControlButtons.ServiceAction) async {
-        let adapter = ApplicationPythonAdapter()
         do {
             switch action {
-            case .start: try await adapter.startService(serverId: serverId)
-            case .stop: try await adapter.stopService(serverId: serverId)
-            case .restart: try await adapter.restartService(serverId: serverId)
+            case .start: try await GoApplicationService.shared.startService(type: .python, serverId: serverId)
+            case .stop: try await GoApplicationService.shared.stopService(type: .python, serverId: serverId)
+            case .restart: try await GoApplicationService.shared.restartService(type: .python, serverId: serverId)
             }
             GlobalToastManager.shared.showSuccess("Python service \(action) completed")
             await loadData()

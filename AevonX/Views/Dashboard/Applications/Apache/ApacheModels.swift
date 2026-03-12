@@ -6,6 +6,18 @@
 //
 
 import Foundation
+import AevonXCoreBridge
+
+// MARK: - Apache Config Data (UI container — was in AevonXCore)
+
+struct ApacheConfigData {
+    var rawConfig: String = ""
+    var configPath: String = ""
+    var documentRoot: String = ""
+    var modules: [ApacheModule] = []
+    var virtualHosts: [ApacheVHost] = []
+    var version: String? = nil
+}
 
 // MARK: - Apache Section
 

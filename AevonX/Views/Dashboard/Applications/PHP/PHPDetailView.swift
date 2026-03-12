@@ -4,7 +4,7 @@
 //
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 @MainActor
 struct PHPDetailView: View {

@@ -9,7 +9,7 @@
 //
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 @MainActor
 struct NodeJSDetailView: View {
@@ -751,13 +751,13 @@ struct NodeJSDetailView: View {
         do {
             switch action {
             case .start:
-                try await ApplicationManager.shared.startService(type: .nodejs, serverId: serverId)
+                try await GoApplicationService.shared.startService(type: .nodejs, serverId: serverId)
                 GlobalToastManager.shared.showSuccess("Node.js started")
             case .stop:
-                try await ApplicationManager.shared.stopService(type: .nodejs, serverId: serverId)
+                try await GoApplicationService.shared.stopService(type: .nodejs, serverId: serverId)
                 GlobalToastManager.shared.showSuccess("Node.js stopped")
             case .restart:
-                try await ApplicationManager.shared.restartService(type: .nodejs, serverId: serverId)
+                try await GoApplicationService.shared.restartService(type: .nodejs, serverId: serverId)
                 GlobalToastManager.shared.showSuccess("Node.js restarted")
             }
             await loadData()

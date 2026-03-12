@@ -7,7 +7,7 @@
 //
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 /// Unified sidebar header component for all service engines
 struct ServiceSidebarHeader: View {

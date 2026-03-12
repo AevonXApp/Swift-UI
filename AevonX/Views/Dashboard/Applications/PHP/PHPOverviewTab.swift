@@ -1,6 +1,6 @@
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 struct PHPOverviewTab: View {
     let application: ApplicationInstance
@@ -144,7 +144,7 @@ struct PHPOverviewTab: View {
                             Button(action: {
                                 Task {
                                     do {
-                                        try await ApplicationManager.shared.resetPHPOPcache(serverId: serverId)
+                                        try await GoApplicationService.shared.resetPHPOPcache(serverId: serverId)
                                         GlobalToastManager.shared.showSuccess("OPcache reset successfully")
                                     } catch {
                                         GlobalToastManager.shared.showError("Failed to reset OPcache: \(error.localizedDescription)")
@@ -214,7 +214,7 @@ struct PHPOverviewTab: View {
                         PHPActionButton(title: "PHP Info", icon: "info.circle", color: .purple) {
                             Task {
                                 isLoadingInfo = true
-                                phpInfoText = (try? await ApplicationManager.shared.getPHPInfo(serverId: serverId)) ?? "Failed to load PHP info"
+                                phpInfoText = (try? await GoApplicationService.shared.getPHPInfo(serverId: serverId)) ?? "Failed to load PHP info"
                                 isLoadingInfo = false
                                 showPHPInfo = true
                             }

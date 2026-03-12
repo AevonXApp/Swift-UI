@@ -1,6 +1,6 @@
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 struct PHPDisabledFunctionsTab: View {
     let application: ApplicationInstance
@@ -78,7 +78,7 @@ struct PHPDisabledFunctionsTab: View {
         }
         .onAppear {
             Task {
-                dangerousFunctions = await ApplicationManager.shared.getDangerousPHPFunctions()
+                dangerousFunctions = await GoApplicationService.shared.getDangerousPHPFunctions()
             }
         }
     }
@@ -88,11 +88,11 @@ struct PHPDisabledFunctionsTab: View {
         
         do {
             if phpConfig.disabledFunctions.contains(functionName) {
-                try await ApplicationManager.shared.enablePHPFunction(functionName, serverId: serverId)
+                try await GoApplicationService.shared.enablePHPFunction(functionName, serverId: serverId)
                 phpConfig.disabledFunctions.removeAll { $0 == functionName }
                 GlobalToastManager.shared.showSuccess("Function '\(functionName)' enabled.")
             } else {
-                try await ApplicationManager.shared.disablePHPFunction(functionName, serverId: serverId)
+                try await GoApplicationService.shared.disablePHPFunction(functionName, serverId: serverId)
                 phpConfig.disabledFunctions.append(functionName)
                 GlobalToastManager.shared.showSuccess("Function '\(functionName)' disabled.")
             }
@@ -109,7 +109,7 @@ struct PHPDisabledFunctionsTab: View {
         isProcessing.insert(functionName)
         
         do {
-            try await ApplicationManager.shared.disablePHPFunction(functionName, serverId: serverId)
+            try await GoApplicationService.shared.disablePHPFunction(functionName, serverId: serverId)
             phpConfig.disabledFunctions.append(functionName)
             customFunction = ""
             GlobalToastManager.shared.showSuccess("Function '\(functionName)' disabled.")

@@ -7,7 +7,7 @@
 //
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 /// Unified message banner for all service engines (PHP, Nginx, databases, etc.)
 struct ServiceMessageBanner: View {
