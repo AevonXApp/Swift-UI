@@ -359,6 +359,12 @@ struct ApplicationsMainView: View {
                 app: app,
                 onBack: { withAnimation { selectedApp = nil } }
             )
+        case "php-fpm":
+            PHPDetailView(
+                serverId: serverId ?? "",
+                app: app,
+                onBack: { withAnimation { selectedApp = nil } }
+            )
         default:
             VStack(spacing: AXSpacing.lg) {
                 Text("\(app.name) Detail View").font(AXTypography.headline).foregroundColor(.axTextPrimary)
