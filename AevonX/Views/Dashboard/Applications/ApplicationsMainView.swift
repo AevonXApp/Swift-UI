@@ -363,6 +363,7 @@ struct ApplicationsMainView: View {
             PHPDetailView(
                 serverId: serverId ?? "",
                 app: app,
+                connectionViewModel: connectionViewModel,
                 onBack: { withAnimation { selectedApp = nil } }
             )
         default:

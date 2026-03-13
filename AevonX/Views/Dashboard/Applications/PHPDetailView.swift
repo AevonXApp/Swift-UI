@@ -12,6 +12,7 @@ import AevonXCoreBridge
 struct PHPDetailView: View {
     let serverId: String
     let app: BridgeAppInfo
+    @ObservedObject var connectionViewModel: ServerConnectionViewModel
     var onBack: () -> Void
 
     @State private var selectedItem: PHPSidebarItem = .overview
@@ -380,13 +381,16 @@ struct PHPDetailView: View {
                 serverId: serverId,
                 installedVersions: versions,
                 availableVersions: availableVersions,
+                connectionViewModel: connectionViewModel,
                 onRefresh: {
                     versionsLoaded = false
                     await loadVersions()
                 }
             )
         case .extensions:
-            PHPExtensionsSection(serverId: serverId, modules: modules)
+            PHPExtensionsSection(serverId: serverId, modules: modules, onRefresh: {
+                await loadModules()
+            })
         case .workers:
             PHPWorkersSection(serverId: serverId)
         case .logs:
