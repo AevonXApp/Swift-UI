@@ -58,8 +58,8 @@ struct NginxDetailView: View {
             // Only load status on initial appear — fast!
             await loadStatus()
         }
-        .onChange(of: selectedItem) { newItem in
-            Task { await loadSectionData(for: newItem) }
+        .onChange(of: selectedItem) {
+            Task { await loadSectionData(for: selectedItem) }
         }
     }
 
@@ -100,8 +100,10 @@ struct NginxDetailView: View {
             if !modulesLoaded { await loadModules() }
         case .workers:
             if !workersLoaded { await loadWorkers() }
-        case .logs:
-            break // Logs section loads its own data internally
+        case .logs, .optimization, .security,
+             .performance, .sites, .snapshots, .analytics,
+             .cache, .benchmark, .proxy, .doctor:
+            break // Self-managed sections
         }
     }
 
@@ -308,7 +310,7 @@ struct NginxDetailView: View {
             },
             items: {
                 ForEach(NginxSidebarItem.categorizedItems(), id: \.0) { category, items in
-                    AXSidebarCategoryHeader(title: category.rawValue, icon: category.icon)
+                    AXSidebarCategoryHeader(title: category.rawValue, icon: "")
                     ForEach(items) { item in
                         AXSidebarRow(
                             icon: item.icon,
@@ -408,7 +410,9 @@ struct NginxDetailView: View {
         case .workers:
             workersLoaded = false
             await loadWorkers()
-        case .logs:
+        case .logs, .optimization, .security,
+             .performance, .sites, .snapshots, .analytics,
+             .cache, .benchmark, .proxy, .doctor:
             break
         }
     }
@@ -440,6 +444,26 @@ struct NginxDetailView: View {
             NginxWorkersSection(workers: workers)
         case .logs:
             NginxLogsSection(serverId: serverId)
+        case .optimization:
+            NginxOptimizationSection(serverId: serverId)
+        case .security:
+            NginxSecuritySection(serverId: serverId)
+        case .performance:
+            NginxPerformanceScoreSection(serverId: serverId)
+        case .sites:
+            NginxSitesSection(serverId: serverId)
+        case .snapshots:
+            NginxSnapshotsSection(serverId: serverId)
+        case .analytics:
+            NginxAnalyticsSection(serverId: serverId)
+        case .cache:
+            NginxCacheSection(serverId: serverId)
+        case .benchmark:
+            NginxBenchmarkSection(serverId: serverId)
+        case .proxy:
+            NginxProxySection(serverId: serverId)
+        case .doctor:
+            NginxDoctorSection(serverId: serverId)
         }
     }
 }

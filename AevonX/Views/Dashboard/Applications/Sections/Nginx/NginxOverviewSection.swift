@@ -4,6 +4,7 @@
 //
 //  Overview dashboard: service status, stat cards, and quick actions.
 //  Receives pre-fetched data from NginxDetailView — zero SSH calls.
+//  Premium design: glass stat cards, gradient status banner, animated actions.
 //
 
 import SwiftUI
@@ -21,15 +22,22 @@ struct NginxOverviewSection: View {
     private let toast = GlobalToastManager.shared
     private let bridge = ApplicationBridge.shared
 
+    private var isRunning: Bool { status?.isRunning ?? app.isRunning }
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: AXSpacing.xl) {
-                statusCard
+                // Premium status banner
+                statusBanner
 
+                // Stat cards
                 if let status = status {
-                    statCardsGrid(status)
+                    statCardsSection(status)
+                } else {
+                    skeletonStats
                 }
 
+                // Quick actions
                 quickActionsSection
 
                 Spacer()
@@ -38,42 +46,67 @@ struct NginxOverviewSection: View {
         }
     }
 
-    // MARK: - Status Card
+    // MARK: - Status Banner
 
-    private var statusCard: some View {
+    private var statusBanner: some View {
         HStack(spacing: AXSpacing.lg) {
+            // Animated status orb
             ZStack {
                 Circle()
                     .fill(
-                        LinearGradient(
+                        RadialGradient(
                             colors: [
-                                (status?.isRunning ?? app.isRunning) ? nginxGreen : Color.axError,
-                                (status?.isRunning ?? app.isRunning) ? nginxGreen.opacity(0.6) : Color.axError.opacity(0.6),
+                                isRunning ? nginxGreen : Color.axError,
+                                isRunning ? nginxGreen.opacity(0.3) : Color.axError.opacity(0.3),
                             ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
+                            center: .center,
+                            startRadius: 0,
+                            endRadius: 30
                         )
                     )
-                    .frame(width: 56, height: 56)
-                    .shadow(color: ((status?.isRunning ?? app.isRunning) ? nginxGreen : Color.axError).opacity(0.3), radius: 10, x: 0, y: 4)
+                    .frame(width: 60, height: 60)
+                    .shadow(color: (isRunning ? nginxGreen : Color.axError).opacity(0.4), radius: 12, y: 4)
 
-                Image(systemName: (status?.isRunning ?? app.isRunning) ? "checkmark.circle.fill" : "xmark.circle.fill")
-                    .font(.system(size: 24, weight: .bold))
+                Image(systemName: isRunning ? "checkmark" : "xmark")
+                    .font(.system(size: 22, weight: .black))
                     .foregroundColor(.white)
             }
 
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Nginx Service")
-                    .font(AXTypography.headline)
-                    .foregroundColor(.axTextPrimary)
+            // Service info
+            VStack(alignment: .leading, spacing: AXSpacing.xs) {
+                HStack(spacing: AXSpacing.sm) {
+                    Text("Nginx Service")
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundColor(.axTextPrimary)
 
-                HStack(spacing: AXSpacing.md) {
-                    Text((status?.isRunning ?? app.isRunning) ? "Active & Healthy" : "Service Stopped")
-                        .font(AXTypography.subheadline)
-                        .foregroundColor(.axTextSecondary)
+                    // Config validity badge
+                    if let s = status {
+                        HStack(spacing: 3) {
+                            Image(systemName: s.configValid ? "checkmark.seal.fill" : "xmark.seal.fill")
+                                .font(.system(size: 10))
+                            Text(s.configValid ? "Config OK" : "Config Error")
+                                .font(.system(size: 10, weight: .semibold))
+                        }
+                        .foregroundColor(s.configValid ? nginxGreen : .axWarning)
+                        .padding(.horizontal, 7)
+                        .padding(.vertical, 3)
+                        .background(
+                            Capsule()
+                                .fill(s.configValid ? nginxGreen.opacity(0.12) : Color.axWarning.opacity(0.12))
+                        )
+                    }
+                }
 
-                    if let uptime = status?.uptime, !uptime.isEmpty {
-                        Text("· Up since \(uptime)")
+                Text(isRunning ? "Active & Healthy" : "Service Stopped")
+                    .font(AXTypography.body)
+                    .foregroundColor(isRunning ? .axTextSecondary : .axError)
+
+                if let uptime = status?.uptime, !uptime.isEmpty {
+                    HStack(spacing: 4) {
+                        Image(systemName: "clock.fill")
+                            .font(.system(size: 10))
+                            .foregroundColor(.axTextMuted)
+                        Text("Up \(uptime)")
                             .font(.system(size: 11))
                             .foregroundColor(.axTextMuted)
                     }
@@ -82,54 +115,102 @@ struct NginxOverviewSection: View {
 
             Spacer()
 
-            if let status = status {
-                VStack(spacing: 4) {
-                    Image(systemName: status.configValid ? "checkmark.seal.fill" : "xmark.seal.fill")
-                        .font(.system(size: 16))
-                        .foregroundColor(status.configValid ? nginxGreen : .axWarning)
-                    Text(status.configValid ? "Config OK" : "Config Error")
-                        .font(.system(size: 10, weight: .medium))
-                        .foregroundColor(status.configValid ? nginxGreen : .axWarning)
+            // PID + version pills
+            VStack(alignment: .trailing, spacing: AXSpacing.xs) {
+                if let s = status {
+                    infoPill(icon: "number", label: "PID \(s.pid)", color: .axAccentBlue)
+                    infoPill(icon: "shippingbox.fill", label: "v\(s.version)", color: nginxGreen)
+                } else if let version = app.version, !version.isEmpty {
+                    infoPill(icon: "shippingbox.fill", label: "v\(version)", color: nginxGreen)
                 }
-                .padding(AXSpacing.sm)
-                .background(
-                    RoundedRectangle(cornerRadius: AXCornerRadius.sm)
-                        .fill(status.configValid ? nginxGreen.opacity(0.08) : Color.axWarning.opacity(0.08))
-                )
             }
         }
         .padding(AXSpacing.xl)
-        .background(Color.axSurface)
-        .cornerRadius(AXCornerRadius.lg)
-        .overlay(
+        .background(
             RoundedRectangle(cornerRadius: AXCornerRadius.lg)
-                .stroke(Color.axBorder.opacity(0.3), lineWidth: 1)
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            isRunning ? nginxGreen.opacity(0.08) : Color.axError.opacity(0.08),
+                            Color.axSurface,
+                        ],
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: AXCornerRadius.lg)
+                        .stroke(
+                            (isRunning ? nginxGreen : Color.axError).opacity(0.2),
+                            lineWidth: 1
+                        )
+                )
         )
+    }
+
+    private func infoPill(icon: String, label: String, color: Color) -> some View {
+        HStack(spacing: 4) {
+            Image(systemName: icon)
+                .font(.system(size: 9, weight: .semibold))
+                .foregroundColor(color)
+            Text(label)
+                .font(.system(size: 11, weight: .medium, design: .monospaced))
+                .foregroundColor(.axTextSecondary)
+        }
+        .padding(.horizontal, AXSpacing.sm)
+        .padding(.vertical, 4)
+        .background(color.opacity(0.08))
+        .cornerRadius(AXCornerRadius.sm)
+        .overlay(
+            RoundedRectangle(cornerRadius: AXCornerRadius.sm)
+                .stroke(color.opacity(0.15), lineWidth: 1)
+        )
+    }
+
+    // MARK: - Skeleton Stats
+
+    private var skeletonStats: some View {
+        VStack(alignment: .leading, spacing: AXSpacing.md) {
+            HStack(spacing: AXSpacing.sm) {
+                RoundedRectangle(cornerRadius: AXCornerRadius.sm)
+                    .fill(Color.axSurface)
+                    .frame(width: 16, height: 16)
+                    .shimmer()
+                RoundedRectangle(cornerRadius: AXCornerRadius.sm)
+                    .fill(Color.axSurface)
+                    .frame(width: 70, height: 13)
+                    .shimmer()
+            }
+
+            LazyVGrid(
+                columns: Array(repeating: GridItem(.flexible(), spacing: AXSpacing.md), count: 4),
+                spacing: AXSpacing.md
+            ) {
+                ForEach(0..<4, id: \.self) { _ in
+                    AXSkeletonStatCard()
+                }
+            }
+        }
     }
 
     // MARK: - Stat Cards
 
-    private func statCardsGrid(_ status: BridgeAppStatus) -> some View {
+    private func statCardsSection(_ s: BridgeAppStatus) -> some View {
         VStack(alignment: .leading, spacing: AXSpacing.md) {
             AXSectionTitle(title: "Metrics", icon: "chart.bar.fill")
 
             LazyVGrid(
-                columns: [
-                    GridItem(.flexible()),
-                    GridItem(.flexible()),
-                    GridItem(.flexible()),
-                    GridItem(.flexible()),
-                ],
+                columns: Array(repeating: GridItem(.flexible(), spacing: AXSpacing.md), count: 4),
                 spacing: AXSpacing.md
             ) {
-                AXStatCard(icon: "link", label: "Connections",
-                           value: "\(status.connections)", color: .axAccentBlue, style: .card)
-                AXStatCard(icon: "cpu", label: "Workers",
-                           value: "\(status.workerCount)", color: .cyan, style: .card)
-                AXStatCard(icon: "memorychip", label: "Memory",
-                           value: status.memoryUsage ?? "N/A", color: .purple, style: .card)
+                AXStatCard(icon: "link.circle.fill", label: "Connections",
+                           value: "\(s.connections)", color: .axAccentBlue, style: .glass)
+                AXStatCard(icon: "cpu.fill", label: "Workers",
+                           value: "\(s.workerCount)", color: .cyan, style: .glass)
+                AXStatCard(icon: "memorychip.fill", label: "Memory",
+                           value: s.memoryUsage ?? "N/A", color: .purple, style: .glass)
                 AXStatCard(icon: "bolt.fill", label: "Req/sec",
-                           value: String(format: "%.1f", status.requestsPerSec), color: nginxGreen, style: .card)
+                           value: String(format: "%.1f", s.requestsPerSec), color: nginxGreen, style: .glass)
             }
         }
     }
@@ -141,14 +222,19 @@ struct NginxOverviewSection: View {
             AXSectionTitle(title: "Quick Actions", icon: "bolt.fill")
 
             LazyVGrid(
-                columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())],
+                columns: [
+                    GridItem(.flexible(), spacing: AXSpacing.md),
+                    GridItem(.flexible(), spacing: AXSpacing.md),
+                    GridItem(.flexible(), spacing: AXSpacing.md),
+                    GridItem(.flexible(), spacing: AXSpacing.md),
+                ],
                 spacing: AXSpacing.md
             ) {
                 quickAction(
-                    icon: (status?.isRunning ?? app.isRunning) ? "stop.fill" : "play.fill",
-                    title: (status?.isRunning ?? app.isRunning) ? "Stop" : "Start",
-                    color: (status?.isRunning ?? app.isRunning) ? .axError : .axSuccess,
-                    action: (status?.isRunning ?? app.isRunning) ? "stop" : "start"
+                    icon: isRunning ? "stop.fill" : "play.fill",
+                    title: isRunning ? "Stop" : "Start",
+                    color: isRunning ? .axError : .axSuccess,
+                    action: isRunning ? "stop" : "start"
                 )
                 quickAction(icon: "arrow.clockwise", title: "Restart", color: .axWarning, action: "restart")
                 quickAction(icon: "arrow.triangle.2.circlepath", title: "Reload", color: .axAccentBlue, action: "reload")
@@ -158,33 +244,17 @@ struct NginxOverviewSection: View {
     }
 
     private func quickAction(icon: String, title: String, color: Color, action: String) -> some View {
-        Button {
-            Task { await performAction(action, title: title) }
-        } label: {
-            VStack(spacing: AXSpacing.sm) {
-                if actionInProgress == action {
-                    ProgressView().scaleEffect(0.7).frame(height: 20)
-                } else {
-                    Image(systemName: icon)
-                        .font(.system(size: 18, weight: .semibold))
-                        .foregroundColor(color)
-                }
-                Text(title)
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundColor(.axTextPrimary)
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, AXSpacing.lg)
-            .background(color.opacity(0.06))
-            .cornerRadius(AXCornerRadius.md)
-            .overlay(
-                RoundedRectangle(cornerRadius: AXCornerRadius.md)
-                    .stroke(color.opacity(0.2), lineWidth: 1)
-            )
-        }
-        .buttonStyle(PlainButtonStyle())
-        .disabled(actionInProgress != nil)
+        NginxQuickActionButton(
+            icon: icon,
+            title: title,
+            color: color,
+            isLoading: actionInProgress == action,
+            isDisabled: actionInProgress != nil,
+            onTap: { Task { await performAction(action, title: title) } }
+        )
     }
+
+    // MARK: - Actions
 
     private func performAction(_ action: String, title: String) async {
         actionInProgress = action
@@ -199,7 +269,6 @@ struct NginxOverviewSection: View {
         default:           resultJSON = ""
         }
 
-        // Parse result and show toast
         if let data = resultJSON.data(using: .utf8),
            let resp = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
             let success = resp["success"] as? Bool ?? false
@@ -211,8 +280,65 @@ struct NginxOverviewSection: View {
             }
         }
 
-        // Refresh status
         onAction(action)
         actionInProgress = nil
+    }
+}
+
+// MARK: - NginxQuickActionButton (extracted for hover state)
+
+private struct NginxQuickActionButton: View {
+    let icon: String
+    let title: String
+    let color: Color
+    let isLoading: Bool
+    let isDisabled: Bool
+    let onTap: () -> Void
+
+    @State private var isHovered = false
+
+    var body: some View {
+        Button(action: onTap) {
+            VStack(spacing: AXSpacing.sm) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: AXCornerRadius.md)
+                        .fill(
+                            LinearGradient(
+                                colors: [color.opacity(isHovered ? 0.2 : 0.1), color.opacity(0.05)],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .frame(width: 48, height: 48)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: AXCornerRadius.md)
+                                .stroke(color.opacity(isHovered ? 0.4 : 0.2), lineWidth: 1)
+                        )
+
+                    if isLoading {
+                        ProgressView().scaleEffect(0.7)
+                    } else {
+                        Image(systemName: icon)
+                            .font(.system(size: 18, weight: .semibold))
+                            .foregroundColor(color)
+                    }
+                }
+
+                Text(title)
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(.axTextSecondary)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, AXSpacing.md)
+            .background(
+                RoundedRectangle(cornerRadius: AXCornerRadius.lg)
+                    .fill(isHovered ? color.opacity(0.04) : Color.clear)
+            )
+            .scaleEffect(isHovered ? 1.02 : 1.0)
+            .animation(.spring(response: 0.25), value: isHovered)
+        }
+        .buttonStyle(PlainButtonStyle())
+        .disabled(isDisabled)
+        .onHover { isHovered = $0 }
     }
 }
