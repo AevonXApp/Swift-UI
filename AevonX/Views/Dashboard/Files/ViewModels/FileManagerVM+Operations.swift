@@ -6,7 +6,6 @@
 //
 
 import SwiftUI
-import AevonXCore
 import AevonXCoreBridge
 
 // MARK: - File Operations (CRUD)
@@ -18,7 +17,7 @@ extension FileManagerViewModel {
         
         Task {
             do {
-                try await SFTPFileManager.shared.createDirectory(path: path, serverId: serverId)
+                try await SFTPService.shared.createDirectory(path: path, serverId: serverId)
                 await loadFiles()
             } catch {
                 errorMessage = "Failed to create folder: \(error.localizedDescription)"
@@ -31,7 +30,7 @@ extension FileManagerViewModel {
         
         Task {
             do {
-                try await SFTPFileManager.shared.createFile(path: path, serverId: serverId)
+                try await SFTPService.shared.createFile(path: path, serverId: serverId)
                 await loadFiles()
             } catch {
                 errorMessage = "Failed to create file: \(error.localizedDescription)"
@@ -52,7 +51,7 @@ extension FileManagerViewModel {
         Task {
             for file in toDelete {
                 do {
-                    try await SFTPFileManager.shared.deleteItem(path: file.path, serverId: serverId)
+                    try await SFTPService.shared.deleteItem(path: file.path, serverId: serverId)
                 } catch {
                     errorMessage = "Failed to delete \(file.name): \(error.localizedDescription)"
                 }
@@ -87,7 +86,7 @@ extension FileManagerViewModel {
         
         Task {
             do {
-                try await SFTPFileManager.shared.renameItem(from: file.path, to: newPath, serverId: serverId)
+                try await SFTPService.shared.renameItem(from: file.path, to: newPath, serverId: serverId)
                 await loadFiles()
             } catch {
                 errorMessage = "Failed to rename: \(error.localizedDescription)"
@@ -104,7 +103,7 @@ extension FileManagerViewModel {
         
         Task {
             do {
-                try await SFTPFileManager.shared.copyItem(from: file.path, to: newPath, serverId: serverId)
+                try await SFTPService.shared.copyItem(from: file.path, to: newPath, serverId: serverId)
                 await loadFiles()
             } catch {
                 errorMessage = "Failed to duplicate: \(error.localizedDescription)"
@@ -144,9 +143,9 @@ extension FileManagerViewModel {
                 
                 do {
                     if clipboard.isCut {
-                        try await SFTPFileManager.shared.renameItem(from: file.path, to: destPath, serverId: serverId)
+                        try await SFTPService.shared.renameItem(from: file.path, to: destPath, serverId: serverId)
                     } else {
-                        try await SFTPFileManager.shared.copyItem(from: file.path, to: destPath, serverId: serverId)
+                        try await SFTPService.shared.copyItem(from: file.path, to: destPath, serverId: serverId)
                     }
                 } catch {
                     errorMessage = "Failed to paste \(file.name): \(error.localizedDescription)"
@@ -172,7 +171,7 @@ extension FileManagerViewModel {
         isExtracting = true
         Task {
             do {
-                try await SFTPFileManager.shared.extractArchive(
+                try await SFTPService.shared.extractArchive(
                     path: file.path,
                     serverId: serverId
                 )
@@ -190,7 +189,7 @@ extension FileManagerViewModel {
         }
     }
     
-    func compressSelected(archiveName: String, format: SFTPFileManager.ArchiveFormat) {
+    func compressSelected(archiveName: String, format: ArchiveFormat) {
         let selected = files.filter { selectedFiles.contains($0.id) }
         guard !selected.isEmpty else { return }
         
@@ -201,7 +200,7 @@ extension FileManagerViewModel {
         isCompressing = true
         Task {
             do {
-                try await SFTPFileManager.shared.compressFiles(
+                try await SFTPService.shared.compressFiles(
                     paths: selected.map { $0.path },
                     archivePath: archivePath,
                     format: format,
@@ -224,7 +223,7 @@ extension FileManagerViewModel {
     }
     
     func isArchiveFile(_ file: RemoteFileItem) -> Bool {
-        SFTPFileManager.isArchive(file.path)
+        SFTPService.isArchive(file.path)
     }
     
     // MARK: - Symlink
@@ -236,7 +235,7 @@ extension FileManagerViewModel {
         
         Task {
             do {
-                try await SFTPFileManager.shared.createSymlink(
+                try await SFTPService.shared.createSymlink(
                     target: target.path,
                     linkPath: linkPath,
                     serverId: serverId
@@ -256,12 +255,11 @@ extension FileManagerViewModel {
             do {
                 if recursive {
                     let safePath = ShellSanitizer.escapePath(file.path)
-                    _ = try await SSHBridge.shared.execute(
-                        "chown -R \(ShellSanitizer.sanitizeIdentifier(owner)):\(ShellSanitizer.sanitizeIdentifier(group)) \(safePath)",
-                        serverId: serverId
-                    )
+                    let chownCmd = "chown -R \(ShellSanitizer.sanitizeIdentifier(owner)):\(ShellSanitizer.sanitizeIdentifier(group)) \(safePath)"
+                    let json = await SSHBridge.shared.executeAsyncJSON(serverID: serverId, command: chownCmd)
+                    let _ = SSHResult.parse(json)
                 } else {
-                    try await SFTPFileManager.shared.changeOwner(
+                    try await SFTPService.shared.changeOwner(
                         path: file.path,
                         owner: owner,
                         group: group,
@@ -322,13 +320,15 @@ extension FileManagerViewModel {
                 fi
                 """
                 
-                let result = try await SSHBridge.shared.execute(installCmd, serverId: serverId)
+                let installJson = await SSHBridge.shared.executeAsyncJSON(serverID: serverId, command: installCmd)
+                let result = SSHResult.parse(installJson)
                 
                 if result.isSuccess {
-                    let verify = try await SSHBridge.shared.execute(
-                        "command -v \(ShellSanitizer.sanitizeIdentifier(tool.toolName))",
-                        serverId: serverId
+                    let verifyJson = await SSHBridge.shared.executeAsyncJSON(
+                        serverID: serverId,
+                        command: "command -v \(ShellSanitizer.sanitizeIdentifier(tool.toolName))"
                     )
+                    let verify = SSHResult.parse(verifyJson)
                     if verify.isSuccess {
                         showMissingToolBanner = false
                         missingTool = nil

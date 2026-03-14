@@ -9,7 +9,7 @@
 //
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 // MARK: - Keyboard Shortcuts Modifier
 

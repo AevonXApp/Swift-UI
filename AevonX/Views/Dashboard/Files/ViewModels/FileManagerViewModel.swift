@@ -12,7 +12,7 @@
 
 import SwiftUI
 import Combine
-import AevonXCore
+import AevonXCoreBridge
 
 // MARK: - File Manager ViewModel
 

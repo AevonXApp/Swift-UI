@@ -6,7 +6,7 @@
 //
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 // MARK: - Navigation & Tab Management
 
@@ -134,7 +134,7 @@ extension FileManagerViewModel {
         errorMessage = nil
         
         do {
-            files = try await SFTPFileManager.shared.listDirectory(
+            files = try await SFTPService.shared.listDirectory(
                 path: currentPath,
                 serverId: serverId,
                 showHidden: showHiddenFiles
@@ -155,7 +155,7 @@ extension FileManagerViewModel {
     
     func initialLoad() async {
         // Load quick access paths
-        quickAccessPaths = await SFTPFileManager.shared.getQuickAccessPaths(serverId: serverId)
+        quickAccessPaths = await SFTPService.shared.getQuickAccessPaths(serverId: serverId)
         
         // Load favorites
         favorites = FavoritesManager.shared.getFavorites(serverId: serverId)
@@ -181,7 +181,7 @@ extension FileManagerViewModel {
         
         // Load disk usage in background
         Task {
-            if let usage = try? await SFTPFileManager.shared.getDiskUsage(path: currentPath, serverId: serverId) {
+            if let usage = try? await SFTPService.shared.getDiskUsage(path: currentPath, serverId: serverId) {
                 diskUsage = usage
             }
         }

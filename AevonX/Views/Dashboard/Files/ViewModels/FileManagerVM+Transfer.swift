@@ -6,7 +6,7 @@
 //
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 // MARK: - File Transfer (Upload / Download)
 
@@ -41,7 +41,7 @@ extension FileManagerViewModel {
                     try Task.checkCancellation()
                     updateTransferState(id: transferId, state: .transferring)
                     
-                    try await SFTPFileManager.shared.uploadFile(
+                    try await SFTPService.shared.uploadFile(
                         localURL: url,
                         remotePath: remotePath,
                         serverId: serverId,
@@ -99,7 +99,7 @@ extension FileManagerViewModel {
                 self.updateTransferState(id: transferId, state: .transferring)
                 
                 do {
-                    try await SFTPFileManager.shared.downloadFile(
+                    try await SFTPService.shared.downloadFile(
                         remotePath: file.path,
                         localURL: localURL,
                         serverId: self.serverId,
@@ -141,7 +141,7 @@ extension FileManagerViewModel {
         
         Task {
             do {
-                try await SFTPFileManager.shared.downloadFromURL(
+                try await SFTPService.shared.downloadFromURL(
                     url: urlString,
                     destPath: destPath,
                     serverId: serverId
@@ -174,7 +174,7 @@ extension FileManagerViewModel {
             isSearching = true
             
             do {
-                searchResults = try await SFTPFileManager.shared.searchFiles(
+                searchResults = try await SFTPService.shared.searchFiles(
                     query: query,
                     path: currentPath,
                     serverId: serverId

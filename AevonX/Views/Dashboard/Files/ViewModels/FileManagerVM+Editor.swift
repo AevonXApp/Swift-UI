@@ -7,7 +7,7 @@
 //
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 // MARK: - File Editor
 
@@ -25,7 +25,7 @@ extension FileManagerViewModel {
 
         Task {
             do {
-                let content = try await SFTPFileManager.shared.readFile(
+                let content = try await SFTPService.shared.readFile(
                     path: file.path,
                     serverId: serverId
                 )
@@ -50,7 +50,7 @@ extension FileManagerViewModel {
 
         Task {
             do {
-                try await SFTPFileManager.shared.writeFile(
+                try await SFTPService.shared.writeFile(
                     path: file.path,
                     content: editorContent,
                     serverId: serverId
@@ -86,7 +86,7 @@ extension FileManagerViewModel {
 
         Task {
             do {
-                try await SFTPFileManager.shared.changePermissions(
+                try await SFTPService.shared.changePermissions(
                     path: file.path,
                     mode: perms.numericString,
                     serverId: serverId

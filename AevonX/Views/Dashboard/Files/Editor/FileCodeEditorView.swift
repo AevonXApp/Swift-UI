@@ -17,7 +17,7 @@
 
 import SwiftUI
 import AppKit
-import AevonXCore
+import AevonXCoreBridge
 
 // MARK: - Code Editor View (SwiftUI)
 

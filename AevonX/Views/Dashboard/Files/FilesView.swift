@@ -8,7 +8,7 @@
 //
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 import UniformTypeIdentifiers
 
 // MARK: - Files View (Main Hub)

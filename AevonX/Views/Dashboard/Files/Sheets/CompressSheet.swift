@@ -6,14 +6,14 @@
 //
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 // MARK: - Compress Sheet
 
 struct CompressSheetView: View {
     @ObservedObject var viewModel: FileManagerViewModel
     @State private var archiveName = ""
-    @State private var selectedFormat: SFTPFileManager.ArchiveFormat = .zip
+    @State private var selectedFormat: ArchiveFormat = .zip
     
     var body: some View {
         VStack(spacing: AXSpacing.lg) {
@@ -45,7 +45,7 @@ struct CompressSheetView: View {
                         .font(AXTypography.caption)
                         .foregroundColor(.axTextSecondary)
                     Picker("", selection: $selectedFormat) {
-                        ForEach(SFTPFileManager.ArchiveFormat.allCases, id: \.self) { format in
+                        ForEach(ArchiveFormat.allCases, id: \.self) { format in
                             Text(format.displayName).tag(format)
                         }
                     }
