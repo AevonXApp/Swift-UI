@@ -1,6 +1,6 @@
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 struct DockerInstallationView: View {
     let serverId: String
@@ -93,7 +93,7 @@ struct DockerInstallationView: View {
         
         Task {
             do {
-                try await DockerManager.shared.installDocker(serverId: serverId) { message, currentProgress in
+                try await DockerService.shared.installDocker(serverId: serverId) { message, currentProgress in
                     Task { @MainActor in
                         self.statusMessage = message
                         self.progress = currentProgress

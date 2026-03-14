@@ -1,6 +1,6 @@
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 struct DockerCloneSheet: View {
     let container: DockerContainer
@@ -140,7 +140,7 @@ struct DockerCloneSheet: View {
         
         Task {
             do {
-                try await DockerManager.shared.cloneContainer(
+                try await DockerService.shared.cloneContainer(
                     containerId: container.id,
                     newName: newName,
                     serverId: serverId,

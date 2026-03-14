@@ -1,6 +1,6 @@
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 struct DockerSystemPrune: View {
     let serverId: String
@@ -162,7 +162,7 @@ struct DockerSystemPrune: View {
         isPruning = true; errorMessage = nil; spaceReclaimed = nil; output = ""
         Task {
             do {
-                let result = try await DockerManager.shared.systemPrune(all: pruneAll, volumes: pruneVolumes, serverId: serverId)
+                let result = try await DockerService.shared.systemPrune(all: pruneAll, volumes: pruneVolumes, serverId: serverId)
                 
                 await MainActor.run {
                     output = result

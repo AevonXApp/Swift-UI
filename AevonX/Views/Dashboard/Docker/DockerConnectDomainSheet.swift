@@ -1,6 +1,6 @@
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 struct DockerConnectDomainSheet: View {
     let container: DockerContainer
@@ -490,10 +490,22 @@ struct DockerConnectDomainSheet: View {
         isLoading = true
         Task {
             do {
-                let ports = try await DockerManager.shared.getContainerPorts(id: container.id, serverId: serverId)
+                let portStrings = try await DockerService.shared.getContainerPorts(id: container.id, serverId: serverId)
                 await MainActor.run {
-                    detectedPorts = ports
-                    if let first = ports.first {
+                    // Parse "80/tcp -> 0.0.0.0:8080" format into tuples
+                    detectedPorts = portStrings.compactMap { line in
+                        let parts = line.components(separatedBy: " -> ")
+                        guard parts.count >= 2 else {
+                            // Simple format: just "8080"
+                            let port = line.trimmingCharacters(in: .whitespaces)
+                            return (hostPort: port, containerPort: port)
+                        }
+                        let containerPort = parts[0].components(separatedBy: "/").first ?? parts[0]
+                        let hostPort = parts[1].components(separatedBy: ":").last ?? parts[1]
+                        return (hostPort: hostPort.trimmingCharacters(in: .whitespaces),
+                                containerPort: containerPort.trimmingCharacters(in: .whitespaces))
+                    }
+                    if let first = detectedPorts.first {
                         selectedPort = first.hostPort
                     }
                     isLoading = false
@@ -510,11 +522,10 @@ struct DockerConnectDomainSheet: View {
         
         Task {
             do {
-                try await DockerManager.shared.connectDomain(
+                try await DockerService.shared.connectDomain(
                     domain: domain,
-                    containerPort: selectedPort,
-                    enableSSL: enableSSL,
-                    enableWebSocket: enableWebSocket,
+                    containerId: container.id,
+                    containerPort: Int(selectedPort) ?? 80,
                     serverId: serverId,
                     progress: { text in
                         Task { @MainActor in
@@ -542,7 +553,7 @@ struct DockerConnectDomainSheet: View {
         
         Task {
             do {
-                try await DockerManager.shared.disconnectDomain(domain: domain, serverId: serverId)
+                try await DockerService.shared.disconnectDomain(domain: domain, serverId: serverId)
                 await MainActor.run {
                     progressSteps.append("Nginx configuration removed ✅")
                     progressSteps.append("Domain disconnected successfully ✅")

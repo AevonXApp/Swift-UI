@@ -1,6 +1,6 @@
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 struct DockerComposeEditor: View {
     let project: DockerComposeProject
@@ -147,7 +147,7 @@ struct DockerComposeEditor: View {
     private func loadFile() async {
         isLoading = true
         do {
-            content = try await DockerManager.shared.readComposeFile(workingDir: project.workingDir, serverId: serverId)
+            content = try await DockerService.shared.readComposeFile(workingDir: project.workingDir, serverId: serverId)
             originalContent = content
         } catch {
             errorMessage = error.localizedDescription
@@ -162,7 +162,7 @@ struct DockerComposeEditor: View {
         
         Task {
             do {
-                try await DockerManager.shared.writeComposeFile(content: content, workingDir: project.workingDir, serverId: serverId)
+                try await DockerService.shared.writeComposeFile(content: content, workingDir: project.workingDir, serverId: serverId)
                 await MainActor.run {
                     originalContent = content
                     hasChanges = false
@@ -185,9 +185,9 @@ struct DockerComposeEditor: View {
         
         Task {
             do {
-                try await DockerManager.shared.writeComposeFile(content: content, workingDir: project.workingDir, serverId: serverId)
-                try await DockerManager.shared.composeDown(workingDir: project.workingDir, serverId: serverId)
-                try await DockerManager.shared.composeUp(workingDir: project.workingDir, serverId: serverId)
+                try await DockerService.shared.writeComposeFile(content: content, workingDir: project.workingDir, serverId: serverId)
+                try await DockerService.shared.composeDown(workingDir: project.workingDir, serverId: serverId)
+                try await DockerService.shared.composeUp(workingDir: project.workingDir, serverId: serverId)
                 
                 await MainActor.run {
                     originalContent = content

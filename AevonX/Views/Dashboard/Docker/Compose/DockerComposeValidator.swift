@@ -1,6 +1,6 @@
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 struct DockerComposeValidator: View {
     let serverId: String
@@ -151,7 +151,7 @@ struct DockerComposeValidator: View {
         isValidating = true; validOutput = nil; errorOutput = nil; isValid = nil
         Task {
             do {
-                let result = try await DockerManager.shared.composeValidate(workingDir: workingDir, serverId: serverId)
+                let result = try await DockerService.shared.composeValidate(workingDir: workingDir, serverId: serverId)
                 await MainActor.run {
                     isValid = result.isValid
                     validOutput = result.resolvedConfig

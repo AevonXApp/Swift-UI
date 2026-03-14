@@ -1,6 +1,6 @@
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 struct DockerHubSearchView: View {
     let serverId: String
@@ -139,7 +139,7 @@ struct DockerHubSearchView: View {
         
         Task {
             do {
-                let hubResults = try await DockerManager.shared.searchHub(query: searchQuery, serverId: serverId)
+                let hubResults = try await DockerService.shared.searchHub(query: searchQuery, serverId: serverId)
                 let mapped = hubResults.map {
                     HubSearchResult(name: $0.name, description: $0.description, stars: $0.stars, isOfficial: $0.isOfficial, isAutomated: $0.isAutomated)
                 }
@@ -157,7 +157,7 @@ struct DockerHubSearchView: View {
         
         Task {
             do {
-                try await DockerManager.shared.pullImage(name, serverId: serverId)
+                try await DockerService.shared.pullImage(name, serverId: serverId)
                 await MainActor.run {
                     successMessage = "Pulled \(name) successfully"
                     isPulling = nil

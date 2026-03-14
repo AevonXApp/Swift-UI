@@ -1,6 +1,6 @@
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 struct DockerOverviewTab: View {
     let server: Server
@@ -8,7 +8,7 @@ struct DockerOverviewTab: View {
     @ObservedObject var connectionViewModel: ServerConnectionViewModel
     
     @State private var dockerInfo: DockerInfo?
-    @State private var serviceStatus: AevonXCore.ServiceStatus = .unknown
+    @State private var serviceStatus: AevonXCoreBridge.ServiceStatus = .unknown
     @State private var cpuUsage: Double = 0
     @State private var memoryUsage: Double = 0
     @State private var isLoading: Bool = false
@@ -267,18 +267,18 @@ struct DockerOverviewTab: View {
             
         Task {
             do {
-                serviceStatus = try await DockerManager.shared.getServiceStatus(serverId: serverId)
+                serviceStatus = try await DockerService.shared.getServiceStatus(serverId: serverId)
                 
                 if serviceStatus == .active {
                     // Sequential but fault-tolerant — each call independent
-                    dockerInfo = try? await DockerManager.shared.getDockerInfo(serverId: serverId)
-                    cpuUsage = (try? await DockerManager.shared.getCPUUsage(serverId: serverId)) ?? 0
-                    memoryUsage = (try? await DockerManager.shared.getMemoryUsage(serverId: serverId)) ?? 0
+                    dockerInfo = try? await DockerService.shared.getDockerInfo(serverId: serverId)
+                    cpuUsage = (try? await DockerService.shared.getCPUUsage(serverId: serverId)) ?? 0
+                    memoryUsage = (try? await DockerService.shared.getMemoryUsage(serverId: serverId)) ?? 0
                     
                     // Fetch recent events (single call, no polling)
                     let since = Int(Date().timeIntervalSince1970) - 300
                     let until = Int(Date().timeIntervalSince1970)
-                    let events = (try? await DockerManager.shared.getRecentEvents(since: since, until: until, serverId: serverId)) ?? []
+                    let events = (try? await DockerService.shared.getRecentEvents(since: since, until: until, serverId: serverId)) ?? []
                     recentEvents = events.prefix(10).map { e in
                         (time: String(e.timestamp.suffix(8)), type: e.type, action: e.action, actor: e.actor)
                     }
@@ -296,9 +296,9 @@ struct DockerOverviewTab: View {
         Task {
             do {
                 if serviceStatus == .active {
-                    try await DockerManager.shared.stopService(serverId: serverId)
+                    try await DockerService.shared.stopService(serverId: serverId)
                 } else {
-                    try await DockerManager.shared.startService(serverId: serverId)
+                    try await DockerService.shared.startService(serverId: serverId)
                 }
                 // Wait a bit then refresh
                 try await Task.sleep(nanoseconds: 2_000_000_000)

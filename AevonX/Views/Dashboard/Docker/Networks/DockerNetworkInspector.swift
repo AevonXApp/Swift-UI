@@ -1,6 +1,6 @@
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 struct DockerNetworkInspector: View {
     let network: DockerNetwork
@@ -159,7 +159,7 @@ struct DockerNetworkInspector: View {
     private func loadDetails() async {
         isLoading = true
         do {
-            let inspection = try await DockerManager.shared.inspectNetwork(id: network.id, serverId: serverId)
+            let inspection = try await DockerService.shared.inspectNetwork(id: network.id, serverId: serverId)
             
             await MainActor.run {
                 subnet = inspection.subnet

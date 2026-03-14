@@ -1,12 +1,12 @@
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 struct DockerEnvTemplatesView: View {
     let serverId: String
     
     @Environment(\.dismiss) private var dismiss
-    @State private var templates: [DockerManager.EnvTemplate] = []
+    @State private var templates: [EnvTemplate] = []
     @State private var isLoading = true
     @State private var showAddForm = false
     @State private var errorMessage: String?
@@ -188,7 +188,7 @@ struct DockerEnvTemplatesView: View {
     private func loadTemplates() {
         Task {
             do {
-                let t = try await DockerManager.shared.listEnvTemplates(serverId: serverId)
+                let t = try await DockerService.shared.listEnvTemplates(serverId: serverId)
                 await MainActor.run { templates = t; isLoading = false }
             } catch {
                 await MainActor.run { isLoading = false; errorMessage = error.localizedDescription }
@@ -199,10 +199,10 @@ struct DockerEnvTemplatesView: View {
     private func saveTemplate() {
         isAdding = true
         let vars = envLines.components(separatedBy: .newlines).filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
-        let template = DockerManager.EnvTemplate(name: templateName, description: templateDesc, variables: vars)
+        let template = EnvTemplate(name: templateName, description: templateDesc, variables: vars)
         Task {
             do {
-                try await DockerManager.shared.saveEnvTemplate(template, serverId: serverId)
+                try await DockerService.shared.saveEnvTemplate(template, serverId: serverId)
                 await MainActor.run {
                     isAdding = false; showAddForm = false
                     templateName = ""; templateDesc = ""; envLines = ""
@@ -214,9 +214,9 @@ struct DockerEnvTemplatesView: View {
         }
     }
     
-    private func deleteTemplate(_ template: DockerManager.EnvTemplate) {
+    private func deleteTemplate(_ template: EnvTemplate) {
         Task {
-            try? await DockerManager.shared.deleteEnvTemplate(id: template.id, serverId: serverId)
+            try? await DockerService.shared.deleteEnvTemplate(id: template.id, serverId: serverId)
             await MainActor.run { templates.removeAll { $0.id == template.id } }
         }
     }

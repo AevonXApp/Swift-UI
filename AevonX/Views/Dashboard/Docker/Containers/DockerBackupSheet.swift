@@ -1,6 +1,6 @@
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 struct DockerBackupSheet: View {
     let container: DockerContainer
@@ -8,8 +8,8 @@ struct DockerBackupSheet: View {
     
     @Environment(\.dismiss) private var dismiss
     @State private var isBackingUp = false
-    @State private var backupResult: DockerManager.ContainerBackup?
-    @State private var existingBackups: [DockerManager.BackupEntry] = []
+    @State private var backupResult: ContainerBackup?
+    @State private var existingBackups: [BackupEntry] = []
     @State private var isLoadingBackups = true
     @State private var progressMessage = ""
     @State private var progressValue: Double = 0
@@ -210,7 +210,7 @@ struct DockerBackupSheet: View {
         
         Task {
             do {
-                let result = try await DockerManager.shared.backupContainer(
+                let result = try await DockerService.shared.backupContainer(
                     containerId: container.id,
                     serverId: serverId,
                     progress: { msg, pct in
@@ -238,7 +238,7 @@ struct DockerBackupSheet: View {
         isLoadingBackups = true
         Task {
             do {
-                let backups = try await DockerManager.shared.listBackups(serverId: serverId)
+                let backups = try await DockerService.shared.listBackups(serverId: serverId)
                 await MainActor.run {
                     existingBackups = backups
                     isLoadingBackups = false
@@ -251,9 +251,9 @@ struct DockerBackupSheet: View {
         }
     }
     
-    private func deleteBackup(_ backup: DockerManager.BackupEntry) {
+    private func deleteBackup(_ backup: BackupEntry) {
         Task {
-            try? await DockerManager.shared.deleteBackup(backupPath: backup.path, serverId: serverId)
+            try? await DockerService.shared.deleteBackup(backupPath: backup.path, serverId: serverId)
             await MainActor.run {
                 existingBackups.removeAll { $0.id == backup.id }
             }

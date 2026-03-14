@@ -1,6 +1,6 @@
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 struct DockerProfileExportView: View {
     let serverId: String
@@ -203,7 +203,7 @@ struct DockerProfileExportView: View {
         errorMessage = nil
         Task {
             do {
-                let json = try await DockerManager.shared.exportContainerProfile(serverId: serverId)
+                let json = try await DockerService.shared.exportContainerProfile(serverId: serverId)
                 await MainActor.run {
                     exportedJSON = json
                     isExporting = false
@@ -223,7 +223,7 @@ struct DockerProfileExportView: View {
         successMessage = nil
         Task {
             do {
-                try await DockerManager.shared.importContainerProfile(
+                try await DockerService.shared.importContainerProfile(
                     json: importJSON,
                     serverId: serverId,
                     progress: { msg, pct in

@@ -1,6 +1,6 @@
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 struct DockerImagesTab: View {
     let server: Server
@@ -165,7 +165,7 @@ struct DockerImagesTab: View {
         
         Task {
             do {
-                images = try await DockerManager.shared.getImages(serverId: serverId)
+                images = try await DockerService.shared.getImages(serverId: serverId)
             } catch {
                 errorMessage = "Failed to fetch images: \(error.localizedDescription)"
             }
@@ -179,7 +179,7 @@ struct DockerImagesTab: View {
         
         Task {
             do {
-                try await DockerManager.shared.removeImage(id: id, force: force, serverId: serverId)
+                try await DockerService.shared.removeImage(id: id, force: force, serverId: serverId)
                 
                 // Refresh
                 try await Task.sleep(nanoseconds: 500_000_000)
@@ -204,7 +204,7 @@ struct DockerImagesTab: View {
         
         Task {
             do {
-                try await DockerManager.shared.pullImage(imageName, serverId: serverId)
+                try await DockerService.shared.pullImage(imageName, serverId: serverId)
                 refreshData() // Removed await
             } catch {
                 errorMessage = "Failed to pull image: \(error.localizedDescription)"

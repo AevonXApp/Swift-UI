@@ -1,6 +1,6 @@
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 struct DockerContainerExportImport: View {
     let serverId: String
@@ -110,7 +110,7 @@ struct DockerContainerExportImport: View {
         .background(Color.axBackground)
         .task {
             do {
-                containers = try await DockerManager.shared.getContainers(serverId: serverId, all: true)
+                containers = try await DockerService.shared.getContainers(serverId: serverId, all: true)
             } catch {}
         }
     }
@@ -217,7 +217,7 @@ struct DockerContainerExportImport: View {
             do {
                 let containerName = containers.first(where: { $0.id == selectedContainerId })?.names ?? selectedContainerId
                 let fileName = "\(exportPath)/\(containerName)-export.tar"
-                try await DockerManager.shared.exportContainer(id: selectedContainerId, path: fileName, serverId: serverId)
+                try await DockerService.shared.exportContainer(id: selectedContainerId, path: fileName, serverId: serverId)
                 await MainActor.run {
                     successMessage = "Exported to \(fileName)"
                     isProcessing = false
@@ -232,7 +232,7 @@ struct DockerContainerExportImport: View {
         isProcessing = true; errorMessage = nil; successMessage = nil; output = ""
         Task {
             do {
-                try await DockerManager.shared.importContainer(path: importPath, imageName: containerName, serverId: serverId)
+                try await DockerService.shared.importContainer(path: importPath, imageName: containerName, serverId: serverId)
                 await MainActor.run {
                     successMessage = "Imported as \(containerName)"
                     isProcessing = false
@@ -247,7 +247,7 @@ struct DockerContainerExportImport: View {
         isProcessing = true; errorMessage = nil; successMessage = nil; output = ""
         Task {
             do {
-                try await DockerManager.shared.commitContainer(
+                try await DockerService.shared.commitContainer(
                     id: selectedContainerId,
                     imageName: containerName,
                     tag: "latest",

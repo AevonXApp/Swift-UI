@@ -1,6 +1,6 @@
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 struct DockerContainerDiff: View {
     let container: DockerContainer
@@ -141,7 +141,7 @@ struct DockerContainerDiff: View {
     
     private func loadDiff() async {
         do {
-            let result = try await DockerManager.shared.diffContainer(id: container.id, serverId: serverId)
+            let result = try await DockerService.shared.diffContainer(id: container.id, serverId: serverId)
             let parsed = result.map { (kind: $0.kind, path: $0.path) }
             await MainActor.run { changes = parsed; isLoading = false }
         } catch {

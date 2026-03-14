@@ -1,6 +1,6 @@
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 struct DockerRunToComposeView: View {
     let serverId: String
@@ -121,6 +121,6 @@ struct DockerRunToComposeView: View {
     }
     
     private func convert() {
-        composeOutput = DockerManager.shared.convertRunToCompose(runCommand: runCommand)
+        composeOutput = DockerService.shared.convertRunToCompose(runCommand: runCommand)
     }
 }

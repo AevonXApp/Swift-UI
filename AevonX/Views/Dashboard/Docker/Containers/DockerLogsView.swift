@@ -7,7 +7,7 @@
 //
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 struct DockerLogsView: View {
     let container: DockerContainer
@@ -143,7 +143,7 @@ struct DockerLogsView: View {
 
         task = Task {
             do {
-                try await DockerManager.shared.getContainerLogs(
+                try await DockerService.shared.getContainerLogs(
                     id: container.id,
                     tail: tailCount,
                     follow: true,

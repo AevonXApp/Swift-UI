@@ -1,6 +1,6 @@
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 struct DockerComposeScaleView: View {
     let project: DockerComposeProject
@@ -152,7 +152,7 @@ struct DockerComposeScaleView: View {
     private func loadServices() async {
         isLoading = true
         do {
-            let result = try await DockerManager.shared.getComposeServices(workingDir: project.workingDir, serverId: serverId)
+            let result = try await DockerService.shared.getComposeServices(workingDir: project.workingDir, serverId: serverId)
             await MainActor.run {
                 services = result.map { (name: $0.name, current: $0.replicas, desired: $0.replicas) }
                 isLoading = false
@@ -167,7 +167,7 @@ struct DockerComposeScaleView: View {
         Task {
             do {
                 for service in services where service.desired != service.current {
-                    try await DockerManager.shared.composeScale(
+                    try await DockerService.shared.composeScale(
                         service: service.name,
                         replicas: service.desired,
                         workingDir: project.workingDir,

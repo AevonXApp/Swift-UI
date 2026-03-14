@@ -1,6 +1,6 @@
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 struct DockerAILogAnalyzer: View {
     let container: DockerContainer
@@ -161,7 +161,7 @@ struct DockerAILogAnalyzer: View {
     private func loadLogs() async {
         isLoadingLogs = true
         do {
-            let result = try await DockerManager.shared.fetchContainerLogs(id: container.id, tail: tailLines, serverId: serverId)
+            let result = try await DockerService.shared.fetchContainerLogs(id: container.id, tail: tailLines, serverId: serverId)
             await MainActor.run {
                 logs = result
                 isLoadingLogs = false

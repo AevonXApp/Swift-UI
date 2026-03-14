@@ -1,6 +1,6 @@
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 struct DockerContainerInspector: View {
     let container: DockerContainer
@@ -367,7 +367,7 @@ struct DockerContainerInspector: View {
     private func loadInspection() async {
         isLoading = true
         do {
-            inspection = try await DockerManager.shared.inspectContainer(id: container.id, serverId: serverId)
+            inspection = try await DockerService.shared.inspectContainer(id: container.id, serverId: serverId)
         } catch {
             errorMessage = error.localizedDescription
         }

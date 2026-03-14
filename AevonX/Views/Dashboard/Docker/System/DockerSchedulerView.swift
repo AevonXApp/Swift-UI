@@ -1,12 +1,12 @@
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 struct DockerSchedulerView: View {
     let serverId: String
     
     @Environment(\.dismiss) private var dismiss
-    @State private var scheduledActions: [DockerManager.ScheduledAction] = []
+    @State private var scheduledActions: [ScheduledAction] = []
     @State private var isLoading = true
     @State private var errorMessage: String?
     
@@ -234,8 +234,8 @@ struct DockerSchedulerView: View {
     private func loadData() {
         Task {
             do {
-                let c = try await DockerManager.shared.getContainers(serverId: serverId, all: true)
-                let s = try await DockerManager.shared.listScheduledActions(serverId: serverId)
+                let c = try await DockerService.shared.getContainers(serverId: serverId, all: true)
+                let s = try await DockerService.shared.listScheduledActions(serverId: serverId)
                 await MainActor.run {
                     containers = c
                     if let first = c.first { selectedContainer = first.names }
@@ -252,7 +252,7 @@ struct DockerSchedulerView: View {
         isAdding = true
         Task {
             do {
-                try await DockerManager.shared.scheduleContainerAction(
+                try await DockerService.shared.scheduleContainerAction(
                     containerName: selectedContainer, action: selectedAction,
                     schedule: cronSchedule, serverId: serverId
                 )
@@ -266,9 +266,9 @@ struct DockerSchedulerView: View {
         }
     }
     
-    private func removeSchedule(_ action: DockerManager.ScheduledAction) {
+    private func removeSchedule(_ action: ScheduledAction) {
         Task {
-            try? await DockerManager.shared.removeScheduledAction(
+            try? await DockerService.shared.removeScheduledAction(
                 containerName: action.containerName, action: action.action, serverId: serverId
             )
             await MainActor.run { scheduledActions.removeAll { $0.id == action.id } }

@@ -1,12 +1,12 @@
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 struct DockerDependencyGraphView: View {
     let serverId: String
     
     @Environment(\.dismiss) private var dismiss
-    @State private var dependencies: [DockerManager.ContainerDependency] = []
+    @State private var dependencies: [ContainerDependency] = []
     @State private var isLoading = true
     @State private var errorMessage: String?
     
@@ -163,7 +163,7 @@ struct DockerDependencyGraphView: View {
         isLoading = true
         Task {
             do {
-                let deps = try await DockerManager.shared.detectContainerDependencies(serverId: serverId)
+                let deps = try await DockerService.shared.detectContainerDependencies(serverId: serverId)
                 await MainActor.run { dependencies = deps; isLoading = false }
             } catch {
                 await MainActor.run { isLoading = false; errorMessage = error.localizedDescription }

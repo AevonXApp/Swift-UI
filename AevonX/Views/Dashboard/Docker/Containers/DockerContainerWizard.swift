@@ -1,6 +1,6 @@
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 struct DockerContainerWizard: View {
     let serverId: String
@@ -118,7 +118,7 @@ struct DockerContainerWizard: View {
         .background(Color.axBackground)
         .task {
             do {
-                availableNetworks = try await DockerManager.shared.getNetworks(serverId: serverId)
+                availableNetworks = try await DockerService.shared.getNetworks(serverId: serverId)
             } catch {}
         }
     }
@@ -506,7 +506,7 @@ struct DockerContainerWizard: View {
         
         Task {
             do {
-                try await DockerManager.shared.runContainerAdvanced(
+                try await DockerService.shared.runContainerAdvanced(
                     config: config,
                     serverId: serverId
                 )

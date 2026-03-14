@@ -1,6 +1,6 @@
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 // MARK: - Docker Logs Tab (Table-based, like AXAdvancedLogsView)
 
@@ -9,13 +9,13 @@ struct DockerLogsTab: View {
     
     @State private var containers: [DockerContainer] = []
     @State private var selectedContainerIds: Set<String> = []
-    @State private var logEntries: [DockerManager.AggregatedLogEntry] = []
+    @State private var logEntries: [AggregatedLogEntry] = []
     @State private var isLoading = false
     @State private var isFetching = false
     @State private var searchText = ""
     @State private var selectedLevel: LogLevelFilter = .all
     @State private var sortNewestFirst = true
-    @State private var selectedEntry: DockerManager.AggregatedLogEntry?
+    @State private var selectedEntry: AggregatedLogEntry?
     @State private var tailLines = 200
     
     enum LogLevelFilter: String, CaseIterable {
@@ -36,7 +36,7 @@ struct DockerLogsTab: View {
         }
     }
     
-    private var filteredEntries: [DockerManager.AggregatedLogEntry] {
+    private var filteredEntries: [AggregatedLogEntry] {
         var result = logEntries
         
         // Filter by selected containers
@@ -338,7 +338,7 @@ struct DockerLogsTab: View {
     
     // MARK: - Log Detail Sheet (simple/quick)
     
-    private func logDetailSheet(_ entry: DockerManager.AggregatedLogEntry) -> some View {
+    private func logDetailSheet(_ entry: AggregatedLogEntry) -> some View {
         VStack(spacing: 0) {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
@@ -410,7 +410,7 @@ struct DockerLogsTab: View {
         isLoading = true
         Task {
             do {
-                let c = try await DockerManager.shared.getContainers(serverId: serverId, all: false)
+                let c = try await DockerService.shared.getContainers(serverId: serverId, all: false)
                 await MainActor.run {
                     containers = c
                     isLoading = false
@@ -431,7 +431,7 @@ struct DockerLogsTab: View {
         
         Task {
             do {
-                let rawLogs = try await DockerManager.shared.getAggregatedLogs(
+                let rawLogs = try await DockerService.shared.getAggregatedLogs(
                     containerIds: ids,
                     tail: tailLines,
                     serverId: serverId
@@ -459,7 +459,7 @@ struct DockerLogsTab: View {
 // MARK: - Docker Log Table Row
 
 private struct DockerLogTableRow: View {
-    let entry: DockerManager.AggregatedLogEntry
+    let entry: AggregatedLogEntry
     let isEven: Bool
     let action: () -> Void
     

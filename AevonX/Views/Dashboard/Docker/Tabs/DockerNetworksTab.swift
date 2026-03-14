@@ -1,6 +1,6 @@
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 struct DockerNetworksTab: View {
     let serverId: String
@@ -125,7 +125,7 @@ struct DockerNetworksTab: View {
         
         Task {
             do {
-                networks = try await DockerManager.shared.getNetworks(serverId: serverId)
+                networks = try await DockerService.shared.getNetworks(serverId: serverId)
             } catch {
                 errorMessage = "Failed to fetch networks: \(error.localizedDescription)"
             }
@@ -139,7 +139,7 @@ struct DockerNetworksTab: View {
         
         Task {
             do {
-                try await DockerManager.shared.removeNetwork(id: id, serverId: serverId)
+                try await DockerService.shared.removeNetwork(id: id, serverId: serverId)
                 
                 // Refresh
                 try await Task.sleep(nanoseconds: 500_000_000)
@@ -158,7 +158,7 @@ struct DockerNetworksTab: View {
         
         Task {
             do {
-                try await DockerManager.shared.createNetwork(name: name, driver: driver, serverId: serverId)
+                try await DockerService.shared.createNetwork(name: name, driver: driver, serverId: serverId)
                 refreshData()
             } catch {
                 errorMessage = "Failed to create network: \(error.localizedDescription)"

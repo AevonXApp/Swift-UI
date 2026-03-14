@@ -1,6 +1,6 @@
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 struct DockerImageTagPush: View {
     let image: DockerImage
@@ -161,7 +161,7 @@ struct DockerImageTagPush: View {
         isTagging = true; errorMessage = nil; successMessage = nil
         Task {
             do {
-                try await DockerManager.shared.tagImage(id: image.id, newTag: fullNewTag, serverId: serverId)
+                try await DockerService.shared.tagImage(id: image.id, newTag: fullNewTag, serverId: serverId)
                 await MainActor.run { successMessage = "Tagged as \(fullNewTag)"; isTagging = false }
             } catch {
                 await MainActor.run { errorMessage = error.localizedDescription; isTagging = false }
@@ -174,10 +174,10 @@ struct DockerImageTagPush: View {
         Task {
             do {
                 // Tag first
-                try await DockerManager.shared.tagImage(id: image.id, newTag: fullNewTag, serverId: serverId)
+                try await DockerService.shared.tagImage(id: image.id, newTag: fullNewTag, serverId: serverId)
                 
                 // Push
-                let result = try await DockerManager.shared.pushImage(tag: fullNewTag, serverId: serverId)
+                let result = try await DockerService.shared.pushImage(tag: fullNewTag, serverId: serverId)
                 await MainActor.run {
                     output = result
                     successMessage = "Pushed \(fullNewTag) successfully"

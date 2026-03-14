@@ -1,6 +1,6 @@
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 struct DockerAutoUpdateSheet: View {
     let container: DockerContainer
@@ -8,7 +8,7 @@ struct DockerAutoUpdateSheet: View {
     var onComplete: (() -> Void)?
     
     @Environment(\.dismiss) private var dismiss
-    @State private var updateStatus: DockerManager.ImageUpdateStatus?
+    @State private var updateStatus: ImageUpdateStatus?
     @State private var isChecking = true
     @State private var isUpdating = false
     @State private var createSnapshot = true
@@ -227,7 +227,7 @@ struct DockerAutoUpdateSheet: View {
     private func checkUpdate() {
         Task {
             do {
-                let statuses = try await DockerManager.shared.checkAllImageUpdates(serverId: serverId)
+                let statuses = try await DockerService.shared.checkAllImageUpdates(serverId: serverId)
                 let match = statuses.first { $0.containerIds.contains(container.id) }
                 await MainActor.run {
                     updateStatus = match
@@ -249,7 +249,7 @@ struct DockerAutoUpdateSheet: View {
         
         Task {
             do {
-                try await DockerManager.shared.updateContainerImage(
+                try await DockerService.shared.updateContainerImage(
                     containerId: container.id,
                     serverId: serverId,
                     createSnapshot: createSnapshot,
@@ -276,7 +276,7 @@ struct DockerAutoUpdateSheet: View {
     
     private func checkWatchtower() {
         Task {
-            let running = try? await DockerManager.shared.isWatchtowerRunning(serverId: serverId)
+            let running = try? await DockerService.shared.isWatchtowerRunning(serverId: serverId)
             await MainActor.run { watchtowerRunning = running ?? false }
         }
     }
@@ -285,7 +285,7 @@ struct DockerAutoUpdateSheet: View {
         isDeployingWatchtower = true
         Task {
             do {
-                try await DockerManager.shared.deployWatchtower(
+                try await DockerService.shared.deployWatchtower(
                     notifyOnly: watchtowerNotifyOnly,
                     serverId: serverId
                 )
@@ -304,7 +304,7 @@ struct DockerAutoUpdateSheet: View {
     
     private func removeWatchtower() {
         Task {
-            try? await DockerManager.shared.removeWatchtower(serverId: serverId)
+            try? await DockerService.shared.removeWatchtower(serverId: serverId)
             await MainActor.run { watchtowerRunning = false }
         }
     }

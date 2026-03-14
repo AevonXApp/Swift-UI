@@ -1,6 +1,6 @@
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 struct DockerVolumesTab: View {
     let server: Server
@@ -115,7 +115,7 @@ struct DockerVolumesTab: View {
         
         Task {
             do {
-                volumes = try await DockerManager.shared.getVolumes(serverId: serverId)
+                volumes = try await DockerService.shared.getVolumes(serverId: serverId)
             } catch {
                 errorMessage = "Failed to fetch volumes: \(error.localizedDescription)"
             }
@@ -129,7 +129,7 @@ struct DockerVolumesTab: View {
         
         Task {
             do {
-                try await DockerManager.shared.removeVolume(name: name, force: false, serverId: serverId)
+                try await DockerService.shared.removeVolume(name: name, force: false, serverId: serverId)
                 
                 // Refresh
                 try await Task.sleep(nanoseconds: 500_000_000)
@@ -148,7 +148,7 @@ struct DockerVolumesTab: View {
         
         Task {
             do {
-                try await DockerManager.shared.createVolume(name: name, driver: driver, serverId: serverId)
+                try await DockerService.shared.createVolume(name: name, driver: driver, serverId: serverId)
                 refreshData() // Removed await
             } catch {
                 errorMessage = "Failed to create volume: \(error.localizedDescription)"

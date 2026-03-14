@@ -1,14 +1,14 @@
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 struct DockerSecurityAuditView: View {
     let container: DockerContainer
     let serverId: String
     
     @Environment(\.dismiss) private var dismiss
-    @State private var audit: DockerManager.SecurityAudit?
-    @State private var vulnScan: DockerManager.VulnerabilityScan?
+    @State private var audit: SecurityAudit?
+    @State private var vulnScan: VulnerabilityScan?
     @State private var isLoadingAudit = true
     @State private var isLoadingScan = false
     @State private var errorMessage: String?
@@ -225,7 +225,7 @@ struct DockerSecurityAuditView: View {
     private func runAudit() {
         Task {
             do {
-                let result = try await DockerManager.shared.auditContainerSecurity(
+                let result = try await DockerService.shared.auditContainerSecurity(
                     containerId: container.id, serverId: serverId
                 )
                 await MainActor.run {
@@ -245,7 +245,7 @@ struct DockerSecurityAuditView: View {
         isLoadingScan = true
         Task {
             do {
-                let result = try await DockerManager.shared.scanImageVulnerabilities(
+                let result = try await DockerService.shared.scanImageVulnerabilities(
                     image: container.image, serverId: serverId
                 )
                 await MainActor.run {

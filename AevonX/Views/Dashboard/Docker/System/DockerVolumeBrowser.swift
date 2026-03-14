@@ -1,6 +1,6 @@
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 struct DockerVolumeBrowser: View {
     let serverId: String
@@ -146,7 +146,7 @@ struct DockerVolumeBrowser: View {
         .background(Color.axBackground)
         .task {
             do {
-                volumes = try await DockerManager.shared.getVolumes(serverId: serverId)
+                volumes = try await DockerService.shared.getVolumes(serverId: serverId)
             } catch {}
         }
     }
@@ -156,7 +156,7 @@ struct DockerVolumeBrowser: View {
         isLoading = true; errorMessage = nil
         Task {
             do {
-                let result = try await DockerManager.shared.browseVolume(name: selectedVolume, path: currentPath, serverId: serverId)
+                let result = try await DockerService.shared.browseVolume(name: selectedVolume, path: currentPath, serverId: serverId)
                 let parsed = result.map { (name: $0.name, isDir: $0.isDir, size: $0.size) }
                 await MainActor.run { files = parsed; isLoading = false }
             } catch {

@@ -1,6 +1,6 @@
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 struct DockerComposeTab: View {
     let serverId: String
@@ -116,7 +116,7 @@ struct DockerComposeTab: View {
         
         Task {
             do {
-                projects = try await DockerManager.shared.listComposeProjects(serverId: serverId)
+                projects = try await DockerService.shared.listComposeProjects(serverId: serverId)
             } catch {
                 errorMessage = "Failed to fetch projects: \(error.localizedDescription)"
             }
@@ -158,11 +158,11 @@ struct DockerComposeTab: View {
             do {
                 switch action {
                 case "up":
-                    try await DockerManager.shared.composeUp(workingDir: project.workingDir, serverId: serverId)
+                    try await DockerService.shared.composeUp(workingDir: project.workingDir, serverId: serverId)
                 case "down":
-                    try await DockerManager.shared.composeDown(workingDir: project.workingDir, serverId: serverId)
+                    try await DockerService.shared.composeDown(workingDir: project.workingDir, serverId: serverId)
                 case "restart":
-                    try await DockerManager.shared.composeRestart(workingDir: project.workingDir, serverId: serverId)
+                    try await DockerService.shared.composeRestart(workingDir: project.workingDir, serverId: serverId)
                 default:
                     break
                 }
@@ -354,15 +354,13 @@ struct DockerComposeLogsView: View {
         isConnected = true
         Task {
             do {
-                try await DockerManager.shared.composeLogs(
+                let output = try await DockerService.shared.composeLogs(
                     workingDir: project.workingDir,
-                    serverId: serverId,
-                    onOutput: { chunk in
-                        DispatchQueue.main.async {
-                            self.logs += chunk
-                        }
-                    }
+                    serverId: serverId
                 )
+                await MainActor.run {
+                    self.logs = output
+                }
             } catch {
                 await MainActor.run {
                     self.logs += "\n[Error: \(error.localizedDescription)]"

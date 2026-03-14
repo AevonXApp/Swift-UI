@@ -1,6 +1,6 @@
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 struct DockerImageLayerInspector: View {
     let image: DockerImage
@@ -152,7 +152,7 @@ struct DockerImageLayerInspector: View {
     private func loadLayers() async {
         isLoading = true
         do {
-            let result = try await DockerManager.shared.getImageLayers(id: image.id, serverId: serverId)
+            let result = try await DockerService.shared.getImageLayers(id: image.id, serverId: serverId)
             await MainActor.run {
                 layers = result.map { (created: $0.created, createdBy: $0.createdBy, size: $0.size) }
                 totalSize = image.size

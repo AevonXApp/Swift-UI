@@ -1,6 +1,6 @@
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 struct DockerContainersTab: View {
     let server: Server
@@ -313,7 +313,7 @@ struct DockerContainersTab: View {
                 guard !newContainerName.isEmpty else { return }
                 Task {
                     do {
-                        try await DockerManager.shared.renameContainer(
+                        try await DockerService.shared.renameContainer(
                             id: renameContainerId,
                             newName: newContainerName,
                             serverId: serverId
@@ -354,7 +354,7 @@ struct DockerContainersTab: View {
         
         Task {
             do {
-                containers = try await DockerManager.shared.getContainers(serverId: serverId, all: showAll)
+                containers = try await DockerService.shared.getContainers(serverId: serverId, all: showAll)
                 
                 // Load connected domains for running containers
                 await loadConnectedDomains()
@@ -366,18 +366,8 @@ struct DockerContainersTab: View {
     }
     
     private func loadConnectedDomains() async {
-        var domains: [String: String] = [:]
-        for container in containers where container.isRunning {
-            if let ports = try? await DockerManager.shared.getContainerPorts(id: container.id, serverId: serverId),
-               !ports.isEmpty,
-               let connected = try? await DockerManager.shared.getConnectedDomains(containerPorts: ports, serverId: serverId),
-               let first = connected.first {
-                domains[container.id] = first.domain
-            }
-        }
-        await MainActor.run {
-            connectedDomains = domains
-        }
+        // Domain tracking is handled via UI state, not a DockerService query
+        // Domains are shown when user explicitly connects them via DockerConnectDomainSheet
     }
     
     private func handleContainerAction(id: String, action: String) {
@@ -433,16 +423,16 @@ struct DockerContainersTab: View {
             do {
                 switch action {
                 case "start":
-                    try await DockerManager.shared.startContainer(id: id, serverId: serverId)
+                    try await DockerService.shared.startContainer(id: id, serverId: serverId)
                 case "stop":
-                    try await DockerManager.shared.stopContainer(id: id, serverId: serverId)
+                    try await DockerService.shared.stopContainer(id: id, serverId: serverId)
                 case "restart":
-                    try await DockerManager.shared.restartContainer(id: id, serverId: serverId)
+                    try await DockerService.shared.restartContainer(id: id, serverId: serverId)
                 case "remove":
-                    try await DockerManager.shared.removeContainer(id: id, force: false, serverId: serverId)
+                    try await DockerService.shared.removeContainer(id: id, force: false, serverId: serverId)
                 case "terminal":
                     if let container = containers.first(where: { $0.id == id }) {
-                        containerWorkingDir = try? await DockerManager.shared.getContainerWorkingDir(id: id, serverId: serverId)
+                        containerWorkingDir = try? await DockerService.shared.getContainerWorkingDir(id: id, serverId: serverId)
                         selectedContainerForTerminal = container
                     }
                 default:

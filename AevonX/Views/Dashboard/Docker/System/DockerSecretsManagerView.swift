@@ -1,12 +1,12 @@
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 struct DockerSecretsManagerView: View {
     let serverId: String
     
     @Environment(\.dismiss) private var dismiss
-    @State private var secrets: [DockerManager.DockerSecret] = []
+    @State private var secrets: [DockerSecret] = []
     @State private var isLoading = true
     @State private var showAddSecret = false
     @State private var newSecretName = ""
@@ -145,7 +145,7 @@ struct DockerSecretsManagerView: View {
     private func loadSecrets() {
         Task {
             do {
-                let s = try await DockerManager.shared.listSecrets(serverId: serverId)
+                let s = try await DockerService.shared.listSecrets(serverId: serverId)
                 await MainActor.run { secrets = s; isLoading = false }
             } catch {
                 await MainActor.run { isLoading = false; errorMessage = error.localizedDescription }
@@ -157,7 +157,7 @@ struct DockerSecretsManagerView: View {
         isAdding = true
         Task {
             do {
-                try await DockerManager.shared.createSecret(name: newSecretName, value: newSecretValue, serverId: serverId)
+                try await DockerService.shared.createSecret(name: newSecretName, value: newSecretValue, serverId: serverId)
                 await MainActor.run {
                     isAdding = false; showAddSecret = false
                     newSecretName = ""; newSecretValue = ""
@@ -169,9 +169,9 @@ struct DockerSecretsManagerView: View {
         }
     }
     
-    private func deleteSecret(_ secret: DockerManager.DockerSecret) {
+    private func deleteSecret(_ secret: DockerSecret) {
         Task {
-            try? await DockerManager.shared.deleteSecret(name: secret.name, serverId: serverId)
+            try? await DockerService.shared.deleteSecret(name: secret.name, serverId: serverId)
             await MainActor.run { secrets.removeAll { $0.id == secret.id } }
         }
     }

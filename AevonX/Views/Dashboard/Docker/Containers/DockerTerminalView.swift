@@ -6,7 +6,7 @@
 //
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 import Combine
 
 // MARK: - Docker Terminal View
@@ -133,80 +133,51 @@ class DockerTerminalViewModel: ObservableObject {
     @Published var inputCommand: String = ""
     @Published var isConnected: Bool = false
     @Published var errorMessage: String?
-    
-    private var session: SSHInteractiveSession?
-    
+
+    private var containerId: String = ""
+    private var serverId: String = ""
+
     func connect(containerId: String, serverId: String, workingDir: String? = nil) {
-        let baseExec = "docker exec -it"
-        var workdirFlag = ""
-        if let workingDir = workingDir, !workingDir.isEmpty {
-            workdirFlag = "-w \"\(workingDir)\""
-        }
-        
-        let fullBase = "\(baseExec) \(workdirFlag) \(containerId)".replacingOccurrences(of: "  ", with: " ")
-        // Fallback chain for different container environments
-        let command = "\(fullBase) /bin/bash || \(fullBase) /bin/sh || \(fullBase) sh"
-        
-        print("Connecting to terminal: \(command)")
-        
+        self.containerId = containerId
+        self.serverId = serverId
+
+        self.lines.append(TerminalLine(content: "Connected to container \(containerId.prefix(12))"))
+        self.lines.append(TerminalLine(content: "Type commands below. Each command runs via 'docker exec'."))
+        self.isConnected = true
+    }
+
+    func disconnect() {
+        self.isConnected = false
+    }
+
+    func sendCommand() {
+        guard !inputCommand.isEmpty else { return }
+
+        let cmd = inputCommand
+        inputCommand = ""
+
+        self.lines.append(TerminalLine(content: "> \(cmd)"))
+
         Task {
             do {
-                self.lines.append(TerminalLine(content: "Connecting to container \(containerId)..."))
-                
-                session = try await SSHService.shared.startInteractive(
-                    command: command,
-                    serverId: serverId,
-                    onOutput: { [weak self] output in
-                        Task { @MainActor [weak self] in
-                            self?.handleOutput(output)
-                        }
-                    }
+                let output = try await DockerService.shared.execInContainer(
+                    id: containerId, command: cmd, serverId: serverId
                 )
-                
-                self.isConnected = true
-                self.lines.append(TerminalLine(content: "Connected."))
-                
+                let outputLines = output.components(separatedBy: "\n").filter { !$0.isEmpty }
+                for line in outputLines {
+                    self.lines.append(TerminalLine(content: line))
+                }
+                if outputLines.isEmpty {
+                    self.lines.append(TerminalLine(content: "(no output)"))
+                }
             } catch {
-                self.errorMessage = error.localizedDescription
                 self.lines.append(TerminalLine(content: "Error: \(error.localizedDescription)"))
             }
-        }
-    }
-    
-    func disconnect() {
-        Task {
-            try? await session?.close()
-            self.isConnected = false
-            self.session = nil
-        }
-    }
-    
-    func sendCommand() {
-        guard !inputCommand.isEmpty, let session = session else { return }
-        
-        let commandToSend = inputCommand + "\n"
-        inputCommand = ""
-        
-        Task {
-            try? await session.write(commandToSend)
-        }
-    }
-    
-    private func handleOutput(_ output: String) {
-        // ANSI escape code cleaning (strips most common terminal control sequences)
-        let cleaned = output
-            .replacingOccurrences(of: "\u{1B}\\[\\?[0-9]*[a-zA-Z]", with: "", options: .regularExpression)
-            .replacingOccurrences(of: "\u{1B}\\[[0-9;]*[a-zA-Z]", with: "", options: .regularExpression)
-            .replacingOccurrences(of: "\r", with: "")
-        
-        if cleaned.isEmpty { return }
-        
-        let newLines = cleaned.split(separator: "\n", omittingEmptySubsequences: false).map { TerminalLine(content: String($0)) }
-        self.lines.append(contentsOf: newLines)
-        
-        // Keep buffer size reasonable
-        if self.lines.count > 1000 {
-            self.lines.removeFirst(self.lines.count - 1000)
+
+            // Keep buffer size reasonable
+            if self.lines.count > 1000 {
+                self.lines.removeFirst(self.lines.count - 1000)
+            }
         }
     }
 }

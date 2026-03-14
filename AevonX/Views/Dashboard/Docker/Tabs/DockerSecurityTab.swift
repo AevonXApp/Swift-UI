@@ -1,6 +1,6 @@
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 // MARK: - Docker Security Tab
 
@@ -477,7 +477,7 @@ struct DockerSecurityTab: View {
     private func loadContainers() {
         Task {
             do {
-                let c = try await DockerManager.shared.getContainers(serverId: serverId, all: false)
+                let c = try await DockerService.shared.getContainers(serverId: serverId, all: false)
                 await MainActor.run { containers = c; isLoading = false }
             } catch {
                 await MainActor.run { isLoading = false }
@@ -489,7 +489,7 @@ struct DockerSecurityTab: View {
         scanningId = container.id
         Task {
             do {
-                let result = try await DockerManager.shared.auditContainerSecurity(containerId: container.id, serverId: serverId)
+                let result = try await DockerService.shared.auditContainerSecurity(containerId: container.id, serverId: serverId)
                 await MainActor.run {
                     auditResults[container.id] = SecurityAuditResult(
                         score: result.securityScore,
@@ -513,7 +513,7 @@ struct DockerSecurityTab: View {
         vulnReport = nil
         Task {
             do {
-                let scan = try await DockerManager.shared.scanImageVulnerabilities(image: container.image, serverId: serverId)
+                let scan = try await DockerService.shared.scanImageVulnerabilities(image: container.image, serverId: serverId)
                 await MainActor.run {
                     vulnReport = "\(scan.scanner): \(scan.summary)\n\n\(scan.rawOutput)"
                     vulnScanning = nil

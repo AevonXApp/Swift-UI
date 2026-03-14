@@ -1,6 +1,6 @@
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 struct DockerHealthTab: View {
     let serverId: String
@@ -174,10 +174,10 @@ struct DockerHealthTab: View {
     private func loadData() async {
         isLoading = true
         do {
-            containers = try await DockerManager.shared.getContainers(serverId: serverId, all: true)
+            containers = try await DockerService.shared.getContainers(serverId: serverId, all: true)
             
             for container in containers where container.isRunning {
-                if let info = try? await DockerManager.shared.fetchContainerHealth(id: container.id, serverId: serverId) {
+                if let info = try? await DockerService.shared.fetchContainerHealth(id: container.id, serverId: serverId) {
                     await MainActor.run {
                         healthStatus[container.id] = HealthInfo(
                             status: info.status,

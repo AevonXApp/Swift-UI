@@ -1,6 +1,6 @@
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 struct DockerRollbackSheet: View {
     let container: DockerContainer
@@ -8,7 +8,7 @@ struct DockerRollbackSheet: View {
     var onComplete: (() -> Void)?
     
     @Environment(\.dismiss) private var dismiss
-    @State private var snapshots: [DockerManager.RollbackSnapshot] = []
+    @State private var snapshots: [RollbackSnapshot] = []
     @State private var isLoading = true
     @State private var isCreatingSnapshot = false
     @State private var isRollingBack = false
@@ -198,7 +198,7 @@ struct DockerRollbackSheet: View {
         isLoading = true
         Task {
             do {
-                let all = try await DockerManager.shared.listRollbackSnapshots(serverId: serverId)
+                let all = try await DockerService.shared.listRollbackSnapshots(serverId: serverId)
                 let containerSnapshots = all.filter {
                     $0.containerName.lowercased() == container.names.lowercased().replacingOccurrences(of: "/", with: "")
                 }
@@ -223,7 +223,7 @@ struct DockerRollbackSheet: View {
         
         Task {
             do {
-                let snapshot = try await DockerManager.shared.createRollbackSnapshot(
+                let snapshot = try await DockerService.shared.createRollbackSnapshot(
                     containerId: container.id,
                     containerName: container.names,
                     serverId: serverId
@@ -244,14 +244,14 @@ struct DockerRollbackSheet: View {
         }
     }
     
-    private func rollbackToSnapshot(_ snapshot: DockerManager.RollbackSnapshot) {
+    private func rollbackToSnapshot(_ snapshot: RollbackSnapshot) {
         isRollingBack = true
         errorMessage = nil
         successMessage = nil
         
         Task {
             do {
-                try await DockerManager.shared.rollbackContainer(
+                try await DockerService.shared.rollbackContainer(
                     containerId: container.id,
                     containerName: container.names,
                     snapshot: snapshot,
@@ -276,10 +276,10 @@ struct DockerRollbackSheet: View {
         }
     }
     
-    private func deleteSnapshot(_ snapshot: DockerManager.RollbackSnapshot) {
+    private func deleteSnapshot(_ snapshot: RollbackSnapshot) {
         Task {
             do {
-                try await DockerManager.shared.deleteRollbackSnapshot(snapshotTag: snapshot.snapshotTag, serverId: serverId)
+                try await DockerService.shared.deleteRollbackSnapshot(snapshotTag: snapshot.snapshotTag, serverId: serverId)
                 await MainActor.run {
                     snapshots.removeAll { $0.id == snapshot.id }
                 }

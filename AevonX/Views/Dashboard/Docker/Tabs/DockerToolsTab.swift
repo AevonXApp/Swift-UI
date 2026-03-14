@@ -1,6 +1,6 @@
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 // MARK: - Docker Tools Tab
 
@@ -140,7 +140,7 @@ struct DockerToolsTab: View {
 
 private struct DockerSchedulerInline: View {
     let serverId: String
-    @State private var jobs: [DockerManager.ScheduledAction] = []
+    @State private var jobs: [ScheduledAction] = []
     @State private var isLoading = true
     @State private var showAddForm = false
     @State private var selectedContainer = ""
@@ -257,7 +257,7 @@ private struct DockerSchedulerInline: View {
         .cornerRadius(AXCornerRadius.md)
     }
     
-    private func jobRow(_ job: DockerManager.ScheduledAction) -> some View {
+    private func jobRow(_ job: ScheduledAction) -> some View {
         HStack(spacing: AXSpacing.md) {
             Image(systemName: "clock.fill")
                 .font(.system(size: 12))
@@ -290,8 +290,8 @@ private struct DockerSchedulerInline: View {
     
     private func load() {
         Task {
-            containers = (try? await DockerManager.shared.getContainers(serverId: serverId, all: false)) ?? []
-            jobs = (try? await DockerManager.shared.listScheduledActions(serverId: serverId)) ?? []
+            containers = (try? await DockerService.shared.getContainers(serverId: serverId, all: false)) ?? []
+            jobs = (try? await DockerService.shared.listScheduledActions(serverId: serverId)) ?? []
             await MainActor.run { isLoading = false }
         }
     }
@@ -300,7 +300,7 @@ private struct DockerSchedulerInline: View {
         isAdding = true
         Task {
             do {
-                try await DockerManager.shared.scheduleContainerAction(
+                try await DockerService.shared.scheduleContainerAction(
                     containerName: selectedContainer,
                     action: selectedAction,
                     schedule: selectedSchedule,
@@ -313,9 +313,9 @@ private struct DockerSchedulerInline: View {
         }
     }
     
-    private func deleteJob(_ job: DockerManager.ScheduledAction) {
+    private func deleteJob(_ job: ScheduledAction) {
         Task {
-            try? await DockerManager.shared.removeScheduledAction(containerName: job.containerName, action: job.action, serverId: serverId)
+            try? await DockerService.shared.removeScheduledAction(containerName: job.containerName, action: job.action, serverId: serverId)
             await MainActor.run { load() }
         }
     }
@@ -325,7 +325,7 @@ private struct DockerSchedulerInline: View {
 
 private struct DockerSecretsInline: View {
     let serverId: String
-    @State private var secrets: [DockerManager.DockerSecret] = []
+    @State private var secrets: [DockerSecret] = []
     @State private var isLoading = true
     @State private var showAdd = false
     @State private var newName = ""
@@ -393,7 +393,7 @@ private struct DockerSecretsInline: View {
                             .font(.system(size: 10))
                             .foregroundColor(.axTextMuted)
                         Button {
-                            Task { try? await DockerManager.shared.deleteSecret(name: secret.name, serverId: serverId); load() }
+                            Task { try? await DockerService.shared.deleteSecret(name: secret.name, serverId: serverId); load() }
                         } label: {
                             Image(systemName: "trash").font(.system(size: 11)).foregroundColor(.axError)
                         }
@@ -414,7 +414,7 @@ private struct DockerSecretsInline: View {
     
     private func load() {
         Task {
-            secrets = (try? await DockerManager.shared.listSecrets(serverId: serverId)) ?? []
+            secrets = (try? await DockerService.shared.listSecrets(serverId: serverId)) ?? []
             await MainActor.run { isLoading = false }
         }
     }
@@ -422,7 +422,7 @@ private struct DockerSecretsInline: View {
     private func createSecret() {
         Task {
             do {
-                try await DockerManager.shared.createSecret(name: newName, value: newValue, serverId: serverId)
+                try await DockerService.shared.createSecret(name: newName, value: newValue, serverId: serverId)
                 await MainActor.run { newName = ""; newValue = ""; showAdd = false; load() }
             } catch {
                 await MainActor.run { errorMessage = error.localizedDescription }
@@ -435,7 +435,7 @@ private struct DockerSecretsInline: View {
 
 private struct DockerTrafficInline: View {
     let serverId: String
-    @State private var stats: [DockerManager.ContainerNetworkStats] = []
+    @State private var stats: [ContainerNetworkStats] = []
     @State private var isLoading = true
     
     private var maxBytes: Int64 { max(stats.map { $0.rxBytes + $0.txBytes }.max() ?? 1, 1) }
@@ -533,7 +533,7 @@ private struct DockerTrafficInline: View {
     private func load() {
         isLoading = true
         Task {
-            stats = (try? await DockerManager.shared.getNetworkTrafficStats(serverId: serverId)) ?? []
+            stats = (try? await DockerService.shared.getNetworkTrafficStats(serverId: serverId)) ?? []
             await MainActor.run { isLoading = false }
         }
     }
@@ -544,7 +544,7 @@ private struct DockerTrafficInline: View {
 
 private struct DockerDependenciesInline: View {
     let serverId: String
-    @State private var deps: [DockerManager.ContainerDependency] = []
+    @State private var deps: [ContainerDependency] = []
     @State private var isLoading = true
     
     private var containerNames: [String] {
@@ -614,7 +614,7 @@ private struct DockerDependenciesInline: View {
     private func load() {
         isLoading = true
         Task {
-            deps = (try? await DockerManager.shared.detectContainerDependencies(serverId: serverId)) ?? []
+            deps = (try? await DockerService.shared.detectContainerDependencies(serverId: serverId)) ?? []
             await MainActor.run { isLoading = false }
         }
     }
@@ -649,7 +649,7 @@ private struct DockerRunToComposeInline: View {
             
             HStack {
                 Button {
-                    composeOutput = DockerManager.shared.convertRunToCompose(runCommand: runCommand)
+                    composeOutput = DockerService.shared.convertRunToCompose(runCommand: runCommand)
                 } label: {
                     Label("Convert", systemImage: "arrow.right.arrow.left")
                         .font(.system(size: 12, weight: .semibold))
@@ -698,7 +698,7 @@ private struct DockerRunToComposeInline: View {
 
 private struct DockerEnvTemplatesInline: View {
     let serverId: String
-    @State private var templates: [DockerManager.EnvTemplate] = []
+    @State private var templates: [EnvTemplate] = []
     @State private var isLoading = true
     @State private var showAdd = false
     @State private var tName = ""
@@ -768,7 +768,7 @@ private struct DockerEnvTemplatesInline: View {
                                 Image(systemName: "doc.on.doc").font(.system(size: 10)).foregroundColor(.axAccentBlue)
                             }.buttonStyle(.plain)
                             Button {
-                                Task { try? await DockerManager.shared.deleteEnvTemplate(id: t.id, serverId: serverId); load() }
+                                Task { try? await DockerService.shared.deleteEnvTemplate(id: t.id, serverId: serverId); load() }
                             } label: {
                                 Image(systemName: "trash").font(.system(size: 10)).foregroundColor(.axError)
                             }.buttonStyle(.plain)
@@ -793,7 +793,7 @@ private struct DockerEnvTemplatesInline: View {
     
     private func load() {
         Task {
-            templates = (try? await DockerManager.shared.listEnvTemplates(serverId: serverId)) ?? []
+            templates = (try? await DockerService.shared.listEnvTemplates(serverId: serverId)) ?? []
             await MainActor.run { isLoading = false }
         }
     }
@@ -802,7 +802,7 @@ private struct DockerEnvTemplatesInline: View {
         let vars = tVars.components(separatedBy: .newlines).filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
         Task {
             do {
-                try await DockerManager.shared.saveEnvTemplate(DockerManager.EnvTemplate(name: tName, description: tDesc, variables: vars), serverId: serverId)
+                try await DockerService.shared.saveEnvTemplate(EnvTemplate(name: tName, description: tDesc, variables: vars), serverId: serverId)
                 await MainActor.run { tName = ""; tDesc = ""; tVars = ""; showAdd = false; load() }
             } catch {
                 await MainActor.run { errorMessage = error.localizedDescription }
@@ -923,7 +923,7 @@ private struct DockerProfilesInline: View {
         isExporting = true; errorMsg = nil
         Task {
             do {
-                let json = try await DockerManager.shared.exportContainerProfile(serverId: serverId)
+                let json = try await DockerService.shared.exportContainerProfile(serverId: serverId)
                 await MainActor.run { exportedJSON = json; isExporting = false }
             } catch {
                 await MainActor.run { isExporting = false; errorMsg = error.localizedDescription }
@@ -935,7 +935,7 @@ private struct DockerProfilesInline: View {
         isImporting = true; errorMsg = nil; successMsg = nil
         Task {
             do {
-                try await DockerManager.shared.importContainerProfile(json: importJSON, serverId: serverId) { msg, pct in
+                try await DockerService.shared.importContainerProfile(json: importJSON, serverId: serverId) { msg, pct in
                     Task { @MainActor in progressMsg = msg; progressVal = pct }
                 }
                 await MainActor.run { isImporting = false; successMsg = "Profile imported ✅" }
@@ -950,7 +950,7 @@ private struct DockerProfilesInline: View {
 
 private struct DockerAutoUpdateInline: View {
     let serverId: String
-    @State private var updates: [DockerManager.ImageUpdateStatus] = []
+    @State private var updates: [ImageUpdateStatus] = []
     @State private var isChecking = false
     @State private var updatingId: String?
     @State private var watchtowerRunning = false
@@ -1064,7 +1064,7 @@ private struct DockerAutoUpdateInline: View {
         isChecking = true
         Task {
             do {
-                let u = try await DockerManager.shared.checkAllImageUpdates(serverId: serverId)
+                let u = try await DockerService.shared.checkAllImageUpdates(serverId: serverId)
                 await MainActor.run { updates = u; isChecking = false }
             } catch {
                 await MainActor.run { isChecking = false; errorMessage = error.localizedDescription }
@@ -1072,12 +1072,12 @@ private struct DockerAutoUpdateInline: View {
         }
     }
     
-    private func updateContainer(_ info: DockerManager.ImageUpdateStatus) {
+    private func updateContainer(_ info: ImageUpdateStatus) {
         updatingId = info.imageName
         Task {
             do {
                 let containerId = info.containerIds.first ?? info.imageName
-                try await DockerManager.shared.updateContainerImage(containerId: containerId, serverId: serverId, createSnapshot: true) { _, _ in }
+                try await DockerService.shared.updateContainerImage(containerId: containerId, serverId: serverId, createSnapshot: true) { _, _ in }
                 await MainActor.run { updatingId = nil; checkUpdates() }
             } catch {
                 await MainActor.run { updatingId = nil; errorMessage = error.localizedDescription }
@@ -1087,7 +1087,7 @@ private struct DockerAutoUpdateInline: View {
     
     private func checkWatchtower() {
         Task {
-            watchtowerRunning = (try? await DockerManager.shared.isWatchtowerRunning(serverId: serverId)) ?? false
+            watchtowerRunning = (try? await DockerService.shared.isWatchtowerRunning(serverId: serverId)) ?? false
         }
     }
     
@@ -1095,9 +1095,9 @@ private struct DockerAutoUpdateInline: View {
         Task {
             do {
                 if watchtowerRunning {
-                    try await DockerManager.shared.removeWatchtower(serverId: serverId)
+                    try await DockerService.shared.removeWatchtower(serverId: serverId)
                 } else {
-                    try await DockerManager.shared.deployWatchtower(serverId: serverId)
+                    try await DockerService.shared.deployWatchtower(serverId: serverId)
                 }
                 await MainActor.run { watchtowerRunning.toggle() }
             } catch {

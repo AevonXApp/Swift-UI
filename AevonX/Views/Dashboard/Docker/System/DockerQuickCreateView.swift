@@ -1,6 +1,6 @@
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 struct DockerQuickCreateView: View {
     let serverId: String
@@ -107,7 +107,7 @@ struct DockerQuickCreateView: View {
         
         Task {
             do {
-                try await DockerManager.shared.runContainer(
+                try await DockerService.shared.runContainer(
                     name: name,
                     image: image,
                     ports: ports.isEmpty ? nil : ports,

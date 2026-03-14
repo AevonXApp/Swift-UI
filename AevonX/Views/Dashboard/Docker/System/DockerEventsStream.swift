@@ -1,6 +1,6 @@
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 struct DockerEventsStream: View {
     let serverId: String
@@ -175,7 +175,7 @@ struct DockerEventsStream: View {
                 let since = Int(Date().timeIntervalSince1970) - 60
                 let until = Int(Date().timeIntervalSince1970)
                 
-                let result = try await DockerManager.shared.getRecentEvents(
+                let result = try await DockerService.shared.getRecentEvents(
                     since: since,
                     until: until,
                     serverId: serverId
@@ -200,7 +200,7 @@ struct DockerEventsStream: View {
                     let newSince = Int(Date().timeIntervalSince1970) - 30
                     let newUntil = Int(Date().timeIntervalSince1970)
                     
-                    let newResult = try await DockerManager.shared.getRecentEvents(
+                    let newResult = try await DockerService.shared.getRecentEvents(
                         since: newSince,
                         until: newUntil,
                         serverId: serverId

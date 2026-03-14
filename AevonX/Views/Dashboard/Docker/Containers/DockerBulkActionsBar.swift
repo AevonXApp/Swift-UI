@@ -1,6 +1,6 @@
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 struct DockerBulkActionsBar: View {
     let selectedContainers: Set<String>
@@ -84,13 +84,13 @@ struct DockerBulkActionsBar: View {
             for id in selectedContainers {
                 switch action {
                 case "start":
-                    try await DockerManager.shared.startContainer(id: id, serverId: serverId)
+                    try await DockerService.shared.startContainer(id: id, serverId: serverId)
                 case "stop":
-                    try await DockerManager.shared.stopContainer(id: id, serverId: serverId)
+                    try await DockerService.shared.stopContainer(id: id, serverId: serverId)
                 case "restart":
-                    try await DockerManager.shared.restartContainer(id: id, serverId: serverId)
+                    try await DockerService.shared.restartContainer(id: id, serverId: serverId)
                 case "remove":
-                    try await DockerManager.shared.removeContainer(id: id, force: false, serverId: serverId)
+                    try await DockerService.shared.removeContainer(id: id, force: false, serverId: serverId)
                 default: break
                 }
             }

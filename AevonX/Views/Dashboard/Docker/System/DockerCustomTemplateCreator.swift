@@ -1,6 +1,6 @@
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 struct DockerCustomTemplateCreator: View {
     let serverId: String
@@ -150,7 +150,7 @@ struct DockerCustomTemplateCreator: View {
         isSaving = true; errorMessage = nil; successMessage = nil
         Task {
             do {
-                try await DockerManager.shared.saveCustomTemplate(
+                try await DockerService.shared.saveCustomTemplate(
                     name: templateName,
                     description: templateDescription,
                     category: templateCategory,

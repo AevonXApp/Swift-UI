@@ -1,6 +1,6 @@
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 // MARK: - Template Models
 
@@ -1097,7 +1097,7 @@ struct DockerTemplateDeployView: View {
         
         Task {
             do {
-                try await DockerManager.shared.deployTemplate(
+                try await DockerService.shared.deployTemplate(
                     name: projectName,
                     composeContent: template.composeContent,
                     serverId: serverId

@@ -1,6 +1,6 @@
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 struct DockerContainerStats: View {
     let container: DockerContainer
@@ -145,7 +145,7 @@ struct DockerContainerStats: View {
     private func fetchStats() {
         Task {
             do {
-                let newStats = try await DockerManager.shared.getContainerStats(id: container.id, serverId: serverId)
+                let newStats = try await DockerService.shared.getContainerStats(id: container.id, serverId: serverId)
                 await MainActor.run {
                     stats = newStats
                     cpuHistory.append(newStats.cpuPercent)

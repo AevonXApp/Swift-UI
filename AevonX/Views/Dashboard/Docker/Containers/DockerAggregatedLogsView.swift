@@ -1,6 +1,6 @@
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 struct DockerAggregatedLogsView: View {
     let serverId: String
@@ -8,12 +8,12 @@ struct DockerAggregatedLogsView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var containers: [DockerContainer] = []
     @State private var selectedContainerIds: Set<String> = []
-    @State private var logEntries: [DockerManager.AggregatedLogEntry] = []
+    @State private var logEntries: [AggregatedLogEntry] = []
     @State private var isLoading = false
     @State private var filterText = ""
     @State private var tailCount = 50
     
-    var filteredEntries: [DockerManager.AggregatedLogEntry] {
+    var filteredEntries: [AggregatedLogEntry] {
         if filterText.isEmpty { return logEntries }
         return logEntries.filter {
             $0.message.localizedCaseInsensitiveContains(filterText) ||
@@ -171,7 +171,7 @@ struct DockerAggregatedLogsView: View {
     
     private func loadContainers() {
         Task {
-            let c = try? await DockerManager.shared.getContainers(serverId: serverId, all: false)
+            let c = try? await DockerService.shared.getContainers(serverId: serverId, all: false)
             await MainActor.run { containers = c ?? [] }
         }
     }
@@ -180,7 +180,7 @@ struct DockerAggregatedLogsView: View {
         isLoading = true
         Task {
             do {
-                let entries = try await DockerManager.shared.getAggregatedLogs(
+                let entries = try await DockerService.shared.getAggregatedLogs(
                     containerIds: Array(selectedContainerIds),
                     tail: tailCount,
                     serverId: serverId

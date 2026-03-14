@@ -1,6 +1,6 @@
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 struct DockerAIComposeGenerator: View {
     let serverId: String
@@ -273,7 +273,7 @@ struct DockerAIComposeGenerator: View {
         
         Task {
             do {
-                try await DockerManager.shared.deployTemplate(
+                try await DockerService.shared.deployTemplate(
                     name: projectName,
                     composeContent: generatedCompose,
                     serverId: serverId

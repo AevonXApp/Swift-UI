@@ -1,6 +1,6 @@
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 struct DockerfileBuilder: View {
     let serverId: String
@@ -231,7 +231,7 @@ struct DockerfileBuilder: View {
         Task {
             do {
                 let tag = "\(imageName):\(imageTag)"
-                let result = try await DockerManager.shared.buildImageFromDockerfile(
+                let result = try await DockerService.shared.buildImageFromDockerfile(
                     content: generatedDockerfile,
                     tag: tag,
                     serverId: serverId

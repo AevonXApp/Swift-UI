@@ -1,6 +1,6 @@
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 struct DockerDetailView: View {
     let server: Server
@@ -227,7 +227,7 @@ struct DockerDetailView: View {
         isCheckingInstallation = true
         Task {
             do {
-                let installed = try await DockerManager.shared.isInstalled(serverId: serverId)
+                let installed = try await DockerService.shared.isInstalled(serverId: serverId)
                 await MainActor.run {
                     self.isDockerInstalled = installed
                     self.isCheckingInstallation = false

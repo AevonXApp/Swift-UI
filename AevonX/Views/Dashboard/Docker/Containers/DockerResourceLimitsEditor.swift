@@ -1,6 +1,6 @@
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 struct DockerResourceLimitsEditor: View {
     let container: DockerContainer
@@ -120,7 +120,7 @@ struct DockerResourceLimitsEditor: View {
     
     private func loadCurrentLimits() async {
         do {
-            let limits = try await DockerManager.shared.getContainerLimits(id: container.id, serverId: serverId)
+            let limits = try await DockerService.shared.getContainerLimits(id: container.id, serverId: serverId)
             await MainActor.run {
                 if limits.memoryMB > 0 { memoryMB = "\(limits.memoryMB)" }
                 if limits.cpus > 0 { cpus = String(format: "%.1f", limits.cpus) }
@@ -145,7 +145,7 @@ struct DockerResourceLimitsEditor: View {
                     return
                 }
                 
-                try await DockerManager.shared.updateContainerLimits(
+                try await DockerService.shared.updateContainerLimits(
                     id: container.id, flags: flags, serverId: serverId
                 )
                 await MainActor.run { successMessage = "Resource limits updated"; isApplying = false }

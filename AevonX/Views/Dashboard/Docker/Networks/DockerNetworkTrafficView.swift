@@ -1,12 +1,12 @@
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 struct DockerNetworkTrafficView: View {
     let serverId: String
     
     @Environment(\.dismiss) private var dismiss
-    @State private var stats: [DockerManager.ContainerNetworkStats] = []
+    @State private var stats: [ContainerNetworkStats] = []
     @State private var isLoading = true
     @State private var errorMessage: String?
     
@@ -162,7 +162,7 @@ struct DockerNetworkTrafficView: View {
         isLoading = true
         Task {
             do {
-                let s = try await DockerManager.shared.getNetworkTrafficStats(serverId: serverId)
+                let s = try await DockerService.shared.getNetworkTrafficStats(serverId: serverId)
                 await MainActor.run { stats = s; isLoading = false }
             } catch {
                 await MainActor.run { isLoading = false; errorMessage = error.localizedDescription }

@@ -1,6 +1,6 @@
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 struct DockerComposeEnvEditor: View {
     let project: DockerComposeProject
@@ -168,7 +168,7 @@ struct DockerComposeEnvEditor: View {
     private func loadEnvFile() async {
         isLoading = true
         do {
-            let entries = try await DockerManager.shared.readEnvFile(workingDir: project.workingDir, serverId: serverId)
+            let entries = try await DockerService.shared.readEnvFile(workingDir: project.workingDir, serverId: serverId)
             let mapped = entries.map { (key: $0.key, value: $0.value, isSecret: $0.isSecret) }
             await MainActor.run { envVars = mapped; isLoading = false }
         } catch {
@@ -184,7 +184,7 @@ struct DockerComposeEnvEditor: View {
         isSaving = true; errorMessage = nil; successMessage = nil
         Task {
             do {
-                try await DockerManager.shared.writeEnvFile(workingDir: project.workingDir, content: buildEnvContent(), serverId: serverId)
+                try await DockerService.shared.writeEnvFile(workingDir: project.workingDir, content: buildEnvContent(), serverId: serverId)
                 await MainActor.run { hasChanges = false; successMessage = "Saved"; isSaving = false }
             } catch {
                 await MainActor.run { errorMessage = error.localizedDescription; isSaving = false }
@@ -196,9 +196,9 @@ struct DockerComposeEnvEditor: View {
         isSaving = true; errorMessage = nil; successMessage = nil
         Task {
             do {
-                try await DockerManager.shared.writeEnvFile(workingDir: project.workingDir, content: buildEnvContent(), serverId: serverId)
-                try await DockerManager.shared.composeDown(workingDir: project.workingDir, serverId: serverId)
-                try await DockerManager.shared.composeUp(workingDir: project.workingDir, serverId: serverId)
+                try await DockerService.shared.writeEnvFile(workingDir: project.workingDir, content: buildEnvContent(), serverId: serverId)
+                try await DockerService.shared.composeDown(workingDir: project.workingDir, serverId: serverId)
+                try await DockerService.shared.composeUp(workingDir: project.workingDir, serverId: serverId)
                 await MainActor.run { hasChanges = false; successMessage = "Saved & containers recreated"; isSaving = false }
             } catch {
                 await MainActor.run { errorMessage = error.localizedDescription; isSaving = false }

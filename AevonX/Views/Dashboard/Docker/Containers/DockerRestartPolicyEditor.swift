@@ -1,6 +1,6 @@
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 struct DockerRestartPolicyEditor: View {
     let container: DockerContainer
@@ -156,7 +156,7 @@ struct DockerRestartPolicyEditor: View {
     
     private func loadCurrentPolicy() async {
         do {
-            let info = try await DockerManager.shared.getRestartPolicy(id: container.id, serverId: serverId)
+            let info = try await DockerService.shared.getRestartPolicy(id: container.id, serverId: serverId)
             await MainActor.run {
                 currentPolicy = info.name
                 selectedPolicy = info.name
@@ -174,7 +174,7 @@ struct DockerRestartPolicyEditor: View {
                     policy = "on-failure:\(retries)"
                 }
                 
-                try await DockerManager.shared.updateRestartPolicy(id: container.id, policy: policy, serverId: serverId)
+                try await DockerService.shared.updateRestartPolicy(id: container.id, policy: policy, serverId: serverId)
                 await MainActor.run {
                     currentPolicy = selectedPolicy
                     successMessage = "Restart policy updated to '\(selectedPolicy)'"
