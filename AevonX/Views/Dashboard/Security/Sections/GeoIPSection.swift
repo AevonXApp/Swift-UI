@@ -7,7 +7,7 @@
 //
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 private struct IndexedAttack: Identifiable {
     let id: Int; let src: AttackSource

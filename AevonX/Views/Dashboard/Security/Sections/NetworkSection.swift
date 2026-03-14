@@ -7,7 +7,7 @@
 //
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 private struct IndexedPort: Identifiable {
     let id: Int

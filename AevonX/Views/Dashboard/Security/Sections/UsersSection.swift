@@ -7,7 +7,7 @@
 //
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 private struct IndexedUser: Identifiable {
     let id: Int

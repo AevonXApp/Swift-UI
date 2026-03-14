@@ -7,7 +7,7 @@
 //
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 private struct SSHSessionItem: Identifiable {
     let id: Int; let user: String; let ip: String; let since: String
