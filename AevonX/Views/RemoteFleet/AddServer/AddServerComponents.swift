@@ -153,7 +153,7 @@ struct PremiumSecureField: View {
 
 // MARK: - Auth Type Picker
 struct AuthTypePicker: View {
-    @Binding var selection: AuthenticationType
+    @Binding var selection: AevonXCore.AuthenticationType
     
     var body: some View {
         HStack(spacing: 0) {
@@ -168,7 +168,7 @@ struct AuthTypePicker: View {
         )
     }
     
-    private func authOption(type: AuthenticationType, icon: String, label: String) -> some View {
+    private func authOption(type: AevonXCore.AuthenticationType, icon: String, label: String) -> some View {
         Button {
             withAnimation(.spring(response: 0.3)) {
                 selection = type
@@ -262,7 +262,7 @@ struct PremiumProgressView: View {
 
 // MARK: - Premium Result View
 struct PremiumResultView: View {
-    let result: ConnectionTestResult
+    let result: AevonXCore.ConnectionTestResult
     
     var body: some View {
         HStack(spacing: AXSpacing.md) {

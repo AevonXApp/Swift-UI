@@ -7,8 +7,8 @@
 //
 
 import SwiftUI
-import AevonXCore
 import AevonXCoreBridge
+import AevonXCore
 
 // DashboardTab is now defined in ServerConnectionViewModel.swift
 

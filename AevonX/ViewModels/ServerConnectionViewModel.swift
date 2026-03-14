@@ -7,8 +7,8 @@
 //
 
 import SwiftUI
-import AevonXCore
 import AevonXCoreBridge
+import AevonXCore
 import Combine
 
 // MARK: - Reconnection Tier
@@ -256,7 +256,7 @@ public class ServerConnectionViewModel: ObservableObject {
     private let serverId: String
     
     /// SSH service backed by Go Core — used by strategies and detectors
-    private let sshService: any SSHServiceProtocol = SSHBridge.shared
+    private let sshService: any AevonXCore.SSHServiceProtocol = SSHBridge.shared
     
     /// Server profile (detected capabilities: OS, init system, package manager)
     @Published private(set) var serverProfile: AevonXCoreBridge.ServerProfile?
@@ -386,8 +386,8 @@ public class ServerConnectionViewModel: ObservableObject {
             // Step 4: Decrypt credentials using local encryption
             connectionStage = .decrypting
             connectionProgress = 0.5
-            let serverData = try await ServerEncryptionService.shared.decryptServer(
-                EncryptedServerData.self,
+            let serverData = try await AevonXCore.ServerEncryptionService.shared.decryptServer(
+                AevonXCore.EncryptedServerData.self,
                 from: serverPayload
             )
             
@@ -477,7 +477,7 @@ public class ServerConnectionViewModel: ObservableObject {
                 createTerminalSession()
             }
             
-        } catch let error as SSHConnectionError {
+        } catch let error as AevonXCore.SSHConnectionError {
             isConnecting = false
             isConnected = false
             connectionStage = .failed
@@ -654,7 +654,7 @@ public class ServerConnectionViewModel: ObservableObject {
             throw ConnectionError.deviceIdentificationFailed
         }
         
-        guard let token = await AuthService.shared.getToken() else {
+        guard let token = await AevonXCoreBridge.AuthService.shared.getToken() else {
             throw ConnectionError.authenticationRequired
         }
         
@@ -687,13 +687,13 @@ public class ServerConnectionViewModel: ObservableObject {
     }
     
     /// Gets encrypted server payload from Core or Go HTTP fallback
-    private func getServerPayload() async throws -> EncryptedServerPayload? {
+    private func getServerPayload() async throws -> AevonXCore.EncryptedServerPayload? {
         print("[ServerConnection] getServerPayload called for serverId: \(serverId)")
         
         // Try to get from serverListViewModel first (already in memory)
         if let serverListVM = serverListViewModel {
             if let accessibleServer = serverListVM.servers.first(where: { $0.id == serverId }) {
-                let payload = EncryptedServerPayload(
+                let payload = AevonXCore.EncryptedServerPayload(
                     encryptedData: accessibleServer.server.encryptedPayload,
                     nonce: accessibleServer.server.payloadNonce,
                     authTag: accessibleServer.server.payloadAuthTag,
@@ -704,7 +704,7 @@ public class ServerConnectionViewModel: ObservableObject {
         }
         
         // Fallback: Fetch from API via Go HTTP
-        guard let token = await AuthService.shared.getToken() else { return nil }
+        guard let token = await AevonXCoreBridge.AuthService.shared.getToken() else { return nil }
         let baseURL = AevonXCoreBridge.ConfigurationManager.shared.currentConfiguration.fullBaseURL
         let resultJSON = await APIBridge.shared.fetchServerAsync(baseURL: baseURL, token: token, serverID: serverId)
         
@@ -717,12 +717,12 @@ public class ServerConnectionViewModel: ObservableObject {
               let authTag = responseData["payload_auth_tag"] as? String,
               let metadataDict = responseData["encryption_metadata"] as? [String: Any],
               let metadataJSON = try? JSONSerialization.data(withJSONObject: metadataDict),
-              let metadata = try? JSONDecoder().decode(EncryptionMetadata.self, from: metadataJSON) else {
+              let metadata = try? JSONDecoder().decode(AevonXCore.EncryptionMetadata.self, from: metadataJSON) else {
             print("[ServerConnection] ERROR: Failed to fetch server from Go API")
             return nil
         }
         
-        return EncryptedServerPayload(
+        return AevonXCore.EncryptedServerPayload(
             encryptedData: encryptedPayload,
             nonce: nonce,
             authTag: authTag,
@@ -737,7 +737,7 @@ public class ServerConnectionViewModel: ObservableObject {
     }
     
     /// Updates connection stage from Core stage
-    private func updateConnectionStage(_ stage: ConnectionStage, percent: Double) {
+    private func updateConnectionStage(_ stage: AevonXCore.ConnectionStage, percent: Double) {
         connectionProgress = percent
 
         switch stage {
@@ -826,8 +826,8 @@ public class ServerConnectionViewModel: ObservableObject {
                     }
                     
                     // Step 4: Decrypt and connect via Go SSH
-                    let serverData = try await ServerEncryptionService.shared.decryptServer(
-                        EncryptedServerData.self,
+                    let serverData = try await AevonXCore.ServerEncryptionService.shared.decryptServer(
+                        AevonXCore.EncryptedServerData.self,
                         from: serverPayload
                     )
                     let connectResult = await SSHBridge.shared.connectAsync(

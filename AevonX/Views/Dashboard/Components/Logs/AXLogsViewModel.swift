@@ -8,8 +8,8 @@
 
 import SwiftUI
 import Combine
-import AevonXCore
 import AevonXCoreBridge
+import AevonXCore
 
 @MainActor
 public final class AXLogsViewModel: ObservableObject {

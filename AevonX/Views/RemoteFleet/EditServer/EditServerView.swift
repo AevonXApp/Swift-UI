@@ -4,25 +4,35 @@
 //
 
 import SwiftUI
-import AevonXCore
 import AevonXCoreBridge
+import AevonXCore
+
+// Resolve ambiguity between AevonXCore and AevonXCoreBridge types
+fileprivate typealias SVM = AevonXCore.ServerViewModel
+fileprivate typealias ASR = AevonXCore.AddServerRequest
+fileprivate typealias AT = AevonXCore.AuthenticationType
+fileprivate typealias SI = AevonXCore.ServerIcon
+fileprivate typealias SC = AevonXCore.ServerColor
+fileprivate typealias ESPayload = AevonXCore.EncryptedServerPayload
+fileprivate typealias EMeta = AevonXCore.EncryptionMetadata
+fileprivate typealias ESData = AevonXCore.EncryptedServerData
 
 struct EditServerView: View {
     @Environment(\.dismiss) private var dismiss
-    let server: ServerViewModel
-    let onSave: (AddServerRequest) -> Void
+    let server: AevonXCore.ServerViewModel
+    let onSave: (AevonXCore.AddServerRequest) -> Void
 
     @State private var name: String = ""
     @State private var host: String = ""
     @State private var port: String = ""
     @State private var username: String = ""
-    @State private var authType: AuthenticationType = .password
+    @State private var authType: AT = .password
     @State private var password: String = ""
     @State private var privateKey: String = ""
     @State private var keyPassphrase: String = ""
     @State private var tagsText: String = ""
-    @State private var selectedIcon: ServerIcon = .serverRack
-    @State private var selectedColor: ServerColor = .blue
+    @State private var selectedIcon: SI = .serverRack
+    @State private var selectedColor: SC = .blue
     @State private var hasChanges: Bool = false
     
     // Original credentials loaded from encrypted payload
@@ -127,7 +137,7 @@ struct EditServerView: View {
                                 .foregroundColor(.axTextMuted)
                             ScrollView(.horizontal, showsIndicators: false) {
                                 HStack(spacing: AXSpacing.sm) {
-                                    ForEach(ServerIcon.allCases) { icon in
+                                    ForEach(SI.allCases) { icon in
                                         Button {
                                             selectedIcon = icon
                                         } label: {
@@ -152,7 +162,7 @@ struct EditServerView: View {
                                 .font(AXTypography.caption)
                                 .foregroundColor(.axTextMuted)
                             HStack(spacing: AXSpacing.sm) {
-                                ForEach(ServerColor.allCases) { color in
+                                ForEach(SC.allCases) { color in
                                     Button {
                                         selectedColor = color
                                     } label: {
@@ -324,7 +334,7 @@ struct EditServerView: View {
                     VStack(spacing: AXSpacing.md) {
                         // Auth Type Picker
                         HStack(spacing: AXSpacing.sm) {
-                            ForEach([AuthenticationType.password, .privateKey], id: \.self) { type in
+                            ForEach([AT.password, .privateKey], id: \.self) { type in
                                 Button {
                                     authType = type
                                 } label: {
@@ -455,7 +465,7 @@ struct EditServerView: View {
                         .keyboardShortcut(.cancelAction)
 
                         Button {
-                            let request = AddServerRequest(
+                            let request = ASR(
                                 name: name,
                                 host: host,
                                 port: Int(port) ?? 22,
@@ -512,62 +522,68 @@ struct EditServerView: View {
         .background(Color.axBackground)
         .preferredColorScheme(.dark)
         .onAppear {
-            name = server.name
-            host = server.host
-            port = String(server.port)
-            username = server.username
-            tagsText = server.tags.joined(separator: ", ")
-            selectedIcon = ServerIcon(rawValue: server.iconName) ?? .serverRack
-            if let hex = server.customColor {
-                selectedColor = ServerColor(rawValue: hex) ?? .blue
+            loadInitialData()
+        }
+    }
+    
+    // MARK: - Helpers
+    
+    private func loadInitialData() {
+        name = server.name
+        host = server.host
+        port = String(server.port)
+        username = server.username
+        tagsText = server.tags.joined(separator: ", ")
+        selectedIcon = SI(rawValue: server.iconName) ?? .serverRack
+        if let hex = server.customColor {
+            selectedColor = SC(rawValue: hex) ?? .blue
+        }
+        Task { await loadCredentials() }
+    }
+    
+    private func loadCredentials() async {
+        do {
+            let token = await AevonXCoreBridge.AuthService.shared.getToken() ?? ""
+            let baseURL = AevonXCoreBridge.ConfigurationManager.shared.currentConfiguration.fullBaseURL
+            let resultJSON = await APIBridge.shared.fetchServerAsync(baseURL: baseURL, token: token, serverID: server.id)
+            
+            guard let rawData = resultJSON.data(using: String.Encoding.utf8),
+                  let result = try? JSONSerialization.jsonObject(with: rawData) as? [String: Any],
+                  result["success"] as? Bool == true,
+                  let responseData = result["data"] as? [String: Any],
+                  let encryptedPayload = responseData["encrypted_payload"] as? String,
+                  let nonce = responseData["payload_nonce"] as? String,
+                  let authTag = responseData["payload_auth_tag"] as? String,
+                  let metadataDict = responseData["encryption_metadata"] as? [String: Any],
+                  let metadataJSON = try? JSONSerialization.data(withJSONObject: metadataDict),
+                  let metadata = try? JSONDecoder().decode(EMeta.self, from: metadataJSON) else {
+                await MainActor.run { isLoadingCredentials = false }
+                return
             }
             
-            // Load existing credentials from encrypted payload via Go HTTP
-            Task {
-                do {
-                    let token = await AuthService.shared.getToken() ?? ""
-                    let baseURL = AevonXCoreBridge.ConfigurationManager.shared.currentConfiguration.fullBaseURL
-                    let resultJSON = await APIBridge.shared.fetchServerAsync(baseURL: baseURL, token: token, serverID: server.id)
-                    
-                    guard let rawData = resultJSON.data(using: .utf8),
-                          let result = try? JSONSerialization.jsonObject(with: rawData) as? [String: Any],
-                          result["success"] as? Bool == true,
-                          let responseData = result["data"] as? [String: Any],
-                          let encryptedPayload = responseData["encrypted_payload"] as? String,
-                          let nonce = responseData["payload_nonce"] as? String,
-                          let authTag = responseData["payload_auth_tag"] as? String,
-                          let metadataDict = responseData["encryption_metadata"] as? [String: Any],
-                          let metadataJSON = try? JSONSerialization.data(withJSONObject: metadataDict),
-                          let metadata = try? JSONDecoder().decode(EncryptionMetadata.self, from: metadataJSON) else {
-                        await MainActor.run { isLoadingCredentials = false }
-                        return
-                    }
-                    
-                    let payload = EncryptedServerPayload(
-                        encryptedData: encryptedPayload,
-                        nonce: nonce,
-                        authTag: authTag,
-                        metadata: metadata
-                    )
-                    let serverData = try await ServerEncryptionService.shared.decryptServer(
-                        EncryptedServerData.self,
-                        from: payload
-                    )
-                    
-                    await MainActor.run {
-                        originalPassword = serverData.authentication.password
-                        originalPrivateKey = serverData.authentication.privateKey
-                        originalPassphrase = serverData.authentication.keyPassphrase
-                        authType = serverData.authentication.authType
-                        hasExistingPassword = !(serverData.authentication.password ?? "").isEmpty
-                        hasExistingPrivateKey = !(serverData.authentication.privateKey ?? "").isEmpty
-                        isLoadingCredentials = false
-                    }
-                } catch {
-                    await MainActor.run {
-                        isLoadingCredentials = false
-                    }
-                }
+            let payload = ESPayload(
+                encryptedData: encryptedPayload,
+                nonce: nonce,
+                authTag: authTag,
+                metadata: metadata
+            )
+            let serverData = try await ServerEncryptionService.shared.decryptServer(
+                ESData.self,
+                from: payload
+            )
+            
+            await MainActor.run {
+                originalPassword = serverData.authentication.password
+                originalPrivateKey = serverData.authentication.privateKey
+                originalPassphrase = serverData.authentication.keyPassphrase
+                authType = serverData.authentication.authType
+                hasExistingPassword = !(serverData.authentication.password ?? "").isEmpty
+                hasExistingPrivateKey = !(serverData.authentication.privateKey ?? "").isEmpty
+                isLoadingCredentials = false
+            }
+        } catch {
+            await MainActor.run {
+                isLoadingCredentials = false
             }
         }
     }

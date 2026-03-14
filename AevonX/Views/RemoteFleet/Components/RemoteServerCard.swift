@@ -10,7 +10,7 @@ import AevonXCoreBridge
 import AevonXCore
 
 struct RemoteServerCard: View {
-    let server: ServerViewModel
+    let server: AevonXCore.ServerViewModel
     let connectionProgress: ConnectionProgress?
     let onTap: () -> Void
     let onConnect: () -> Void

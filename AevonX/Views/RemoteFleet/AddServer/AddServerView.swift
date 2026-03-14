@@ -14,7 +14,7 @@ struct AddServerView: View {
     @StateObject private var viewModel = AddServerViewModel()
     @State private var showContent = false
     
-    var onSave: (AddServerRequest) -> Void
+    var onSave: (AevonXCore.AddServerRequest) -> Void
     
     var body: some View {
         ZStack {

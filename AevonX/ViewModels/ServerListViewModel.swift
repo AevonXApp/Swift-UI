@@ -7,8 +7,8 @@
 //
 
 import SwiftUI
-import AevonXCore
 import AevonXCoreBridge
+import AevonXCore
 import Combine
 
 /// View model for server list management with real-time status updates
@@ -18,7 +18,7 @@ class ServerListViewModel: ObservableObject {
     // MARK: - Published Properties
     
     @Published var servers: [AccessibleServer] = []
-    @Published var decryptedServers: [ServerViewModel] = []
+    @Published var decryptedServers: [AevonXCore.ServerViewModel] = []
     @Published var isLoading = false
     @Published var errorMessage: String?
     @Published var showError = false
@@ -29,7 +29,7 @@ class ServerListViewModel: ObservableObject {
     @Published var remainingSlots = 0
     
     @Published var connectionProgress: [String: ConnectionProgress] = [:]
-    @Published var connectionResults: [String: ConnectionTestResult] = [:]
+    @Published var connectionResults: [String: AevonXCore.ConnectionTestResult] = [:]
     
     // MARK: - Encryption Error Handling
     
@@ -65,7 +65,7 @@ class ServerListViewModel: ObservableObject {
     }
 
     private func setupEncryption() async {
-        let hasKey = EncryptionKeyStore.shared.hasKey()
+        let hasKey = AevonXCore.EncryptionKeyStore.shared.hasKey()
         
         if !hasKey {
             AevonXCoreBridge.CoreLogger.shared.warning("⚠️ No encryption key — user needs to set up", module: "ServerList")
@@ -74,7 +74,7 @@ class ServerListViewModel: ObservableObject {
         
         // Load key into memory cache (instant file read, no prompts)
         do {
-            _ = try await EncryptionKeyStore.shared.getKey()
+            _ = try await AevonXCore.EncryptionKeyStore.shared.getKey()
             AevonXCoreBridge.CoreLogger.shared.info("✅ Encryption key ready", module: "ServerList")
         } catch {
             AevonXCoreBridge.CoreLogger.shared.error("Failed to load encryption key: \(error.localizedDescription)", module: "ServerList")
@@ -92,7 +92,7 @@ class ServerListViewModel: ObservableObject {
         defer { isLoading = false }
 
         // Check authentication first
-        let token = await AuthService.shared.getToken()
+        let token = await AevonXCoreBridge.AuthService.shared.getToken()
         if token == nil {
             isAuthenticated = false
             errorMessage = "Please log in to view your servers"
@@ -119,7 +119,7 @@ class ServerListViewModel: ObservableObject {
             self.servers = await SubscriptionManager.shared.getAccessibleServers(from: serversData)
 
             // Only decrypt if we have encryption key
-            let hasKey = EncryptionKeyStore.shared.hasKey()
+            let hasKey = AevonXCore.EncryptionKeyStore.shared.hasKey()
             if hasKey {
                 await decryptServersForDisplay()
             } else {
@@ -162,7 +162,7 @@ class ServerListViewModel: ObservableObject {
             self.canAddServer = await SubscriptionManager.shared.canAddServer()
             self.remainingSlots = await SubscriptionManager.shared.remainingServerSlots()
             
-            let token = await AuthService.shared.getToken() ?? ""
+            let token = await AevonXCoreBridge.AuthService.shared.getToken() ?? ""
             let baseURL = AevonXCoreBridge.ConfigurationManager.shared.currentConfiguration.fullBaseURL
             let resultJSON = await APIBridge.shared.fetchServersAsync(baseURL: baseURL, token: token)
             if let serversData = parseGoServers(resultJSON) {
@@ -178,14 +178,14 @@ class ServerListViewModel: ObservableObject {
     
     /// Decrypts all accessible servers for display
     private func decryptServersForDisplay() async {
-        var decrypted: [ServerViewModel] = []
+        var decrypted: [AevonXCore.ServerViewModel] = []
         var hasDecryptionErrors = false
         
         failedServerIds.removeAll()
         
         for accessibleServer in servers {
             do {
-                let payload = EncryptedServerPayload(
+                let payload = AevonXCore.EncryptedServerPayload(
                     encryptedData: accessibleServer.server.encryptedPayload,
                     nonce: accessibleServer.server.payloadNonce,
                     authTag: accessibleServer.server.payloadAuthTag,
@@ -193,12 +193,12 @@ class ServerListViewModel: ObservableObject {
                 )
                 
                 // Decrypt using new ServerEncryptionService
-                let serverData = try await ServerEncryptionService.shared.decryptServer(
-                    EncryptedServerData.self,
+                let serverData = try await AevonXCore.ServerEncryptionService.shared.decryptServer(
+                    AevonXCore.EncryptedServerData.self,
                     from: payload
                 )
                 
-                let viewModel = ServerViewModel(
+                let viewModel = AevonXCore.ServerViewModel(
                     id: accessibleServer.id,
                     name: serverData.serverIdentity.name,
                     host: serverData.connectionDetails.host,
@@ -222,7 +222,7 @@ class ServerListViewModel: ObservableObject {
                 hasDecryptionErrors = true
                 failedServerIds.insert(accessibleServer.id)
                 
-                let placeholder = ServerViewModel(
+                let placeholder = AevonXCore.ServerViewModel(
                     id: accessibleServer.id,
                     name: "🔒 Decryption Failed",
                     host: error.localizedDescription,
@@ -249,7 +249,7 @@ class ServerListViewModel: ObservableObject {
         AevonXCoreBridge.CoreLogger.shared.info("Retrying decryption with provided key...", module: "ServerList")
         
         do {
-            try await EncryptionKeyStore.shared.saveKey(key)
+            try await AevonXCore.EncryptionKeyStore.shared.saveKey(key)
             showEncryptionKeyInput = false
             encryptionError = nil
             
@@ -268,13 +268,13 @@ class ServerListViewModel: ObservableObject {
     
     // MARK: - Server Management
     
-    func addServer(_ request: AddServerRequest) async {
+    func addServer(_ request: AevonXCore.AddServerRequest) async {
         isLoading = true
         defer { isLoading = false }
         
         do {
             let serverData = request.toEncryptedServerData()
-            let encryptedPayload = try await ServerEncryptionService.shared.encryptServer(serverData)
+            let encryptedPayload = try await AevonXCore.ServerEncryptionService.shared.encryptServer(serverData)
             
             // Encode payload as JSON for Go
             let payloadDict: [String: Any] = [
@@ -286,7 +286,7 @@ class ServerListViewModel: ObservableObject {
             ]
             let payloadJSON = String(data: try JSONSerialization.data(withJSONObject: payloadDict), encoding: .utf8) ?? "{}"
             
-            let token = await AuthService.shared.getToken() ?? ""
+            let token = await AevonXCoreBridge.AuthService.shared.getToken() ?? ""
             let baseURL = AevonXCoreBridge.ConfigurationManager.shared.currentConfiguration.fullBaseURL
             let resultJSON = await APIBridge.shared.createServerAsync(baseURL: baseURL, token: token, payloadJSON: payloadJSON)
             
@@ -316,7 +316,7 @@ class ServerListViewModel: ObservableObject {
         isLoading = true
         defer { isLoading = false }
         
-        let token = await AuthService.shared.getToken() ?? ""
+        let token = await AevonXCoreBridge.AuthService.shared.getToken() ?? ""
         let baseURL = AevonXCoreBridge.ConfigurationManager.shared.currentConfiguration.fullBaseURL
         let resultJSON = await APIBridge.shared.deleteServerAsync(baseURL: baseURL, token: token, serverID: id)
         
@@ -353,7 +353,7 @@ class ServerListViewModel: ObservableObject {
                   let host = connectionDetails["host"] as? String,
                   let port = connectionDetails["port"] as? Int,
                   let username = connectionDetails["username"] as? String else {
-                throw SSHConnectionError.invalidCredentials
+                throw AevonXCore.SSHConnectionError.invalidCredentials
             }
             
             let authDetails = details["authentication"] as? [String: Any]
@@ -383,7 +383,7 @@ class ServerListViewModel: ObservableObject {
             guard let rd = connectResult.data(using: .utf8),
                   let rj = try? JSONSerialization.jsonObject(with: rd) as? [String: Any],
                   rj["success"] as? Bool == true else {
-                connectionResults[serverId] = ConnectionTestResult(
+                connectionResults[serverId] = AevonXCore.ConnectionTestResult(
                     success: false, message: "SSH connection failed", stage: .failed
                 )
                 return
@@ -396,7 +396,7 @@ class ServerListViewModel: ObservableObject {
             // Disconnect test session
             SSHBridge.shared.disconnect(serverID: serverId)
             
-            connectionResults[serverId] = ConnectionTestResult(
+            connectionResults[serverId] = AevonXCore.ConnectionTestResult(
                 success: true,
                 message: "Connection successful",
                 stage: .complete,
@@ -404,7 +404,7 @@ class ServerListViewModel: ObservableObject {
             )
             
         } catch {
-            connectionResults[serverId] = ConnectionTestResult(
+            connectionResults[serverId] = AevonXCore.ConnectionTestResult(
                 success: false,
                 message: "Failed to test connection: \(error.localizedDescription)",
                 stage: .failed
@@ -421,7 +421,7 @@ class ServerListViewModel: ObservableObject {
         return server.accessLevel == .full
     }
     
-    func accessLevel(for id: String) -> ServerAccessLevel {
+    func accessLevel(for id: String) -> AevonXCore.ServerAccessLevel {
         return servers.first(where: { $0.id == id })?.accessLevel ?? .none
     }
     
@@ -437,7 +437,7 @@ class ServerListViewModel: ObservableObject {
     // MARK: - Go Bridge Helpers
     
     /// Parses Go AuthServiceResult → extracts servers array from "data.servers".
-    private func parseGoServers(_ json: String) -> [ServerResponse]? {
+    private func parseGoServers(_ json: String) -> [AevonXCore.ServerResponse]? {
         guard let rawData = json.data(using: .utf8),
               let result = try? JSONSerialization.jsonObject(with: rawData) as? [String: Any],
               result["success"] as? Bool == true,
@@ -469,7 +469,7 @@ class ServerListViewModel: ObservableObject {
             throw DecodingError.dataCorruptedError(in: container, debugDescription: "Invalid date: \(dateString)")
         }
         
-        return try? decoder.decode([ServerResponse].self, from: serversJSON)
+        return try? decoder.decode([AevonXCore.ServerResponse].self, from: serversJSON)
     }
     
     /// Extracts error message from Go AuthServiceResult.
@@ -487,7 +487,7 @@ class ServerListViewModel: ObservableObject {
 // MARK: - Connection Progress
 
 struct ConnectionProgress {
-    let stage: ConnectionStage
+    let stage: AevonXCore.ConnectionStage
     let message: String
     let percentComplete: Double
 }

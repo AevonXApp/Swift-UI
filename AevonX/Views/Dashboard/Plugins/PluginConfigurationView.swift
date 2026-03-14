@@ -5,8 +5,8 @@
 //
 
 import SwiftUI
-import AevonXCore
 import AevonXCoreBridge
+import AevonXCore
 
 struct PluginConfigurationView: View {
     @StateObject var viewModel: PluginConfigurationViewModel

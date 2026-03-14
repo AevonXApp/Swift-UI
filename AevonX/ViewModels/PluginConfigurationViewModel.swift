@@ -5,8 +5,8 @@
 
 import SwiftUI
 import Combine
-import AevonXCore
 import AevonXCoreBridge
+import AevonXCore
 
 @MainActor
 class PluginConfigurationViewModel: ObservableObject {

@@ -4,8 +4,8 @@
 //
 
 import SwiftUI
-import AevonXCore
 import AevonXCoreBridge
+import AevonXCore
 
 struct DashboardSidebar: View {
     let server: Server

@@ -6,8 +6,8 @@
 //
 
 import SwiftUI
-import AevonXCore
 import AevonXCoreBridge
+import AevonXCore
 
 // MARK: - Pricing Badge Color
 

@@ -4,8 +4,8 @@
 //
 
 import SwiftUI
-import AevonXCore
 import AevonXCoreBridge
+import AevonXCore
 import Combine
 
 @MainActor
@@ -38,7 +38,7 @@ class PluginsViewModel: ObservableObject {
         isLoading = true
         errorMessage = nil
         
-        let token = await AuthService.shared.getToken() ?? ""
+        let token = await AevonXCoreBridge.AuthService.shared.getToken() ?? ""
         let resultJSON = await apiBridge.fetchPluginsAsync(
             baseURL: baseURL, token: token,
             page: 1,
@@ -64,7 +64,7 @@ class PluginsViewModel: ObservableObject {
     }
     
     func loadCategories() async {
-        let token = await AuthService.shared.getToken() ?? ""
+        let token = await AevonXCoreBridge.AuthService.shared.getToken() ?? ""
         let resultJSON = await apiBridge.fetchPluginCategoriesAsync(baseURL: baseURL, token: token)
         
         if let data = parseGoResult(resultJSON),
@@ -93,7 +93,7 @@ class PluginsViewModel: ObservableObject {
         do {
             // 1. Get one-time download token via Go HTTP
             installationStatus[plugin.id] = "Requesting download..."
-            let token = await AuthService.shared.getToken() ?? ""
+            let token = await AevonXCoreBridge.AuthService.shared.getToken() ?? ""
             let downloadJSON = await apiBridge.getPluginDownloadInfoAsync(
                 baseURL: baseURL, token: token,
                 pluginID: plugin.id,

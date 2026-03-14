@@ -6,7 +6,6 @@
 //
 
 import SwiftUI
-import AevonXCore
 import AevonXCoreBridge
 
 struct ContentView: View {

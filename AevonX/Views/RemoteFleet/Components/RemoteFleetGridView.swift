@@ -8,13 +8,13 @@ import AevonXCoreBridge
 import AevonXCore
 
 struct RemoteFleetGridView: View {
-    let servers: [ServerViewModel]
+    let servers: [AevonXCore.ServerViewModel]
     @Binding var selectedServer: Server?
     @Binding var showServerDashboard: Bool
     @ObservedObject var viewModel: ServerListViewModel
-    let onConnect: (ServerViewModel) -> Void
-    let onEdit: (ServerViewModel) -> Void
-    let onDelete: (ServerViewModel) -> Void
+    let onConnect: (AevonXCore.ServerViewModel) -> Void
+    let onEdit: (AevonXCore.ServerViewModel) -> Void
+    let onDelete: (AevonXCore.ServerViewModel) -> Void
 
     var body: some View {
         LazyVGrid(columns: [
@@ -42,7 +42,7 @@ struct RemoteFleetGridView: View {
         .padding(AXSpacing.xxl)
     }
     
-    private func navigateToServer(_ server: ServerViewModel) async {
+    private func navigateToServer(_ server: AevonXCore.ServerViewModel) async {
         print("[RemoteFleet] navigateToServer called for: \(server.name)")
         
         // Create full Server model from decrypted info

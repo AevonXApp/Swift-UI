@@ -10,8 +10,8 @@
 //
 
 import SwiftUI
-import AevonXCore
 import AevonXCoreBridge
+import AevonXCore
 import Combine
 
 // MARK: - Bridge Response Models

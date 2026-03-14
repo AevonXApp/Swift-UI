@@ -8,8 +8,8 @@
 
 import SwiftUI
 import Combine
-import AevonXCore
 import AevonXCoreBridge
+import AevonXCore
 
 @MainActor
 public class ServerActionsViewModel: ObservableObject {
@@ -25,7 +25,7 @@ public class ServerActionsViewModel: ObservableObject {
     // MARK: - Private Properties
     
     private let serverId: String
-    private let sshService: any SSHServiceProtocol = SSHBridge.shared
+    private let sshService: any AevonXCore.SSHServiceProtocol = SSHBridge.shared
     
     /// Callback to trigger disconnect (set by parent)
     var onDisconnectNeeded: (() async -> Void)?

@@ -46,7 +46,7 @@ struct AddServerIdentityStep: View {
                     
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: AXSpacing.sm) {
-                            ForEach(ServerIcon.allCases) { icon in
+                            ForEach(AevonXCore.ServerIcon.allCases) { icon in
                                 Button {
                                     viewModel.selectedIcon = icon
                                 } label: {
@@ -77,7 +77,7 @@ struct AddServerIdentityStep: View {
                     }
                     
                     HStack(spacing: AXSpacing.sm) {
-                        ForEach(ServerColor.allCases) { color in
+                        ForEach(AevonXCore.ServerColor.allCases) { color in
                             Button {
                                 viewModel.selectedColor = color
                             } label: {

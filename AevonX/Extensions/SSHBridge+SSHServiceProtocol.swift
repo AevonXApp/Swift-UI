@@ -10,10 +10,10 @@
 //
 
 import Foundation
-import AevonXCore
 import AevonXCoreBridge
+import AevonXCore
 
-extension SSHBridge: @retroactive SSHServiceProtocol {
+extension SSHBridge: @retroactive AevonXCore.SSHServiceProtocol {
 
     /// Execute a command via Go SSH, returning AevonXCore.SSHCommandResult.
     public func execute(_ command: String, serverId: String) async throws -> AevonXCore.SSHCommandResult {

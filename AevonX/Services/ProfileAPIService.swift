@@ -9,7 +9,6 @@
 import Foundation
 import Combine
 import AevonXCoreBridge
-import AevonXCore
 
 
 // MARK: - User Session Model

@@ -8,7 +8,6 @@
 
 import SwiftUI
 import AevonXCoreBridge
-import AevonXCore
 import Combine
 
 struct RecoveryKeyDisplayView: View {

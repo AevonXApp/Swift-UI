@@ -1,6 +1,6 @@
 import SwiftUI
-import AevonXCore
 import AevonXCoreBridge
+import AevonXCore
 import Combine
 
 // MARK: - Server Stats ViewModel

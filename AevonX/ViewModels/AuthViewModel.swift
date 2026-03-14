@@ -8,8 +8,8 @@
 //
 
 import SwiftUI
-import AevonXCore
 import AevonXCoreBridge
+import AevonXCore
 import Combine
 
 @MainActor
@@ -17,17 +17,17 @@ class AuthViewModel: ObservableObject {
     @Published var isAuthenticated = false
     @Published var isLoading = false
     @Published var errorMessage: String?
-    @Published var currentUser: User?
+    @Published var currentUser: AevonXCore.User?
     
     // Trial status
-    @Published var trialStatus: TrialService.TrialStatus = .unknown
+    @Published var trialStatus: AevonXCore.TrialService.TrialStatus = .unknown
     @Published var isTrialEligible: Bool?
     @Published var trialEndsAt: String?
     @Published var trialRemainingDays: Int?
     @Published var trialExpired: Bool?
     @Published var trialMessage: String?
     
-    private let authService = AuthService.shared  // Keychain only
+    private let authService = AevonXCoreBridge.AuthService.shared  // Keychain only
     private let apiBridge = APIBridge.shared       // Go HTTP
     private let logBridge = LoggerBridge.shared    // Go logging
     private var hasInitialized = false
@@ -53,12 +53,12 @@ class AuthViewModel: ObservableObject {
     /// Check trial eligibility on app launch
     func checkTrialEligibility() async {
         // First check local Keychain (fastest)
-        let localStatus = await TrialService.shared.checkTrialEligibility()
+        let localStatus = await AevonXCore.TrialService.shared.checkTrialEligibility()
         self.trialStatus = localStatus
         
         // Then verify with server via Go HTTP
         let token = await authService.getToken() ?? ""
-        let deviceID = await TrialService.shared.getDeviceID() ?? ""
+        let deviceID = await AevonXCore.TrialService.shared.getDeviceID() ?? ""
         
         guard !deviceID.isEmpty else { return }
         
@@ -83,7 +83,7 @@ class AuthViewModel: ObservableObject {
             let resultJSON = await apiBridge.getCurrentUserAsync(baseURL: baseURL, token: token)
             
             if let userData = parseGoResultNested(resultJSON, key: "user") {
-                self.currentUser = decodeUser(from: userData)
+                self.currentUser = decodeUser(from: userData) as AevonXCore.User?
                 self.isAuthenticated = true
                 logBridge.info("[AuthVM] Auth check passed", module: "Auth")
             } else {
@@ -128,7 +128,7 @@ class AuthViewModel: ObservableObject {
         
         // Step 4: Parse user
         if let userData = authData["user"] as? [String: Any] {
-            self.currentUser = decodeUser(from: userData)
+            self.currentUser = decodeUser(from: userData) as AevonXCore.User?
         }
         self.isAuthenticated = true
         logBridge.info("[AuthVM] Login successful for \(apiBridge.maskEmail(email))", module: "Auth")
@@ -186,7 +186,7 @@ class AuthViewModel: ObservableObject {
         }
         
         // Step 2: HTTP call via Go net/http
-        let deviceID = await TrialService.shared.getDeviceID() ?? ""
+        let deviceID = await AevonXCore.TrialService.shared.getDeviceID() ?? ""
         let resultJSON = await apiBridge.registerAsync(
             baseURL: baseURL, name: name, email: email,
             password: password, confirmation: passwordConfirmation,
@@ -208,7 +208,7 @@ class AuthViewModel: ObservableObject {
         
         // Step 4: Parse user
         if let userData = authData["user"] as? [String: Any] {
-            self.currentUser = decodeUser(from: userData)
+            self.currentUser = decodeUser(from: userData) as AevonXCore.User?
         }
         self.isAuthenticated = true
         logBridge.info("[AuthVM] Registration successful for \(apiBridge.maskEmail(email))", module: "Auth")
@@ -220,7 +220,7 @@ class AuthViewModel: ObservableObject {
         if authData["trial_eligible"] as? Bool == true {
             self.trialStatus = .used
             self.trialMessage = "Your 14-day free trial has started!"
-            _ = await TrialService.shared.markTrialAsUsed()
+            _ = await AevonXCore.TrialService.shared.markTrialAsUsed()
         } else {
             self.trialMessage = "This device is not eligible for a free trial."
         }
@@ -302,9 +302,9 @@ class AuthViewModel: ObservableObject {
     }
     
     /// Decodes a User from a dictionary (JSON from Go).
-    private func decodeUser(from dict: [String: Any]) -> User? {
+    private func decodeUser(from dict: [String: Any]) -> AevonXCore.User? {
         guard let jsonData = try? JSONSerialization.data(withJSONObject: dict),
-              let user = try? JSONDecoder().decode(User.self, from: jsonData) else {
+              let user = try? JSONDecoder().decode(AevonXCore.User.self, from: jsonData) else {
             return nil
         }
         return user

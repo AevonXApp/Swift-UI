@@ -4,8 +4,8 @@
 //
 
 import SwiftUI
-import AevonXCore
 import AevonXCoreBridge
+import AevonXCore
 
 struct InstalledPluginsView: View {
     let serverId: String?
