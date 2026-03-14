@@ -22,13 +22,13 @@ struct AevonXApp: App {
         print("[AevonXApp] INFO: AevonX App Started - v\(BuildConfiguration.appVersion) (\(BuildConfiguration.buildNumber)) on \(BuildConfiguration.platform)")
         print("[AevonXApp] INFO: API URL: \(AevonXCoreBridge.ConfigurationManager.shared.currentConfiguration.fullBaseURL)")
         
-        // Inject API fetcher into SubscriptionManager (breaks circular dependency)
-        // Inject Go SSH into SystemControlService
+        // Inject API fetcher into AevonXCore.SubscriptionManager (breaks circular dependency)
+        // Inject Go SSH into AevonXCore.SystemControlService
         Task {
-            await SubscriptionManager.shared.setApiFetcher { baseURL, token in
+            await AevonXCore.SubscriptionManager.shared.setApiFetcher { baseURL, token in
                 await APIBridge.shared.fetchSubscriptionStatusAsync(baseURL: baseURL, token: token)
             }
-            await SystemControlService.shared.setSSHService(SSHBridge.shared)
+            await AevonXCore.SystemControlService.shared.setSSHService(SSHBridge.shared)
         }
         
         // Setup app lifecycle notifications

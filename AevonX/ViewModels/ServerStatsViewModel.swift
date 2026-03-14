@@ -64,7 +64,7 @@ public class ServerStatsViewModel: ObservableObject {
     
     /// Polling interval from configuration
     private var pollingInterval: TimeInterval {
-        InternalConfiguration.statsPollingInterval
+        AevonXCore.InternalConfiguration.statsPollingInterval
     }
     
     /// Maximum history points to keep

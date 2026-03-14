@@ -188,7 +188,7 @@ final class GitViewModel: ObservableObject {
                 )
                 
                 // Check subscription
-                let plan = await SubscriptionManager.shared.currentPlan()
+                let plan = await AevonXCoreBridge.SubscriptionManager.shared.currentPlan()
                 isProPlan = (plan != "free")
                 
                 if isProPlan {

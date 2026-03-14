@@ -129,7 +129,7 @@ public class ServerConnectionViewModel: ObservableObject {
     @Published private(set) var reconnectionAttempt: Int = 0
     
     /// Maximum reconnection attempts
-    @Published private(set) var reconnectionMaxAttempts: Int = InternalConfiguration.reconnectionMaxAttempts
+    @Published private(set) var reconnectionMaxAttempts: Int = AevonXCore.InternalConfiguration.reconnectionMaxAttempts
     
     /// Human-readable reason for disconnection
     @Published private(set) var reconnectionReason: String?
@@ -182,7 +182,7 @@ public class ServerConnectionViewModel: ObservableObject {
         set { databasesVM.viewMode = newValue }
     }
     
-    var websites: [CoreWebsiteInfo] { websitesVM.websites }
+    var websites: [AevonXCore.CoreWebsiteInfo] { websitesVM.websites }
     var websiteCount: Int { websitesVM.count > 0 ? websitesVM.count : websiteInventoryCount }
     var databaseCount: Int { databasesVM.databases.count > 0 ? databasesVM.databases.count : databaseInventoryCount }
     var isLoadingWebsites: Bool { websitesVM.isLoading }
@@ -952,7 +952,7 @@ public class ServerConnectionViewModel: ObservableObject {
             guard let self = self else { return }
             
             // Wait for silent threshold, then show banner
-            try? await Task.sleep(nanoseconds: UInt64(InternalConfiguration.reconnectionSilentThreshold * 1_000_000_000))
+            try? await Task.sleep(nanoseconds: UInt64(AevonXCore.InternalConfiguration.reconnectionSilentThreshold * 1_000_000_000))
             guard !Task.isCancelled else { return }
             
             await MainActor.run {
@@ -962,7 +962,7 @@ public class ServerConnectionViewModel: ObservableObject {
             }
             
             // Wait for overlay threshold, then show full overlay
-            let overlayDelay = InternalConfiguration.reconnectionOverlayThreshold - InternalConfiguration.reconnectionSilentThreshold
+            let overlayDelay = AevonXCore.InternalConfiguration.reconnectionOverlayThreshold - AevonXCore.InternalConfiguration.reconnectionSilentThreshold
             try? await Task.sleep(nanoseconds: UInt64(overlayDelay * 1_000_000_000))
             guard !Task.isCancelled else { return }
             

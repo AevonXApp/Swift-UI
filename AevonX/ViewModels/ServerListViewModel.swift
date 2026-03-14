@@ -17,14 +17,14 @@ class ServerListViewModel: ObservableObject {
     
     // MARK: - Published Properties
     
-    @Published var servers: [AccessibleServer] = []
+    @Published var servers: [AevonXCore.AccessibleServer] = []
     @Published var decryptedServers: [AevonXCore.ServerViewModel] = []
     @Published var isLoading = false
     @Published var errorMessage: String?
     @Published var showError = false
     @Published var isAuthenticated = false
     
-    @Published var subscriptionStatus: SubscriptionStatus?
+    @Published var subscriptionStatus: AevonXCore.SubscriptionStatus?
     @Published var canAddServer = false
     @Published var remainingSlots = 0
     
@@ -103,11 +103,11 @@ class ServerListViewModel: ObservableObject {
         let baseURL = AevonXCoreBridge.ConfigurationManager.shared.currentConfiguration.fullBaseURL
 
         do {
-            // Fetch subscription status (still via SubscriptionManager for business logic)
-            let status = try await SubscriptionManager.shared.getSubscriptionStatus(forceRefresh: true)
+            // Fetch subscription status (still via AevonXCore.SubscriptionManager for business logic)
+            let status = try await AevonXCore.SubscriptionManager.shared.getSubscriptionStatus(forceRefresh: true)
             self.subscriptionStatus = status
-            self.canAddServer = await SubscriptionManager.shared.canAddServer()
-            self.remainingSlots = await SubscriptionManager.shared.remainingServerSlots()
+            self.canAddServer = await AevonXCore.SubscriptionManager.shared.canAddServer()
+            self.remainingSlots = await AevonXCore.SubscriptionManager.shared.remainingServerSlots()
 
             // Fetch servers via Go HTTP
             let resultJSON = await APIBridge.shared.fetchServersAsync(baseURL: baseURL, token: token!)
@@ -116,7 +116,7 @@ class ServerListViewModel: ObservableObject {
                 showError = true
                 return
             }
-            self.servers = await SubscriptionManager.shared.getAccessibleServers(from: serversData)
+            self.servers = await AevonXCore.SubscriptionManager.shared.getAccessibleServers(from: serversData)
 
             // Only decrypt if we have encryption key
             let hasKey = AevonXCore.EncryptionKeyStore.shared.hasKey()
@@ -157,16 +157,16 @@ class ServerListViewModel: ObservableObject {
     
     private func refreshServerStatuses() async {
         do {
-            let status = try await SubscriptionManager.shared.getSubscriptionStatus(forceRefresh: true)
+            let status = try await AevonXCore.SubscriptionManager.shared.getSubscriptionStatus(forceRefresh: true)
             self.subscriptionStatus = status
-            self.canAddServer = await SubscriptionManager.shared.canAddServer()
-            self.remainingSlots = await SubscriptionManager.shared.remainingServerSlots()
+            self.canAddServer = await AevonXCore.SubscriptionManager.shared.canAddServer()
+            self.remainingSlots = await AevonXCore.SubscriptionManager.shared.remainingServerSlots()
             
             let token = await AevonXCoreBridge.AuthService.shared.getToken() ?? ""
             let baseURL = AevonXCoreBridge.ConfigurationManager.shared.currentConfiguration.fullBaseURL
             let resultJSON = await APIBridge.shared.fetchServersAsync(baseURL: baseURL, token: token)
             if let serversData = parseGoServers(resultJSON) {
-                self.servers = await SubscriptionManager.shared.getAccessibleServers(from: serversData)
+                self.servers = await AevonXCore.SubscriptionManager.shared.getAccessibleServers(from: serversData)
             }
             
         } catch {

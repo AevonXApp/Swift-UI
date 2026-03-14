@@ -72,7 +72,7 @@ public class ServerActionsViewModel: ObservableObject {
         AevonXCoreBridge.CoreLogger.shared.warning("Initiating server reboot...", module: "ServerActions")
         
         do {
-            try await SystemControlService.shared.reboot(serverId: serverId)
+            try await AevonXCore.SystemControlService.shared.reboot(serverId: serverId)
             await onDisconnectNeeded?()
         } catch {
             AevonXCoreBridge.CoreLogger.shared.error("Failed to reboot server: \(error.localizedDescription)", module: "ServerActions")
@@ -87,7 +87,7 @@ public class ServerActionsViewModel: ObservableObject {
         AevonXCoreBridge.CoreLogger.shared.warning("Initiating server shutdown...", module: "ServerActions")
         
         do {
-            try await SystemControlService.shared.shutdown(serverId: serverId)
+            try await AevonXCore.SystemControlService.shared.shutdown(serverId: serverId)
             await onDisconnectNeeded?()
         } catch {
             AevonXCoreBridge.CoreLogger.shared.error("Failed to shutdown server: \(error.localizedDescription)", module: "ServerActions")
