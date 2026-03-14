@@ -11,7 +11,6 @@ import SwiftUI
 import Combine
 import AppKit
 import UniformTypeIdentifiers
-import AevonXCore
 import AevonXCoreBridge
 
 /// Identifiable wrapper for row data — used for .sheet(item:)

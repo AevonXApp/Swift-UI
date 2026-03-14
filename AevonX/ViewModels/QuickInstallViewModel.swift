@@ -123,7 +123,7 @@ public final class QuickInstallViewModel: ObservableObject {
     // MARK: - Server State
 
     let serverId: String
-    var serverProfile: ServerProfile?
+    var serverProfile: AevonXCoreBridge.ServerProfile?
 
     @Published var isScanning: Bool = false
     @Published var serverScan: [String: String]? = nil  // packageId → version
@@ -149,7 +149,7 @@ public final class QuickInstallViewModel: ObservableObject {
 
     // MARK: - Init
 
-    public init(serverId: String, profile: ServerProfile? = nil) {
+    public init(serverId: String, profile: AevonXCoreBridge.ServerProfile? = nil) {
         self.serverId = serverId
         self.serverProfile = profile
         loadCatalog()
@@ -338,14 +338,15 @@ public final class QuickInstallViewModel: ObservableObject {
         AevonXCoreBridge.CoreLogger.shared.info("beginInstallation() called — \(selections.count) packages selected", module: "QuickInstall")
         guard !selections.isEmpty else { return }
 
-        let profile: ServerProfile
+        let profile: AevonXCoreBridge.ServerProfile
         if let existing = serverProfile {
             profile = existing
         } else {
             AevonXCoreBridge.CoreLogger.shared.info("serverProfile nil — detecting now", module: "QuickInstall")
             let detector = CapabilityDetector(sshService: SSHBridge.shared)
             do {
-                let detected = try await detector.detect(serverId: serverId)
+                let coreProfile = try await detector.detect(serverId: serverId)
+                let detected = try JSONDecoder().decode(AevonXCoreBridge.ServerProfile.self, from: JSONEncoder().encode(coreProfile))
                 serverProfile = detected
                 profile = detected
             } catch {

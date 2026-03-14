@@ -268,7 +268,7 @@ struct DevBuildLogSheet: View {
                 Button(action: {
                     // Reload plugins
                     Task {
-                        await HookLoader.shared.load(serverId: serverId, force: true)
+                        await AevonXCoreBridge.HookLoader.shared.load(serverId: serverId, force: true)
                     }
                     dismiss()
                 }) {
@@ -307,7 +307,7 @@ struct DevBuildLogSheet: View {
                 Button(isComplete ? "Close" : "Cancel") {
                     if isComplete && !hasFailed {
                         Task {
-                            await HookLoader.shared.load(serverId: serverId, force: true)
+                            await AevonXCoreBridge.HookLoader.shared.load(serverId: serverId, force: true)
                         }
                     }
                     dismiss()
@@ -375,7 +375,7 @@ struct DevBuildLogSheet: View {
                 }
                 
                 // Auto-reload plugins
-                await HookLoader.shared.load(serverId: serverId, force: true)
+                await AevonXCoreBridge.HookLoader.shared.load(serverId: serverId, force: true)
                 
             } catch {
                 await MainActor.run {

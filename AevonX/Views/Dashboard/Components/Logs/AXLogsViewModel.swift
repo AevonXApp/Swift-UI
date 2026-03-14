@@ -225,7 +225,7 @@ public final class AXLogsViewModel: ObservableObject {
 
         do {
             let sshService = SSHBridge.shared
-            let logDir = (try? await ServerPathResolver.shared.nginxLogDir(serverId: serverId)) ?? "/var/log/nginx"
+            let logDir = (try? await AevonXCoreBridge.ServerPathResolver.shared.nginxLogDir(serverId: serverId)) ?? "/var/log/nginx"
 
             switch source {
             case .website(let domain):

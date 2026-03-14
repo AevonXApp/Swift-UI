@@ -12,7 +12,7 @@ struct DashboardSidebar: View {
     @ObservedObject var viewModel: ServerConnectionViewModel
     let onBack: () -> Void
 
-    @ObservedObject private var hookRegistry = HookRegistry.shared
+    @ObservedObject private var hookRegistry = AevonXCoreBridge.HookRegistry.shared
     @State private var selectedPluginTabId: String? = nil
 
     var body: some View {
@@ -174,10 +174,10 @@ struct DashboardSidebar: View {
         .onChange(of: viewModel.isConnected) {
             if viewModel.isConnected {
                 Task {
-                    await HookLoader.shared.load(serverId: server.id.uuidString)
+                    await AevonXCoreBridge.HookLoader.shared.load(serverId: server.id.uuidString)
                 }
             } else {
-                HookLoader.shared.unload()
+                AevonXCoreBridge.HookLoader.shared.unload()
             }
         }
     }

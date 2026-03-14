@@ -7,7 +7,6 @@
 //
 
 import SwiftUI
-import AevonXCore
 import AevonXCoreBridge
 
 struct PluginMarkdownComponent: View {
@@ -178,7 +177,9 @@ struct PluginMarkdownComponent: View {
 
         if let source = plugin.contentSource, !source.isEmpty {
             _ = HookPluginCommand(type: .coreCmd, action: "cat", payload: ["path": AnyCodable(source)], timeout: 10)
-            if let result = try? await SSHBridge.shared.execute("cat '\(source)' 2>/dev/null", serverId: serverId) {
+            let raw = await SSHBridge.shared.executeAsync(serverID: serverId, command: "cat '\(source)' 2>/dev/null")
+            let result = SSHResult.parse(raw)
+            if result.isSuccess {
                 markdownContent = result.stdout
             }
         } else if let ds = plugin.dataSource {

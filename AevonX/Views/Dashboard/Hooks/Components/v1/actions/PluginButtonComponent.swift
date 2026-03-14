@@ -6,7 +6,6 @@
 //
 
 import SwiftUI
-import AevonXCore
 import AevonXCoreBridge
 
 // MARK: - Plugin Button Component

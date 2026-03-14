@@ -9,7 +9,6 @@
 
 import SwiftUI
 import Charts
-import AevonXCore
 import AevonXCoreBridge
 
 struct PluginGeoMapComponent: View {

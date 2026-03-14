@@ -9,7 +9,6 @@
 //
 
 import SwiftUI
-import AevonXCore
 import AevonXCoreBridge
 
 // MARK: - Plugin Form Component

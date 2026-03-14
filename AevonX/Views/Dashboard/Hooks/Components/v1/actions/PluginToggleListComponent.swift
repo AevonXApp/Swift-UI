@@ -7,7 +7,6 @@
 //
 
 import SwiftUI
-import AevonXCore
 import AevonXCoreBridge
 
 public struct PluginToggleListComponent: View {

@@ -18,11 +18,11 @@ public struct PluginNotification: Identifiable {
     public let namespace: String
     public let title: String
     public let message: String
-    public let severity: HookAlertSeverity
+    public let severity: AevonXCoreBridge.HookAlertSeverity
     public let timestamp: Date
     public var isRead: Bool = false
 
-    public init(namespace: String, title: String, message: String, severity: HookAlertSeverity = .info) {
+    public init(namespace: String, title: String, message: String, severity: AevonXCoreBridge.HookAlertSeverity = .info) {
         self.namespace = namespace
         self.title = title
         self.message = message
@@ -43,7 +43,7 @@ public final class PluginNotificationCenter: ObservableObject {
     private init() {}
 
     /// Add a new notification
-    public func post(namespace: String, title: String, message: String, severity: HookAlertSeverity = .info) {
+    public func post(namespace: String, title: String, message: String, severity: AevonXCoreBridge.HookAlertSeverity = .info) {
         let notification = PluginNotification(namespace: namespace, title: title, message: message, severity: severity)
         notifications.insert(notification, at: 0)
 
@@ -117,7 +117,7 @@ public final class PluginHealthMonitor: ObservableObject {
     private init() {}
 
     /// Start monitoring health for a namespace
-    public func startMonitoring(namespace: String, healthCheck: HookHealthCheck, serverId: String) {
+    public func startMonitoring(namespace: String, healthCheck: AevonXCoreBridge.HookHealthCheck, serverId: String) {
         stopMonitoring(namespace: namespace)
 
         let interval = healthCheck.interval ?? 30
@@ -179,17 +179,14 @@ public final class PluginHealthMonitor: ObservableObject {
     }
 
     private func checkHealth(namespace: String, command: String, pattern: String, serverId: String) async {
-        do {
-            let result = try await SSHBridge.shared.execute(command, serverId: serverId)
-            let output = result.stdout.trimmingCharacters(in: .whitespacesAndNewlines)
+        let raw = await SSHBridge.shared.executeAsync(serverID: serverId, command: command)
+        let result = SSHResult.parse(raw)
+        let output = result.stdout.trimmingCharacters(in: .whitespacesAndNewlines)
 
-            if output.contains(pattern) {
-                healthStatuses[namespace] = .healthy
-            } else {
-                healthStatuses[namespace] = .unhealthy(output)
-            }
-        } catch {
-            healthStatuses[namespace] = .unhealthy(error.localizedDescription)
+        if output.contains(pattern) {
+            healthStatuses[namespace] = .healthy
+        } else {
+            healthStatuses[namespace] = .unhealthy(output)
         }
     }
 }

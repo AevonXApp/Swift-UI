@@ -202,7 +202,7 @@ public class ServerConnectionViewModel: ObservableObject {
     @Published var selectedTab: DashboardTab = .overview
 
     /// Currently selected plugin-injected sidebar tab (nil = no plugin tab selected)
-    @Published var selectedPluginTab: HookPluginDefinition? = nil
+    @Published var selectedPluginTab: AevonXCoreBridge.HookPluginDefinition? = nil
 
     /// Navigation path for the detail area (legacy, kept for compatibility)
     @Published var navigationPath = NavigationPath()
@@ -259,7 +259,7 @@ public class ServerConnectionViewModel: ObservableObject {
     private let sshService: any SSHServiceProtocol = SSHBridge.shared
     
     /// Server profile (detected capabilities: OS, init system, package manager)
-    @Published private(set) var serverProfile: ServerProfile?
+    @Published private(set) var serverProfile: AevonXCoreBridge.ServerProfile?
     
     /// Service management strategy (based on detected init system)
     private(set) var serviceStrategy: (any ServiceManagementStrategy)?
@@ -427,11 +427,12 @@ public class ServerConnectionViewModel: ObservableObject {
             Task {
                 do {
                     let detector = CapabilityDetector(sshService: sshService)
-                    let profile = try await detector.detect(serverId: serverId)
+                    let coreProfile = try await detector.detect(serverId: serverId)
+                    let profile = try JSONDecoder().decode(AevonXCoreBridge.ServerProfile.self, from: JSONEncoder().encode(coreProfile))
                     await MainActor.run {
                         self.serverProfile = profile
-                        self.serviceStrategy = ServiceStrategyFactory.strategy(for: profile, sshService: sshService)
-                        self.packageStrategy = PackageStrategyFactory.strategy(for: profile, sshService: sshService)
+                        self.serviceStrategy = ServiceStrategyFactory.strategy(for: coreProfile, sshService: sshService)
+                        self.packageStrategy = PackageStrategyFactory.strategy(for: coreProfile, sshService: sshService)
                     }
                     AevonXCoreBridge.CoreLogger.shared.info(
                         "Server profile: \(profile.distro.rawValue), init=\(profile.initSystem.rawValue), pkg=\(profile.packageManager.rawValue)",
