@@ -8,7 +8,6 @@
 import SwiftUI
 import Combine
 import AevonXCoreBridge
-import AevonXCoreBridge
 
 // MARK: - Settings ViewModel
 
@@ -110,8 +109,9 @@ class ServerSettingsViewModel: ObservableObject {
     }
     
     private func ssh(_ cmd: String) async -> String {
-        let result = try? await SSHBridge.shared.execute(cmd, serverId: serverId)
-        return result?.stdout.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let json = await SSHBridge.shared.executeAsyncJSON(serverID: serverId, command: cmd)
+        let result = SSHResult.parse(json)
+        return result.stdout.trimmingCharacters(in: .whitespacesAndNewlines)
     }
     
     // MARK: - Load All

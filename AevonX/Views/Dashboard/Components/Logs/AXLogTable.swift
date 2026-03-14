@@ -21,7 +21,7 @@
 //
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 struct AXLogTable: View {
     let title: String

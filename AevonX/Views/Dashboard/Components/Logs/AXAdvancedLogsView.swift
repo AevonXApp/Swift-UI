@@ -15,7 +15,7 @@
 //
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 // MARK: - AX Advanced Logs View
 

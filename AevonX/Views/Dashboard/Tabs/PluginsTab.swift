@@ -4,6 +4,7 @@
 //
 
 import SwiftUI
+import AevonXCore
 import AevonXCoreBridge
 import UniformTypeIdentifiers
 

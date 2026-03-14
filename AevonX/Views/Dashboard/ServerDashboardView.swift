@@ -8,6 +8,7 @@
 
 import SwiftUI
 import AevonXCore
+import AevonXCoreBridge
 
 // DashboardTab is now defined in ServerConnectionViewModel.swift
 
@@ -112,10 +113,10 @@ struct ServerDashboardView: View {
         }
         .onAppear {
             // Auto-connect when dashboard appears if not already connected
-            CoreLogger.shared.debug("onAppear - isConnected: \(viewModel.isConnected), isConnecting: \(viewModel.isConnecting)", module: "ServerDashboardView")
+            AevonXCoreBridge.CoreLogger.shared.debug("onAppear - isConnected: \(viewModel.isConnected), isConnecting: \(viewModel.isConnecting)", module: "ServerDashboardView")
             Task {
                 if !viewModel.isConnected && !viewModel.isConnecting {
-                    CoreLogger.shared.debug("Auto-connecting...", module: "ServerDashboardView")
+                    AevonXCoreBridge.CoreLogger.shared.debug("Auto-connecting...", module: "ServerDashboardView")
                     await viewModel.connect()
                 }
             }
