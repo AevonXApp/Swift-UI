@@ -2,8 +2,8 @@
 //  TerminalView.swift
 //  AevonX
 //
-//  Pure SwiftUI terminal view — same pattern as DockerTerminalView
-//  ScrollView (read-only output) + TextField (input)
+//  Real terminal view — renders ANSI colored output from PTY sessions.
+//  ScrollView (read-only output with colors) + TextField (input)
 //
 
 import SwiftUI
@@ -25,13 +25,7 @@ struct TerminalView: View {
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: 0) {
                         ForEach(viewModel.lines) { line in
-                            Text(line.content)
-                                .font(.system(size: CGFloat(preferences.fontSize), design: .monospaced))
-                                .foregroundColor(colorForLineType(line.type, theme: theme))
-                                .textSelection(.enabled)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 0.5)
+                            terminalLineView(line, theme: theme)
                                 .id(line.id)
                         }
                     }
@@ -62,6 +56,71 @@ struct TerminalView: View {
         }
     }
 
+    // MARK: - Terminal Line Rendering (with ANSI Colors)
+
+    @ViewBuilder
+    private func terminalLineView(_ line: SSHTerminalLine, theme: TerminalTheme) -> some View {
+        if line.type == .output && line.segments.count > 1 {
+            // Render with ANSI colors — concatenate styled segments
+            HStack(spacing: 0) {
+                ForEach(Array(line.segments.enumerated()), id: \.offset) { _, segment in
+                    styledText(segment, theme: theme)
+                }
+                Spacer(minLength: 0)
+            }
+            .textSelection(.enabled)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 0.5)
+        } else if line.type == .output, let firstSegment = line.segments.first,
+                  (firstSegment.foregroundColorCode != nil || firstSegment.isBold) {
+            // Single segment but has ANSI styling
+            styledText(firstSegment, theme: theme)
+                .textSelection(.enabled)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 0.5)
+        } else {
+            // Plain text (system messages, errors, or unstyled output)
+            Text(line.content)
+                .font(.system(size: CGFloat(preferences.fontSize), design: .monospaced))
+                .foregroundColor(colorForLineType(line.type, theme: theme))
+                .textSelection(.enabled)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 0.5)
+        }
+    }
+
+    /// Render a single ANSI styled segment
+    private func styledText(_ segment: ANSIStyledSegment, theme: TerminalTheme) -> Text {
+        var text = Text(segment.text)
+            .font(.system(
+                size: CGFloat(preferences.fontSize),
+                weight: segment.isBold ? .bold : .regular,
+                design: .monospaced
+            ))
+
+        // Foreground color
+        if let fg = segment.foregroundColorCode {
+            text = text.foregroundColor(theme.colorForANSI(fg))
+        } else {
+            text = text.foregroundColor(theme.foreground)
+        }
+
+        // Italic
+        if segment.isItalic {
+            text = text.italic()
+        }
+
+        // Underline
+        if segment.isUnderline {
+            text = text.underline()
+        }
+
+        return text
+    }
+
     // MARK: - Input Bar
 
     private func inputBar(theme: TerminalTheme) -> some View {
@@ -72,17 +131,10 @@ struct TerminalView: View {
             }
 
             HStack(spacing: 10) {
-                // Prompt indicator
-                HStack(spacing: 4) {
-                    Circle()
-                        .fill(viewModel.isConnected ? Color.axSuccess : Color.axError)
-                        .frame(width: 6, height: 6)
-                    
-                    Text(viewModel.prompt)
-                        .font(.system(size: CGFloat(preferences.fontSize), weight: .semibold, design: .monospaced))
-                        .foregroundColor(theme.green)
-                        .lineLimit(1)
-                }
+                // Connection indicator
+                Circle()
+                    .fill(viewModel.isConnected ? Color.axSuccess : Color.axError)
+                    .frame(width: 6, height: 6)
 
                 // Command input
                 TextField("Type a command...", text: $viewModel.inputCommand)

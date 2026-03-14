@@ -2,8 +2,8 @@
 //  TerminalViewModel.swift
 //  AevonX
 //
-//  Interactive SSH Terminal ViewModel
-//  Uses same pattern as DockerTerminalViewModel — lines array + inputCommand
+//  Interactive SSH Terminal ViewModel — PTY-backed real terminal.
+//  Uses Go SSH PTY sessions for persistent shell with colors, vim, htop, etc.
 //
 
 import Foundation
@@ -15,6 +15,7 @@ import Combine
 struct SSHTerminalLine: Identifiable {
     let id = UUID()
     let content: String
+    let segments: [ANSIStyledSegment]
     let type: LineType
     let timestamp: Date
 
@@ -22,22 +23,40 @@ struct SSHTerminalLine: Identifiable {
         case output, system, error, input
     }
 
+    /// Create a line from raw output (may contain ANSI codes)
     init(content: String, type: LineType = .output) {
+        // Strip non-SGR escape sequences (cursor, bracketed paste, OSC, etc.)
+        // but KEEP SGR color sequences (\e[...m) for rendering
+        let cleaned = Self.stripNonColorEscapes(content)
+        self.content = ANSIParserCore.strip(cleaned)
+        self.segments = type == .output ? ANSIParserCore.parse(cleaned) : [ANSIStyledSegment(text: cleaned)]
+        self.type = type
+        self.timestamp = Date()
+    }
+
+    /// Strip escape sequences that aren't SGR (color) codes
+    private static func stripNonColorEscapes(_ text: String) -> String {
+        var result = text
+        let nonSGRPatterns = [
+            "\u{1B}\\[\\?[0-9;]*[a-z]",   // DEC private modes: [?2004h, [?2004l, etc.
+            "\u{1B}\\[[0-9;]*[A-LN-Z]",     // Cursor movement, erase, etc. (NOT 'm')
+            "\u{1B}\\][^\u{07}]*\u{07}",     // OSC (Operating System Command)
+            "\u{1B}\\]0;[^\u{07}]*\u{07}",   // Window title
+        ]
+        for pattern in nonSGRPatterns {
+            result = result.replacingOccurrences(of: pattern, with: "", options: .regularExpression)
+        }
+        return result
+    }
+
+    /// Create a system/error line (no ANSI parsing needed)
+    init(system content: String, type: LineType) {
         self.content = content
+        self.segments = [ANSIStyledSegment(text: content)]
         self.type = type
         self.timestamp = Date()
     }
 }
-
-// MARK: - Interactive Session Provider
-
-/// Closure that starts an interactive PTY session.
-/// Called by TerminalViewModel during connect; provided by ServerConnectionViewModel
-/// which has access to AevonXCore's SSHService.
-typealias InteractiveSessionProvider = (
-    _ serverId: String,
-    _ onOutput: @escaping @Sendable (String) -> Void
-) async throws -> any SSHInteractiveSession
 
 // MARK: - Terminal View Model
 
@@ -50,9 +69,6 @@ class TerminalViewModel: ObservableObject {
     @Published var inputCommand: String = ""
     @Published var state: TerminalConnectionState = .disconnected
     @Published var isConnected: Bool = false
-    @Published var currentPath: String = "~"
-    @Published var username: String = "user"
-    @Published var hostname: String = "server"
     @Published var commandSuggestions: [String] = []
     @Published var sessionInfo: TerminalSessionInfo
     @Published var isSearchVisible: Bool = false
@@ -65,11 +81,13 @@ class TerminalViewModel: ObservableObject {
     // MARK: - Private Properties
 
     let serverId: String
-    private var interactiveSession: (any SSHInteractiveSession)?
     let preferences = TerminalPreferences.shared
 
-    /// Closure to start an interactive session — injected from ServerConnectionViewModel
-    var sessionProvider: InteractiveSessionProvider?
+    /// Unique PTY session ID for this terminal tab
+    private let ptySessionID: String
+
+    /// Background task that polls PTY output
+    private var readTask: Task<Void, Never>?
 
     private var commandHistory: [String] = []
     private var historyIndex: Int = -1
@@ -82,14 +100,18 @@ class TerminalViewModel: ObservableObject {
 
     // MARK: - Computed Properties
 
-    var prompt: String { "\(username)@\(hostname):\(currentPath) $ " }
     var maxLines: Int { preferences.scrollbackLines }
 
     // MARK: - Init
 
     init(serverId: String, sessionName: String? = nil) {
         self.serverId = serverId
+        self.ptySessionID = "pty-\(UUID().uuidString.prefix(8))"
         self.sessionInfo = TerminalSessionInfo(name: sessionName ?? "Session")
+    }
+
+    deinit {
+        readTask?.cancel()
     }
 
     // MARK: - Connection
@@ -100,80 +122,70 @@ class TerminalViewModel: ObservableObject {
         reconnectAttempt = 0
         state = .connecting
 
-        addLine("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━", type: .system)
-        addLine("🚀 AevonX Interactive Terminal", type: .system)
-        addLine("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━", type: .system)
-        addLine("Connecting to \(serverName) (\(serverHost))...", type: .system)
+        addSystemLine("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+        addSystemLine("🚀 AevonX Interactive Terminal")
+        addSystemLine("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+        addSystemLine("Connecting to \(serverName) (\(serverHost))...")
 
         let connected = SSHBridge.shared.isConnected(serverID: serverId)
 
         guard connected else {
             state = .error("Not connected to SSH")
-            addLine("", type: .error)
-            addLine("❌ ERROR: Not connected to SSH server", type: .error)
-            addLine("📌 Please connect from the Overview tab first", type: .error)
+            addLine(system: "", type: .error)
+            addLine(system: "❌ ERROR: Not connected to SSH server", type: .error)
+            addLine(system: "📌 Please connect from the Overview tab first", type: .error)
             isConnected = false
             return
         }
 
-        do {
-            // Fetch username and hostname via Go SSH
-            let fetchedUser = await SSHBridge.shared.executeAsync(serverID: serverId, command: "whoami")
-            username = fetchedUser.trimmingCharacters(in: .whitespacesAndNewlines)
-            if username.isEmpty { username = "user" }
+        // Start PTY session via Go bridge
+        let resultJSON = PTYBridge.shared.startSession(
+            serverID: serverId,
+            sessionID: ptySessionID,
+            rows: 24,
+            cols: 80
+        )
 
-            let fetchedHost = await SSHBridge.shared.executeAsync(serverID: serverId, command: "hostname")
-            hostname = fetchedHost.trimmingCharacters(in: .whitespacesAndNewlines)
-            if hostname.isEmpty { hostname = "server" }
-
-            addLine("Starting interactive shell session...", type: .system)
-
-            guard let provider = sessionProvider else {
-                throw NSError(domain: "Terminal", code: -1, userInfo: [
-                    NSLocalizedDescriptionKey: "No interactive session provider configured"
-                ])
-            }
-
-            interactiveSession = try await provider(serverId) { [weak self] output in
-                Task { @MainActor [weak self] in
-                    self?.handleOutput(output)
-                }
-            }
-
-            state = .connected
-            isConnected = true
-            sessionInfo.isConnected = true
-
-            addLine("", type: .system)
-            addLine("✅ Connected successfully!", type: .system)
-            addLine("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━", type: .system)
-
-        } catch {
-            state = .error(error.localizedDescription)
+        // Check result
+        guard let data = resultJSON.data(using: .utf8),
+              let result = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              result["success"] as? Bool == true else {
+            state = .error("Failed to start PTY session")
+            addLine(system: "❌ Failed to start interactive session", type: .error)
             isConnected = false
-            sessionInfo.isConnected = false
-            addLine("", type: .error)
-            addLine("❌ Connection failed: \(error.localizedDescription)", type: .error)
 
             if preferences.autoReconnect { attemptReconnect() }
+            return
         }
+
+        // Start output polling
+        startReadLoop()
+
+        state = .connected
+        isConnected = true
+        sessionInfo.isConnected = true
+
+        addSystemLine("✅ Connected — interactive shell ready")
+        addSystemLine("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
     }
 
     func disconnect() {
         reconnectTask?.cancel()
         reconnectTask = nil
+        readTask?.cancel()
+        readTask = nil
 
-        Task {
-            try? await interactiveSession?.close()
-            interactiveSession = nil
-            isConnected = false
-            sessionInfo.isConnected = false
-            state = .disconnected
-            addLine("", type: .system)
-            addLine("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━", type: .system)
-            addLine("🔌 Disconnected from server", type: .system)
-            addLine("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━", type: .system)
-        }
+        // Close PTY session
+        let _ = PTYBridge.shared.closeSession(sessionID: ptySessionID)
+
+        isConnected = false
+        sessionInfo.isConnected = false
+        state = .disconnected
+
+        addSystemLine("")
+        addSystemLine("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+        addSystemLine("🔌 Disconnected from server")
+        addSystemLine("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
     }
 
     private func attemptReconnect() {
@@ -181,7 +193,7 @@ class TerminalViewModel: ObservableObject {
               let name = lastServerName, let host = lastServerHost else { return }
         reconnectAttempt += 1
         state = .reconnecting(attempt: reconnectAttempt)
-        addLine("🔄 Reconnecting... (attempt \(reconnectAttempt)/\(preferences.maxReconnectAttempts))", type: .system)
+        addSystemLine("🔄 Reconnecting... (attempt \(reconnectAttempt)/\(preferences.maxReconnectAttempts))")
 
         reconnectTask = Task {
             try? await Task.sleep(nanoseconds: UInt64(reconnectAttempt) * 2_000_000_000)
@@ -190,49 +202,62 @@ class TerminalViewModel: ObservableObject {
         }
     }
 
+    // MARK: - PTY Output Reading
+
+    private func startReadLoop() {
+        readTask?.cancel()
+        readTask = Task { [weak self] in
+            while !Task.isCancelled {
+                guard let self = self, self.isConnected else { break }
+
+                // Read from PTY — this may block briefly in Go if no data
+                if let data = PTYBridge.shared.read(sessionID: self.ptySessionID, maxBytes: 8192),
+                   let output = String(data: data, encoding: .utf8), !output.isEmpty {
+                    await MainActor.run {
+                        self.handleOutput(output)
+                    }
+                } else {
+                    // No data — small sleep to avoid spinning
+                    try? await Task.sleep(nanoseconds: 30_000_000) // 30ms
+                }
+            }
+        }
+    }
+
     // MARK: - Command Execution
 
     func sendCommand() {
-        let command = inputCommand.trimmingCharacters(in: .whitespacesAndNewlines)
+        let command = inputCommand
         inputCommand = ""
 
-        guard !command.isEmpty else {
-            // Send empty newline
-            if let session = interactiveSession {
-                Task { try? await session.write("\n") }
-            }
-            return
-        }
-
         // Local commands
-        if command == "clear" || command == "cls" {
+        if command.trimmingCharacters(in: .whitespacesAndNewlines) == "clear" ||
+           command.trimmingCharacters(in: .whitespacesAndNewlines) == "cls" {
             lines.removeAll()
+            outputBuffer = ""
+            // Send clear to the real terminal too
+            let _ = PTYBridge.shared.writeString(sessionID: ptySessionID, text: "clear\n")
             return
         }
 
         // Dangerous command detection
-        if preferences.showDangerWarnings {
-            let analysis = DangerousCommandDetector.analyze(command)
+        let trimmed = command.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmed.isEmpty && preferences.showDangerWarnings {
+            let analysis = DangerousCommandDetector.analyze(trimmed)
             if analysis.level >= .dangerous {
                 dangerWarning = analysis
-                inputCommand = command // Put it back so user can see it
+                inputCommand = command
                 return
             }
         }
 
-        addToHistory(command)
-        if preferences.showCommandTimer { commandStartTime = Date() }
-
-        // Invalidate directory cache if cd command
-        if command.hasPrefix("cd ") || command == "cd" {
-            invalidateDirectoryCache()
+        if !trimmed.isEmpty {
+            addToHistory(trimmed)
+            if preferences.showCommandTimer { commandStartTime = Date() }
         }
 
-        // Send to shell
-        guard let session = interactiveSession else { return }
-        Task {
-            try? await session.write(command + "\n")
-        }
+        // Write to PTY — the shell will echo it and show output
+        let _ = PTYBridge.shared.writeString(sessionID: ptySessionID, text: command + "\n")
     }
 
     func confirmDangerousCommand() {
@@ -243,8 +268,7 @@ class TerminalViewModel: ObservableObject {
         addToHistory(command)
         if preferences.showCommandTimer { commandStartTime = Date() }
 
-        guard let session = interactiveSession else { return }
-        Task { try? await session.write(command + "\n") }
+        let _ = PTYBridge.shared.writeString(sessionID: ptySessionID, text: command + "\n")
     }
 
     func cancelDangerousCommand() {
@@ -294,18 +318,18 @@ class TerminalViewModel: ObservableObject {
     }
 
     func sendInterrupt() {
-        guard let session = interactiveSession else { return }
-        Task { try? await session.write("\u{03}") }
+        // Real Ctrl+C via PTY
+        let _ = PTYBridge.shared.writeString(sessionID: ptySessionID, text: "\u{03}")
     }
 
     func sendEOF() {
-        guard let session = interactiveSession else { return }
-        Task { try? await session.write("\u{04}") }
+        // Real Ctrl+D via PTY
+        let _ = PTYBridge.shared.writeString(sessionID: ptySessionID, text: "\u{04}")
     }
 
     func sendTab() {
-        guard let session = interactiveSession else { return }
-        Task { try? await session.write("\t") }
+        // Real Tab via PTY — server-side completion!
+        let _ = PTYBridge.shared.writeString(sessionID: ptySessionID, text: "\t")
     }
 
     // MARK: - Terminal Control
@@ -316,8 +340,7 @@ class TerminalViewModel: ObservableObject {
     }
 
     func resize(width: Int, height: Int) {
-        guard let session = interactiveSession else { return }
-        Task { try? await session.resize(width: width, height: height) }
+        let _ = PTYBridge.shared.resize(sessionID: ptySessionID, rows: height, cols: width)
     }
 
     // MARK: - Search
@@ -330,9 +353,8 @@ class TerminalViewModel: ObservableObject {
     // MARK: - Private: Output Handling
 
     private func handleOutput(_ output: String) {
-        // Clean ANSI codes
-        let cleaned = ANSIParserCore.strip(output)
-            .replacingOccurrences(of: "\r", with: "")
+        // Clean \r (carriage return) but KEEP ANSI codes for color rendering
+        let cleaned = output.replacingOccurrences(of: "\r", with: "")
 
         guard !cleaned.isEmpty else { return }
 
@@ -346,17 +368,17 @@ class TerminalViewModel: ObservableObject {
             // Keep the last (potentially incomplete) line in buffer
             outputBuffer = outputLines.removeLast()
 
-            // Add complete lines
+            // Add complete lines — with ANSI color parsing
             for line in outputLines {
-                addLine(line)
+                addLine(raw: line)
             }
         }
 
-        // If buffer ends with prompt pattern, flush it as a line
-        let trimmedBuffer = outputBuffer.trimmingCharacters(in: .whitespaces)
-        if trimmedBuffer.hasSuffix("$") || trimmedBuffer.hasSuffix("#") || trimmedBuffer.hasSuffix("❯") || trimmedBuffer.hasSuffix(">") {
+        // If buffer ends with prompt pattern, flush it
+        let stripped = ANSIParserCore.strip(outputBuffer).trimmingCharacters(in: .whitespaces)
+        if stripped.hasSuffix("$") || stripped.hasSuffix("#") || stripped.hasSuffix("❯") || stripped.hasSuffix(">") {
             if !outputBuffer.isEmpty {
-                addLine(outputBuffer)
+                addLine(raw: outputBuffer)
                 outputBuffer = ""
             }
         }
@@ -365,18 +387,34 @@ class TerminalViewModel: ObservableObject {
 
         // Command timer
         if let startTime = commandStartTime {
-            if trimmedBuffer.hasSuffix("$") || trimmedBuffer.hasSuffix("#") {
+            if stripped.hasSuffix("$") || stripped.hasSuffix("#") {
                 let elapsed = Date().timeIntervalSince(startTime)
                 if elapsed > 2.0 {
-                    addLine("⏱ Command completed in \(String(format: "%.1f", elapsed))s", type: .system)
+                    addLine(system: "⏱ Command completed in \(String(format: "%.1f", elapsed))s", type: .system)
                 }
                 commandStartTime = nil
             }
         }
     }
 
-    private func addLine(_ content: String, type: SSHTerminalLine.LineType = .output) {
-        lines.append(SSHTerminalLine(content: content, type: type))
+    /// Add a line with ANSI color parsing (for real terminal output)
+    private func addLine(raw content: String) {
+        lines.append(SSHTerminalLine(content: content, type: .output))
+        trimLines()
+    }
+
+    /// Add a system/error line (no ANSI parsing)
+    private func addLine(system content: String, type: SSHTerminalLine.LineType) {
+        lines.append(SSHTerminalLine(system: content, type: type))
+        trimLines()
+    }
+
+    /// Convenience for system lines
+    private func addSystemLine(_ content: String) {
+        addLine(system: content, type: .system)
+    }
+
+    private func trimLines() {
         if lines.count > maxLines {
             lines.removeFirst(lines.count - maxLines)
         }
@@ -386,16 +424,14 @@ class TerminalViewModel: ObservableObject {
 
     private var suggestionsTask: Task<Void, Never>?
     private var cachedDirContents: [String: (entries: [String], timestamp: Date)] = [:]
-    private let cacheTTL: TimeInterval = 10 // Cache for 10 seconds
+    private let cacheTTL: TimeInterval = 10
 
     func updateSuggestions() {
         let input = inputCommand.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !input.isEmpty else { commandSuggestions = []; return }
 
-        // Cancel previous async fetch
         suggestionsTask?.cancel()
 
-        // Determine if we need live SSH suggestions
         let parts = input.split(separator: " ", maxSplits: 1).map(String.init)
         let baseCmd = parts.first?.lowercased() ?? ""
         let argument = parts.count > 1 ? parts[1] : ""
@@ -406,17 +442,14 @@ class TerminalViewModel: ObservableObject {
         let needsDirOnly = ["cd"].contains(baseCmd)
 
         if needsPathSuggestions && parts.count >= 1 {
-            // Async: fetch real paths from server
             suggestionsTask = Task { [weak self] in
                 guard let self = self else { return }
 
-                // Show static suggestions immediately while fetching
                 let quick = self.getQuickSuggestions(input: input, baseCmd: baseCmd)
                 if !quick.isEmpty {
                     self.commandSuggestions = quick
                 }
 
-                // Determine which directory to list
                 let dirToList: String
                 let partialName: String
 
@@ -427,7 +460,6 @@ class TerminalViewModel: ObservableObject {
                     dirToList = argument
                     partialName = ""
                 } else {
-                    // e.g. "cd /var/ww" → list "/var/" and filter "ww"
                     let lastSlash = argument.lastIndex(of: "/")
                     if let idx = lastSlash {
                         dirToList = String(argument[...idx])
@@ -440,13 +472,11 @@ class TerminalViewModel: ObservableObject {
 
                 guard !Task.isCancelled else { return }
 
-                // Check cache
                 let entries: [String]
                 if let cached = self.cachedDirContents[dirToList],
                    Date().timeIntervalSince(cached.timestamp) < self.cacheTTL {
                     entries = cached.entries
                 } else {
-                    // Fetch from server via SSH Bridge
                     let safePath = dirToList.replacingOccurrences(of: "'", with: "'\\''")
                     let output = await SSHBridge.shared.executeAsync(
                         serverID: self.serverId,
@@ -462,7 +492,6 @@ class TerminalViewModel: ObservableObject {
 
                 guard !Task.isCancelled else { return }
 
-                // Filter entries
                 let filtered = entries.filter { entry in
                     if needsDirOnly && !entry.hasSuffix("/") { return false }
                     if partialName.isEmpty { return true }
@@ -472,7 +501,6 @@ class TerminalViewModel: ObservableObject {
                     return name.lowercased().hasPrefix(partialName.lowercased())
                 }
 
-                // Build full suggestion strings
                 let prefix: String
                 if dirToList == "." {
                     prefix = baseCmd + " "
@@ -486,7 +514,6 @@ class TerminalViewModel: ObservableObject {
                     return prefix + cleanEntry
                 }
 
-                // Add history matches
                 let inputLower = input.lowercased()
                 let histMatches = self.commandHistory.filter {
                     $0.lowercased().starts(with: inputLower)
@@ -501,10 +528,8 @@ class TerminalViewModel: ObservableObject {
                 self.commandSuggestions = Array(suggestions.prefix(8))
             }
         } else {
-            // Synchronous: static + history suggestions
             var suggestions: [String] = []
 
-            // Decode static suggestions from Go Core
             let suggestionsJSON = TerminalBridge.shared.getSuggestions(input: input)
             if let data = suggestionsJSON.data(using: .utf8),
                let response = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
@@ -527,16 +552,13 @@ class TerminalViewModel: ObservableObject {
         }
     }
 
-    /// Quick suggestions shown instantly while SSH fetch is in progress
     private func getQuickSuggestions(input: String, baseCmd: String) -> [String] {
         let inputLower = input.lowercased()
 
-        // History-based
         var quick = commandHistory.filter {
             $0.lowercased().starts(with: inputLower)
         }.suffix(3).map { $0 }
 
-        // Common shortcuts for the base command
         switch baseCmd {
         case "cd":
             let cdQuick = ["cd ..", "cd ~", "cd -", "cd /"]
@@ -558,7 +580,6 @@ class TerminalViewModel: ObservableObject {
         commandSuggestions = []
     }
 
-    /// Invalidate cache when directory changes (cd command)
     func invalidateDirectoryCache() {
         cachedDirContents.removeAll()
     }

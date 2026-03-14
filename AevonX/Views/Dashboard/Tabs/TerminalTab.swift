@@ -267,11 +267,11 @@ struct TerminalTab: View {
         HStack(spacing: AXSpacing.sm) {
             if vm.isConnected {
                 HStack(spacing: AXSpacing.xs) {
-                    Text("\(vm.username)@\(vm.hostname)")
+                    Text(server.name)
                         .font(.system(size: 11, design: .monospaced))
                         .foregroundColor(.axTextSecondary)
                     
-                    Text(vm.currentPath)
+                    Text(server.host)
                         .font(.system(size: 11, design: .monospaced))
                         .foregroundColor(.axAccentBlue)
                         .lineLimit(1)

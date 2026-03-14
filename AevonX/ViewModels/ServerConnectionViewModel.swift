@@ -11,75 +11,6 @@ import AevonXCore
 import AevonXCoreBridge
 import Combine
 
-// MARK: - Go SSH Direct Session Adapter
-
-/// Interactive session backed by Go SSHBridge — executes each command directly.
-/// Since Go SSH doesn't support PTY, each write() sends the command as a
-/// one-shot `executeAsyncJSON` call and delivers output via the onOutput callback.
-/// This is fast, reliable, and uses the existing active Go SSH connection.
-final class GoSSHDirectSession: AevonXCoreBridge.SSHInteractiveSession, @unchecked Sendable {
-    private let serverId: String
-    private let onOutput: @Sendable (String) -> Void
-    private var isActive = true
-    /// Track current working directory for `cd` support
-    private var cwd: String = "~"
-
-    init(serverId: String, onOutput: @escaping @Sendable (String) -> Void) {
-        self.serverId = serverId
-        self.onOutput = onOutput
-    }
-
-    func write(_ data: String) async throws {
-        guard isActive else { return }
-        let command = data.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !command.isEmpty else { return }
-
-        // Handle `cd` — update internal cwd and verify
-        if command == "cd" || command.hasPrefix("cd ") {
-            let target = command == "cd" ? "~" : String(command.dropFirst(3)).trimmingCharacters(in: .whitespaces)
-            let resolveCmd = "cd \(cwd) && cd \(target) && pwd"
-            let json = await SSHBridge.shared.executeAsyncJSON(serverID: serverId, command: resolveCmd)
-            if let (stdout, _, exitCode) = Self.parseResult(json), exitCode == 0 {
-                cwd = stdout.trimmingCharacters(in: .whitespacesAndNewlines)
-            } else {
-                onOutput("-bash: cd: \(target): No such file or directory\n")
-            }
-            return
-        }
-
-        // Execute command in current working directory
-        let fullCmd = "cd \(cwd) && \(command) 2>&1"
-        let json = await SSHBridge.shared.executeAsyncJSON(serverID: serverId, command: fullCmd)
-
-        if let (stdout, stderr, _) = Self.parseResult(json) {
-            let output = stdout.isEmpty ? stderr : stdout
-            if !output.isEmpty {
-                onOutput(output.hasSuffix("\n") ? output : output + "\n")
-            }
-        }
-    }
-
-    func resize(width: Int, height: Int) async throws {
-        // No-op — PTY resize not supported via Go SSH exec
-    }
-
-    func close() async throws {
-        isActive = false
-    }
-
-    /// Parse JSON result from SSHBridge
-    private static func parseResult(_ json: String) -> (stdout: String, stderr: String, exitCode: Int)? {
-        guard let data = json.data(using: .utf8),
-              let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-              let inner = obj["data"] as? [String: Any] else { return nil }
-        return (
-            inner["stdout"] as? String ?? "",
-            inner["stderr"] as? String ?? "",
-            inner["exit_code"] as? Int ?? -1
-        )
-    }
-}
-
 // MARK: - Reconnection Tier
 
 /// Visual tier for reconnection UI
@@ -602,24 +533,13 @@ public class ServerConnectionViewModel: ObservableObject {
     func createTerminalSession() {
         let newSession = TerminalViewModel(serverId: serverId)
 
-        // Inject interactive session provider — uses Go SSHBridge
-        // (replaces old NIO-SSH PTY which required a separate connection)
-        newSession.sessionProvider = { [weak self] serverId, onOutput in
-            guard let _ = self else {
-                throw NSError(domain: "Terminal", code: -1, userInfo: [
-                    NSLocalizedDescriptionKey: "Server connection no longer available"
-                ])
-            }
-            let session = GoSSHDirectSession(serverId: serverId, onOutput: onOutput)
-            return session
-        }
-
         terminalSessions.append(newSession)
 
         // Switch to the new session
         activeTerminalIndex = terminalSessions.count - 1
 
         // Auto-connect if server is already connected
+        // TerminalViewModel now connects directly via PTYBridge (real PTY session)
         if isConnected {
             Task {
                 await newSession.connect(serverName: server.name, serverHost: server.host)
