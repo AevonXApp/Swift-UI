@@ -338,15 +338,11 @@ class ServerListViewModel: ObservableObject {
             return
         }
         
-        await SSHService.shared.setProgressHandler(for: serverId) { [weak self] stage, progress in
-            Task { @MainActor [weak self] in
-                self?.connectionProgress[serverId] = ConnectionProgress(
-                    stage: stage,
-                    message: stage.rawValue,
-                    percentComplete: progress
-                )
-            }
-        }
+        connectionProgress[serverId] = ConnectionProgress(
+            stage: .decrypting,
+            message: "Decrypting credentials...",
+            percentComplete: 0.2
+        )
         
         do {
             let details = try await EphemeralDecryptionService.shared.decryptServerDetails(
@@ -355,18 +351,57 @@ class ServerListViewModel: ObservableObject {
             
             guard let connectionDetails = details["connection_details"] as? [String: Any],
                   let host = connectionDetails["host"] as? String,
-                  let port = connectionDetails["port"] as? Int else {
+                  let port = connectionDetails["port"] as? Int,
+                  let username = connectionDetails["username"] as? String else {
                 throw SSHConnectionError.invalidCredentials
             }
             
-            let result = await SSHService.shared.testConnection(
-                to: accessibleServer.server.toEncryptedPayload(),
-                host: host,
-                port: port,
-                serverId: serverId
+            let authDetails = details["authentication"] as? [String: Any]
+            let password = authDetails?["password"] as? String ?? ""
+            let privateKey = authDetails?["private_key"] as? String ?? ""
+            let passphrase = authDetails?["key_passphrase"] as? String ?? ""
+            
+            connectionProgress[serverId] = ConnectionProgress(
+                stage: .establishingSSH,
+                message: "Connecting...",
+                percentComplete: 0.5
             )
             
-            connectionResults[serverId] = result
+            let startTime = Date()
+            
+            // Connect via Go SSH Bridge
+            let connectResult = await SSHBridge.shared.connectAsync(
+                serverID: serverId,
+                host: host,
+                port: Int32(port),
+                username: username,
+                password: password,
+                privateKey: privateKey,
+                passphrase: passphrase
+            )
+            
+            guard let rd = connectResult.data(using: .utf8),
+                  let rj = try? JSONSerialization.jsonObject(with: rd) as? [String: Any],
+                  rj["success"] as? Bool == true else {
+                connectionResults[serverId] = ConnectionTestResult(
+                    success: false, message: "SSH connection failed", stage: .failed
+                )
+                return
+            }
+            
+            // Quick test command
+            let _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: "echo 1")
+            let latencyMs = Date().timeIntervalSince(startTime) * 1000
+            
+            // Disconnect test session
+            SSHBridge.shared.disconnect(serverID: serverId)
+            
+            connectionResults[serverId] = ConnectionTestResult(
+                success: true,
+                message: "Connection successful",
+                stage: .complete,
+                latencyMs: latencyMs
+            )
             
         } catch {
             connectionResults[serverId] = ConnectionTestResult(

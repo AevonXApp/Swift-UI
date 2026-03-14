@@ -7,6 +7,7 @@
 
 import SwiftUI
 import AevonXCore
+import AevonXCoreBridge
 
 struct FTPAddUserSheet: View {
     @ObservedObject var vm: FTPViewModel
@@ -434,7 +435,7 @@ struct FTPAddUserSheet: View {
         isLoadingDirs = true
         defer { isLoadingDirs = false }
         do {
-            let result = try await SSHService.shared.execute(
+            let result = try await SSHBridge.shared.execute(
                 "find '\(currentBrowsePath)' -maxdepth 1 -mindepth 1 -type d -not -name '.*' 2>/dev/null | sort | head -50",
                 serverId: vm.serverId
             )

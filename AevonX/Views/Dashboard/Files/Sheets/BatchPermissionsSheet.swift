@@ -7,6 +7,7 @@
 
 import SwiftUI
 import AevonXCore
+import AevonXCoreBridge
 
 // MARK: - Batch Permissions Sheet
 
@@ -186,7 +187,7 @@ struct BatchPermissionsSheet: View {
                 do {
                     let safePath = ShellSanitizer.escapePath(file.path)
                     let cmd = "chmod \(recursive)\(numericPerms) \(safePath)"
-                    let result = try await SSHService.shared.execute(cmd, serverId: viewModel.serverId)
+                    let result = try await SSHBridge.shared.execute(cmd, serverId: viewModel.serverId)
                     if result.isSuccess { successCount += 1 } else { failCount += 1 }
                 } catch {
                     failCount += 1

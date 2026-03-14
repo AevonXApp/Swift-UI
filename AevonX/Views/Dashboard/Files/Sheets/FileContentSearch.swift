@@ -8,6 +8,7 @@
 
 import SwiftUI
 import AevonXCore
+import AevonXCoreBridge
 
 // MARK: - Content Search Sheet
 
@@ -209,7 +210,7 @@ struct FileContentSearchSheet: View {
                 
                 let cmd = "grep \(flags) --max-count=\(maxResults) -- \"\(safeQuery)\" \(safePath) 2>/dev/null | head -\(maxResults)"
                 
-                let result = try await SSHService.shared.execute(cmd, serverId: viewModel.serverId)
+                let result = try await SSHBridge.shared.execute(cmd, serverId: viewModel.serverId)
                 
                 if result.isSuccess {
                     let lines = result.stdout.components(separatedBy: "\n").filter { !$0.isEmpty }

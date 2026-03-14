@@ -7,6 +7,7 @@
 
 import SwiftUI
 import AevonXCore
+import AevonXCoreBridge
 
 // MARK: - File Operations (CRUD)
 
@@ -255,7 +256,7 @@ extension FileManagerViewModel {
             do {
                 if recursive {
                     let safePath = ShellSanitizer.escapePath(file.path)
-                    _ = try await SSHService.shared.execute(
+                    _ = try await SSHBridge.shared.execute(
                         "chown -R \(ShellSanitizer.sanitizeIdentifier(owner)):\(ShellSanitizer.sanitizeIdentifier(group)) \(safePath)",
                         serverId: serverId
                     )
@@ -321,10 +322,10 @@ extension FileManagerViewModel {
                 fi
                 """
                 
-                let result = try await SSHService.shared.execute(installCmd, serverId: serverId)
+                let result = try await SSHBridge.shared.execute(installCmd, serverId: serverId)
                 
                 if result.isSuccess {
-                    let verify = try await SSHService.shared.execute(
+                    let verify = try await SSHBridge.shared.execute(
                         "command -v \(ShellSanitizer.sanitizeIdentifier(tool.toolName))",
                         serverId: serverId
                     )

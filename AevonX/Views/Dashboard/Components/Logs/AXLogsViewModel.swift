@@ -9,6 +9,7 @@
 import SwiftUI
 import Combine
 import AevonXCore
+import AevonXCoreBridge
 
 @MainActor
 public final class AXLogsViewModel: ObservableObject {
@@ -223,7 +224,7 @@ public final class AXLogsViewModel: ObservableObject {
         isLoading = true
 
         do {
-            let sshService = SSHService.shared
+            let sshService = SSHBridge.shared
             let logDir = (try? await ServerPathResolver.shared.nginxLogDir(serverId: serverId)) ?? "/var/log/nginx"
 
             switch source {

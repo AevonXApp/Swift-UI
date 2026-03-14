@@ -46,7 +46,7 @@ public class ServerDatabasesViewModel: ObservableObject {
     
     // MARK: - Initialization
     
-    init(serverId: String, sshService: any SSHServiceProtocol = SSHService.shared) {
+    init(serverId: String, sshService: any SSHServiceProtocol = SSHBridge.shared) {
         self.serverId = serverId
         self.sshService = sshService
     }

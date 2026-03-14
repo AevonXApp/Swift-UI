@@ -5,6 +5,7 @@
 
 import SwiftUI
 import AevonXCore
+import AevonXCoreBridge
 import Combine
 
 @MainActor
@@ -133,38 +134,59 @@ class AddServerViewModel: ObservableObject {
             return
         }
         
-        do {
-            let serverData = request.toEncryptedServerData()
-            
-            // Encrypt server data using new ServerEncryptionService
-            // (biometric is handled by EncryptionKeyStore internally on first access)
-            let encryptedPayload = try await ServerEncryptionService.shared.encryptServer(serverData)
-            
-            let serverId = "test-\(UUID().uuidString)"
-            await SSHService.shared.setProgressHandler(for: serverId) { [weak self] stage, progress in
-                guard let self = self else { return }
-                Task { @MainActor in
-                    self.connectionProgress = ConnectionProgress(
-                        stage: stage,
-                        message: stage.rawValue,
-                        percentComplete: progress
-                    )
-                }
-            }
-            
-            let result = await SSHService.shared.testConnection(
-                to: encryptedPayload,
-                host: request.host,
-                port: request.port,
-                serverId: serverId
-            )
-            
-            testResult = result
-            
-        } catch {
-            errorMessage = "Connection test failed: \(error.localizedDescription)"
-            showError = true
+        let serverId = "test-\(UUID().uuidString)"
+        let startTime = Date()
+        
+        connectionProgress = ConnectionProgress(
+            stage: .establishingSSH,
+            message: "Connecting...",
+            percentComplete: 0.5
+        )
+        
+        // Connect via Go SSH Bridge
+        let connectResult = await SSHBridge.shared.connectAsync(
+            serverID: serverId,
+            host: request.host,
+            port: Int32(request.port),
+            username: request.username,
+            password: request.authType == .password ? request.password ?? "" : "",
+            privateKey: request.authType == .privateKey ? request.privateKey ?? "" : "",
+            passphrase: request.keyPassphrase ?? ""
+        )
+        
+        guard let rd = connectResult.data(using: .utf8),
+              let rj = try? JSONSerialization.jsonObject(with: rd) as? [String: Any],
+              rj["success"] as? Bool == true else {
+            let errorMsg = connectResult.contains("\"error\"") ? "SSH authentication failed" : "Connection failed"
+            testResult = ConnectionTestResult(success: false, message: errorMsg, stage: .failed)
+            return
         }
+        
+        connectionProgress = ConnectionProgress(
+            stage: .testing,
+            message: "Testing...",
+            percentComplete: 0.8
+        )
+        
+        // Quick test command
+        let _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: "echo 1")
+        let latencyMs = Date().timeIntervalSince(startTime) * 1000
+        
+        // Disconnect test session
+        SSHBridge.shared.disconnect(serverID: serverId)
+        
+        connectionProgress = ConnectionProgress(
+            stage: .complete,
+            message: "Connected",
+            percentComplete: 1.0
+        )
+        
+        testResult = ConnectionTestResult(
+            success: true,
+            message: "Connection successful",
+            stage: .complete,
+            latencyMs: latencyMs
+        )
     }
     
     func importSSHKeyFile(from url: URL) {

@@ -6,6 +6,7 @@
 import SwiftUI
 import Combine
 import AevonXCore
+import AevonXCoreBridge
 
 @MainActor
 class PluginConfigurationViewModel: ObservableObject {
@@ -36,7 +37,7 @@ class PluginConfigurationViewModel: ObservableObject {
             
             // Also get raw content for the text editor
             let path = "/opt/aevonx/plugins/\(plugin.slug)/config.avx"
-            let result = try await SSHService.shared.execute("cat \(path)", serverId: serverId)
+            let result = try await SSHBridge.shared.execute("cat \(path)", serverId: serverId)
             self.rawContent = result.stdout
             
             isLoading = false
@@ -79,7 +80,7 @@ class PluginConfigurationViewModel: ObservableObject {
             // Use base64 to avoid escaping issues
             let base64Content = Data(rawContent.utf8).base64EncodedString()
             let command = "echo '\(base64Content)' | base64 -d > \(path)"
-            _ = try await SSHService.shared.execute(command, serverId: serverId)
+            _ = try await SSHBridge.shared.execute(command, serverId: serverId)
             
             successMessage = "Raw configuration saved successfully"
             isSaving = false

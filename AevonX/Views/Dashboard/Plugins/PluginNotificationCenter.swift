@@ -9,6 +9,7 @@
 import SwiftUI
 import Combine
 import AevonXCore
+import AevonXCoreBridge
 
 // MARK: - Plugin Notification Model
 
@@ -179,7 +180,7 @@ public final class PluginHealthMonitor: ObservableObject {
 
     private func checkHealth(namespace: String, command: String, pattern: String, serverId: String) async {
         do {
-            let result = try await SSHService.shared.execute(command, serverId: serverId)
+            let result = try await SSHBridge.shared.execute(command, serverId: serverId)
             let output = result.stdout.trimmingCharacters(in: .whitespacesAndNewlines)
 
             if output.contains(pattern) {

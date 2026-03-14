@@ -7,6 +7,7 @@
 
 import SwiftUI
 import AevonXCore
+import AevonXCoreBridge
 
 struct ServerSettingsTab: View {
     let server: Server
@@ -124,7 +125,7 @@ struct ServerSettingsTab: View {
                 await vm.loadAll()
             }
             quickActionButton(icon: "arrow.triangle.2.circlepath", title: "Restart SSH", color: .axWarning) {
-                let _ = try? await SSHService.shared.execute("sudo systemctl restart sshd 2>/dev/null || sudo systemctl restart ssh", serverId: serverId)
+                let _ = try? await SSHBridge.shared.execute("sudo systemctl restart sshd 2>/dev/null || sudo systemctl restart ssh", serverId: serverId)
             }
             quickActionButton(icon: "arrow.down.circle", title: "Check Updates", color: .axAccentGreen) {
                 await vm.checkUpdates()
