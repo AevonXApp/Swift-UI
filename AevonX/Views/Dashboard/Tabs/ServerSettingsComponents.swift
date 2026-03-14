@@ -7,7 +7,7 @@
 
 import SwiftUI
 import Combine
-import AevonXCore
+import AevonXCoreBridge
 import AevonXCoreBridge
 
 // MARK: - Settings ViewModel

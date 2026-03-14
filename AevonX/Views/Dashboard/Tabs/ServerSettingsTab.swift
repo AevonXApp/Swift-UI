@@ -6,7 +6,7 @@
 //
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 import AevonXCoreBridge
 
 struct ServerSettingsTab: View {

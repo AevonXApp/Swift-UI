@@ -6,7 +6,6 @@
 //
 
 import SwiftUI
-import AevonXCore
 import AevonXCoreBridge
 
 struct FTPAddUserSheet: View {
@@ -434,22 +433,19 @@ struct FTPAddUserSheet: View {
     private func browseDirs() async {
         isLoadingDirs = true
         defer { isLoadingDirs = false }
-        do {
-            let result = try await SSHBridge.shared.execute(
-                "find '\(currentBrowsePath)' -maxdepth 1 -mindepth 1 -type d -not -name '.*' 2>/dev/null | sort | head -50",
-                serverId: vm.serverId
-            )
-            let paths = result.stdout.components(separatedBy: "\n")
-                .map { $0.trimmingCharacters(in: .whitespaces) }
-                .filter { !$0.isEmpty }
-                .compactMap { path -> String? in
-                    let name = (path as NSString).lastPathComponent
-                    return name.isEmpty ? nil : name
-                }
-            directories = paths
-        } catch {
-            directories = []
-        }
+        let json = await SSHBridge.shared.executeAsyncJSON(
+            serverID: vm.serverId,
+            command: "find '\(currentBrowsePath)' -maxdepth 1 -mindepth 1 -type d -not -name '.*' 2>/dev/null | sort | head -50"
+        )
+        let result = SSHResult.parse(json)
+        let paths = result.stdout.components(separatedBy: "\n")
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .filter { !$0.isEmpty }
+            .compactMap { path -> String? in
+                let name = (path as NSString).lastPathComponent
+                return name.isEmpty ? nil : name
+            }
+        directories = paths
     }
     
     private func formLabel(_ text: String) -> some View {

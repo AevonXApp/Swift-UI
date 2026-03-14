@@ -4,7 +4,7 @@
 //
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 import UniformTypeIdentifiers
 
 struct PluginsTab: View {

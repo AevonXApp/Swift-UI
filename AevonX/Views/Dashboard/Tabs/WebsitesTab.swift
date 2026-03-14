@@ -6,7 +6,7 @@
 //
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 struct OldWebsitesTab: View {
     @State private var websites: [Website] = [
