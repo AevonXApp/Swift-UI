@@ -6,7 +6,7 @@
 //
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 struct CronAddTaskSheet: View {
     @ObservedObject var vm: CronViewModel
