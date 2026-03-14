@@ -100,7 +100,7 @@ class ServerListViewModel: ObservableObject {
             return
         }
         isAuthenticated = true
-        let baseURL = ConfigurationManager.shared.currentConfiguration.fullBaseURL
+        let baseURL = AevonXCoreBridge.ConfigurationManager.shared.currentConfiguration.fullBaseURL
 
         do {
             // Fetch subscription status (still via SubscriptionManager for business logic)
@@ -163,7 +163,7 @@ class ServerListViewModel: ObservableObject {
             self.remainingSlots = await SubscriptionManager.shared.remainingServerSlots()
             
             let token = await AuthService.shared.getToken() ?? ""
-            let baseURL = ConfigurationManager.shared.currentConfiguration.fullBaseURL
+            let baseURL = AevonXCoreBridge.ConfigurationManager.shared.currentConfiguration.fullBaseURL
             let resultJSON = await APIBridge.shared.fetchServersAsync(baseURL: baseURL, token: token)
             if let serversData = parseGoServers(resultJSON) {
                 self.servers = await SubscriptionManager.shared.getAccessibleServers(from: serversData)
@@ -287,7 +287,7 @@ class ServerListViewModel: ObservableObject {
             let payloadJSON = String(data: try JSONSerialization.data(withJSONObject: payloadDict), encoding: .utf8) ?? "{}"
             
             let token = await AuthService.shared.getToken() ?? ""
-            let baseURL = ConfigurationManager.shared.currentConfiguration.fullBaseURL
+            let baseURL = AevonXCoreBridge.ConfigurationManager.shared.currentConfiguration.fullBaseURL
             let resultJSON = await APIBridge.shared.createServerAsync(baseURL: baseURL, token: token, payloadJSON: payloadJSON)
             
             // Check for errors
@@ -317,7 +317,7 @@ class ServerListViewModel: ObservableObject {
         defer { isLoading = false }
         
         let token = await AuthService.shared.getToken() ?? ""
-        let baseURL = ConfigurationManager.shared.currentConfiguration.fullBaseURL
+        let baseURL = AevonXCoreBridge.ConfigurationManager.shared.currentConfiguration.fullBaseURL
         let resultJSON = await APIBridge.shared.deleteServerAsync(baseURL: baseURL, token: token, serverID: id)
         
         if let data = resultJSON.data(using: .utf8),

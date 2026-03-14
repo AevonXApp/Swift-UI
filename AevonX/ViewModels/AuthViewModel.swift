@@ -34,7 +34,7 @@ class AuthViewModel: ObservableObject {
     
     /// Base URL from Go Core config
     private var baseURL: String {
-        ConfigurationManager.shared.currentConfiguration.fullBaseURL
+        AevonXCoreBridge.ConfigurationManager.shared.currentConfiguration.fullBaseURL
     }
     
     init() {}

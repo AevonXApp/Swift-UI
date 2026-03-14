@@ -28,7 +28,7 @@ class VaultStatusViewModel: ObservableObject {
     private let apiBridge = APIBridge.shared
     
     private var baseURL: String {
-        ConfigurationManager.shared.currentConfiguration.fullBaseURL
+        AevonXCoreBridge.ConfigurationManager.shared.currentConfiguration.fullBaseURL
     }
     
     func checkVaultStatus() async {

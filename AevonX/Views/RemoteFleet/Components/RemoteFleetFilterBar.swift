@@ -4,7 +4,7 @@
 //
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 struct RemoteFleetFilterBar: View {
     @Binding var searchText: String

@@ -4,6 +4,7 @@
 //
 
 import SwiftUI
+import AevonXCoreBridge
 import AevonXCore
 
 struct RemoteServerRow: View {

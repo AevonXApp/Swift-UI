@@ -8,7 +8,7 @@
 //
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 // MARK: - Reconnection Overlay View
 

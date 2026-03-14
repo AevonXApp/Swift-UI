@@ -150,7 +150,7 @@ struct PluginsTab: View {
     // MARK: - Developer Page
     
     private func openDeveloperPage() {
-        let baseURL = ConfigurationManager.shared.currentConfiguration.fullBaseURL
+        let baseURL = AevonXCoreBridge.ConfigurationManager.shared.currentConfiguration.fullBaseURL
         let urlString = "\(baseURL)/apply-developer"
         if let url = URL(string: urlString) {
             NSWorkspace.shared.open(url)

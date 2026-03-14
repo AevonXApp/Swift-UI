@@ -8,6 +8,7 @@
 
 import Foundation
 import Combine
+import AevonXCoreBridge
 import AevonXCore
 
 
@@ -75,7 +76,7 @@ class ProfileAPIService: ObservableObject {
     static let shared = ProfileAPIService()
 
     private var baseURL: String {
-        ConfigurationManager.shared.currentConfiguration.fullBaseURL
+        AevonXCoreBridge.ConfigurationManager.shared.currentConfiguration.fullBaseURL
     }
 
     private let decoder: JSONDecoder = {

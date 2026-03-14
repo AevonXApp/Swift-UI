@@ -658,7 +658,7 @@ public class ServerConnectionViewModel: ObservableObject {
             throw ConnectionError.authenticationRequired
         }
         
-        let baseURL = ConfigurationManager.shared.currentConfiguration.fullBaseURL
+        let baseURL = AevonXCoreBridge.ConfigurationManager.shared.currentConfiguration.fullBaseURL
         AevonXCoreBridge.CoreLogger.shared.info("Requesting CAT for server: \(serverId) via Go", module: "ServerConnection")
         
         let resultJSON = await APIBridge.shared.requestCATAsync(
@@ -705,7 +705,7 @@ public class ServerConnectionViewModel: ObservableObject {
         
         // Fallback: Fetch from API via Go HTTP
         guard let token = await AuthService.shared.getToken() else { return nil }
-        let baseURL = ConfigurationManager.shared.currentConfiguration.fullBaseURL
+        let baseURL = AevonXCoreBridge.ConfigurationManager.shared.currentConfiguration.fullBaseURL
         let resultJSON = await APIBridge.shared.fetchServerAsync(baseURL: baseURL, token: token, serverID: serverId)
         
         guard let data = resultJSON.data(using: .utf8),

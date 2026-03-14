@@ -7,7 +7,7 @@
 //
 
 import Foundation
-import AevonXCore
+import AevonXCoreBridge
 
 enum ServerStatus: String, CaseIterable {
     case online = "Online"

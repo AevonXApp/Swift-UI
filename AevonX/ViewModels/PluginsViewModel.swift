@@ -29,7 +29,7 @@ class PluginsViewModel: ObservableObject {
     private var cancellables = Set<AnyCancellable>()
     
     private var baseURL: String {
-        ConfigurationManager.shared.currentConfiguration.fullBaseURL
+        AevonXCoreBridge.ConfigurationManager.shared.currentConfiguration.fullBaseURL
     }
     
     init() {}

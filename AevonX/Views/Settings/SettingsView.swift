@@ -6,7 +6,7 @@
 //
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 
 struct SettingsView: View {
@@ -413,8 +413,8 @@ struct AboutSettings: View {
             }
             
             SettingsSection(title: "Links", icon: "link") {
-                LinkRow(title: "Website",       url: AppURLs.website.absoluteString)
-                LinkRow(title: "Documentation",  url: AppURLs.docs.absoluteString)
+                LinkRow(title: "Website",       url: AevonXCoreBridge.AppURLs.website.absoluteString)
+                LinkRow(title: "Documentation",  url: AevonXCoreBridge.AppURLs.docs.absoluteString)
                 LinkRow(title: "GitHub", url: "https://github.com/aevonxapp")
                 LinkRow(title: "Twitter", url: "https://twitter.com/aevonxapp")
             }

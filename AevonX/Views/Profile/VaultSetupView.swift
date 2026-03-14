@@ -675,7 +675,7 @@ class VaultSetupViewModel: ObservableObject {
         
         // 2. No local key — check server for key hash via Go HTTP
         let token = await AuthService.shared.getToken() ?? ""
-        let baseURL = ConfigurationManager.shared.currentConfiguration.fullBaseURL
+        let baseURL = AevonXCoreBridge.ConfigurationManager.shared.currentConfiguration.fullBaseURL
         let resultJSON = await APIBridge.shared.checkRecoveryKeyStatusAsync(baseURL: baseURL, token: token)
         
         if let data = resultJSON.data(using: .utf8),
@@ -718,7 +718,7 @@ class VaultSetupViewModel: ObservableObject {
             
             // Verify against server hash via Go HTTP
             let token = await AuthService.shared.getToken() ?? ""
-            let baseURL = ConfigurationManager.shared.currentConfiguration.fullBaseURL
+            let baseURL = AevonXCoreBridge.ConfigurationManager.shared.currentConfiguration.fullBaseURL
             let resultJSON = await APIBridge.shared.verifyRecoveryKeyAsync(baseURL: baseURL, token: token, verifierHash: keyHash)
             
             var verified = false
@@ -776,7 +776,7 @@ class VaultSetupViewModel: ObservableObject {
             // 2. Register key hash with server via Go HTTP
             let keyHash = await EncryptionKeyStore.shared.hashKey(recoveryKey)
             let token = await AuthService.shared.getToken() ?? ""
-            let baseURL = ConfigurationManager.shared.currentConfiguration.fullBaseURL
+            let baseURL = AevonXCoreBridge.ConfigurationManager.shared.currentConfiguration.fullBaseURL
             let resultJSON = await APIBridge.shared.registerRecoveryKeyAsync(
                 baseURL: baseURL, token: token,
                 verifierHash: keyHash, salt: ""

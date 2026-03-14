@@ -10,7 +10,7 @@
 //
 
 import Foundation
-import AevonXCore
+import AevonXCoreBridge
 
 // MARK: - Command Template
 

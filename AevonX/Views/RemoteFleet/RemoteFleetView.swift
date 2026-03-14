@@ -5,6 +5,7 @@
 //
 
 import SwiftUI
+import AevonXCoreBridge
 import AevonXCore
 
 // MARK: - Local Models

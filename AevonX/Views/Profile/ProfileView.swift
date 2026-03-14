@@ -7,6 +7,7 @@
 
 import SwiftUI
 import Combine
+import AevonXCoreBridge
 import AevonXCore
 
 enum SubscriptionTier: String {
@@ -187,7 +188,7 @@ struct LoggedInView: View {
                         
                         // Upgrade button — visible only on Free plan
                         if subscription == .free {
-                            Button(action: { NSWorkspace.shared.open(AppURLs.pricing) }) {
+                            Button(action: { NSWorkspace.shared.open(AevonXCoreBridge.AppURLs.pricing) }) {
                                 Text("Upgrade")
                                     .font(AXTypography.caption)
                                     .fontWeight(.semibold)
@@ -710,11 +711,11 @@ struct SubscriptionTab: View {
     }
     
     private func openUpgradePage() {
-        NSWorkspace.shared.open(AppURLs.pricing)
+        NSWorkspace.shared.open(AevonXCoreBridge.AppURLs.pricing)
     }
     
     private func openManageSubscription() {
-        NSWorkspace.shared.open(AppURLs.subscription)
+        NSWorkspace.shared.open(AevonXCoreBridge.AppURLs.subscription)
     }
 }
 
@@ -1026,7 +1027,7 @@ struct ActivityTab: View {
     }
     
     private func timeAgo(_ date: Date) -> String {
-        AXFormatter.formatTimeAgo(date)
+        AevonXCoreBridge.AXFormatter.formatTimeAgo(date)
     }
 }
 

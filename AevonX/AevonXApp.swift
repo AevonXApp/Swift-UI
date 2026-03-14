@@ -20,7 +20,7 @@ struct AevonXApp: App {
     init() {
         // Log app startup information
         print("[AevonXApp] INFO: AevonX App Started - v\(BuildConfiguration.appVersion) (\(BuildConfiguration.buildNumber)) on \(BuildConfiguration.platform)")
-        print("[AevonXApp] INFO: API URL: \(ConfigurationManager.shared.currentConfiguration.fullBaseURL)")
+        print("[AevonXApp] INFO: API URL: \(AevonXCoreBridge.ConfigurationManager.shared.currentConfiguration.fullBaseURL)")
         
         // Inject API fetcher into SubscriptionManager (breaks circular dependency)
         // Inject Go SSH into SystemControlService

@@ -4,7 +4,7 @@
 //
 
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 // MARK: - Loading View
 struct LoadingServersView: View {

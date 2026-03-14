@@ -526,7 +526,7 @@ struct EditServerView: View {
             Task {
                 do {
                     let token = await AuthService.shared.getToken() ?? ""
-                    let baseURL = ConfigurationManager.shared.currentConfiguration.fullBaseURL
+                    let baseURL = AevonXCoreBridge.ConfigurationManager.shared.currentConfiguration.fullBaseURL
                     let resultJSON = await APIBridge.shared.fetchServerAsync(baseURL: baseURL, token: token, serverID: server.id)
                     
                     guard let rawData = resultJSON.data(using: .utf8),
