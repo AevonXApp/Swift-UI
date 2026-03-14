@@ -8,6 +8,7 @@
 
 import SwiftUI
 import AevonXCore
+import AevonXCoreBridge
 
 struct PluginAlertComponent: View {
     let plugin: HookPluginDefinition

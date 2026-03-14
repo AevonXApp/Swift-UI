@@ -11,6 +11,7 @@ import SwiftUI
 import Charts
 import Combine
 import AevonXCore
+import AevonXCoreBridge
 
 // MARK: - Chart Type
 

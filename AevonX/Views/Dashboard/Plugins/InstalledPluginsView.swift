@@ -5,6 +5,7 @@
 
 import SwiftUI
 import AevonXCore
+import AevonXCoreBridge
 
 struct InstalledPluginsView: View {
     let serverId: String?

@@ -12,6 +12,7 @@ import Combine
 import AppKit
 import UniformTypeIdentifiers
 import AevonXCore
+import AevonXCoreBridge
 
 /// Identifiable wrapper for row data — used for .sheet(item:)
 private struct IdentifiableRow: Identifiable {
@@ -651,7 +652,7 @@ struct PluginDataTableComponent: View {
 
     private func formatBytes(_ value: String) -> String {
         guard let bytes = Double(value) else { return value }
-        return AXFormatter.formatBytes(bytes)
+        return AevonXCoreBridge.AXFormatter.formatBytes(bytes)
     }
 
     private func formatNumber(_ value: String) -> String {

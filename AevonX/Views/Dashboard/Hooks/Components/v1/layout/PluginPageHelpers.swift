@@ -9,6 +9,7 @@
 
 import SwiftUI
 import AevonXCore
+import AevonXCoreBridge
 
 // MARK: - Dashboard Stat Pill
 
@@ -80,12 +81,12 @@ struct DashboardStatPill: View {
             if let extracted = extractValue(from: json, path: valuePath) {
                 let title = card.title.lowercased()
                 if title.contains("uptime") {
-                    if let seconds = extracted as? Double { displayValue = AXFormatter.formatDuration(seconds: seconds) }
-                    else if let seconds = extracted as? Int { displayValue = AXFormatter.formatDuration(seconds: Double(seconds)) }
-                    else if valuePath.contains("ms"), let ms = extracted as? Double { displayValue = AXFormatter.formatDuration(seconds: ms / 1000.0) }
-                    else if valuePath.contains("ms"), let ms = extracted as? Int { displayValue = AXFormatter.formatDuration(seconds: Double(ms) / 1000.0) }
-                    else { displayValue = AXFormatter.formatValue(extracted) }
-                } else { displayValue = AXFormatter.formatValue(extracted) }
+                    if let seconds = extracted as? Double { displayValue = AevonXCoreBridge.AXFormatter.formatDuration(seconds: seconds) }
+                    else if let seconds = extracted as? Int { displayValue = AevonXCoreBridge.AXFormatter.formatDuration(seconds: Double(seconds)) }
+                    else if valuePath.contains("ms"), let ms = extracted as? Double { displayValue = AevonXCoreBridge.AXFormatter.formatDuration(seconds: ms / 1000.0) }
+                    else if valuePath.contains("ms"), let ms = extracted as? Int { displayValue = AevonXCoreBridge.AXFormatter.formatDuration(seconds: Double(ms) / 1000.0) }
+                    else { displayValue = AevonXCoreBridge.AXFormatter.formatValue(extracted) }
+                } else { displayValue = AevonXCoreBridge.AXFormatter.formatValue(extracted) }
                 if let suffix = json["suffix"] as? String, !suffix.isEmpty { displayValue = (displayValue ?? "") + suffix }
                 if let trend = json["trend"] as? String {
                     switch trend { case "up": displayValue = (displayValue ?? "") + " ↑"; case "down": displayValue = (displayValue ?? "") + " ↓"; default: break }
@@ -106,11 +107,11 @@ struct DashboardStatPill: View {
                 }
             } else { statusColor = .axError; displayValue = "✗ \(statusText)" }
         } else if title.contains("uptime") {
-            if let seconds = json["uptime_seconds"] as? Double { displayValue = AXFormatter.formatDuration(seconds: seconds); statusColor = .axSuccess }
-            else if let seconds = json["uptime_seconds"] as? Int { displayValue = AXFormatter.formatDuration(seconds: Double(seconds)); statusColor = .axSuccess }
-            else if let ms = json["uptime_ms"] as? Double { displayValue = AXFormatter.formatDuration(seconds: ms / 1000.0); statusColor = .axSuccess }
-            else if let ms = json["uptime_ms"] as? Int { displayValue = AXFormatter.formatDuration(seconds: Double(ms) / 1000.0); statusColor = .axSuccess }
-            else { displayValue = AXFormatter.formatValue(json["uptime"] ?? "—"); statusColor = .axSuccess }
+            if let seconds = json["uptime_seconds"] as? Double { displayValue = AevonXCoreBridge.AXFormatter.formatDuration(seconds: seconds); statusColor = .axSuccess }
+            else if let seconds = json["uptime_seconds"] as? Int { displayValue = AevonXCoreBridge.AXFormatter.formatDuration(seconds: Double(seconds)); statusColor = .axSuccess }
+            else if let ms = json["uptime_ms"] as? Double { displayValue = AevonXCoreBridge.AXFormatter.formatDuration(seconds: ms / 1000.0); statusColor = .axSuccess }
+            else if let ms = json["uptime_ms"] as? Int { displayValue = AevonXCoreBridge.AXFormatter.formatDuration(seconds: Double(ms) / 1000.0); statusColor = .axSuccess }
+            else { displayValue = AevonXCoreBridge.AXFormatter.formatValue(json["uptime"] ?? "—"); statusColor = .axSuccess }
         } else if title.contains("scan") || title.contains("summary") {
             let totalFindings = json["total_findings"] as? Int ?? 0; let filesScanned = json["files_scanned"] as? Int ?? 0
             statusColor = totalFindings > 0 ? .axWarning : .axSuccess
@@ -139,7 +140,7 @@ struct DashboardStatPill: View {
     }
 
     private func formatDuration(seconds: Double) -> String {
-        AXFormatter.formatDuration(seconds: seconds)
+        AevonXCoreBridge.AXFormatter.formatDuration(seconds: seconds)
     }
 
     private func extractValue(from json: [String: Any], path: String) -> Any? {
@@ -149,11 +150,11 @@ struct DashboardStatPill: View {
     }
 
     private func formatStatValue(_ value: Any) -> String {
-        AXFormatter.formatValue(value)
+        AevonXCoreBridge.AXFormatter.formatValue(value)
     }
 
     private func formatLargeNumber(_ num: Double) -> String {
-        AXFormatter.formatNumber(num)
+        AevonXCoreBridge.AXFormatter.formatNumber(num)
     }
 
     private func detectStatusColor(for value: Any, title: String) -> Color {

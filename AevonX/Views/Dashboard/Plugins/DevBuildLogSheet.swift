@@ -9,6 +9,7 @@
 
 import SwiftUI
 import AevonXCore
+import AevonXCoreBridge
 import UniformTypeIdentifiers
 
 struct DevBuildLogSheet: View {

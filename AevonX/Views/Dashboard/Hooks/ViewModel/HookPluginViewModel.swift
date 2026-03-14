@@ -9,6 +9,7 @@
 import SwiftUI
 import Combine
 import AevonXCore
+import AevonXCoreBridge
 
 // MARK: - Hook Plugin ViewModel
 
