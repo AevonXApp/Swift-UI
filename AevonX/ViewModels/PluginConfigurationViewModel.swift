@@ -10,19 +10,19 @@ import AevonXCore
 
 @MainActor
 class PluginConfigurationViewModel: ObservableObject {
-    let plugin: Plugin
+    let plugin: AevonXCore.Plugin
     let serverId: String
     
-    @Published var config: PluginConfig = PluginConfig()
+    @Published var config: AevonXCore.PluginConfig = AevonXCore.PluginConfig()
     @Published var rawContent: String = ""
     @Published var isLoading = false
     @Published var isSaving = false
     @Published var errorMessage: String?
     @Published var successMessage: String?
     
-    private let pluginManager = PluginManager.shared
+    private let pluginManager = AevonXCore.PluginManager.shared
     
-    init(plugin: Plugin, serverId: String) {
+    init(plugin: AevonXCore.Plugin, serverId: String) {
         self.plugin = plugin
         self.serverId = serverId
     }
@@ -73,7 +73,7 @@ class PluginConfigurationViewModel: ObservableObject {
         do {
             // Validate JSON first
             if let data = rawContent.data(using: .utf8) {
-                _ = try JSONDecoder().decode(PluginConfig.self, from: data)
+                _ = try JSONDecoder().decode(AevonXCore.PluginConfig.self, from: data)
             }
             
             let path = "/opt/aevonx/plugins/\(plugin.slug)/config.avx"

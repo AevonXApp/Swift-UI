@@ -14,7 +14,7 @@ struct PluginsTab: View {
     let connectionViewModel: ServerConnectionViewModel?
     
     @State private var selectedTab: PluginViewType = .marketplace
-    @State private var pluginForConfiguration: Plugin?
+    @State private var pluginForConfiguration: AevonXCore.Plugin?
     @StateObject private var viewModel = PluginsViewModel()
     
     // Dev build sheet

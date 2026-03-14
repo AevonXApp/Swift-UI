@@ -343,7 +343,7 @@ public final class QuickInstallViewModel: ObservableObject {
             profile = existing
         } else {
             AevonXCoreBridge.CoreLogger.shared.info("serverProfile nil — detecting now", module: "QuickInstall")
-            let detector = CapabilityDetector(sshService: SSHBridge.shared)
+            let detector = AevonXCore.CapabilityDetector(sshService: SSHBridge.shared)
             do {
                 let coreProfile = try await detector.detect(serverId: serverId)
                 let detected = try JSONDecoder().decode(AevonXCoreBridge.ServerProfile.self, from: JSONEncoder().encode(coreProfile))

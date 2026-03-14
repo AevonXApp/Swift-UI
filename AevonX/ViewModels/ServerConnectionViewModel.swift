@@ -78,7 +78,7 @@ enum DashboardTab: String, CaseIterable, Identifiable {
     }
 }
 
-/// A dynamically injected sidebar tab from the Hook & Plugin System
+/// A dynamically injected sidebar tab from the Hook & AevonXCore.Plugin System
 struct PluginSidebarTab: Identifiable, Equatable {
     let id: String        // plugin.id
     let name: String      // plugin.name
@@ -88,7 +88,7 @@ struct PluginSidebarTab: Identifiable, Equatable {
 
 /// Navigation destinations for the dashboard detail area
 enum DashboardDestination: Hashable {
-    case pluginConfig(Plugin)
+    case pluginConfig(AevonXCore.Plugin)
 }
 
 // MARK: - Server Connection ViewModel
@@ -208,7 +208,7 @@ public class ServerConnectionViewModel: ObservableObject {
     @Published var navigationPath = NavigationPath()
 
     /// Active plugin configuration being shown (replaces NavigationStack navigation)
-    @Published var activeConfigPlugin: Plugin? = nil
+    @Published var activeConfigPlugin: AevonXCore.Plugin? = nil
 
     /// Quick Install ViewModel — persists across tab navigation so bubble stays visible
     @Published var quickInstallVM: QuickInstallViewModel? = nil
@@ -386,7 +386,7 @@ public class ServerConnectionViewModel: ObservableObject {
             // Step 4: Decrypt credentials using local encryption
             connectionStage = .decrypting
             connectionProgress = 0.5
-            let serverData = try await AevonXCore.ServerEncryptionService.shared.decryptServer(
+            let serverData = try await ServerEncryptionService.shared.decryptServer(
                 AevonXCore.EncryptedServerData.self,
                 from: serverPayload
             )
@@ -426,7 +426,7 @@ public class ServerConnectionViewModel: ObservableObject {
             // Detect server capabilities (OS, init system, package manager)
             Task {
                 do {
-                    let detector = CapabilityDetector(sshService: sshService)
+                    let detector = AevonXCore.CapabilityDetector(sshService: sshService)
                     let coreProfile = try await detector.detect(serverId: serverId)
                     let profile = try JSONDecoder().decode(AevonXCoreBridge.ServerProfile.self, from: JSONEncoder().encode(coreProfile))
                     await MainActor.run {
@@ -784,7 +784,7 @@ public class ServerConnectionViewModel: ObservableObject {
               let result = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
               result["success"] as? Bool == true,
               let cmdData = result["data"] as? [String: Any] else {
-            throw SSHServiceError.commandFailed("Go SSH command failed")
+            throw AevonXCore.SSHServiceError.commandFailed("Go SSH command failed")
         }
         
         return AevonXCore.SSHCommandResult(
@@ -801,7 +801,7 @@ public class ServerConnectionViewModel: ObservableObject {
         // Provide the reconnection handler to Core.
         // This closure performs the full CAT → encrypt → SSH connect flow.
         // Core never holds credentials — it only calls this handler when reconnection is needed.
-        Task {
+        Task<Void, Never> {
             await ConnectionHealthMonitor.shared.setReconnectionHandler { [weak self] serverId in
                 guard let self = self else { return false }
                 
@@ -826,7 +826,7 @@ public class ServerConnectionViewModel: ObservableObject {
                     }
                     
                     // Step 4: Decrypt and connect via Go SSH
-                    let serverData = try await AevonXCore.ServerEncryptionService.shared.decryptServer(
+                    let serverData = try await ServerEncryptionService.shared.decryptServer(
                         AevonXCore.EncryptedServerData.self,
                         from: serverPayload
                     )

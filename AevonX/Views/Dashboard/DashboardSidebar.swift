@@ -81,7 +81,7 @@ struct DashboardSidebar: View {
                         )
                     }
 
-                    // Plugin-injected sidebar tabs
+                    // AevonXCore.Plugin-injected sidebar tabs
                     let pluginTabs = hookRegistry.plugins(for: .sidebarTabs)
                     if !pluginTabs.isEmpty {
                         Divider()
@@ -217,11 +217,11 @@ private struct SidebarNavRow: View {
                 Spacer()
 
                 if isPlugin {
-                    // Plugin badge
+                    // AevonXCore.Plugin badge
                     HStack(spacing: 2) {
                         Image(systemName: "puzzlepiece.fill")
                             .font(.system(size: 7))
-                        Text("Plugin")
+                        Text("AevonXCore.Plugin")
                             .font(.system(size: 8, weight: .medium))
                     }
                     .foregroundColor(.axTextMuted)

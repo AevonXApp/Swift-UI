@@ -11,7 +11,7 @@ import AevonXCore
 
 // MARK: - Pricing Badge Color
 
-private extension PluginPricing {
+private extension AevonXCore.PluginPricing {
     var badgeColor: Color {
         switch type {
         case .free: return .axSuccess
@@ -34,10 +34,10 @@ private extension PluginPricing {
 struct PluginsMarketplaceView: View {
     let serverId: String?
     var showInstalledOnly: Bool = false
-    let onSettings: (Plugin) -> Void
+    let onSettings: (AevonXCore.Plugin) -> Void
     
     @ObservedObject var viewModel: PluginsViewModel
-    @State private var pluginToInstall: Plugin?
+    @State private var pluginToInstall: AevonXCore.Plugin?
     
     let columns = [
         GridItem(.adaptive(minimum: 340, maximum: 480), spacing: AXSpacing.md)
@@ -334,12 +334,12 @@ private struct FilterChip: View {
 // MARK: - Plugin Card (Premium Redesign)
 
 struct PluginCard: View {
-    let plugin: Plugin
+    let plugin: AevonXCore.Plugin
     let isInstalling: Bool
     let isInstalled: Bool
     let progress: Double
     let status: String
-    var installSource: InstallSource? = nil
+    var installSource: AevonXCore.InstallSource? = nil
     var isInMarketplace: Bool = true
     let onInstall: () -> Void
     let onSettings: () -> Void
@@ -392,7 +392,7 @@ struct PluginCard: View {
                                             endPoint: .bottomTrailing
                                         )
                                     )
-                                    .help("Official AevonX Plugin")
+                                    .help("Official AevonX AevonXCore.Plugin")
                             }
                             
                             // Install source badges
@@ -592,7 +592,7 @@ struct PluginCard: View {
                 .help("Uninstall")
                 .alert(isPresented: $showUninstallConfirmation) {
                     Alert(
-                        title: Text("Uninstall Plugin"),
+                        title: Text("Uninstall AevonXCore.Plugin"),
                         message: Text("Are you sure you want to uninstall \(plugin.name)?"),
                         primaryButton: .destructive(Text("Uninstall"), action: onUninstall),
                         secondaryButton: .cancel()
@@ -658,7 +658,7 @@ struct PluginCard: View {
 // MARK: - Version Picker
 
 struct PluginVersionPickerView: View {
-    let plugin: Plugin
+    let plugin: AevonXCore.Plugin
     let serverId: String
     @ObservedObject var viewModel: PluginsViewModel
     @Environment(\.dismiss) var dismiss

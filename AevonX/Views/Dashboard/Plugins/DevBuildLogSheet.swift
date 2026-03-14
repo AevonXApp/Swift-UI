@@ -18,7 +18,7 @@ struct DevBuildLogSheet: View {
     @Environment(\.dismiss) private var dismiss
     
     // Build state
-    @State private var steps: [DevBuildStep] = []
+    @State private var steps: [AevonXCore.DevBuildStep] = []
     @State private var isInstalling: Bool = false
     @State private var isComplete: Bool = false
     @State private var hasFailed: Bool = false
@@ -187,7 +187,7 @@ struct DevBuildLogSheet: View {
         }
     }
     
-    private func stepRow(_ step: DevBuildStep) -> some View {
+    private func stepRow(_ step: AevonXCore.DevBuildStep) -> some View {
         HStack(alignment: .top, spacing: 8) {
             // Status icon
             Group {
@@ -326,7 +326,7 @@ struct DevBuildLogSheet: View {
     
     private func selectFile() {
         let panel = NSOpenPanel()
-        panel.title = "Select Plugin Build ZIP"
+        panel.title = "Select AevonXCore.Plugin Build ZIP"
         panel.message = "Choose a .zip file containing setup.sh, uninstall.sh, and config.avx"
         panel.allowedContentTypes = [.zip]
         panel.allowsMultipleSelection = false
@@ -359,7 +359,7 @@ struct DevBuildLogSheet: View {
         
         Task {
             do {
-                let slug = try await PluginManager.shared.installDevBuild(
+                let slug = try await AevonXCore.PluginManager.shared.installDevBuild(
                     zipURL: url,
                     on: serverId
                 ) { step in
@@ -385,7 +385,7 @@ struct DevBuildLogSheet: View {
                     
                     // Add error step if not already shown
                     if steps.last?.status != .failed {
-                        var errorStep = DevBuildStep(index: (steps.last?.index ?? 0) + 1, label: "Installation failed", status: .failed)
+                        var errorStep = AevonXCore.DevBuildStep(index: (steps.last?.index ?? 0) + 1, label: "Installation failed", status: .failed)
                         errorStep.detail = error.localizedDescription
                         steps.append(errorStep)
                     }
@@ -395,7 +395,7 @@ struct DevBuildLogSheet: View {
     }
     
     @MainActor
-    private func updateStep(_ step: DevBuildStep) {
+    private func updateStep(_ step: AevonXCore.DevBuildStep) {
         withAnimation(.easeInOut(duration: 0.15)) {
             if let existingIndex = steps.firstIndex(where: { $0.index == step.index }) {
                 steps[existingIndex] = step
@@ -407,7 +407,7 @@ struct DevBuildLogSheet: View {
     
     // MARK: - Styling Helpers
     
-    private func stepLabelColor(_ step: DevBuildStep) -> Color {
+    private func stepLabelColor(_ step: AevonXCore.DevBuildStep) -> Color {
         switch step.status {
         case .running: return .white
         case .success: return .white.opacity(0.7)
@@ -417,7 +417,7 @@ struct DevBuildLogSheet: View {
         }
     }
     
-    private func statusText(_ status: DevBuildStep.StepStatus) -> String {
+    private func statusText(_ status: AevonXCore.DevBuildStep.StepStatus) -> String {
         switch status {
         case .pending: return "WAIT"
         case .running: return "RUN"
@@ -427,7 +427,7 @@ struct DevBuildLogSheet: View {
         }
     }
     
-    private func statusColor(_ status: DevBuildStep.StepStatus) -> Color {
+    private func statusColor(_ status: AevonXCore.DevBuildStep.StepStatus) -> Color {
         switch status {
         case .pending: return .white.opacity(0.3)
         case .running: return .axAccentBlue

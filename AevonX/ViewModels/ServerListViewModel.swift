@@ -193,7 +193,7 @@ class ServerListViewModel: ObservableObject {
                 )
                 
                 // Decrypt using new ServerEncryptionService
-                let serverData = try await AevonXCore.ServerEncryptionService.shared.decryptServer(
+                let serverData = try await ServerEncryptionService.shared.decryptServer(
                     AevonXCore.EncryptedServerData.self,
                     from: payload
                 )
@@ -274,7 +274,7 @@ class ServerListViewModel: ObservableObject {
         
         do {
             let serverData = request.toEncryptedServerData()
-            let encryptedPayload = try await AevonXCore.ServerEncryptionService.shared.encryptServer(serverData)
+            let encryptedPayload = try await ServerEncryptionService.shared.encryptServer(serverData)
             
             // Encode payload as JSON for Go
             let payloadDict: [String: Any] = [

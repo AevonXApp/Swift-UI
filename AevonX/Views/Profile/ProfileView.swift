@@ -109,7 +109,7 @@ struct LoggedInView: View {
     
     // User info from auth view model
     private var userName: String {
-        authViewModel.currentUser?.name ?? "User"
+        authViewModel.currentUser?.name ?? "AevonXCore.User"
     }
     
     private var userEmail: String {
