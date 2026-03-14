@@ -28,11 +28,12 @@ struct PHPVersionsSection: View {
             VStack(alignment: .leading, spacing: AXSpacing.xl) {
                 // Installed
                 AXSectionTitle(title: "Installed Versions", icon: "checkmark.circle.fill")
-                if installedVersions.isEmpty {
+                let uniqueInstalled = deduplicateVersions(installedVersions)
+                if uniqueInstalled.isEmpty {
                     emptyState("No PHP versions installed", icon: "folder")
                 } else {
                     LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())], spacing: AXSpacing.md) {
-                        ForEach(installedVersions, id: \.version) { v in
+                        ForEach(Array(uniqueInstalled.enumerated()), id: \.offset) { _, v in
                             installedCard(v)
                         }
                     }
@@ -41,7 +42,8 @@ struct PHPVersionsSection: View {
                 // Available
                 AXSectionTitle(title: "Available Versions", icon: "shippingbox.fill")
                 let filteredAvailable = availableVersions.filter { av in
-                    !installedVersions.contains(where: { $0.version == av.version })
+                    let avMajorMinor = majorMinor(av.version)
+                    return !uniqueInstalled.contains(where: { majorMinor($0.version) == avMajorMinor })
                 }
                 if filteredAvailable.isEmpty {
                     emptyState("All available versions are installed", icon: "checkmark.seal")
@@ -201,7 +203,7 @@ struct PHPVersionsSection: View {
             print("[PHP-INSTALL] ♻️ Reusing existing QuickInstallViewModel (isInstalling: \(existing.isInstalling))")
             qi = existing
         } else {
-            print("[PHP-INSTALL] 🆕 Creating new QuickInstallViewModel (serverProfile: \(connectionViewModel.serverProfile?.distro.rawValue ?? "nil"))")
+            print("[PHP-INSTALL] 🆕 Creating new QuickInstallViewModel (hasProfile: \(connectionViewModel.serverProfile != nil))")
             qi = QuickInstallViewModel(serverId: serverId, profile: connectionViewModel.serverProfile)
             connectionViewModel.quickInstallVM = qi
         }
@@ -269,15 +271,18 @@ struct PHPVersionsSection: View {
 
     private func setDefault(_ version: String) async {
         actionInProgress = version
-        toast.showSuccess("Setting PHP \(version) as default...")
-        let json = await bridge.switchVersion(serverID: serverId, appID: "php-fpm", version: version)
+        // Extract major.minor (e.g., 8.3 from 8.3.30) — the server binary is /usr/bin/php8.3
+        let shortVersion = majorMinor(version)
+        print("[PHP-SWITCH] Setting default: full=\(version), short=\(shortVersion)")
+        toast.showSuccess("Setting PHP \(shortVersion) as default...")
+        let json = await bridge.switchVersion(serverID: serverId, appID: "php-fpm", version: shortVersion)
         if let d = json.data(using: .utf8),
            let r = try? JSONSerialization.jsonObject(with: d) as? [String: Any],
            r["success"] as? Bool == true {
-            toast.showSuccess("PHP \(version) is now the default")
+            toast.showSuccess("PHP \(shortVersion) is now the default")
             await onRefresh()
         } else {
-            toast.showError("Failed to set PHP \(version) as default")
+            toast.showError("Failed to set PHP \(shortVersion) as default")
         }
         actionInProgress = nil
     }
@@ -290,6 +295,26 @@ struct PHPVersionsSection: View {
             s = s.replacingOccurrences(of: marker, with: "")
         }
         return s.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    /// Extract major.minor from full version: "8.3.30" → "8.3", "8.4" → "8.4"
+    private func majorMinor(_ version: String) -> String {
+        let parts = version.split(separator: ".")
+        if parts.count >= 2 {
+            return "\(parts[0]).\(parts[1])"
+        }
+        return version
+    }
+
+    /// Remove duplicate installed versions (keep first by major.minor)
+    private func deduplicateVersions(_ versions: [BridgeAppVersion]) -> [BridgeAppVersion] {
+        var seen = Set<String>()
+        return versions.filter { v in
+            let key = majorMinor(cleanVersionString(v.version))
+            if seen.contains(key) { return false }
+            seen.insert(key)
+            return true
+        }
     }
 
     private func channelColor(_ ch: String) -> Color {

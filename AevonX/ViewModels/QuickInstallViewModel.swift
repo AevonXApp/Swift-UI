@@ -546,7 +546,7 @@ public final class QuickInstallViewModel: ObservableObject {
 
                     consecutiveErrors = 0
                     self.applyQueueState(state, vm: vm, stepIdToIndex: stepIdToIndex)
-                    print("[QI-POLL] 📈 Progress: \(Int((vm.overallProgress ?? 0) * 100))%")
+                    print("[QI-POLL] 📈 Progress: \(Int(vm.overallProgress * 100))%")
 
                     if state.is_done {
                         let hasFails = state.is_done_with_errors
