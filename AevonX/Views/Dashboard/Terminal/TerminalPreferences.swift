@@ -8,7 +8,7 @@
 
 import SwiftUI
 import Combine
-import AevonXCore
+import AevonXCoreBridge
 
 // MARK: - Terminal Preferences
 

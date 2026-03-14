@@ -8,7 +8,7 @@
 
 import Foundation
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 // MARK: - ANSI Styled Text (SwiftUI)
 

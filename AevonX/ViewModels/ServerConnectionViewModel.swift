@@ -11,6 +11,31 @@ import AevonXCore
 import AevonXCoreBridge
 import Combine
 
+// MARK: - Interactive Session Adapter
+
+/// Wraps AevonXCore's SSHInteractiveSession into AevonXCoreBridge's protocol.
+/// This adapter allows TerminalViewModel to use only AevonXCoreBridge types
+/// while the actual PTY session runs on AevonXCore's NIO-SSH stack.
+final class InteractiveSessionAdapter: AevonXCoreBridge.SSHInteractiveSession, @unchecked Sendable {
+    private let coreSession: AevonXCore.SSHInteractiveSession
+
+    init(coreSession: AevonXCore.SSHInteractiveSession) {
+        self.coreSession = coreSession
+    }
+
+    func write(_ data: String) async throws {
+        try await coreSession.write(data)
+    }
+
+    func resize(width: Int, height: Int) async throws {
+        try await coreSession.resize(width: width, height: height)
+    }
+
+    func close() async throws {
+        try await coreSession.close()
+    }
+}
+
 // MARK: - Reconnection Tier
 
 /// Visual tier for reconnection UI
@@ -532,15 +557,33 @@ public class ServerConnectionViewModel: ObservableObject {
     /// Creates a new terminal session
     func createTerminalSession() {
         let newSession = TerminalViewModel(serverId: serverId)
+
+        // Inject interactive session provider — bridges AevonXCore's NIO-SSH PTY
+        // to AevonXCoreBridge's SSHInteractiveSession protocol
+        newSession.sessionProvider = { [weak self] serverId, onOutput in
+            guard let _ = self else {
+                throw NSError(domain: "Terminal", code: -1, userInfo: [
+                    NSLocalizedDescriptionKey: "Server connection no longer available"
+                ])
+            }
+            let session = try await SSHService.shared.startInteractive(
+                command: "/bin/bash -l || /bin/sh -l || sh",
+                serverId: serverId,
+                onOutput: onOutput
+            )
+            // Wrap AevonXCore's SSHInteractiveSession into AevonXCoreBridge's protocol
+            return InteractiveSessionAdapter(coreSession: session)
+        }
+
         terminalSessions.append(newSession)
-        
+
         // Switch to the new session
         activeTerminalIndex = terminalSessions.count - 1
-        
+
         // Auto-connect if server is already connected
         if isConnected {
             Task {
-                await newSession.connect(server: server)
+                await newSession.connect(serverName: server.name, serverHost: server.host)
             }
         }
     }

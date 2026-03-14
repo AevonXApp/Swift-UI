@@ -7,7 +7,7 @@
 //
 
 import Foundation
-import AevonXCore
+import AevonXCoreBridge
 import Combine
 
 // MARK: - Terminal Line
@@ -28,6 +28,16 @@ struct SSHTerminalLine: Identifiable {
         self.timestamp = Date()
     }
 }
+
+// MARK: - Interactive Session Provider
+
+/// Closure that starts an interactive PTY session.
+/// Called by TerminalViewModel during connect; provided by ServerConnectionViewModel
+/// which has access to AevonXCore's SSHService.
+typealias InteractiveSessionProvider = (
+    _ serverId: String,
+    _ onOutput: @escaping @Sendable (String) -> Void
+) async throws -> any SSHInteractiveSession
 
 // MARK: - Terminal View Model
 
@@ -55,16 +65,19 @@ class TerminalViewModel: ObservableObject {
     // MARK: - Private Properties
 
     let serverId: String
-    private let terminalService = TerminalService.shared
-    private var interactiveSession: SSHInteractiveSession?
+    private var interactiveSession: (any SSHInteractiveSession)?
     let preferences = TerminalPreferences.shared
+
+    /// Closure to start an interactive session — injected from ServerConnectionViewModel
+    var sessionProvider: InteractiveSessionProvider?
 
     private var commandHistory: [String] = []
     private var historyIndex: Int = -1
     private var savedCurrentInput: String = ""
     private var reconnectAttempt: Int = 0
     private var reconnectTask: Task<Void, Never>?
-    private var lastServer: Server?
+    private var lastServerName: String?
+    private var lastServerHost: String?
     private var outputBuffer: String = ""
 
     // MARK: - Computed Properties
@@ -81,17 +94,18 @@ class TerminalViewModel: ObservableObject {
 
     // MARK: - Connection
 
-    func connect(server: Server) async {
-        lastServer = server
+    func connect(serverName: String, serverHost: String) async {
+        lastServerName = serverName
+        lastServerHost = serverHost
         reconnectAttempt = 0
         state = .connecting
 
         addLine("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━", type: .system)
         addLine("🚀 AevonX Interactive Terminal", type: .system)
         addLine("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━", type: .system)
-        addLine("Connecting to \(server.name) (\(server.host))...", type: .system)
+        addLine("Connecting to \(serverName) (\(serverHost))...", type: .system)
 
-        let connected = await terminalService.isSSHConnected(serverId: serverId)
+        let connected = SSHBridge.shared.isConnected(serverID: serverId)
 
         guard connected else {
             state = .error("Not connected to SSH")
@@ -103,19 +117,28 @@ class TerminalViewModel: ObservableObject {
         }
 
         do {
-            username = await terminalService.fetchUsername(serverId: serverId)
-            hostname = await terminalService.fetchHostname(serverId: serverId)
+            // Fetch username and hostname via Go SSH
+            let fetchedUser = await SSHBridge.shared.executeAsync(serverID: serverId, command: "whoami")
+            username = fetchedUser.trimmingCharacters(in: .whitespacesAndNewlines)
+            if username.isEmpty { username = "user" }
+
+            let fetchedHost = await SSHBridge.shared.executeAsync(serverID: serverId, command: "hostname")
+            hostname = fetchedHost.trimmingCharacters(in: .whitespacesAndNewlines)
+            if hostname.isEmpty { hostname = "server" }
 
             addLine("Starting interactive shell session...", type: .system)
 
-            interactiveSession = try await terminalService.startInteractiveSession(
-                serverId: serverId,
-                onOutput: { [weak self] output in
-                    Task { @MainActor [weak self] in
-                        self?.handleOutput(output)
-                    }
+            guard let provider = sessionProvider else {
+                throw NSError(domain: "Terminal", code: -1, userInfo: [
+                    NSLocalizedDescriptionKey: "No interactive session provider configured"
+                ])
+            }
+
+            interactiveSession = try await provider(serverId) { [weak self] output in
+                Task { @MainActor [weak self] in
+                    self?.handleOutput(output)
                 }
-            )
+            }
 
             state = .connected
             isConnected = true
@@ -154,7 +177,8 @@ class TerminalViewModel: ObservableObject {
     }
 
     private func attemptReconnect() {
-        guard reconnectAttempt < preferences.maxReconnectAttempts, let server = lastServer else { return }
+        guard reconnectAttempt < preferences.maxReconnectAttempts,
+              let name = lastServerName, let host = lastServerHost else { return }
         reconnectAttempt += 1
         state = .reconnecting(attempt: reconnectAttempt)
         addLine("🔄 Reconnecting... (attempt \(reconnectAttempt)/\(preferences.maxReconnectAttempts))", type: .system)
@@ -162,7 +186,7 @@ class TerminalViewModel: ObservableObject {
         reconnectTask = Task {
             try? await Task.sleep(nanoseconds: UInt64(reconnectAttempt) * 2_000_000_000)
             guard !Task.isCancelled else { return }
-            await connect(server: server)
+            await connect(serverName: name, serverHost: host)
         }
     }
 
@@ -422,11 +446,16 @@ class TerminalViewModel: ObservableObject {
                    Date().timeIntervalSince(cached.timestamp) < self.cacheTTL {
                     entries = cached.entries
                 } else {
-                    // Fetch from server
-                    let fetched = await self.terminalService.fetchDirectoryContents(
-                        path: dirToList, serverId: self.serverId
+                    // Fetch from server via SSH Bridge
+                    let safePath = dirToList.replacingOccurrences(of: "'", with: "'\\''")
+                    let output = await SSHBridge.shared.executeAsync(
+                        serverID: self.serverId,
+                        command: "ls -F1a '\(safePath)' 2>/dev/null"
                     )
                     guard !Task.isCancelled else { return }
+                    let fetched = output.components(separatedBy: "\n")
+                        .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+                        .filter { !$0.isEmpty && $0 != "." && $0 != ".." }
                     self.cachedDirContents[dirToList] = (entries: fetched, timestamp: Date())
                     entries = fetched
                 }
@@ -475,8 +504,14 @@ class TerminalViewModel: ObservableObject {
             // Synchronous: static + history suggestions
             var suggestions: [String] = []
 
-            let staticSuggestions = terminalService.getStaticSuggestions(for: input)
-            suggestions.append(contentsOf: staticSuggestions)
+            // Decode static suggestions from Go Core
+            let suggestionsJSON = TerminalBridge.shared.getSuggestions(input: input)
+            if let data = suggestionsJSON.data(using: .utf8),
+               let response = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+               response["success"] as? Bool == true,
+               let suggestionsData = response["data"] as? [String] {
+                suggestions.append(contentsOf: suggestionsData)
+            }
 
             let inputLower = input.lowercased()
             let historySuggestions = commandHistory.filter {

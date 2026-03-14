@@ -9,7 +9,7 @@
 
 import Foundation
 import SwiftUI
-import AevonXCore
+import AevonXCoreBridge
 
 // This file is kept for any future app-side terminal model extensions.
 // The main SSHTerminalLine is now in TerminalViewModel.swift.
