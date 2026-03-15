@@ -7,7 +7,6 @@
 
 import SwiftUI
 import AevonXCoreBridge
-import AevonXCore
 
 struct LoginView: View {
     @EnvironmentObject private var viewModel: AuthViewModel

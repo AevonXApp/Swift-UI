@@ -5,7 +5,6 @@
 
 import SwiftUI
 import AevonXCoreBridge
-import AevonXCore
 
 struct RemoteFleetHeader: View {
     @ObservedObject var viewModel: ServerListViewModel

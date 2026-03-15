@@ -5,7 +5,7 @@
 
 import SwiftUI
 import AevonXCoreBridge
-import AevonXCore
+
 import Combine
 
 @MainActor
@@ -31,7 +31,7 @@ class AddServerViewModel: ObservableObject {
     @Published var host = ""
     @Published var port = 22
     @Published var username = ""
-    @Published var authType: AevonXCore.AuthenticationType = .password
+    @Published var authType: AuthenticationType = .password
     @Published var password = ""
     @Published var privateKey = ""
     @Published var keyPassphrase = ""
@@ -39,11 +39,11 @@ class AddServerViewModel: ObservableObject {
     @Published var notes = ""
     
     // Icon and Color selection (from AevonXCore)
-    @Published var selectedIcon: AevonXCore.ServerIcon = .serverRack
-    @Published var selectedColor: AevonXCore.ServerColor = .blue
+    @Published var selectedIcon: ServerIcon = .serverRack
+    @Published var selectedColor: ServerColor = .blue
     
     @Published var isTesting = false
-    @Published var testResult: AevonXCore.ConnectionTestResult?
+    @Published var testResult: ConnectionTestResult?
     @Published var connectionProgress: ConnectionProgress?
     
     @Published var showError = false
@@ -97,7 +97,7 @@ class AddServerViewModel: ObservableObject {
         (authType == .password ? !password.isEmpty : !privateKey.isEmpty)
     }
     
-    func buildRequest() -> AevonXCore.AddServerRequest? {
+    func buildRequest() -> AddServerRequest? {
         guard isValid else { return nil }
         
         let tags = tagsText
@@ -105,7 +105,7 @@ class AddServerViewModel: ObservableObject {
             .map { $0.trimmingCharacters(in: .whitespaces) }
             .filter { !$0.isEmpty }
         
-        return AevonXCore.AddServerRequest(
+        return AddServerRequest(
             name: name,
             host: host,
             port: port,
@@ -158,7 +158,7 @@ class AddServerViewModel: ObservableObject {
               let rj = try? JSONSerialization.jsonObject(with: rd) as? [String: Any],
               rj["success"] as? Bool == true else {
             let errorMsg = connectResult.contains("\"error\"") ? "SSH authentication failed" : "Connection failed"
-            testResult = AevonXCore.ConnectionTestResult(success: false, message: errorMsg, stage: .failed)
+            testResult = ConnectionTestResult(success: false, message: errorMsg, stage: .failed)
             return
         }
         
@@ -181,7 +181,7 @@ class AddServerViewModel: ObservableObject {
             percentComplete: 1.0
         )
         
-        testResult = AevonXCore.ConnectionTestResult(
+        testResult = ConnectionTestResult(
             success: true,
             message: "Connection successful",
             stage: .complete,

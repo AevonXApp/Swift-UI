@@ -377,7 +377,6 @@ struct NginxProxySection: View {
         .clipShape(RoundedRectangle(cornerRadius: AXCornerRadius.lg))
     }
 
-
     private func loadUpstreams() async {
         isLoading = true
         let json = await bridge.listUpstreams(serverID: serverId, appID: "nginx")

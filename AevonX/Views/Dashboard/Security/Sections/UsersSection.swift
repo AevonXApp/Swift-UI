@@ -3,7 +3,7 @@
 //  AevonX
 //
 //  Users & Permissions section — system user audit.
-//  UI only — all data comes from SecurityManager in AevonXCore.
+//  UI only — all data comes from SecurityManager in 
 //
 
 import SwiftUI
@@ -100,8 +100,6 @@ struct UsersSection: View {
         }
         .task { await loadUsers() }
     }
-
-
 
     // MARK: - Load Data (from Core)
 

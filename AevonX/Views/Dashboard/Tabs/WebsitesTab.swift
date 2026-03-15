@@ -364,9 +364,6 @@ private struct WebsitesTabRow: View {
     }
 }
 
-
-
-
 #Preview {
     OldWebsitesTab()
         .padding()

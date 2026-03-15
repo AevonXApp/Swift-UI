@@ -8,9 +8,6 @@
 
 import SwiftUI
 import AevonXCoreBridge
-import AevonXCore
-
-// DashboardTab is now defined in ServerConnectionViewModel.swift
 
 struct ServerDashboardView: View {
     let server: Server

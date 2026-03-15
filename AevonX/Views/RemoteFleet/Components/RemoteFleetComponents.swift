@@ -109,7 +109,6 @@ struct TagChip: View {
         }
     }
 
-
 // MARK: - Filter Pill
 struct FilterPill: View {
     let title: String

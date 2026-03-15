@@ -6,7 +6,7 @@
 //
 
 import SwiftUI
-import AevonXCore       // GitService — not yet migrated to Go Core
+
 import AevonXCoreBridge
 import Combine
 

@@ -9,7 +9,7 @@
 
 import SwiftUI
 import AevonXCoreBridge
-import AevonXCore   // Still needed for AevonXCore.CoreWebsiteInfo (used by parent VM) and CoreLogger
+
 import Combine
 
 // MARK: - Server Websites ViewModel
@@ -21,7 +21,7 @@ public class ServerWebsitesViewModel: ObservableObject {
     // MARK: - Published Properties
     
     /// Array of websites on the server
-    @Published private(set) var websites: [AevonXCore.CoreWebsiteInfo] = []
+    @Published private(set) var websites: [AevonXCoreBridge.CoreWebsiteInfo] = []
     
     /// Whether websites are being loaded
     @Published private(set) var isLoading: Bool = false
@@ -63,7 +63,7 @@ public class ServerWebsitesViewModel: ObservableObject {
             // Step 3: Parse output via Go Core
             let parsedJSON = bridge.parseNginxSites(output: stdout)
             
-            // Step 4: Decode into AevonXCore.CoreWebsiteInfo array
+            // Step 4: Decode into CoreWebsiteInfo array
             if let data = parsedJSON.data(using: .utf8),
                let response = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
                response["success"] as? Bool == true,
@@ -71,9 +71,9 @@ public class ServerWebsitesViewModel: ObservableObject {
                JSONSerialization.isValidJSONObject(sitesData) {
                 let sitesJSON = try JSONSerialization.data(withJSONObject: sitesData)
                 if let sites = try? JSONDecoder().decode([SimpleSiteInfo].self, from: sitesJSON) {
-                    // Convert to AevonXCore.CoreWebsiteInfo for compatibility with parent VM
+                    // Convert to CoreWebsiteInfo for compatibility with parent VM
                     websites = sites.map { site in
-                        AevonXCore.CoreWebsiteInfo(
+                        AevonXCoreBridge.CoreWebsiteInfo(
                             name: site.domain,
                             domain: site.domain,
                             status: site.enabled ? .online : .offline,

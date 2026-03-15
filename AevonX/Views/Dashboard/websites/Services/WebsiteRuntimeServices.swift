@@ -471,7 +471,6 @@ public actor WebsiteLifecycleService {
 
 // MARK: - Database Management Service (stub)
 
-
 public struct CoreDatabaseInfo: Sendable {
     public let id: String
     public let name: String

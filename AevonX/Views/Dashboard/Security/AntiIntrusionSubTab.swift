@@ -194,8 +194,6 @@ struct AntiIntrusionSubTab: View {
         }
     }
 
-
-
     // MARK: - Jails
 
     private func filteredIPs(_ ips: [String]) -> [String] {

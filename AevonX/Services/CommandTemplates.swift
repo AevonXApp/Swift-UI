@@ -40,7 +40,6 @@ public enum CommandTemplate {
 
     case system(SystemCommand)
 
-
     // MARK: - Build Command
     
     /// Builds the actual command string for execution
@@ -500,8 +499,6 @@ public enum SystemCommand {
         }
     }
 }
-
-
 
 // MARK: - Path Sanitization
 

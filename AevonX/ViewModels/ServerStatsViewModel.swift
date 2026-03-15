@@ -1,6 +1,6 @@
 import SwiftUI
 import AevonXCoreBridge
-import AevonXCore
+
 import Combine
 
 // MARK: - Server Stats ViewModel
@@ -64,7 +64,7 @@ public class ServerStatsViewModel: ObservableObject {
     
     /// Polling interval from configuration
     private var pollingInterval: TimeInterval {
-        AevonXCore.InternalConfiguration.statsPollingInterval
+        InternalConfiguration.statsPollingInterval
     }
     
     /// Maximum history points to keep

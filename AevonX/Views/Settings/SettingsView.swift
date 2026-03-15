@@ -8,7 +8,6 @@
 import SwiftUI
 import AevonXCoreBridge
 
-
 struct SettingsView: View {
     @State private var selectedTab = 0
     
@@ -118,8 +117,6 @@ struct SettingsView: View {
         .frame(minWidth: 800, minHeight: 600)
     }
 }
-
-
 
 // MARK: - Settings Sections
 

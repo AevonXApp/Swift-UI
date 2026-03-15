@@ -257,8 +257,6 @@ private struct NetworkRow: View {
     }
 }
 
-
-
 private struct CreateNetworkSheet: View {
     @Binding var isOpen: Bool
     let onCreate: (String, String) -> Void

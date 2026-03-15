@@ -169,7 +169,6 @@ struct MetricsGrid: View {
         }
     }
 
-
 }
 
 struct PerformanceCard: View {
@@ -196,8 +195,6 @@ struct PerformanceCard: View {
         }
     }
 }
-
-
 
 struct StatColumn: View {
     let label: String
@@ -235,5 +232,4 @@ struct DBEMInfoRow: View {
         }
     }
 }
-
 

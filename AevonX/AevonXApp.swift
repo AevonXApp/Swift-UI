@@ -7,7 +7,6 @@
 
 import SwiftUI
 import AevonXCoreBridge
-import AevonXCore
 
 @main
 struct AevonXApp: App {
@@ -19,16 +18,16 @@ struct AevonXApp: App {
     
     init() {
         // Log app startup information
-        print("[AevonXApp] INFO: AevonX App Started - v\(AevonXCore.BuildConfiguration.appVersion) (\(AevonXCore.BuildConfiguration.buildNumber)) on \(AevonXCore.BuildConfiguration.platform)")
+        print("[AevonXApp] INFO: AevonX App Started - v\(BuildConfiguration.appVersion) (\(BuildConfiguration.buildNumber)) on \(BuildConfiguration.platform)")
         print("[AevonXApp] INFO: API URL: \(AevonXCoreBridge.ConfigurationManager.shared.currentConfiguration.fullBaseURL)")
         
-        // Inject API fetcher into AevonXCore.SubscriptionManager (breaks circular dependency)
-        // Inject Go SSH into AevonXCore.SystemControlService
+        // Inject API fetcher into SubscriptionManager (breaks circular dependency)
+        // Inject Go SSH into SystemControlService
         Task {
-            await AevonXCore.SubscriptionManager.shared.setApiFetcher { baseURL, token in
+            await SubscriptionManager.shared.setApiFetcher { baseURL, token in
                 await APIBridge.shared.fetchSubscriptionStatusAsync(baseURL: baseURL, token: token)
             }
-            await AevonXCore.SystemControlService.shared.setSSHService(SSHBridge.shared)
+            await SystemControlService.shared.setSSHService(SSHBridge.shared)
         }
         
         // Setup app lifecycle notifications
@@ -130,7 +129,7 @@ struct AevonXApp: App {
     
     /// Called when app enters foreground
     private func appWillEnterForeground() async {
-        AevonXCore.CoreLogger.shared.info("App entering foreground", module: "AppLifecycle")
+        CoreLogger.shared.info("App entering foreground", module: "AppLifecycle")
         
         // Resume any suspended operations
         await resumeBackgroundOperations()
@@ -138,7 +137,7 @@ struct AevonXApp: App {
     
     /// Called when app enters background
     private func appDidEnterBackground() async {
-        AevonXCore.CoreLogger.shared.info("App entering background", module: "AppLifecycle")
+        CoreLogger.shared.info("App entering background", module: "AppLifecycle")
         
         // Pause non-essential operations
         await pauseForegroundOperations()
@@ -205,13 +204,13 @@ struct AevonXApp: App {
     /// If the connection dies during sleep, ConnectionHealthMonitor will detect
     /// it on wake and trigger automatic reconnection.
     private func deviceWillSleep() async {
-        AevonXCore.CoreLogger.shared.info("Device going to sleep — keeping connections alive", module: "AppLifecycle")
+        CoreLogger.shared.info("Device going to sleep — keeping connections alive", module: "AppLifecycle")
     }
     
     /// Called when device wakes up
     /// Note: Connections will need to be manually reconnected by the user
     private func deviceDidWake() async {
-        AevonXCore.CoreLogger.shared.info("Device woke up - connections were disconnected during sleep", module: "AppLifecycle")
+        CoreLogger.shared.info("Device woke up - connections were disconnected during sleep", module: "AppLifecycle")
         // TODO: Implement suspend/resume in SSHConnectionService if needed
         // For now, connections were disconnected during sleep and need manual reconnection
     }
@@ -220,7 +219,7 @@ struct AevonXApp: App {
     
     /// Called when app is about to terminate
     private func appWillTerminate() async {
-        AevonXCore.CoreLogger.shared.info("App terminating - cleaning up connections", module: "AppLifecycle")
+        CoreLogger.shared.info("App terminating - cleaning up connections", module: "AppLifecycle")
         
         // Disconnect all SSH connections via Go Core
         CoreBridge.shared.shutdown()
@@ -230,7 +229,7 @@ struct AevonXApp: App {
     
     /// Called when user logs out
     private func handleUserLogout() async {
-        AevonXCore.CoreLogger.shared.info("User logged out - clearing connections", module: "AppLifecycle")
+        CoreLogger.shared.info("User logged out - clearing connections", module: "AppLifecycle")
         
         // Disconnect all SSH connections via Go Core
         CoreBridge.shared.shutdown()
@@ -241,13 +240,13 @@ struct AevonXApp: App {
     /// Resumes operations that were paused in background
     private func resumeBackgroundOperations() async {
         // Resume stats polling, etc.
-        AevonXCore.CoreLogger.shared.debug("Resuming background operations", module: "AppLifecycle")
+        CoreLogger.shared.debug("Resuming background operations", module: "AppLifecycle")
     }
     
     /// Pauses operations when entering background
     private func pauseForegroundOperations() async {
         // Pause stats polling, etc.
-        AevonXCore.CoreLogger.shared.debug("Pausing foreground operations", module: "AppLifecycle")
+        CoreLogger.shared.debug("Pausing foreground operations", module: "AppLifecycle")
     }
 }
 

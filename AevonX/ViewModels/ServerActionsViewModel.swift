@@ -9,7 +9,6 @@
 import SwiftUI
 import Combine
 import AevonXCoreBridge
-import AevonXCore
 
 @MainActor
 public class ServerActionsViewModel: ObservableObject {
@@ -25,7 +24,7 @@ public class ServerActionsViewModel: ObservableObject {
     // MARK: - Private Properties
     
     private let serverId: String
-    private let sshService: any AevonXCore.SSHServiceProtocol = SSHBridge.shared
+    private let sshService: any AevonXCoreBridge.SSHServiceProtocol = SSHBridge.shared
     
     /// Callback to trigger disconnect (set by parent)
     var onDisconnectNeeded: (() async -> Void)?
@@ -72,7 +71,7 @@ public class ServerActionsViewModel: ObservableObject {
         AevonXCoreBridge.CoreLogger.shared.warning("Initiating server reboot...", module: "ServerActions")
         
         do {
-            try await AevonXCore.SystemControlService.shared.reboot(serverId: serverId)
+            try await SystemControlService.shared.reboot(serverId: serverId)
             await onDisconnectNeeded?()
         } catch {
             AevonXCoreBridge.CoreLogger.shared.error("Failed to reboot server: \(error.localizedDescription)", module: "ServerActions")
@@ -87,7 +86,7 @@ public class ServerActionsViewModel: ObservableObject {
         AevonXCoreBridge.CoreLogger.shared.warning("Initiating server shutdown...", module: "ServerActions")
         
         do {
-            try await AevonXCore.SystemControlService.shared.shutdown(serverId: serverId)
+            try await SystemControlService.shared.shutdown(serverId: serverId)
             await onDisconnectNeeded?()
         } catch {
             AevonXCoreBridge.CoreLogger.shared.error("Failed to shutdown server: \(error.localizedDescription)", module: "ServerActions")
@@ -97,7 +96,7 @@ public class ServerActionsViewModel: ObservableObject {
     
     // MARK: - Private
     
-    private func executeCommand(_ command: CommandTemplate) async throws -> AevonXCore.SSHCommandResult {
+    private func executeCommand(_ command: CommandTemplate) async throws -> AevonXCoreBridge.SSHCommandResult {
         let commandString = command.build()
         return try await sshService.execute(commandString, serverId: serverId)
     }

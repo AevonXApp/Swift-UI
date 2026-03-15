@@ -910,8 +910,6 @@ struct SSHSubTab: View {
 
     // MARK: - Helpers
 
-
-
     private func toggleRow(icon: String, label: String, isOn: Binding<Bool>, color: Color, onChange: @escaping () -> Void) -> some View {
         HStack(spacing: AXSpacing.md) {
             Image(systemName: icon)

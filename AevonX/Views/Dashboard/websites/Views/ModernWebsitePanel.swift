@@ -1070,7 +1070,6 @@ struct ModernWebsitePanel: View {
         }
     }
 
-
     private var trafficControlView: some View {
         ScrollView(showsIndicators: false) {
             VStack(alignment: .leading, spacing: AXSpacing.xl) {
@@ -1165,7 +1164,6 @@ struct ModernWebsitePanel: View {
             genericRuntimeView
         }
     }
-
 
     // MARK: - Python Config View
 

@@ -281,7 +281,6 @@ struct FirewallSubTab: View {
         }
     }
 
-
     // MARK: - Rule Templates (Phase 2)
 
     private struct RuleTemplate: Identifiable {

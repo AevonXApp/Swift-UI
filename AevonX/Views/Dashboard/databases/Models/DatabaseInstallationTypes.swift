@@ -4,7 +4,6 @@
 //
 //  Local type definitions for database installation types.
 //  These replace the types from AIInstallationAPIService.swift (AevonXCore).
-//  NO import AevonXCore — fully self-contained.
 //
 
 import Foundation

@@ -8,7 +8,6 @@
 
 import Foundation
 
-
 // MARK: - URL Rewrite Rule (local definition)
 
 public struct URLRewriteRule: Codable, Sendable, Hashable, Equatable, Identifiable {

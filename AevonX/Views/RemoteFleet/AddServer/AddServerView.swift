@@ -7,14 +7,13 @@
 
 import SwiftUI
 import AevonXCoreBridge
-import AevonXCore
 
 struct AddServerView: View {
     @Environment(\.dismiss) private var dismiss
     @StateObject private var viewModel = AddServerViewModel()
     @State private var showContent = false
     
-    var onSave: (AevonXCore.AddServerRequest) -> Void
+    var onSave: (AddServerRequest) -> Void
     
     var body: some View {
         ZStack {

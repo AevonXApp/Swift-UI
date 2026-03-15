@@ -17,7 +17,6 @@ struct DBSQLConsoleSection: View {
     @State private var hoveredResultRow: Int? = nil
     @State private var copiedResultCell: String? = nil
 
-
     /// Check if a QueryResult contains an error returned as data by MySQL
     private func resultContainsError(_ result: QueryResult) -> Bool {
         if result.rows.isEmpty {

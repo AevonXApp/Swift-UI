@@ -5,12 +5,11 @@
 
 import SwiftUI
 import AevonXCoreBridge
-import AevonXCore
 
 struct InstalledPluginsView: View {
     let serverId: String?
     @StateObject private var viewModel = PluginsViewModel()
-    @State private var selectedPlugin: AevonXCore.Plugin?
+    @State private var selectedPlugin: Plugin?
     @State private var showConfig = false
     
     var body: some View {
@@ -74,7 +73,7 @@ struct InstalledPluginsView: View {
 }
 
 struct InstalledPluginRow: View {
-    let plugin: AevonXCore.Plugin
+    let plugin: Plugin
     let onConfigure: () -> Void
     let onUninstall: () -> Void
     
@@ -136,10 +135,10 @@ private struct UninstallButton: View {
                 .cornerRadius(AXCornerRadius.sm)
         }
         .buttonStyle(PlainButtonStyle())
-        .help("Uninstall AevonXCore.Plugin")
+        .help("Uninstall Plugin")
         .alert(isPresented: $showConfirmation) {
             Alert(
-                title: Text("Uninstall AevonXCore.Plugin"),
+                title: Text("Uninstall Plugin"),
                 message: Text("Are you sure you want to uninstall this plugin? This action cannot be undone."),
                 primaryButton: .destructive(Text("Uninstall"), action: onUninstall),
                 secondaryButton: .cancel()

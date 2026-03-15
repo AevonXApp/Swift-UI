@@ -5,16 +5,15 @@
 
 import SwiftUI
 import AevonXCoreBridge
-import AevonXCore
 
 struct RemoteFleetListView: View {
-    let servers: [AevonXCore.ServerViewModel]
+    let servers: [ServerViewModel]
     @Binding var selectedServer: Server?
     @Binding var showServerDashboard: Bool
     @ObservedObject var viewModel: ServerListViewModel
-    let onConnect: (AevonXCore.ServerViewModel) -> Void
-    let onEdit: (AevonXCore.ServerViewModel) -> Void
-    let onDelete: (AevonXCore.ServerViewModel) -> Void
+    let onConnect: (ServerViewModel) -> Void
+    let onEdit: (ServerViewModel) -> Void
+    let onDelete: (ServerViewModel) -> Void
 
     var body: some View {
         LazyVStack(spacing: 0) {
@@ -48,7 +47,7 @@ struct RemoteFleetListView: View {
         .padding(.vertical, AXSpacing.lg)
     }
     
-    private func navigateToServer(_ server: AevonXCore.ServerViewModel) async {
+    private func navigateToServer(_ server: ServerViewModel) async {
         let fullServer = Server(
             name: server.name,
             host: server.host,

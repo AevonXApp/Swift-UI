@@ -9,10 +9,6 @@
 import SwiftUI
 import AevonXCoreBridge
 
-
-
-
-
 // MARK: - Info Grid
 
 struct InfoGrid: View {
@@ -46,8 +42,6 @@ struct InfoGrid: View {
         )
     }
 }
-
-
 
 // MARK: - SSL Overview Card
 
@@ -218,9 +212,6 @@ struct ConnectionRow: View {
     }
 }
 
-
-
-
 struct EmptyStateCard: View {
     let icon: String
     let title: String
@@ -253,5 +244,4 @@ struct EmptyStateCard: View {
         )
     }
 }
-
 

@@ -112,7 +112,6 @@ enum EnhancedLogParser {
         return raw
     }
 
-
     // MARK: - Badges
 
     static func levelColor(_ level: String) -> Color {

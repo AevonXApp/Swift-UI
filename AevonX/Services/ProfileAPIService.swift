@@ -10,7 +10,6 @@ import Foundation
 import Combine
 import AevonXCoreBridge
 
-
 // MARK: - User Session Model
 
 public struct UserSession: Codable, Identifiable {

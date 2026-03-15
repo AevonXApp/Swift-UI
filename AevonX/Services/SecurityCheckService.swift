@@ -114,7 +114,6 @@ public struct AntiDebugResult: Sendable {
     }
 }
 
-
 /// Types of debuggers that may be detected
 public enum DebuggerType: String {
     case lldb = "LLDB"

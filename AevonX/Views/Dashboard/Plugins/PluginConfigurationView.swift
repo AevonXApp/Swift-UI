@@ -6,7 +6,6 @@
 
 import SwiftUI
 import AevonXCoreBridge
-import AevonXCore
 
 struct PluginConfigurationView: View {
     @StateObject var viewModel: PluginConfigurationViewModel
@@ -243,7 +242,7 @@ struct PluginConfigurationView: View {
     }
     
     @ViewBuilder
-    private func fieldRow(for field: AevonXCore.ConfigField, in section: AevonXCore.ConfigSection) -> some View {
+    private func fieldRow(for field: ConfigField, in section: ConfigSection) -> some View {
         VStack(alignment: .leading, spacing: AXSpacing.sm) {
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 2) {
@@ -354,7 +353,7 @@ struct PluginConfigurationView: View {
         .padding(.vertical, 4)
     }
     
-    private func updateField(sectionId: String, fieldId: String, value: AevonXCore.ConfigValue) {
+    private func updateField(sectionId: String, fieldId: String, value: ConfigValue) {
         if let sectionIndex = viewModel.config.configSchema.firstIndex(where: { $0.id == sectionId }),
            let fieldIndex = viewModel.config.configSchema[sectionIndex].fields.firstIndex(where: { $0.id == fieldId }) {
             viewModel.config.configSchema[sectionIndex].fields[fieldIndex].value = value

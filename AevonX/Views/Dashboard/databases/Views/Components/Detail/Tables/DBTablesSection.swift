@@ -370,7 +370,6 @@ private struct PremiumTableRow: View {
                         .cornerRadius(AXCornerRadius.sm)
                 }
 
-
             }
             .padding(.leading, AXSpacing.sm)
             .padding(.trailing, AXSpacing.xxl)

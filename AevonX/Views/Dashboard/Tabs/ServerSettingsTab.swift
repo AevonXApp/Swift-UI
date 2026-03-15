@@ -419,7 +419,6 @@ struct ServerSettingsTab: View {
         }
     }
 
-
     // MARK: - Services
 
     private var servicesCard: some View {

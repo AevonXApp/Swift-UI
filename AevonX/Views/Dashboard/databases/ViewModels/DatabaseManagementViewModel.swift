@@ -81,7 +81,6 @@ public final class DatabaseManagementViewModel: ObservableObject {
     /// Show engine detail view
     @Published public var showEngineDetail = false
 
-
     public enum DatabaseViewMode: String, CaseIterable, Identifiable {
         case grid, list
         public var id: String { self.rawValue }
@@ -113,8 +112,6 @@ public final class DatabaseManagementViewModel: ObservableObject {
         self.connectionViewModel = connectionViewModel
 
     }
-
-
 
     // MARK: - Data Loading
 
@@ -421,7 +418,6 @@ public final class DatabaseManagementViewModel: ObservableObject {
     public func installationState(for type: DatabaseType) -> DatabaseInstallationState? {
         return installationStates.first { $0.type == type }
     }
-
 
     // MARK: - Statistics
 

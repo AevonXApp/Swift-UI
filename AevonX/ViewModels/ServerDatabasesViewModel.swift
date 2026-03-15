@@ -8,7 +8,7 @@
 
 import SwiftUI
 import AevonXCoreBridge
-import AevonXCore
+
 import Combine
 
 // MARK: - Server Databases ViewModel
@@ -42,11 +42,11 @@ public class ServerDatabasesViewModel: ObservableObject {
     // MARK: - Private Properties
     
     private let serverId: String
-    private let sshService: any AevonXCore.SSHServiceProtocol
+    private let sshService: any AevonXCoreBridge.SSHServiceProtocol
     
     // MARK: - Initialization
     
-    init(serverId: String, sshService: any AevonXCore.SSHServiceProtocol = SSHBridge.shared) {
+    init(serverId: String, sshService: any AevonXCoreBridge.SSHServiceProtocol = SSHBridge.shared) {
         self.serverId = serverId
         self.sshService = sshService
     }

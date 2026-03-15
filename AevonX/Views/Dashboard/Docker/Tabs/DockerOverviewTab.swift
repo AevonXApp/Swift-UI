@@ -313,8 +313,6 @@ struct DockerOverviewTab: View {
 
 // MARK: - Subviews
 
-
-
     private struct DockerInfoRow: View {
         let label: String
         let value: String

@@ -3,7 +3,7 @@
 //  AevonX
 //
 //  AI Security Assistant — AI-powered threat analysis.
-//  UI only — all data comes from SecurityManager in AevonXCore.
+//  UI only — all data comes from SecurityManager in 
 //
 
 import SwiftUI
@@ -370,8 +370,6 @@ struct AISecuritySection: View {
     }
 
     // MARK: - Helpers
-
-
 
     private func attackerColor(_ count: Int) -> Color {
         if count > 1000 { return .axError }

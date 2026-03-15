@@ -5,7 +5,7 @@
 
 import SwiftUI
 import AevonXCoreBridge
-import AevonXCore
+
 import UniformTypeIdentifiers
 
 // MARK: - Identity Step
@@ -46,7 +46,7 @@ struct AddServerIdentityStep: View {
                     
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: AXSpacing.sm) {
-                            ForEach(AevonXCore.ServerIcon.allCases) { icon in
+                            ForEach(ServerIcon.allCases) { icon in
                                 Button {
                                     viewModel.selectedIcon = icon
                                 } label: {
@@ -77,7 +77,7 @@ struct AddServerIdentityStep: View {
                     }
                     
                     HStack(spacing: AXSpacing.sm) {
-                        ForEach(AevonXCore.ServerColor.allCases) { color in
+                        ForEach(ServerColor.allCases) { color in
                             Button {
                                 viewModel.selectedColor = color
                             } label: {

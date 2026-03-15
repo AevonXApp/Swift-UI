@@ -5,7 +5,6 @@
 
 import SwiftUI
 import AevonXCoreBridge
-import AevonXCore
 
 struct DashboardSidebar: View {
     let server: Server
@@ -81,7 +80,7 @@ struct DashboardSidebar: View {
                         )
                     }
 
-                    // AevonXCore.Plugin-injected sidebar tabs
+                    // Plugin-injected sidebar tabs
                     let pluginTabs = hookRegistry.plugins(for: .sidebarTabs)
                     if !pluginTabs.isEmpty {
                         Divider()
@@ -217,11 +216,11 @@ private struct SidebarNavRow: View {
                 Spacer()
 
                 if isPlugin {
-                    // AevonXCore.Plugin badge
+                    // Plugin badge
                     HStack(spacing: 2) {
                         Image(systemName: "puzzlepiece.fill")
                             .font(.system(size: 7))
-                        Text("AevonXCore.Plugin")
+                        Text("Plugin")
                             .font(.system(size: 8, weight: .medium))
                     }
                     .foregroundColor(.axTextMuted)

@@ -9,9 +9,6 @@
 import SwiftUI
 import Combine
 import AevonXCoreBridge
-import AevonXCore
-
-// MARK: - Plugin Notification Model
 
 public struct PluginNotification: Identifiable {
     public let id = UUID()

@@ -7,7 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		F84AF3002F3436FC00D4EFFC /* AevonXCore in Frameworks */ = {isa = PBXBuildFile; productRef = F81340062F343679008D069B /* AevonXCore */; };
 		F86F50BD2F5CB08900DA237A /* AevonXCoreBridge in Frameworks */ = {isa = PBXBuildFile; productRef = F86F50BC2F5CB08900DA237A /* AevonXCoreBridge */; };
 /* End PBXBuildFile section */
 
@@ -41,7 +40,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				F84AF3002F3436FC00D4EFFC /* AevonXCore in Frameworks */,
 				F86F50BD2F5CB08900DA237A /* AevonXCoreBridge in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -95,7 +93,6 @@
 			);
 			name = AevonX;
 			packageProductDependencies = (
-				F81340062F343679008D069B /* AevonXCore */,
 				F86F50BC2F5CB08900DA237A /* AevonXCoreBridge */,
 			);
 			productName = AevonX;
@@ -127,7 +124,6 @@
 			mainGroup = F865D4012F2C555300A29BB5;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				F81340052F343679008D069B /* XCLocalSwiftPackageReference "../AevonXCore" */,
 				F86F50BB2F5CB08900DA237A /* XCLocalSwiftPackageReference "../core-go" */,
 			);
 			preferredProjectObjectVersion = 77;
@@ -394,10 +390,6 @@
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
-		F81340052F343679008D069B /* XCLocalSwiftPackageReference "../AevonXCore" */ = {
-			isa = XCLocalSwiftPackageReference;
-			relativePath = ../AevonXCore;
-		};
 		F86F50BB2F5CB08900DA237A /* XCLocalSwiftPackageReference "../core-go" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = "../core-go";
@@ -405,11 +397,6 @@
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		F81340062F343679008D069B /* AevonXCore */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = F81340052F343679008D069B /* XCLocalSwiftPackageReference "../AevonXCore" */;
-			productName = AevonXCore;
-		};
 		F86F50BC2F5CB08900DA237A /* AevonXCoreBridge */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = AevonXCoreBridge;

@@ -5,22 +5,20 @@
 
 import SwiftUI
 import AevonXCoreBridge
-import AevonXCore
 
-// Resolve ambiguity between AevonXCore and AevonXCoreBridge types
-fileprivate typealias SVM = AevonXCore.ServerViewModel
-fileprivate typealias ASR = AevonXCore.AddServerRequest
-fileprivate typealias AT = AevonXCore.AuthenticationType
-fileprivate typealias SI = AevonXCore.ServerIcon
-fileprivate typealias SC = AevonXCore.ServerColor
-fileprivate typealias ESPayload = AevonXCore.EncryptedServerPayload
-fileprivate typealias EMeta = AevonXCore.EncryptionMetadata
-fileprivate typealias ESData = AevonXCore.EncryptedServerData
+fileprivate typealias SVM = ServerViewModel
+fileprivate typealias ASR = AddServerRequest
+fileprivate typealias AT = AuthenticationType
+fileprivate typealias SI = ServerIcon
+fileprivate typealias SC = ServerColor
+fileprivate typealias ESPayload = EncryptedServerPayload
+fileprivate typealias EMeta = EncryptionMetadata
+fileprivate typealias ESData = EncryptedServerData
 
 struct EditServerView: View {
     @Environment(\.dismiss) private var dismiss
-    let server: AevonXCore.ServerViewModel
-    let onSave: (AevonXCore.AddServerRequest) -> Void
+    let server: ServerViewModel
+    let onSave: (AddServerRequest) -> Void
 
     @State private var name: String = ""
     @State private var host: String = ""

@@ -8,7 +8,6 @@
 import SwiftUI
 import Combine
 import AevonXCoreBridge
-import AevonXCore
 
 enum SubscriptionTier: String {
     case free = "Free"
@@ -109,7 +108,7 @@ struct LoggedInView: View {
     
     // User info from auth view model
     private var userName: String {
-        authViewModel.currentUser?.name ?? "AevonXCore.User"
+        authViewModel.currentUser?.name ?? "User"
     }
     
     private var userEmail: String {
@@ -312,7 +311,6 @@ struct LoggedInView: View {
         }
     }
 }
-
 
 // MARK: - Account Tab (Real Data)
 
@@ -1357,7 +1355,6 @@ struct EncryptionFeatureRow: View {
         }
     }
 }
-
 
 #Preview {
     ProfileView()

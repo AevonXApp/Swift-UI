@@ -3,7 +3,7 @@
 //  AevonX
 //
 //  App-side ANSI parser — bridges Core's ANSIParserCore/ANSIColorCode to SwiftUI Colors.
-//  The core parsing logic lives in AevonXCore.ANSIParserCore.
+//  The core parsing logic lives in ANSIParserCore.
 //
 
 import Foundation

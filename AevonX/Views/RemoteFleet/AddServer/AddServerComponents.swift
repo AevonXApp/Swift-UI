@@ -5,9 +5,7 @@
 
 import SwiftUI
 import AevonXCoreBridge
-import AevonXCore
 
-// MARK: - Glass Card Component
 struct GlassCard<Content: View>: View {
     let icon: String
     let title: String
@@ -153,7 +151,7 @@ struct PremiumSecureField: View {
 
 // MARK: - Auth Type Picker
 struct AuthTypePicker: View {
-    @Binding var selection: AevonXCore.AuthenticationType
+    @Binding var selection: AuthenticationType
     
     var body: some View {
         HStack(spacing: 0) {
@@ -168,7 +166,7 @@ struct AuthTypePicker: View {
         )
     }
     
-    private func authOption(type: AevonXCore.AuthenticationType, icon: String, label: String) -> some View {
+    private func authOption(type: AuthenticationType, icon: String, label: String) -> some View {
         Button {
             withAnimation(.spring(response: 0.3)) {
                 selection = type
@@ -262,7 +260,7 @@ struct PremiumProgressView: View {
 
 // MARK: - Premium Result View
 struct PremiumResultView: View {
-    let result: AevonXCore.ConnectionTestResult
+    let result: ConnectionTestResult
     
     var body: some View {
         HStack(spacing: AXSpacing.md) {

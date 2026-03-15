@@ -3,7 +3,7 @@
 //  AevonX
 //
 //  GeoIP / Attack Source analysis.
-//  UI only — all data comes from SecurityManager in AevonXCore.
+//  UI only — all data comes from SecurityManager in 
 //
 
 import SwiftUI

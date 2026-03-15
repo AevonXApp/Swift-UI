@@ -11,7 +11,7 @@
 
 import SwiftUI
 import AevonXCoreBridge
-import AevonXCore
+
 import Combine
 
 // MARK: - Bridge Response Models
@@ -343,7 +343,7 @@ public final class QuickInstallViewModel: ObservableObject {
             profile = existing
         } else {
             AevonXCoreBridge.CoreLogger.shared.info("serverProfile nil — detecting now", module: "QuickInstall")
-            let detector = AevonXCore.CapabilityDetector(sshService: SSHBridge.shared)
+            let detector = AevonXCoreBridge.CapabilityDetector(sshService: SSHBridge.shared)
             do {
                 let coreProfile = try await detector.detect(serverId: serverId)
                 let detected = try JSONDecoder().decode(AevonXCoreBridge.ServerProfile.self, from: JSONEncoder().encode(coreProfile))

@@ -5,26 +5,26 @@
 
 import SwiftUI
 import AevonXCoreBridge
-import AevonXCore
+
 import Combine
 
 @MainActor
 class PluginsViewModel: ObservableObject {
-    @Published var plugins: [AevonXCore.Plugin] = []
-    @Published var categories: [AevonXCore.PluginCategory] = []
+    @Published var plugins: [Plugin] = []
+    @Published var categories: [PluginCategory] = []
     @Published var isLoading = false
     @Published var errorMessage: String?
     @Published var searchQuery = ""
     @Published var selectedPricing: String? = nil
     @Published var selectedCategory: String? = nil   // slug
     
-    @Published var installedPlugins: [AevonXCore.Plugin] = []
+    @Published var installedPlugins: [Plugin] = []
     @Published var installationProgress: [String: Double] = [:] // pluginId: progress
     @Published var installationStatus: [String: String] = [:]   // pluginId: status message
-    @Published var installSources: [String: AevonXCore.InstallSource] = [:] // slug: source
+    @Published var installSources: [String: InstallSource] = [:] // slug: source
     
-    private let apiService = AevonXCore.PluginAPIService.shared   // only for downloadPluginFile
-    private let pluginManager = AevonXCore.PluginManager.shared
+    private let apiService = PluginAPIService.shared   // only for downloadPluginFile
+    private let pluginManager = PluginManager.shared
     private let apiBridge = APIBridge.shared
     private var cancellables = Set<AnyCancellable>()
     
@@ -56,7 +56,7 @@ class PluginsViewModel: ObservableObject {
             fmt.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSZ"
             fmt.locale = Locale(identifier: "en_US_POSIX")
             decoder.dateDecodingStrategy = .formatted(fmt)
-            self.plugins = (try? decoder.decode([AevonXCore.Plugin].self, from: pluginsJSON)) ?? []
+            self.plugins = (try? decoder.decode([Plugin].self, from: pluginsJSON)) ?? []
         } else {
             self.errorMessage = "Failed to load plugins: \(extractGoError(resultJSON))"
         }
@@ -75,13 +75,13 @@ class PluginsViewModel: ObservableObject {
             fmt.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSZ"
             fmt.locale = Locale(identifier: "en_US_POSIX")
             decoder.dateDecodingStrategy = .formatted(fmt)
-            self.categories = (try? decoder.decode([AevonXCore.PluginCategory].self, from: catsJSON)) ?? []
+            self.categories = (try? decoder.decode([PluginCategory].self, from: catsJSON)) ?? []
         } else {
             AevonXCoreBridge.CoreLogger.shared.error("Failed to load categories via Go", module: "PluginsViewModel")
         }
     }
     
-    func installPlugin(_ plugin: AevonXCore.Plugin, version: AevonXCore.PluginVersion? = nil, on serverId: String) async {
+    func installPlugin(_ plugin: Plugin, version: PluginVersion? = nil, on serverId: String) async {
         guard !installationProgress.keys.contains(plugin.id) else { return }
         
         let targetVersion = version ?? plugin.activeVersion
@@ -138,7 +138,7 @@ class PluginsViewModel: ObservableObject {
             installationStatus.removeValue(forKey: plugin.id)
             
         } catch {
-            AevonXCoreBridge.CoreLogger.shared.error("AevonXCore.Plugin installation failed: \(error.localizedDescription)", module: "PluginsViewModel")
+            AevonXCoreBridge.CoreLogger.shared.error("Plugin installation failed: \(error.localizedDescription)", module: "PluginsViewModel")
             errorMessage = "Installation failed: \(error.localizedDescription)"
             installationStatus[plugin.id] = "Failed"
             installationProgress.removeValue(forKey: plugin.id)
@@ -159,14 +159,14 @@ class PluginsViewModel: ObservableObject {
             let (installedSlugs, sources) = try await (slugsTask, sourcesTask)
             self.installSources = sources
             
-            var matchedPlugins: [AevonXCore.Plugin] = []
+            var matchedPlugins: [Plugin] = []
             for slug in installedSlugs {
                 if let existing = plugins.first(where: { $0.slug == slug }) {
                     matchedPlugins.append(existing)
                 } else {
-                    // Create a stub AevonXCore.Plugin for installed plugins not in marketplace
+                    // Create a stub Plugin for installed plugins not in marketplace
                     // so they still appear in the installed list
-                    let stub = AevonXCore.Plugin(
+                    let stub = Plugin(
                         id: slug,
                         name: slug,
                         slug: slug,
@@ -198,7 +198,7 @@ class PluginsViewModel: ObservableObject {
         }
     }
     
-    func uninstallPlugin(_ plugin: AevonXCore.Plugin, on serverId: String) async {
+    func uninstallPlugin(_ plugin: Plugin, on serverId: String) async {
         guard !installationProgress.keys.contains(plugin.id) else { return }
         
         installationStatus[plugin.id] = "Uninstalling..."
@@ -222,7 +222,7 @@ class PluginsViewModel: ObservableObject {
             installationStatus.removeValue(forKey: plugin.id)
             
         } catch {
-            AevonXCoreBridge.CoreLogger.shared.error("AevonXCore.Plugin uninstallation failed: \(error.localizedDescription)", module: "PluginsViewModel")
+            AevonXCoreBridge.CoreLogger.shared.error("Plugin uninstallation failed: \(error.localizedDescription)", module: "PluginsViewModel")
             errorMessage = "Uninstallation failed: \(error.localizedDescription)"
             installationStatus[plugin.id] = "Failed"
             installationProgress.removeValue(forKey: plugin.id)

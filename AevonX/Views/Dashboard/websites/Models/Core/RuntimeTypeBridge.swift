@@ -2,13 +2,13 @@
 //  RuntimeTypeBridge.swift
 //  AevonX
 //
-//  Local definitions for types previously imported from AevonXCore.
+//  Local definitions for types previously imported from 
 //  These are used in Websites UI Runtime components.
 //
 
 import Foundation
 
-// MARK: - Core Runtime Type (was AevonXCore.CoreRuntimeType)
+// MARK: - Core Runtime Type (was CoreRuntimeType)
 
 public enum CoreRuntimeType: String, Codable, Sendable {
     case php = "PHP"
@@ -19,7 +19,7 @@ public enum CoreRuntimeType: String, Codable, Sendable {
     case docker = "Docker"
 }
 
-// MARK: - Environment Variable (was AevonXCore.EnvironmentVariable)
+// MARK: - Environment Variable (was EnvironmentVariable)
 
 public struct EnvironmentVariable: Identifiable, Codable, Sendable, Hashable {
     public let id: UUID
@@ -35,7 +35,7 @@ public struct EnvironmentVariable: Identifiable, Codable, Sendable, Hashable {
     }
 }
 
-// MARK: - Package.json Model (was AevonXCore.PackageJSON)
+// MARK: - Package.json Model (was PackageJSON)
 
 public struct PackageJSON: Codable, Sendable {
     public let name: String?
@@ -70,7 +70,7 @@ public struct PackageJSON: Codable, Sendable {
     }
 }
 
-// MARK: - PM2 Process (was AevonXCore.PM2Process)
+// MARK: - PM2 Process (was PM2Process)
 
 public struct PM2Process: Codable, Sendable, Identifiable {
     public let id: Int
@@ -113,5 +113,4 @@ public struct PM2Process: Codable, Sendable, Identifiable {
         return "\(minutes)m"
     }
 }
-
 

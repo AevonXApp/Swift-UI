@@ -83,8 +83,6 @@ struct DBEDOverviewTab: View {
         }
     }
 
-
-
     // MARK: - Performance Card
 
     private func performanceCard(stats: PerformanceStatistics) -> some View {
@@ -126,8 +124,6 @@ private struct DBInfoRow: View {
         }
     }
 }
-
-
 
 private struct DBStatItem: View {
     let label: String

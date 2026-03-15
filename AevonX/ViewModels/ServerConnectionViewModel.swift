@@ -8,7 +8,7 @@
 
 import SwiftUI
 import AevonXCoreBridge
-import AevonXCore
+
 import Combine
 
 // MARK: - Reconnection Tier
@@ -78,7 +78,7 @@ enum DashboardTab: String, CaseIterable, Identifiable {
     }
 }
 
-/// A dynamically injected sidebar tab from the Hook & AevonXCore.Plugin System
+/// A dynamically injected sidebar tab from the Hook & Plugin System
 struct PluginSidebarTab: Identifiable, Equatable {
     let id: String        // plugin.id
     let name: String      // plugin.name
@@ -88,7 +88,7 @@ struct PluginSidebarTab: Identifiable, Equatable {
 
 /// Navigation destinations for the dashboard detail area
 enum DashboardDestination: Hashable {
-    case pluginConfig(AevonXCore.Plugin)
+    case pluginConfig(Plugin)
 }
 
 // MARK: - Server Connection ViewModel
@@ -129,7 +129,7 @@ public class ServerConnectionViewModel: ObservableObject {
     @Published private(set) var reconnectionAttempt: Int = 0
     
     /// Maximum reconnection attempts
-    @Published private(set) var reconnectionMaxAttempts: Int = AevonXCore.InternalConfiguration.reconnectionMaxAttempts
+    @Published private(set) var reconnectionMaxAttempts: Int = InternalConfiguration.reconnectionMaxAttempts
     
     /// Human-readable reason for disconnection
     @Published private(set) var reconnectionReason: String?
@@ -182,7 +182,7 @@ public class ServerConnectionViewModel: ObservableObject {
         set { databasesVM.viewMode = newValue }
     }
     
-    var websites: [AevonXCore.CoreWebsiteInfo] { websitesVM.websites }
+    var websites: [AevonXCoreBridge.CoreWebsiteInfo] { websitesVM.websites }
     var websiteCount: Int { websitesVM.count > 0 ? websitesVM.count : websiteInventoryCount }
     var databaseCount: Int { databasesVM.databases.count > 0 ? databasesVM.databases.count : databaseInventoryCount }
     var isLoadingWebsites: Bool { websitesVM.isLoading }
@@ -208,7 +208,7 @@ public class ServerConnectionViewModel: ObservableObject {
     @Published var navigationPath = NavigationPath()
 
     /// Active plugin configuration being shown (replaces NavigationStack navigation)
-    @Published var activeConfigPlugin: AevonXCore.Plugin? = nil
+    @Published var activeConfigPlugin: Plugin? = nil
 
     /// Quick Install ViewModel — persists across tab navigation so bubble stays visible
     @Published var quickInstallVM: QuickInstallViewModel? = nil
@@ -256,7 +256,7 @@ public class ServerConnectionViewModel: ObservableObject {
     private let serverId: String
     
     /// SSH service backed by Go Core — used by strategies and detectors
-    private let sshService: any AevonXCore.SSHServiceProtocol = SSHBridge.shared
+    private let sshService: any AevonXCoreBridge.SSHServiceProtocol = SSHBridge.shared
     
     /// Server profile (detected capabilities: OS, init system, package manager)
     @Published private(set) var serverProfile: AevonXCoreBridge.ServerProfile?
@@ -387,7 +387,7 @@ public class ServerConnectionViewModel: ObservableObject {
             connectionStage = .decrypting
             connectionProgress = 0.5
             let serverData = try await ServerEncryptionService.shared.decryptServer(
-                AevonXCore.EncryptedServerData.self,
+                EncryptedServerData.self,
                 from: serverPayload
             )
             
@@ -426,13 +426,15 @@ public class ServerConnectionViewModel: ObservableObject {
             // Detect server capabilities (OS, init system, package manager)
             Task {
                 do {
-                    let detector = AevonXCore.CapabilityDetector(sshService: sshService)
+                    let detector = AevonXCoreBridge.CapabilityDetector(sshService: SSHBridge.shared)
                     let coreProfile = try await detector.detect(serverId: serverId)
                     let profile = try JSONDecoder().decode(AevonXCoreBridge.ServerProfile.self, from: JSONEncoder().encode(coreProfile))
+                    // Convert bridge profile to AevonXCore profile for strategy factories (Phase 3 will eliminate this)
+                    let legacyProfile = try JSONDecoder().decode(ServerProfile.self, from: JSONEncoder().encode(coreProfile))
                     await MainActor.run {
                         self.serverProfile = profile
-                        self.serviceStrategy = ServiceStrategyFactory.strategy(for: coreProfile, sshService: sshService)
-                        self.packageStrategy = PackageStrategyFactory.strategy(for: coreProfile, sshService: sshService)
+                        self.serviceStrategy = ServiceStrategyFactory.strategy(for: legacyProfile, sshService: SSHBridge.shared)
+                        self.packageStrategy = PackageStrategyFactory.strategy(for: legacyProfile, sshService: SSHBridge.shared)
                     }
                     AevonXCoreBridge.CoreLogger.shared.info(
                         "Server profile: \(profile.distro.rawValue), init=\(profile.initSystem.rawValue), pkg=\(profile.packageManager.rawValue)",
@@ -477,7 +479,7 @@ public class ServerConnectionViewModel: ObservableObject {
                 createTerminalSession()
             }
             
-        } catch let error as AevonXCore.SSHConnectionError {
+        } catch let error as SSHConnectionError {
             isConnecting = false
             isConnected = false
             connectionStage = .failed
@@ -687,13 +689,13 @@ public class ServerConnectionViewModel: ObservableObject {
     }
     
     /// Gets encrypted server payload from Core or Go HTTP fallback
-    private func getServerPayload() async throws -> AevonXCore.EncryptedServerPayload? {
+    private func getServerPayload() async throws -> EncryptedServerPayload? {
         print("[ServerConnection] getServerPayload called for serverId: \(serverId)")
         
         // Try to get from serverListViewModel first (already in memory)
         if let serverListVM = serverListViewModel {
             if let accessibleServer = serverListVM.servers.first(where: { $0.id == serverId }) {
-                let payload = AevonXCore.EncryptedServerPayload(
+                let payload = EncryptedServerPayload(
                     encryptedData: accessibleServer.server.encryptedPayload,
                     nonce: accessibleServer.server.payloadNonce,
                     authTag: accessibleServer.server.payloadAuthTag,
@@ -717,12 +719,12 @@ public class ServerConnectionViewModel: ObservableObject {
               let authTag = responseData["payload_auth_tag"] as? String,
               let metadataDict = responseData["encryption_metadata"] as? [String: Any],
               let metadataJSON = try? JSONSerialization.data(withJSONObject: metadataDict),
-              let metadata = try? JSONDecoder().decode(AevonXCore.EncryptionMetadata.self, from: metadataJSON) else {
+              let metadata = try? JSONDecoder().decode(EncryptionMetadata.self, from: metadataJSON) else {
             print("[ServerConnection] ERROR: Failed to fetch server from Go API")
             return nil
         }
         
-        return AevonXCore.EncryptedServerPayload(
+        return EncryptedServerPayload(
             encryptedData: encryptedPayload,
             nonce: nonce,
             authTag: authTag,
@@ -737,7 +739,7 @@ public class ServerConnectionViewModel: ObservableObject {
     }
     
     /// Updates connection stage from Core stage
-    private func updateConnectionStage(_ stage: AevonXCore.ConnectionStage, percent: Double) {
+    private func updateConnectionStage(_ stage: ConnectionStage, percent: Double) {
         connectionProgress = percent
 
         switch stage {
@@ -776,7 +778,7 @@ public class ServerConnectionViewModel: ObservableObject {
     }
     
     /// Executes a predefined command via Go SSH Bridge
-    private func executeCommand(_ command: CommandTemplate) async throws -> AevonXCore.SSHCommandResult {
+    private func executeCommand(_ command: CommandTemplate) async throws -> AevonXCoreBridge.SSHCommandResult {
         let commandString = command.build()
         let resultJSON = await SSHBridge.shared.executeAsyncJSON(serverID: serverId, command: commandString)
         
@@ -784,13 +786,13 @@ public class ServerConnectionViewModel: ObservableObject {
               let result = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
               result["success"] as? Bool == true,
               let cmdData = result["data"] as? [String: Any] else {
-            throw AevonXCore.SSHServiceError.commandFailed("Go SSH command failed")
+            throw AevonXCoreBridge.SSHServiceError.commandFailed("Go SSH command failed")
         }
         
-        return AevonXCore.SSHCommandResult(
+        return AevonXCoreBridge.SSHCommandResult(
             stdout: cmdData["stdout"] as? String ?? "",
             stderr: cmdData["stderr"] as? String ?? "",
-            exitCode: Int32(cmdData["exit_code"] as? Int ?? -1)
+            exitCode: cmdData["exit_code"] as? Int ?? -1
         )
     }
     
@@ -827,7 +829,7 @@ public class ServerConnectionViewModel: ObservableObject {
                     
                     // Step 4: Decrypt and connect via Go SSH
                     let serverData = try await ServerEncryptionService.shared.decryptServer(
-                        AevonXCore.EncryptedServerData.self,
+                        EncryptedServerData.self,
                         from: serverPayload
                     )
                     let connectResult = await SSHBridge.shared.connectAsync(
@@ -952,7 +954,7 @@ public class ServerConnectionViewModel: ObservableObject {
             guard let self = self else { return }
             
             // Wait for silent threshold, then show banner
-            try? await Task.sleep(nanoseconds: UInt64(AevonXCore.InternalConfiguration.reconnectionSilentThreshold * 1_000_000_000))
+            try? await Task.sleep(nanoseconds: UInt64(InternalConfiguration.reconnectionSilentThreshold * 1_000_000_000))
             guard !Task.isCancelled else { return }
             
             await MainActor.run {
@@ -962,7 +964,7 @@ public class ServerConnectionViewModel: ObservableObject {
             }
             
             // Wait for overlay threshold, then show full overlay
-            let overlayDelay = AevonXCore.InternalConfiguration.reconnectionOverlayThreshold - AevonXCore.InternalConfiguration.reconnectionSilentThreshold
+            let overlayDelay = InternalConfiguration.reconnectionOverlayThreshold - InternalConfiguration.reconnectionSilentThreshold
             try? await Task.sleep(nanoseconds: UInt64(overlayDelay * 1_000_000_000))
             guard !Task.isCancelled else { return }
             

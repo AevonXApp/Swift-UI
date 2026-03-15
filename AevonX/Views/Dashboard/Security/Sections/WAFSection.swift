@@ -3,7 +3,7 @@
 //  AevonX
 //
 //  Web Application Firewall section.
-//  UI only — all data comes from SecurityManager in AevonXCore.
+//  UI only — all data comes from SecurityManager in 
 //
 
 import SwiftUI

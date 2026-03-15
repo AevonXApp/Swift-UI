@@ -6,9 +6,6 @@
 
 import SwiftUI
 import AevonXCoreBridge
-import AevonXCore
-
-// MARK: - Local Models
 
 enum ServerViewMode: String, CaseIterable {
     case grid
@@ -55,7 +52,7 @@ struct RemoteFleetView: View {
     @State private var selectedFilter: ServerStatusFilter? = nil
     @State private var viewMode: ServerViewMode = .grid
     @State private var sortOption: ServerSortOption = .nameAsc
-    @State private var serverToEdit: AevonXCore.ServerViewModel?
+    @State private var serverToEdit: ServerViewModel?
     @State private var showEditServer = false
     
     var body: some View {
@@ -148,7 +145,7 @@ struct RemoteFleetView: View {
     
     // MARK: - Filtering Logic
     
-    private var filteredServers: [AevonXCore.ServerViewModel] {
+    private var filteredServers: [ServerViewModel] {
         let filtered = viewModel.decryptedServers.filter { server in
             let matchesSearch = searchText.isEmpty ||
                 server.name.localizedCaseInsensitiveContains(searchText) ||
@@ -172,7 +169,7 @@ struct RemoteFleetView: View {
         }
     }
 
-    private func navigateToServer(_ server: AevonXCore.ServerViewModel) {
+    private func navigateToServer(_ server: ServerViewModel) {
         let fullServer = Server(
             id: UUID(uuidString: server.id) ?? UUID(),
             name: server.name,

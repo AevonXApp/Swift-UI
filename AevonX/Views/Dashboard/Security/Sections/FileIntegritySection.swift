@@ -3,7 +3,7 @@
 //  AevonX
 //
 //  File integrity monitoring — SUID/SGID and world-writable files.
-//  UI only — all data comes from SecurityManager in AevonXCore.
+//  UI only — all data comes from SecurityManager in 
 //
 
 import SwiftUI

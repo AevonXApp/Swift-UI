@@ -172,8 +172,6 @@ public struct DatabaseHealthIssue: Identifiable, Codable, Hashable {
     }
 }
 
-
-
 // MARK: - Database User Info
 
 /// Represents a database user with privileges

@@ -3,7 +3,7 @@
 //  AevonX
 //
 //  SSL/TLS Certificate Monitor.
-//  UI only — all data comes from SecurityManager in AevonXCore.
+//  UI only — all data comes from SecurityManager in 
 //
 
 import SwiftUI

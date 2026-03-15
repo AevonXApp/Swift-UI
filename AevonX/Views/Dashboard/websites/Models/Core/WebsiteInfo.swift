@@ -8,7 +8,6 @@
 
 import Foundation
 
-
 // MARK: - Website Info
 
 /// Represents a complete website instance with all metadata

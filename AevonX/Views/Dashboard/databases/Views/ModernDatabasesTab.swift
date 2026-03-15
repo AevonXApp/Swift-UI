@@ -183,7 +183,6 @@ struct ModernDatabasesTab: View {
         showEngineManagement = true
     }
 
-
     // MARK: - Legacy Loading/Error Views
     
     private var loadingView: some View {
