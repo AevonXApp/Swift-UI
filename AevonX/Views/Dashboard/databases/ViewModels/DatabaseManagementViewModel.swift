@@ -181,6 +181,15 @@ public final class DatabaseManagementViewModel: ObservableObject {
             ))
         }
         
+        // Deduplicate: When MariaDB is installed, MariaDB provides a `mysql` compatibility
+        // binary that makes MySQL appear installed too. Suppress MySQL in this case to avoid
+        // listing every database twice.
+        let mysqlIdx = uiStates.firstIndex(where: { $0.type == .mysql && $0.isInstalled })
+        let mariaIdx = uiStates.firstIndex(where: { $0.type == .mariadb && $0.isInstalled })
+        if let mi = mysqlIdx, let _ = mariaIdx {
+            uiStates[mi].isInstalled = false
+        }
+        
         // For installed engines, also check service status
         for i in 0..<uiStates.count where uiStates[i].isInstalled {
             let status = await DatabaseEngineService.shared.getServiceStatus(type: uiStates[i].type, serverId: serverId)

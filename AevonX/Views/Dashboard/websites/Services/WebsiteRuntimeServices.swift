@@ -486,26 +486,73 @@ public actor DatabaseManagementService {
     public static let shared = DatabaseManagementService()
     public init() {}
 
+    /// Multi-source MySQL/MariaDB auth prefix — probes 7 credential sources.
+    /// Priority: (1) BT Panel default.pl, (2) BT Panel SQLite db, (3) BT tools.py,
+    ///           (4) Debian .cnf, (5) Unix socket, (6) sudo root, + --skip-ssl for MariaDB.
+    private let mysqlAuthPrefix: String = {
+        // Each step only runs if MYSQL_AUTH is still empty (first match wins)
+        let steps = [
+            // Init
+            #"MYSQL_AUTH=""; MYSQL_SUDO=""; MYSQL_SSL="";"#,
+
+            // 1. BT Panel classic: /www/server/panel/data/default.pl (plain-text password)
+            #"[ -z "$MYSQL_AUTH" ] && [ -f /www/server/panel/data/default.pl ] && MYSQL_AUTH="-uroot -p$(cat /www/server/panel/data/default.pl 2>/dev/null)";"#,
+
+            // 2. BT Panel newer: SQLite db at /www/server/panel/data/default.db
+            //    The root MySQL password is stored in the `config` table, column `mysql_root`
+            #"[ -z "$MYSQL_AUTH" ] && [ -f /www/server/panel/data/default.db ] && command -v sqlite3 >/dev/null 2>&1 && { BTPW=$(sqlite3 /www/server/panel/data/default.db "SELECT mysql_root FROM config LIMIT 1" 2>/dev/null); [ -n "$BTPW" ] && MYSQL_AUTH="-uroot -p${BTPW}"; };"#,
+
+            // 3. BT Panel Python tool (fallback if sqlite3 not available)
+            #"[ -z "$MYSQL_AUTH" ] && [ -f /www/server/panel/tools.py ] && { BTPW=$(python3 /www/server/panel/tools.py root_mysql 2>/dev/null); [ -n "$BTPW" ] && MYSQL_AUTH="-uroot -p${BTPW}"; };"#,
+
+            // 4. Debian/Ubuntu maintenance credentials
+            #"[ -z "$MYSQL_AUTH" ] && [ -f /etc/mysql/debian.cnf ] && MYSQL_AUTH="--defaults-extra-file=/etc/mysql/debian.cnf";"#,
+
+            // 5. Unix socket auth (try common socket paths)
+            #"if [ -z "$MYSQL_AUTH" ]; then for sock in /var/run/mysqld/mysqld.sock /tmp/mysql.sock /var/lib/mysql/mysql.sock /run/mysqld/mysqld.sock; do [ -S "$sock" ] && MYSQL_AUTH="-uroot --socket=$sock" && break; done; fi;"#,
+
+            // 6. Final fallback: sudo root (Debian 13+ unix_socket plugin)
+            #"[ -z "$MYSQL_AUTH" ] && MYSQL_SUDO="sudo" && MYSQL_AUTH="-uroot";"#,
+
+            // 7. MariaDB --skip-ssl to avoid ERROR 2026 TLS
+            #"command -v mariadb >/dev/null 2>&1 && MYSQL_SSL="--skip-ssl";"#,
+        ]
+        return steps.joined(separator: " ")
+    }()
+
+    /// Returns the correct mysql client binary name for the given type.
+    private func mysqlBinary(for type: String) -> String {
+        return type.lowercased() == "mariadb" ? "mariadb" : "mysql"
+    }
+
+    /// Builds a full auth-aware command for mysql/mariadb.
+    private func mysqlCommand(for type: String, args: String) -> String {
+        let bin = mysqlBinary(for: type)
+        return "\(mysqlAuthPrefix) $MYSQL_SUDO \(bin) $MYSQL_AUTH $MYSQL_SSL \(args)"
+    }
+
     public func listDatabases(type: String, serverId: String) async throws -> [CoreDatabaseInfo] {
         let typeLower = type.lowercased()
         let systemMySQL = ["information_schema", "performance_schema", "mysql", "sys"]
         let systemPG = ["postgres"]
         
         if typeLower == "mysql" || typeLower == "mariadb" {
-            // Use schemata LEFT JOIN tables so empty databases (0 tables) also appear
-            let cmd = "mysql -NBe \"SELECT s.schema_name, COALESCE(ROUND(SUM(t.data_length + t.index_length)/1024/1024, 2), 0), COUNT(t.table_name) FROM information_schema.schemata s LEFT JOIN information_schema.tables t ON s.schema_name = t.table_schema GROUP BY s.schema_name\" 2>/dev/null"
-            print("[DatabaseManagementService] MySQL cmd: \(cmd)")
+            let cmd = mysqlCommand(for: typeLower, args: "-NBe \"SELECT s.schema_name, COALESCE(ROUND(SUM(t.data_length + t.index_length)/1024/1024, 2), 0), COUNT(t.table_name) FROM information_schema.schemata s LEFT JOIN information_schema.tables t ON s.schema_name = t.table_schema GROUP BY s.schema_name\" 2>&1")
+            print("[DatabaseManagementService] \(typeLower) cmd: \(cmd)")
             let output = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
-            print("[DatabaseManagementService] MySQL raw output: '\(output)'")
+            print("[DatabaseManagementService] \(typeLower) raw output: '\(output)'")
             return output.components(separatedBy: "\n").filter { !$0.isEmpty }.compactMap { line in
+                // Skip error/warning lines that got merged via 2>&1
+                let lower = line.lowercased()
+                if lower.contains("error") || lower.contains("warning") || lower.contains("access denied") || lower.contains("using a password") { return nil }
                 let parts = line.split(separator: "\t")
                 guard parts.count >= 3 else { return nil }
                 let name = String(parts[0])
                 guard !systemMySQL.contains(name) else { return nil }
                 return CoreDatabaseInfo(name: name, size: Double(parts[1]) ?? 0, tables: Int(parts[2]) ?? 0)
+
             }
         } else if typeLower == "postgresql" {
-            // Filter system databases in SQL for efficiency
             let cmd = "sudo -u postgres psql -tAc \"SELECT datname, pg_database_size(datname)/1024/1024 FROM pg_database WHERE datistemplate = false AND datname != 'postgres'\" 2>/dev/null"
             print("[DatabaseManagementService] PG cmd: \(cmd)")
             let output = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
@@ -526,10 +573,10 @@ public actor DatabaseManagementService {
         let typeLower = type.lowercased()
         var cmd: String
         if typeLower == "mysql" || typeLower == "mariadb" {
-            cmd = "mysql -e \"CREATE DATABASE \(name)"
-            if let cs = characterSet { cmd += " CHARACTER SET \(cs)" }
-            if let co = collation { cmd += " COLLATE \(co)" }
-            cmd += "\" 2>&1"
+            var sqlStmt = "CREATE DATABASE \(name)"
+            if let cs = characterSet { sqlStmt += " CHARACTER SET \(cs)" }
+            if let co = collation { sqlStmt += " COLLATE \(co)" }
+            cmd = mysqlCommand(for: typeLower, args: "-e \"\(sqlStmt)\" 2>&1")
         } else if typeLower == "postgresql" {
             cmd = "sudo -u postgres createdb"
             if let cs = characterSet { cmd += " -E \(cs)" }
@@ -548,7 +595,7 @@ public actor DatabaseManagementService {
         let typeLower = type.lowercased()
         var cmd: String
         if typeLower == "mysql" || typeLower == "mariadb" {
-            cmd = "mysql -e \"DROP DATABASE IF EXISTS \(name)\" 2>&1"
+            cmd = mysqlCommand(for: typeLower, args: "-e \"DROP DATABASE IF EXISTS \(name)\" 2>&1")
         } else if typeLower == "postgresql" {
             cmd = "sudo -u postgres dropdb --if-exists \(name) 2>&1"
         } else {
