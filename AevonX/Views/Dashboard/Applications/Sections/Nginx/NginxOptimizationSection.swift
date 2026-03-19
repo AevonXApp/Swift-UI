@@ -41,14 +41,14 @@ struct NginxOptimizationSection: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: AXSpacing.xl) {
                     // Core
-                    settingsGroup(title: "Core", icon: "cpu.fill", color: .cyan) {
-                        settingRow(
+                    AppOptimizationGroup(title: "Core", icon: "cpu.fill", color: .cyan) {
+                        AppOptimizationRow(
                             label: "worker_processes",
                             value: $workerProcesses,
                             hint: "Worker processes. Auto = CPU cores",
                             placeholder: "auto"
                         )
-                        settingRow(
+                        AppOptimizationRow(
                             label: "worker_connections",
                             value: $workerConnections,
                             hint: "Max connections per worker",
@@ -57,8 +57,8 @@ struct NginxOptimizationSection: View {
                     }
 
                     // Timeouts
-                    settingsGroup(title: "Connection", icon: "timer", color: .orange) {
-                        settingRow(
+                    AppOptimizationGroup(title: "Connection", icon: "timer", color: .orange) {
+                        AppOptimizationRow(
                             label: "keepalive_timeout",
                             value: $keepaliveTimeout,
                             hint: "Connection timeout in seconds",
@@ -67,19 +67,19 @@ struct NginxOptimizationSection: View {
                     }
 
                     // Gzip
-                    settingsGroup(title: "Compression", icon: "arrow.down.right.and.arrow.up.left", color: .purple) {
-                        settingToggle(
+                    AppOptimizationGroup(title: "Compression", icon: "arrow.down.right.and.arrow.up.left", color: .purple) {
+                        AppOptimizationToggle(
                             label: "gzip",
                             value: $gzip,
                             hint: "Enable compressed transmission"
                         )
-                        settingRow(
+                        AppOptimizationRow(
                             label: "gzip_min_length",
                             value: $gzipMinLength,
                             hint: "KB. Minimum file to compress",
                             placeholder: "1"
                         )
-                        settingRow(
+                        AppOptimizationRow(
                             label: "gzip_comp_level",
                             value: $gzipCompLevel,
                             hint: "Compression level (1-9)",
@@ -88,20 +88,20 @@ struct NginxOptimizationSection: View {
                     }
 
                     // Client
-                    settingsGroup(title: "Client", icon: "person.fill", color: .axAccentBlue) {
-                        settingRow(
+                    AppOptimizationGroup(title: "Client", icon: "person.fill", color: .axAccentBlue) {
+                        AppOptimizationRow(
                             label: "client_max_body_size",
                             value: $clientMaxBodySize,
                             hint: "MB. Maximum file to upload",
                             placeholder: "1"
                         )
-                        settingRow(
+                        AppOptimizationRow(
                             label: "client_header_buffer_size",
                             value: $clientHeaderBufferSize,
                             hint: "KB. Client header buffer size",
                             placeholder: "32"
                         )
-                        settingRow(
+                        AppOptimizationRow(
                             label: "client_body_buffer_size",
                             value: $clientBodyBufferSize,
                             hint: "KB. Client body buffer",
@@ -110,14 +110,14 @@ struct NginxOptimizationSection: View {
                     }
 
                     // Hash
-                    settingsGroup(title: "Hash Tables", icon: "number", color: .mint) {
-                        settingRow(
+                    AppOptimizationGroup(title: "Hash Tables", icon: "number", color: .mint) {
+                        AppOptimizationRow(
                             label: "server_names_hash_bucket_size",
                             value: $serverNamesHashBucketSize,
                             hint: "Hash table size of server name",
                             placeholder: "512"
                         )
-                        settingRow(
+                        AppOptimizationRow(
                             label: "types_hash_max_size",
                             value: $typesHashMaxSize,
                             hint: "MIME types hash table",
@@ -126,18 +126,18 @@ struct NginxOptimizationSection: View {
                     }
 
                     // Network
-                    settingsGroup(title: "Network", icon: "network", color: Color(red: 0, green: 0.59, blue: 0.22)) {
-                        settingToggle(
+                    AppOptimizationGroup(title: "Network", icon: "network", color: Color(red: 0, green: 0.59, blue: 0.22)) {
+                        AppOptimizationToggle(
                             label: "sendfile",
                             value: $sendfile,
                             hint: "Kernel-level file transfer"
                         )
-                        settingToggle(
+                        AppOptimizationToggle(
                             label: "tcp_nopush",
                             value: $tcpNopush,
                             hint: "Optimize packet sending"
                         )
-                        settingToggle(
+                        AppOptimizationToggle(
                             label: "tcp_nodelay",
                             value: $tcpNodelay,
                             hint: "Disable Nagle's algorithm"
@@ -145,14 +145,14 @@ struct NginxOptimizationSection: View {
                     }
 
                     // Proxy
-                    settingsGroup(title: "Proxy Buffers", icon: "arrow.left.arrow.right", color: .indigo) {
-                        settingRow(
+                    AppOptimizationGroup(title: "Proxy Buffers", icon: "arrow.left.arrow.right", color: .indigo) {
+                        AppOptimizationRow(
                             label: "proxy_buffer_size",
                             value: $proxyBufferSize,
                             hint: "Proxy response buffer",
                             placeholder: "4k"
                         )
-                        settingRow(
+                        AppOptimizationRow(
                             label: "proxy_buffers",
                             value: $proxyBuffers,
                             hint: "Number × size of buffers",
@@ -161,37 +161,12 @@ struct NginxOptimizationSection: View {
                     }
 
                     // Save button
-                    HStack {
-                        Spacer()
-                        Button {
-                            Task { await saveSettings() }
-                        } label: {
-                            HStack(spacing: AXSpacing.sm) {
-                                if isSaving {
-                                    ProgressView().scaleEffect(0.6)
-                                } else {
-                                    Image(systemName: "checkmark.circle.fill")
-                                        .font(.system(size: 14))
-                                }
-                                Text("Save")
-                                    .font(.system(size: 13, weight: .semibold))
-                            }
-                            .foregroundColor(.white)
-                            .padding(.horizontal, AXSpacing.xl)
-                            .padding(.vertical, AXSpacing.md)
-                            .background(
-                                LinearGradient(
-                                    colors: [Color(red: 0, green: 0.59, blue: 0.22), Color(red: 0, green: 0.45, blue: 0.18)],
-                                    startPoint: .leading,
-                                    endPoint: .trailing
-                                )
-                            )
-                            .cornerRadius(AXCornerRadius.md)
-                            .shadow(color: Color(red: 0, green: 0.59, blue: 0.22).opacity(0.3), radius: 6, x: 0, y: 3)
-                        }
-                        .buttonStyle(PlainButtonStyle())
-                        .disabled(isSaving)
-                        Spacer()
+                    AppOptimizationSaveButton(
+                        title: "Save",
+                        color: Color(red: 0, green: 0.59, blue: 0.22),
+                        isSaving: isSaving
+                    ) {
+                        Task { await saveSettings() }
                     }
                     .padding(.top, AXSpacing.md)
                 }
@@ -201,85 +176,6 @@ struct NginxOptimizationSection: View {
         .task {
             await loadSettings()
         }
-    }
-
-    // MARK: - Components
-
-    private func settingsGroup<Content: View>(title: String, icon: String, color: Color, @ViewBuilder content: () -> Content) -> some View {
-        VStack(alignment: .leading, spacing: AXSpacing.md) {
-            HStack(spacing: AXSpacing.sm) {
-                Image(systemName: icon)
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundColor(color)
-                Text(title)
-                    .font(.system(size: 13, weight: .bold))
-                    .foregroundColor(.axTextPrimary)
-            }
-
-            VStack(spacing: 1) {
-                content()
-            }
-            .background(Color.axSurface)
-            .cornerRadius(AXCornerRadius.md)
-            .overlay(
-                RoundedRectangle(cornerRadius: AXCornerRadius.md)
-                    .stroke(Color.axBorder.opacity(0.2), lineWidth: 1)
-            )
-        }
-    }
-
-    private func settingRow(label: String, value: Binding<String>, hint: String, placeholder: String) -> some View {
-        HStack(spacing: AXSpacing.lg) {
-            Text(label)
-                .font(.system(size: 12, weight: .medium, design: .monospaced))
-                .foregroundColor(.axTextPrimary)
-                .frame(width: 240, alignment: .trailing)
-
-            TextField(placeholder, text: value)
-                .font(.system(size: 12, design: .monospaced))
-                .textFieldStyle(.plain)
-                .padding(.horizontal, AXSpacing.sm)
-                .padding(.vertical, 6)
-                .frame(width: 120)
-                .background(Color.axBackground)
-                .cornerRadius(AXCornerRadius.sm)
-                .overlay(
-                    RoundedRectangle(cornerRadius: AXCornerRadius.sm)
-                        .stroke(Color.axBorder.opacity(0.3), lineWidth: 1)
-                )
-
-            Text(hint)
-                .font(.system(size: 11))
-                .foregroundColor(.axTextMuted)
-
-            Spacer()
-        }
-        .padding(.horizontal, AXSpacing.lg)
-        .padding(.vertical, AXSpacing.sm)
-    }
-
-    private func settingToggle(label: String, value: Binding<String>, hint: String) -> some View {
-        HStack(spacing: AXSpacing.lg) {
-            Text(label)
-                .font(.system(size: 12, weight: .medium, design: .monospaced))
-                .foregroundColor(.axTextPrimary)
-                .frame(width: 240, alignment: .trailing)
-
-            Picker("", selection: value) {
-                Text("Open").tag("on")
-                Text("Close").tag("off")
-            }
-            .pickerStyle(.segmented)
-            .frame(width: 120)
-
-            Text(hint)
-                .font(.system(size: 11))
-                .foregroundColor(.axTextMuted)
-
-            Spacer()
-        }
-        .padding(.horizontal, AXSpacing.lg)
-        .padding(.vertical, AXSpacing.sm)
     }
 
     // MARK: - Data
