@@ -100,7 +100,7 @@ struct AIInstallRecommendationsView: View {
                 ForEach(warnings, id: \.self) { warning in
                     HStack(alignment: .top, spacing: AXSpacing.sm) {
                         Image(systemName: "exclamationmark.triangle.fill")
-                            .font(.system(size: 12))
+                            .font(AXTypography.subheadline)
                             .foregroundColor(.axWarning)
                         
                         Text(warning)
@@ -155,7 +155,7 @@ private struct RequirementItem: View {
         VStack(alignment: .leading, spacing: AXSpacing.xs) {
             HStack(spacing: AXSpacing.xs) {
                 Image(systemName: icon)
-                    .font(.system(size: 12))
+                    .font(AXTypography.subheadline)
                     .foregroundColor(.axTextMuted)
                 
                 Text(title)

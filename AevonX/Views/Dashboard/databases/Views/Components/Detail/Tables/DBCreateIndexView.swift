@@ -31,11 +31,11 @@ struct DBCreateIndexView: View {
                             .fill(Color.axAccentGreen.opacity(0.12))
                             .frame(width: 28, height: 28)
                         Image(systemName: "list.bullet.indent")
-                            .font(.system(size: 12, weight: .medium))
+                            .font(AXTypography.subheadline)
                             .foregroundColor(.axAccentGreen)
                     }
                     Text("Create Index")
-                        .font(.system(size: 15, weight: .bold))
+                        .font(AXTypography.headline).fontWeight(.bold)
                         .foregroundColor(.axTextPrimary)
                 }
 
@@ -43,7 +43,7 @@ struct DBCreateIndexView: View {
 
                 if let table = viewModel.selectedTable {
                     Text(table.name)
-                        .font(.system(size: 10, weight: .medium, design: .monospaced))
+                        .font(AXTypography.monoXs).fontWeight(.medium)
                         .foregroundColor(.axTextMuted)
                         .padding(.horizontal, AXSpacing.sm)
                         .padding(.vertical, 3)
@@ -53,7 +53,7 @@ struct DBCreateIndexView: View {
 
                 Button { dismiss() } label: {
                     Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: 16))
+                        .font(AXTypography.title3)
                         .foregroundColor(.axTextMuted)
                 }
                 .buttonStyle(.plain)
@@ -67,10 +67,10 @@ struct DBCreateIndexView: View {
                     // Index Name
                     VStack(alignment: .leading, spacing: AXSpacing.xs) {
                         Text("Index Name")
-                            .font(.system(size: 11, weight: .semibold))
+                            .font(AXTypography.footnote).fontWeight(.semibold)
                             .foregroundColor(.axTextSecondary)
                         TextField("idx_\(viewModel.selectedTable?.name ?? "table")_...", text: $indexName)
-                            .font(.system(size: 12, design: .monospaced))
+                            .font(AXTypography.monoMd)
                             .foregroundColor(.axTextPrimary)
                             .textFieldStyle(.plain)
                             .padding(.horizontal, AXSpacing.md)
@@ -86,7 +86,7 @@ struct DBCreateIndexView: View {
                     // Index Type
                     VStack(alignment: .leading, spacing: AXSpacing.xs) {
                         Text("Index Type")
-                            .font(.system(size: 11, weight: .semibold))
+                            .font(AXTypography.footnote).fontWeight(.semibold)
                             .foregroundColor(.axTextSecondary)
                         HStack(spacing: AXSpacing.sm) {
                             ForEach(indexTypes, id: \.self) { type in
@@ -94,7 +94,7 @@ struct DBCreateIndexView: View {
                                     indexType = type
                                 } label: {
                                     Text(type)
-                                        .font(.system(size: 10, weight: .bold, design: .monospaced))
+                                        .font(AXTypography.monoXs).fontWeight(.bold)
                                         .foregroundColor(indexType == type ? .white : .axTextSecondary)
                                         .padding(.horizontal, AXSpacing.md)
                                         .padding(.vertical, AXSpacing.sm)
@@ -114,10 +114,10 @@ struct DBCreateIndexView: View {
                     HStack {
                         VStack(alignment: .leading, spacing: AXSpacing.xxxs) {
                             Text("Unique Index")
-                                .font(.system(size: 11, weight: .semibold))
+                                .font(AXTypography.footnote).fontWeight(.semibold)
                                 .foregroundColor(.axTextSecondary)
                             Text("Enforce unique values across selected columns")
-                                .font(.system(size: 9))
+                                .font(AXTypography.caption2)
                                 .foregroundColor(.axTextMuted)
                         }
                         Spacer()
@@ -130,11 +130,11 @@ struct DBCreateIndexView: View {
                     VStack(alignment: .leading, spacing: AXSpacing.xs) {
                         HStack {
                             Text("Columns")
-                                .font(.system(size: 11, weight: .semibold))
+                                .font(AXTypography.footnote).fontWeight(.semibold)
                                 .foregroundColor(.axTextSecondary)
                             Spacer()
                             Text("\(selectedColumns.count) selected")
-                                .font(.system(size: 9, weight: .medium))
+                                .font(AXTypography.caption2)
                                 .foregroundColor(selectedColumns.isEmpty ? .axError : .axSuccess)
                         }
 
@@ -151,15 +151,15 @@ struct DBCreateIndexView: View {
                                     } label: {
                                         HStack(spacing: AXSpacing.sm) {
                                             Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                                                .font(.system(size: 14))
+                                                .font(AXTypography.body)
                                                 .foregroundColor(isSelected ? .axAccentBlue : .axTextMuted.opacity(0.4))
 
                                             VStack(alignment: .leading, spacing: 1) {
                                                 Text(col.name)
-                                                    .font(.system(size: 11, weight: .medium))
+                                                    .font(AXTypography.footnote)
                                                     .foregroundColor(.axTextPrimary)
                                                 Text(col.type)
-                                                    .font(.system(size: 9, design: .monospaced))
+                                                    .font(AXTypography.monoXxs)
                                                     .foregroundColor(.axTextMuted)
                                             }
 
@@ -167,12 +167,12 @@ struct DBCreateIndexView: View {
 
                                             if col.isPrimaryKey {
                                                 Text("PK")
-                                                    .font(.system(size: 8, weight: .bold))
+                                                    .font(AXTypography.caption2).fontWeight(.bold)
                                                     .foregroundColor(.axWarning)
                                                     .padding(.horizontal, 4)
                                                     .padding(.vertical, 2)
                                                     .background(Color.axWarning.opacity(0.1))
-                                                    .cornerRadius(3)
+                                                    .cornerRadius(AXCornerRadius.xs)
                                             }
                                         }
                                         .padding(.horizontal, AXSpacing.md)
@@ -204,7 +204,7 @@ struct DBCreateIndexView: View {
                         VStack(alignment: .leading, spacing: AXSpacing.xs) {
                             HStack {
                                 Text("SQL Preview")
-                                    .font(.system(size: 11, weight: .semibold))
+                                    .font(AXTypography.footnote).fontWeight(.semibold)
                                     .foregroundColor(.axTextSecondary)
                                 Spacer()
                                 Button {
@@ -213,13 +213,13 @@ struct DBCreateIndexView: View {
                                     GlobalToastManager.shared.showSuccess("SQL copied")
                                 } label: {
                                     Image(systemName: "doc.on.doc")
-                                        .font(.system(size: 9))
+                                        .font(AXTypography.caption2)
                                         .foregroundColor(.axAccentBlue)
                                 }
                                 .buttonStyle(.plain)
                             }
                             Text(generateSQL())
-                                .font(.system(size: 11, design: .monospaced))
+                                .font(AXTypography.monoSm)
                                 .foregroundColor(.axAccentGreen)
                                 .textSelection(.enabled)
                                 .padding(AXSpacing.md)
@@ -238,7 +238,7 @@ struct DBCreateIndexView: View {
             HStack(spacing: AXSpacing.md) {
                 Button { dismiss() } label: {
                     Text("Cancel")
-                        .font(.system(size: 12, weight: .semibold))
+                        .font(AXTypography.subheadline).fontWeight(.semibold)
                         .foregroundColor(.axTextSecondary)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, AXSpacing.sm)
@@ -272,7 +272,7 @@ struct DBCreateIndexView: View {
                                 .frame(width: 14, height: 14)
                         }
                         Text(isCreating ? "Creating..." : "Create Index")
-                            .font(.system(size: 12, weight: .bold))
+                            .font(AXTypography.subheadline).fontWeight(.bold)
                     }
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)

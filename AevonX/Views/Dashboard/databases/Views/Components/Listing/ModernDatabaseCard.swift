@@ -33,7 +33,7 @@ struct ModernDatabaseCard: View {
                             .frame(width: 44, height: 44)
 
                         Image(systemName: database.type.iconName)
-                            .font(.system(size: 20, weight: .medium))
+                            .font(AXTypography.title2)
                             .foregroundColor(database.type.brandColor)
                     }
 
@@ -61,7 +61,7 @@ struct ModernDatabaseCard: View {
                     HStack(spacing: AXSpacing.xs) {
                         Button { onOpen?() } label: {
                             Image(systemName: "arrow.right.circle")
-                                .font(.system(size: 13))
+                                .font(AXTypography.callout)
                                 .foregroundColor(database.type.brandColor)
                                 .frame(width: 26, height: 26)
                                 .background(database.type.brandColor.opacity(0.1))
@@ -72,7 +72,7 @@ struct ModernDatabaseCard: View {
 
                         Button { onBackup?() } label: {
                             Image(systemName: "arrow.down.doc")
-                                .font(.system(size: 13))
+                                .font(AXTypography.callout)
                                 .foregroundColor(.axAccentGreen)
                                 .frame(width: 26, height: 26)
                                 .background(Color.axAccentGreen.opacity(0.1))
@@ -83,7 +83,7 @@ struct ModernDatabaseCard: View {
 
                         Button { onDelete?() } label: {
                             Image(systemName: "trash")
-                                .font(.system(size: 12))
+                                .font(AXTypography.subheadline)
                                 .foregroundColor(.axError)
                                 .frame(width: 26, height: 26)
                                 .background(Color.axError.opacity(0.1))

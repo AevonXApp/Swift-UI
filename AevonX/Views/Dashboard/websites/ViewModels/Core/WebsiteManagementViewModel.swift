@@ -431,7 +431,7 @@ public final class WebsiteManagementViewModel: ObservableObject {
         }
         
         // Test & reload nginx
-        let testResult = await SSHBridge.shared.executeAsync(serverID: serverId, command: "sudo nginx -t")
+        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: "sudo nginx -t")
         if true {
             _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.restartNginxCmd())
         }

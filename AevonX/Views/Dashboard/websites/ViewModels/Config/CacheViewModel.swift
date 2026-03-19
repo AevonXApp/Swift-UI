@@ -26,53 +26,41 @@ class CacheViewModel: ObservableObject {
     }
 
     func loadCacheStatus() async {
-        do {
-            // Check if FastCGI cache exists
-            let fcgiResult = await SSHBridge.shared.executeAsync(serverID: serverId, command: "[ -d /var/cache/nginx/fastcgi ] && echo enabled || echo disabled")
-            let fcgiEnabled = fcgiResult.trimmingCharacters(in: .whitespacesAndNewlines) == "enabled"
-            
-            cacheStatuses = [
-                SiteCacheStatus(type: .fastcgi, enabled: fcgiEnabled),
-                SiteCacheStatus(type: .browser, enabled: true),
-            ]
-            
-            browserCacheRules = [
-                BrowserCacheRule(fileTypes: "*.jpg, *.png, *.gif, *.webp", duration: "30 days", cacheControl: "public"),
-                BrowserCacheRule(fileTypes: "*.css, *.js", duration: "7 days", cacheControl: "public, no-transform"),
-                BrowserCacheRule(fileTypes: "*.woff, *.woff2", duration: "1 year", cacheControl: "public, immutable"),
-                BrowserCacheRule(fileTypes: "*.svg, *.ico", duration: "30 days", cacheControl: "public"),
-            ]
-        } catch {
-            errorMessage = error.localizedDescription
-        }
+        // Check if FastCGI cache exists
+        let fcgiResult = await SSHBridge.shared.executeAsync(serverID: serverId, command: "[ -d /var/cache/nginx/fastcgi ] && echo enabled || echo disabled")
+        let fcgiEnabled = fcgiResult.trimmingCharacters(in: .whitespacesAndNewlines) == "enabled"
+        
+        cacheStatuses = [
+            SiteCacheStatus(type: .fastcgi, enabled: fcgiEnabled),
+            SiteCacheStatus(type: .browser, enabled: true),
+        ]
+        
+        browserCacheRules = [
+            BrowserCacheRule(fileTypes: "*.jpg, *.png, *.gif, *.webp", duration: "30 days", cacheControl: "public"),
+            BrowserCacheRule(fileTypes: "*.css, *.js", duration: "7 days", cacheControl: "public, no-transform"),
+            BrowserCacheRule(fileTypes: "*.woff, *.woff2", duration: "1 year", cacheControl: "public, immutable"),
+            BrowserCacheRule(fileTypes: "*.svg, *.ico", duration: "30 days", cacheControl: "public"),
+        ]
     }
 
     func purgeSpecificCache(_ type: SiteCacheType) async {
         isPurging = true
         defer { isPurging = false }
-        do {
-            let cmd: String
-            switch type {
-            case .fastcgi:
-                cmd = bridge.purgeFastCGICmd()
-            default:
-                cmd = bridge.purgeAllCachesCmd()
-            }
-            _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
-            GlobalToastManager.shared.showSuccess("\(type.rawValue) cache purged")
-        } catch {
-            errorMessage = error.localizedDescription
+        let cmd: String
+        switch type {
+        case .fastcgi:
+            cmd = bridge.purgeFastCGICmd()
+        default:
+            cmd = bridge.purgeAllCachesCmd()
         }
+        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
+        GlobalToastManager.shared.showSuccess("\(type.rawValue) cache purged")
     }
 
     func purgeAllCache() async {
         isPurging = true
         defer { isPurging = false }
-        do {
-            _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.purgeAllCachesCmd())
-            GlobalToastManager.shared.showSuccess("All caches purged")
-        } catch {
-            errorMessage = error.localizedDescription
-        }
+        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.purgeAllCachesCmd())
+        GlobalToastManager.shared.showSuccess("All caches purged")
     }
 }

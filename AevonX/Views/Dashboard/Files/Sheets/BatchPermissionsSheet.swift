@@ -183,15 +183,11 @@ struct BatchPermissionsSheet: View {
             let recursive = applyRecursively ? "-R " : ""
             
             for file in selectedFiles {
-                do {
                     let safePath = ShellSanitizer.escapePath(file.path)
                     let cmd = "chmod \(recursive)\(numericPerms) \(safePath)"
                     let json = await SSHBridge.shared.executeAsyncJSON(serverID: viewModel.serverId, command: cmd)
                     let result = SSHResult.parse(json)
                     if result.isSuccess { successCount += 1 } else { failCount += 1 }
-                } catch {
-                    failCount += 1
-                }
             }
             
             if failCount == 0 {

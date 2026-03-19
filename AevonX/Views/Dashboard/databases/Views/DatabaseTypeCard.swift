@@ -40,7 +40,7 @@ public struct DatabaseTypeCard: View {
                             .frame(width: 48, height: 48)
                         
                         Image(systemName: installationState.type.iconName)
-                            .font(.system(size: 20))
+                            .font(AXTypography.title2)
                             .foregroundColor(installationState.type.brandColor)
                     }
                     
@@ -131,7 +131,7 @@ public struct DatabaseTypeCard: View {
         VStack(alignment: .leading, spacing: AXSpacing.sm) {
             HStack(spacing: AXSpacing.sm) {
                 Image(systemName: "exclamationmark.triangle")
-                    .font(.system(size: 14))
+                    .font(AXTypography.body)
                     .foregroundColor(.axWarning)
                 
                 Text("Not Installed")
@@ -153,7 +153,7 @@ public struct DatabaseTypeCard: View {
         Button(action: installationState.isInstalled ? onManage : onInstall) {
             HStack(spacing: AXSpacing.sm) {
                 Image(systemName: installationState.isInstalled ? "gearshape" : "arrow.down.circle")
-                    .font(.system(size: 14))
+                    .font(AXTypography.body)
                 
                 Text(installationState.isInstalled ? "Manage" : "Install")
                     .font(AXTypography.subheadline)

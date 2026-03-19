@@ -84,7 +84,7 @@ struct DBAddColumnView: View {
                 // Column Name
                 fieldGroup(label: "COLUMN NAME") {
                     TextField("column_name", text: $column.name)
-                        .font(.system(size: 13, design: .monospaced))
+                        .font(AXTypography.monoMd)
                         .foregroundColor(.axTextPrimary)
                         .padding(AXSpacing.md)
                         .background(Color.axSurface)
@@ -110,7 +110,7 @@ struct DBAddColumnView: View {
                             get: { column.length ?? "" },
                             set: { column.length = $0.isEmpty ? nil : $0 }
                         ))
-                        .font(.system(size: 13, design: .monospaced))
+                        .font(AXTypography.monoMd)
                         .foregroundColor(.axTextPrimary)
                         .padding(AXSpacing.md)
                         .background(Color.axSurface)
@@ -202,7 +202,7 @@ struct DBAddColumnView: View {
                     .foregroundColor(.axTextPrimary)
 
                 Text(column.type + (column.length.map { "(\($0))" } ?? ""))
-                    .font(.system(size: 11, weight: .medium, design: .monospaced))
+                    .font(AXTypography.monoSm).fontWeight(.medium)
                     .foregroundColor(colorForType(column.type))
                     .padding(.horizontal, AXSpacing.xs)
                     .padding(.vertical, 2)
@@ -211,30 +211,30 @@ struct DBAddColumnView: View {
 
                 if !column.isNullable {
                     Text("NN")
-                        .font(.system(size: 9, weight: .bold))
+                        .font(AXTypography.caption2).fontWeight(.bold)
                         .foregroundColor(.axTextSecondary)
                         .padding(.horizontal, 4)
                         .padding(.vertical, 2)
                         .background(Color.axTextSecondary.opacity(0.1))
-                        .cornerRadius(3)
+                        .cornerRadius(AXCornerRadius.xs)
                 }
                 if column.isPrimaryKey {
                     Text("PK")
-                        .font(.system(size: 9, weight: .bold))
+                        .font(AXTypography.caption2).fontWeight(.bold)
                         .foregroundColor(.axWarning)
                         .padding(.horizontal, 4)
                         .padding(.vertical, 2)
                         .background(Color.axWarning.opacity(0.1))
-                        .cornerRadius(3)
+                        .cornerRadius(AXCornerRadius.xs)
                 }
                 if column.isAutoIncrement {
                     Text("AI")
-                        .font(.system(size: 9, weight: .bold))
+                        .font(AXTypography.caption2).fontWeight(.bold)
                         .foregroundColor(.axAccentBlue)
                         .padding(.horizontal, 4)
                         .padding(.vertical, 2)
                         .background(Color.axAccentBlue.opacity(0.1))
-                        .cornerRadius(3)
+                        .cornerRadius(AXCornerRadius.xs)
                 }
             }
             .padding(AXSpacing.md)

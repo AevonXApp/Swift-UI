@@ -26,7 +26,7 @@ struct DBEMAccessSection: View {
                     Button(action: { Task { await viewModel.loadUsers() } }) {
                         HStack(spacing: AXSpacing.sm) {
                             Image(systemName: "arrow.clockwise")
-                                .font(.system(size: 12))
+                                .font(AXTypography.subheadline)
                             Text("Refresh")
                                 .font(AXTypography.subheadline)
                         }
@@ -68,7 +68,7 @@ struct DBEMAccessSection: View {
                             ForEach(viewModel.databaseUsers) { user in
                                 HStack(spacing: AXSpacing.md) {
                                     Image(systemName: "person.circle.fill")
-                                        .font(.system(size: 20))
+                                        .font(AXTypography.title2)
                                         .foregroundColor(.axAccentBlue)
 
                                     VStack(alignment: .leading, spacing: AXSpacing.xxs) {
@@ -86,13 +86,13 @@ struct DBEMAccessSection: View {
 
                                     if user.isLocked {
                                         Image(systemName: "lock.fill")
-                                            .font(.system(size: 12))
+                                            .font(AXTypography.subheadline)
                                             .foregroundColor(.axWarning)
                                     }
 
                                     if user.sslRequired {
                                         Image(systemName: "lock.shield.fill")
-                                            .font(.system(size: 12))
+                                            .font(AXTypography.subheadline)
                                             .foregroundColor(.axAccentGreen)
                                     }
 

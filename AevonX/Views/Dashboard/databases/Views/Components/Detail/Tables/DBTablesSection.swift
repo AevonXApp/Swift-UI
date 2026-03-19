@@ -39,10 +39,10 @@ struct DBTablesSection: View {
                 HStack(spacing: AXSpacing.sm) {
                     HStack(spacing: AXSpacing.xs) {
                         Image(systemName: "magnifyingglass")
-                            .font(.system(size: 11))
+                            .font(AXTypography.footnote)
                             .foregroundColor(.axTextMuted)
                         TextField("Search tables...", text: $viewModel.tableSearchText)
-                            .font(.system(size: 12))
+                            .font(AXTypography.subheadline)
                             .foregroundColor(.axTextPrimary)
                             .textFieldStyle(.plain)
                     }
@@ -57,7 +57,7 @@ struct DBTablesSection: View {
 
                     Button { viewModel.showCreateTable = true } label: {
                         Image(systemName: "plus")
-                            .font(.system(size: 11, weight: .bold))
+                            .font(AXTypography.footnote).fontWeight(.bold)
                             .foregroundColor(.axAccentGreen)
                             .frame(width: 28, height: 28)
                             .background(Color.axAccentGreen.opacity(0.1))
@@ -74,10 +74,10 @@ struct DBTablesSection: View {
                     VStack(spacing: AXSpacing.sm) {
                         Spacer(minLength: 40)
                         Image(systemName: "tablecells")
-                            .font(.system(size: 24))
+                            .font(AXTypography.title)
                             .foregroundColor(.axTextMuted.opacity(0.3))
                         Text("No tables found")
-                            .font(.system(size: 11))
+                            .font(AXTypography.footnote)
                             .foregroundColor(.axTextMuted)
                         Spacer(minLength: 40)
                     }
@@ -130,14 +130,14 @@ struct DBTablesSection: View {
                         .padding(.horizontal, AXSpacing.sm)
                     HStack(spacing: AXSpacing.xs) {
                         Image(systemName: "tablecells")
-                            .font(.system(size: 9))
+                            .font(AXTypography.caption2)
                             .foregroundColor(.axTextMuted.opacity(0.5))
                         Text("\(viewModel.tables.count) tables")
-                            .font(.system(size: 10, weight: .medium))
+                            .font(AXTypography.caption)
                             .foregroundColor(.axTextMuted.opacity(0.5))
                         Spacer()
                         Text(AXFormatter.formatSizeMB(viewModel.database.size))
-                            .font(.system(size: 10, weight: .medium))
+                            .font(AXTypography.caption)
                             .foregroundColor(.axTextMuted.opacity(0.5))
                     }
                     .padding(.horizontal, AXSpacing.md)
@@ -156,15 +156,15 @@ struct DBTablesSection: View {
                     .fill(Color.axAccentBlue.opacity(0.05))
                     .frame(width: 72, height: 72)
                 Image(systemName: "tablecells.badge.ellipsis")
-                    .font(.system(size: 32))
+                    .font(AXTypography.largeTitle)
                     .foregroundColor(.axTextMuted.opacity(0.4))
             }
             VStack(spacing: AXSpacing.xs) {
                 Text("Select a Table")
-                    .font(.system(size: 18, weight: .bold))
+                    .font(AXTypography.title2).fontWeight(.bold)
                     .foregroundColor(.axTextPrimary)
                 Text("Choose a table from the sidebar to view its structure and data")
-                    .font(.system(size: 13))
+                    .font(AXTypography.callout)
                     .foregroundColor(.axTextMuted)
                     .multilineTextAlignment(.center)
             }
@@ -177,9 +177,9 @@ struct DBTablesSection: View {
                 } label: {
                     HStack(spacing: AXSpacing.xs) {
                         Image(systemName: "tablecells")
-                            .font(.system(size: 11))
+                            .font(AXTypography.footnote)
                         Text("Open First Table")
-                            .font(.system(size: 12, weight: .semibold))
+                            .font(AXTypography.subheadline).fontWeight(.semibold)
                     }
                     .foregroundColor(.white)
                     .padding(.horizontal, AXSpacing.lg)
@@ -195,9 +195,9 @@ struct DBTablesSection: View {
                 } label: {
                     HStack(spacing: AXSpacing.xs) {
                         Image(systemName: "plus")
-                            .font(.system(size: 11))
+                            .font(AXTypography.footnote)
                         Text("Create New")
-                            .font(.system(size: 12, weight: .semibold))
+                            .font(AXTypography.subheadline).fontWeight(.semibold)
                     }
                     .foregroundColor(.axAccentGreen)
                     .padding(.horizontal, AXSpacing.lg)
@@ -229,24 +229,24 @@ struct DBTablesSection: View {
                             .fill(Color.mint.opacity(0.1))
                             .frame(width: 32, height: 32)
                         Image(systemName: "tablecells")
-                            .font(.system(size: 14, weight: .medium))
+                            .font(AXTypography.body)
                             .foregroundColor(.mint)
                     }
 
                     VStack(alignment: .leading, spacing: 1) {
                         Text(viewModel.selectedTable?.name ?? "")
-                            .font(.system(size: 16, weight: .bold))
+                            .font(AXTypography.title3).fontWeight(.bold)
                             .foregroundColor(.axTextPrimary)
                         HStack(spacing: AXSpacing.sm) {
                             if let table = viewModel.selectedTable {
                                 Text("\(table.rowCount) rows")
-                                    .font(.system(size: 10))
+                                    .font(AXTypography.caption)
                                     .foregroundColor(.axTextMuted)
                                 if let structure = viewModel.tableStructure {
                                     Text("·")
                                         .foregroundColor(.axTextMuted)
                                     Text("\(structure.columns.count) cols")
-                                        .font(.system(size: 10))
+                                        .font(AXTypography.caption)
                                         .foregroundColor(.axTextMuted)
                                 }
                             }
@@ -266,9 +266,9 @@ struct DBTablesSection: View {
                         } label: {
                             HStack(spacing: AXSpacing.xxs) {
                                 Image(systemName: iconFor(tab))
-                                    .font(.system(size: 10))
+                                    .font(AXTypography.caption)
                                 Text(tab.rawValue)
-                                    .font(.system(size: 11, weight: viewModel.tableDetailTab == tab ? .semibold : .regular))
+                                    .font(AXTypography.footnote).fontWeight(viewModel.tableDetailTab == tab ? .semibold : .regular)
                             }
                             .foregroundColor(viewModel.tableDetailTab == tab ? .axTextPrimary : .axTextMuted)
                             .padding(.horizontal, AXSpacing.md)
@@ -340,7 +340,7 @@ private struct PremiumTableRow: View {
                         )
                         .frame(width: 28, height: 28)
                     Image(systemName: "tablecells")
-                        .font(.system(size: 12, weight: isSelected ? .semibold : .medium))
+                        .font(AXTypography.subheadline).fontWeight(isSelected ? .semibold : .medium)
                         .foregroundColor(
                             isSelected ? .mint : .mint.opacity(isHovered ? 0.85 : 0.7)
                         )
@@ -349,11 +349,11 @@ private struct PremiumTableRow: View {
                 // Name + size
                 VStack(alignment: .leading, spacing: 2) {
                     Text(table.name)
-                        .font(.system(size: 13, weight: isSelected ? .semibold : .regular))
+                        .font(AXTypography.callout).fontWeight(isSelected ? .semibold : .regular)
                         .foregroundColor(isSelected ? .axTextPrimary : .axTextSecondary)
                         .lineLimit(1)
                     Text(AXFormatter.formatBytes(table.dataSize))
-                        .font(.system(size: 9))
+                        .font(AXTypography.caption2)
                         .foregroundColor(.axTextMuted)
                 }
 
@@ -362,7 +362,7 @@ private struct PremiumTableRow: View {
                 // Row count badge
                 if table.rowCount > 0 {
                     Text("\(table.rowCount)")
-                        .font(.system(size: 10, weight: .bold, design: .rounded))
+                        .font(AXTypography.caption).fontWeight(.bold)
                         .foregroundColor(isSelected ? .mint : .axTextMuted)
                         .padding(.horizontal, 6)
                         .padding(.vertical, 2)

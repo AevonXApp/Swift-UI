@@ -26,7 +26,7 @@ struct DatabaseEngineInstallCard: View {
                             .frame(width: 40, height: 40)
                         
                         Image(systemName: type.iconName)
-                            .font(.system(size: 18))
+                            .font(AXTypography.title2)
                             .foregroundColor(type.brandColor)
                     }
                     
@@ -62,7 +62,7 @@ struct DatabaseEngineInstallCard: View {
                 } label: {
                     HStack(spacing: AXSpacing.sm) {
                         Image(systemName: "slider.horizontal.3")
-                            .font(.system(size: 12))
+                            .font(AXTypography.subheadline)
                         Text("Manage")
                             .font(AXTypography.caption)
                             .fontWeight(.semibold)

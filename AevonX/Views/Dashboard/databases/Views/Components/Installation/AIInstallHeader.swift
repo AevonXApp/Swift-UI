@@ -28,7 +28,7 @@ struct AIInstallHeader: View {
             
             Button(action: onDismiss) {
                 Image(systemName: "xmark")
-                    .font(.system(size: 14))
+                    .font(AXTypography.body)
                     .foregroundColor(.axTextSecondary)
                     .frame(width: 28, height: 28)
                     .background(Color.axSurface)

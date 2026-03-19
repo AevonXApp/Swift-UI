@@ -397,7 +397,7 @@ public actor SiteQuickActionsService {
     }
 
     public func getDiskUsage(docRoot: String, serverId: String) async throws -> String {
-        let cmd = WebsitesBridge.shared.findLargeFilesCmd(docRoot: docRoot)
+        let _ = WebsitesBridge.shared.findLargeFilesCmd(docRoot: docRoot)
         let output = await SSHBridge.shared.executeAsync(serverID: serverId, command: "du -sh \(docRoot) 2>/dev/null | awk '{print $1}'")
         return output.trimmingCharacters(in: .whitespacesAndNewlines)
     }
@@ -574,7 +574,7 @@ public actor DatabaseManagementService {
 // MARK: - Helpers
 
 /// Extracts a single command string from a Go Core dispatch response.
-private func extractCmd(_ json: String) -> String {
+nonisolated func extractCmd(_ json: String) -> String {
     guard let data = json.data(using: .utf8),
           let resp = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
           resp["success"] as? Bool == true,
@@ -586,7 +586,7 @@ private func extractCmd(_ json: String) -> String {
 }
 
 /// Extracts a command array from a Go Core dispatch response.
-private func extractCmds(_ json: String) -> [String] {
+nonisolated func extractCmds(_ json: String) -> [String] {
     guard let data = json.data(using: .utf8),
           let resp = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
           resp["success"] as? Bool == true,

@@ -106,7 +106,7 @@ struct PresetRow: View {
                 Spacer()
 
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 12))
+                    .font(AXTypography.subheadline)
                     .foregroundColor(.axTextMuted)
             }
             .padding(AXSpacing.md)

@@ -26,7 +26,7 @@ struct DBEMVersionsSection: View {
                     Button(action: { Task { await viewModel.fetchAvailableVersions() } }) {
                         HStack(spacing: AXSpacing.sm) {
                             Image(systemName: "arrow.clockwise")
-                                .font(.system(size: 12))
+                                .font(AXTypography.subheadline)
                             Text("Refresh")
                                 .font(AXTypography.subheadline)
                         }

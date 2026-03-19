@@ -11,12 +11,12 @@ import AevonXCoreBridge
 
 struct DBCreateTableView: View {
     @ObservedObject var viewModel: DatabaseDetailViewModel
-    @State private var tableName = ""
-    @State private var columns: [CreateTableColumnDefinition] = [
+    @State var tableName = ""
+    @State var columns: [CreateTableColumnDefinition] = [
         CreateTableColumnDefinition(name: "id", type: "INT", length: nil, isNullable: false, isPrimaryKey: true, isAutoIncrement: true)
     ]
-    @State private var isSubmitting = false
-    @State private var showSQLPreview = false
+    @State var isSubmitting = false
+    @State var showSQLPreview = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -32,7 +32,7 @@ struct DBCreateTableView: View {
 
     // MARK: - Header
 
-    private var dialogHeader: some View {
+    var dialogHeader: some View {
         HStack(spacing: AXSpacing.md) {
             ZStack {
                 RoundedRectangle(cornerRadius: AXCornerRadius.md)
@@ -95,7 +95,7 @@ struct DBCreateTableView: View {
 
     // MARK: - Content
 
-    private var dialogContent: some View {
+    var dialogContent: some View {
         ScrollView(.vertical, showsIndicators: false) {
             VStack(alignment: .leading, spacing: AXSpacing.lg) {
                 tableNameField
@@ -110,7 +110,7 @@ struct DBCreateTableView: View {
         }
     }
 
-    private var tableNameField: some View {
+    var tableNameField: some View {
         VStack(alignment: .leading, spacing: AXSpacing.xs) {
             Text("TABLE NAME")
                 .font(AXTypography.caption2)
@@ -130,7 +130,7 @@ struct DBCreateTableView: View {
         }
     }
 
-    private var sqlPreviewCard: some View {
+    var sqlPreviewCard: some View {
         VStack(alignment: .leading, spacing: AXSpacing.sm) {
             HStack(spacing: AXSpacing.xs) {
                 Image(systemName: "chevron.left.forwardslash.chevron.right")
@@ -159,7 +159,7 @@ struct DBCreateTableView: View {
             }
 
             Text(generateSQL())
-                .font(.system(size: 11, design: .monospaced))
+                .font(AXTypography.monoSm)
                 .foregroundColor(.axAccentGreen)
                 .padding(AXSpacing.md)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -177,7 +177,7 @@ struct DBCreateTableView: View {
 
     // MARK: - Columns Section
 
-    private var columnsSection: some View {
+    var columnsSection: some View {
         VStack(alignment: .leading, spacing: AXSpacing.md) {
             HStack {
                 Text("COLUMNS")
@@ -224,7 +224,7 @@ struct DBCreateTableView: View {
         }
     }
 
-    private var columnHeaderRow: some View {
+    var columnHeaderRow: some View {
         HStack(spacing: AXSpacing.sm) {
             Text("Name")
                 .frame(width: 140, alignment: .leading)
@@ -256,10 +256,10 @@ struct DBCreateTableView: View {
         .cornerRadius(AXCornerRadius.sm)
     }
 
-    private func columnRow(index: Int) -> some View {
+    func columnRow(index: Int) -> some View {
         HStack(spacing: AXSpacing.sm) {
             TextField("column_name", text: $columns[index].name)
-                .font(.system(size: 12, design: .monospaced))
+                .font(AXTypography.monoMd)
                 .foregroundColor(.axTextPrimary)
                 .textFieldStyle(.plain)
                 .padding(AXSpacing.xs)
@@ -283,7 +283,7 @@ struct DBCreateTableView: View {
                 get: { columns[index].length ?? "" },
                 set: { columns[index].length = $0.isEmpty ? nil : $0 }
             ))
-            .font(.system(size: 11, design: .monospaced))
+            .font(AXTypography.monoSm)
             .foregroundColor(.axTextPrimary)
             .textFieldStyle(.plain)
             .padding(AXSpacing.xs)
@@ -321,7 +321,7 @@ struct DBCreateTableView: View {
         .padding(.vertical, AXSpacing.xxs)
     }
 
-    private func constraintToggle(_ isOn: Binding<Bool>, color: Color) -> some View {
+    func constraintToggle(_ isOn: Binding<Bool>, color: Color) -> some View {
         Button {
             isOn.wrappedValue.toggle()
         } label: {
@@ -334,110 +334,13 @@ struct DBCreateTableView: View {
                 )
                 .overlay(
                     isOn.wrappedValue ? Image(systemName: "checkmark")
-                        .font(.system(size: 9, weight: .bold))
+                        .font(AXTypography.caption2).fontWeight(.bold)
                         .foregroundColor(color) : nil
                 )
         }
         .buttonStyle(.plain)
     }
 
-    // MARK: - Footer
 
-    private var dialogFooter: some View {
-        HStack(spacing: AXSpacing.md) {
-            Text("\(columns.count) column\(columns.count == 1 ? "" : "s")")
-                .font(AXTypography.caption)
-                .foregroundColor(.axTextMuted)
-
-            if isFormValid {
-                HStack(spacing: AXSpacing.xxs) {
-                    Circle()
-                        .fill(Color.axSuccess)
-                        .frame(width: 6, height: 6)
-                    Text("Ready")
-                        .font(AXTypography.caption2)
-                        .foregroundColor(.axSuccess)
-                }
-            }
-
-            Spacer()
-
-            Button { viewModel.showCreateTable = false } label: {
-                Text("Cancel")
-                    .font(AXTypography.subheadline)
-                    .foregroundColor(.axTextSecondary)
-                    .padding(.horizontal, AXSpacing.lg)
-                    .padding(.vertical, AXSpacing.md)
-            }
-            .buttonStyle(.plain)
-
-            Button {
-                isSubmitting = true
-                Task {
-                    await viewModel.createTable(name: tableName, columns: columns)
-                    isSubmitting = false
-                }
-            } label: {
-                HStack(spacing: AXSpacing.xs) {
-                    if isSubmitting {
-                        ProgressView().scaleEffect(0.6).tint(.white)
-                    }
-                    Text(isSubmitting ? "Creating..." : "Create Table")
-                }
-                .font(AXTypography.subheadline)
-                .fontWeight(.bold)
-                .foregroundColor(.white)
-                .padding(.horizontal, AXSpacing.xl)
-                .padding(.vertical, AXSpacing.md)
-                .background(isFormValid && !isSubmitting ? Color.axAccentBlue : Color.axTextMuted.opacity(0.3))
-                .cornerRadius(AXCornerRadius.md)
-            }
-            .buttonStyle(.plain)
-            .disabled(!isFormValid || isSubmitting)
-        }
-        .padding(AXSpacing.lg)
-    }
-
-    // MARK: - Helpers
-
-    private var isFormValid: Bool {
-        !tableName.trimmingCharacters(in: .whitespaces).isEmpty &&
-        !columns.isEmpty &&
-        columns.allSatisfy { !$0.name.trimmingCharacters(in: .whitespaces).isEmpty }
-    }
-
-    private func addColumn() {
-        withAnimation(.spring(response: 0.2)) {
-            columns.append(CreateTableColumnDefinition())
-        }
-    }
-
-    private func generateSQL() -> String {
-        guard !tableName.isEmpty else { return "CREATE TABLE ... ;" }
-        var lines: [String] = []
-        var pkCols: [String] = []
-        for col in columns {
-            var def = "  `\(col.name)` \(col.type)"
-            if let len = col.length, !len.isEmpty { def += "(\(len))" }
-            if !col.isNullable { def += " NOT NULL" }
-            if col.isAutoIncrement { def += " AUTO_INCREMENT" }
-            if col.isUnique { def += " UNIQUE" }
-            if col.isPrimaryKey { pkCols.append("`\(col.name)`") }
-            lines.append(def)
-        }
-        if !pkCols.isEmpty {
-            lines.append("  PRIMARY KEY (\(pkCols.joined(separator: ", ")))")
-        }
-        return "CREATE TABLE `\(tableName)` (\n\(lines.joined(separator: ",\n"))\n);"
-    }
-
-    private var mysqlColumnTypes: [String] {
-        ["INT", "BIGINT", "SMALLINT", "TINYINT", "MEDIUMINT",
-         "VARCHAR", "CHAR", "TEXT", "MEDIUMTEXT", "LONGTEXT",
-         "DECIMAL", "FLOAT", "DOUBLE",
-         "DATE", "DATETIME", "TIMESTAMP", "TIME", "YEAR",
-         "BOOLEAN", "ENUM", "SET",
-         "BLOB", "MEDIUMBLOB", "LONGBLOB",
-         "JSON", "BINARY", "VARBINARY"]
-    }
+    // Footer and helpers → DBCreateTableView+Footer.swift
 }

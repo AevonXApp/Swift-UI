@@ -34,9 +34,9 @@ struct DBDetailSidebar: View {
                 Button(action: onBack) {
                     HStack(spacing: AXSpacing.xxs) {
                         Image(systemName: "chevron.left")
-                            .font(.system(size: 9, weight: .bold))
+                            .font(AXTypography.caption2).fontWeight(.bold)
                         Text("Back")
-                            .font(.system(size: 11, weight: .semibold))
+                            .font(AXTypography.footnote).fontWeight(.semibold)
                     }
                     .foregroundColor(.axAccentBlue)
                     .padding(.horizontal, AXSpacing.sm)
@@ -65,13 +65,13 @@ struct DBDetailSidebar: View {
                                 .stroke(Color.axAccentBlue.opacity(0.15), lineWidth: 1)
                         )
                     Image(systemName: "cylinder.split.1x2")
-                        .font(.system(size: 15, weight: .medium))
+                        .font(AXTypography.headline)
                         .foregroundColor(.axAccentBlue)
                 }
 
                 VStack(alignment: .leading, spacing: AXSpacing.xxxs) {
                     Text(viewModel.database.name)
-                        .font(.system(size: 14, weight: .bold))
+                        .font(AXTypography.headline).fontWeight(.bold)
                         .foregroundColor(.axTextPrimary)
                         .lineLimit(1)
                     HStack(spacing: AXSpacing.xs) {
@@ -79,7 +79,7 @@ struct DBDetailSidebar: View {
                             .fill(Color.axSuccess)
                             .frame(width: 5, height: 5)
                         Text("\(viewModel.database.type.displayName) \(viewModel.database.version ?? "")")
-                            .font(.system(size: 9, weight: .medium))
+                            .font(AXTypography.caption2)
                             .foregroundColor(.axTextMuted)
                     }
                 }
@@ -97,7 +97,7 @@ struct DBDetailSidebar: View {
     private var sidebarItems: some View {
         // Section header
         Text("NAVIGATION")
-            .font(.system(size: 9, weight: .heavy))
+            .font(AXTypography.caption2).fontWeight(.heavy)
             .foregroundColor(.axTextMuted.opacity(0.5))
             .tracking(1.5)
             .padding(.horizontal, AXSpacing.sm)
@@ -118,7 +118,7 @@ struct DBDetailSidebar: View {
             .overlay(alignment: .trailing) {
                 if let badge = badgeFor(section) {
                     Text(badge)
-                        .font(.system(size: 9, weight: .bold, design: .rounded))
+                        .font(AXTypography.caption2).fontWeight(.bold)
                         .foregroundColor(colorFor(section))
                         .padding(.horizontal, 5)
                         .padding(.vertical, 2)
@@ -137,7 +137,7 @@ struct DBDetailSidebar: View {
             .padding(.vertical, AXSpacing.sm)
 
         Text("QUICK ACTIONS")
-            .font(.system(size: 9, weight: .heavy))
+            .font(AXTypography.caption2).fontWeight(.heavy)
             .foregroundColor(.axTextMuted.opacity(0.5))
             .tracking(1.5)
             .padding(.horizontal, AXSpacing.sm)
@@ -181,7 +181,7 @@ struct DBDetailSidebar: View {
                 .padding(.vertical, AXSpacing.sm)
 
             Text("TABLES")
-                .font(.system(size: 9, weight: .heavy))
+                .font(AXTypography.caption2).fontWeight(.heavy)
                 .foregroundColor(.axTextMuted.opacity(0.5))
                 .tracking(1.5)
                 .padding(.horizontal, AXSpacing.sm)
@@ -190,16 +190,16 @@ struct DBDetailSidebar: View {
             // Table search
             HStack(spacing: AXSpacing.xs) {
                 Image(systemName: "magnifyingglass")
-                    .font(.system(size: 9))
+                    .font(AXTypography.caption2)
                     .foregroundColor(.axTextMuted)
                 TextField("Filter tables...", text: $sidebarTableSearch)
-                    .font(.system(size: 10))
+                    .font(AXTypography.caption)
                     .foregroundColor(.axTextPrimary)
                     .textFieldStyle(.plain)
                 if !sidebarTableSearch.isEmpty {
                     Button { sidebarTableSearch = "" } label: {
                         Image(systemName: "xmark.circle.fill")
-                            .font(.system(size: 8))
+                            .font(AXTypography.caption2)
                             .foregroundColor(.axTextMuted)
                     }
                     .buttonStyle(.plain)
@@ -224,16 +224,16 @@ struct DBDetailSidebar: View {
                 } label: {
                     HStack(spacing: AXSpacing.xs) {
                         Image(systemName: "tablecells")
-                            .font(.system(size: 9))
+                            .font(AXTypography.caption2)
                             .foregroundColor(.mint.opacity(0.6))
                         Text(table.name)
-                            .font(.system(size: 11))
+                            .font(AXTypography.footnote)
                             .foregroundColor(viewModel.selectedTable?.name == table.name ? .axAccentBlue : .axTextSecondary)
                             .lineLimit(1)
                         Spacer()
                         if table.rowCount > 0 {
                             Text("\(table.rowCount)")
-                                .font(.system(size: 8, weight: .medium, design: .rounded))
+                                .font(AXTypography.caption2)
                                 .foregroundColor(.axTextMuted.opacity(0.5))
                         }
                     }
@@ -251,7 +251,7 @@ struct DBDetailSidebar: View {
 
             if viewModel.tables.count > 20 && sidebarTableSearch.isEmpty {
                 Text("+ \(viewModel.tables.count - 20) more...")
-                    .font(.system(size: 9))
+                    .font(AXTypography.caption2)
                     .foregroundColor(.axTextMuted)
                     .padding(.horizontal, AXSpacing.sm)
                     .padding(.top, AXSpacing.xxs)
@@ -266,11 +266,11 @@ struct DBDetailSidebar: View {
                     .fill(color.opacity(0.07))
                     .frame(width: 28, height: 28)
                 Image(systemName: icon)
-                    .font(.system(size: 11, weight: .medium))
+                    .font(AXTypography.footnote)
                     .foregroundColor(color.opacity(0.7))
             }
             Text(title)
-                .font(.system(size: 12))
+                .font(AXTypography.subheadline)
                 .foregroundColor(.axTextSecondary)
             Spacer()
         }
@@ -290,26 +290,26 @@ struct DBDetailSidebar: View {
             HStack(spacing: AXSpacing.lg) {
                 HStack(spacing: AXSpacing.xxs) {
                     Image(systemName: "internaldrive")
-                        .font(.system(size: 9))
+                        .font(AXTypography.caption2)
                         .foregroundColor(.axTextMuted.opacity(0.5))
                     Text(AXFormatter.formatSizeMB(viewModel.database.size))
-                        .font(.system(size: 10, weight: .medium))
+                        .font(AXTypography.caption)
                         .foregroundColor(.axTextMuted.opacity(0.5))
                 }
                 HStack(spacing: AXSpacing.xxs) {
                     Image(systemName: "tablecells")
-                        .font(.system(size: 9))
+                        .font(AXTypography.caption2)
                         .foregroundColor(.axTextMuted.opacity(0.5))
                     Text("\(viewModel.tables.count) tables")
-                        .font(.system(size: 10, weight: .medium))
+                        .font(AXTypography.caption)
                         .foregroundColor(.axTextMuted.opacity(0.5))
                 }
                 HStack(spacing: AXSpacing.xxs) {
                     Image(systemName: "bolt.horizontal")
-                        .font(.system(size: 9))
+                        .font(AXTypography.caption2)
                         .foregroundColor(.axTextMuted.opacity(0.5))
                     Text("\(viewModel.database.connections)")
-                        .font(.system(size: 10, weight: .medium))
+                        .font(AXTypography.caption)
                         .foregroundColor(.axTextMuted.opacity(0.5))
                 }
                 Spacer()

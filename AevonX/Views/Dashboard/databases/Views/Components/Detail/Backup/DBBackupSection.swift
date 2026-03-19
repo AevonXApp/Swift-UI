@@ -77,16 +77,16 @@ struct DBBackupSection: View {
                     .fill(color.opacity(0.1))
                     .frame(width: 30, height: 30)
                 Image(systemName: icon)
-                    .font(.system(size: 12, weight: .medium))
+                    .font(AXTypography.subheadline)
                     .foregroundColor(color)
             }
             VStack(alignment: .leading, spacing: 1) {
                 Text(value)
-                    .font(.system(size: 13, weight: .bold, design: .rounded))
+                    .font(AXTypography.callout).fontWeight(.bold)
                     .foregroundColor(.axTextPrimary)
                     .lineLimit(1)
                 Text(label)
-                    .font(.system(size: 9, weight: .medium))
+                    .font(AXTypography.caption2)
                     .foregroundColor(.axTextMuted)
             }
             Spacer()
@@ -280,7 +280,7 @@ struct DBBackupSection: View {
             if viewModel.backups.isEmpty {
                 VStack(spacing: AXSpacing.md) {
                     Image(systemName: "tray")
-                        .font(.system(size: 28))
+                        .font(AXTypography.largeTitle)
                         .foregroundColor(.axTextMuted.opacity(0.4))
                     Text("No backups found")
                         .font(AXTypography.subheadline)

@@ -126,7 +126,7 @@ struct DBImportSQLView: View {
 
             // SQL editor
             TextEditor(text: $sqlContent)
-                .font(.system(size: 12, design: .monospaced))
+                .font(AXTypography.monoMd)
                 .foregroundColor(.axTextPrimary)
                 .scrollContentBackground(.hidden)
                 .frame(maxHeight: .infinity)

@@ -35,7 +35,7 @@ struct DBEDHeader: View {
                             .frame(width: 48, height: 48)
 
                         Image(systemName: viewModel.databaseType.iconName)
-                            .font(.system(size: 24))
+                            .font(AXTypography.title)
                             .foregroundColor(.axAccentBlue)
                     }
 

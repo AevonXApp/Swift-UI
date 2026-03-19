@@ -117,7 +117,7 @@ struct DBEditRowView: View {
             HStack(spacing: AXSpacing.xs) {
                 if col.isPrimaryKey {
                     Image(systemName: "key.fill")
-                        .font(.system(size: 9))
+                        .font(AXTypography.caption2)
                         .foregroundColor(.axWarning)
                 }
                 Text(col.name)
@@ -126,7 +126,7 @@ struct DBEditRowView: View {
                     .foregroundColor(.axTextPrimary)
 
                 Text(col.type)
-                    .font(.system(size: 9, weight: .bold, design: .monospaced))
+                    .font(AXTypography.monoXxs).fontWeight(.bold)
                     .foregroundColor(colorForType(col.type))
                     .padding(.horizontal, AXSpacing.xs)
                     .padding(.vertical, 1)
@@ -135,7 +135,7 @@ struct DBEditRowView: View {
 
                 if hasChanged {
                     Text("MODIFIED")
-                        .font(.system(size: 8, weight: .bold))
+                        .font(AXTypography.caption2).fontWeight(.bold)
                         .foregroundColor(.axWarning)
                         .padding(.horizontal, AXSpacing.xs)
                         .padding(.vertical, 1)
@@ -167,7 +167,7 @@ struct DBEditRowView: View {
                     get: { values[col.name] ?? "" },
                     set: { values[col.name] = $0 }
                 ))
-                .font(.system(size: 12, design: .monospaced))
+                .font(AXTypography.monoMd)
                 .foregroundColor(.axTextPrimary)
                 .textFieldStyle(.plain)
                 .padding(AXSpacing.sm)
@@ -180,7 +180,7 @@ struct DBEditRowView: View {
             } else {
                 HStack {
                     Text("NULL")
-                        .font(.system(size: 12, design: .monospaced))
+                        .font(AXTypography.monoMd)
                         .italic()
                         .foregroundColor(.axTextMuted.opacity(0.5))
                 }

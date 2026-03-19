@@ -17,7 +17,7 @@ struct AIInstallSuccessView: View {
     var body: some View {
         VStack(spacing: AXSpacing.xl) {
             Image(systemName: "checkmark.circle.fill")
-                .font(.system(size: 64))
+                .font(AXTypography.largeTitle)
                 .foregroundColor(.axSuccess)
             
             VStack(spacing: AXSpacing.md) {

@@ -42,96 +42,81 @@ class AdvancedDomainViewModel: ObservableObject {
 
     func loadAliases() async {
         isLoading = true; defer { isLoading = false }
-        do {
-            let cmd = bridge.listAliasesCmd(domain: domain)
-            let output = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
-            let parsedJSON = bridge.parseAliases(output: output)
-            if let data = parsedJSON.data(using: .utf8),
-               let resp = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-               resp["success"] as? Bool == true,
-               let aliasList = resp["data"] as? [String] {
-                aliases = aliasList
-            }
+        let cmd = bridge.listAliasesCmd(domain: domain)
+        let output = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
+        let parsedJSON = bridge.parseAliases(output: output)
+        if let data = parsedJSON.data(using: .utf8),
+           let resp = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+           resp["success"] as? Bool == true,
+           let aliasList = resp["data"] as? [String] {
+            aliases = aliasList
         }
-        catch { aliases = [] }
     }
 
     func addAlias() async {
         guard !newAlias.isEmpty else { return }
-        do {
-            let cmd = bridge.addAliasCmd(alias: newAlias, domain: domain)
-            _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
-            _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.restartNginxCmd())
-            aliases.append(newAlias); newAlias = ""
-            GlobalToastManager.shared.showSuccess("Alias added")
-        } catch { GlobalToastManager.shared.showError(error.localizedDescription) }
+        let cmd = bridge.addAliasCmd(alias: newAlias, domain: domain)
+        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
+        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.restartNginxCmd())
+        aliases.append(newAlias); newAlias = ""
+        GlobalToastManager.shared.showSuccess("Alias added")
     }
 
     func removeAlias(_ alias: String) async {
-        do {
-            let cmd = bridge.removeAliasCmd(alias: alias, domain: domain)
-            _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
-            _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.restartNginxCmd())
-            aliases.removeAll { $0 == alias }
-            GlobalToastManager.shared.showSuccess("Alias removed")
-        } catch { GlobalToastManager.shared.showError(error.localizedDescription) }
+        let cmd = bridge.removeAliasCmd(alias: alias, domain: domain)
+        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
+        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.restartNginxCmd())
+        aliases.removeAll { $0 == alias }
+        GlobalToastManager.shared.showSuccess("Alias removed")
     }
 
     func loadSubdomains() async {
         isLoading = true; defer { isLoading = false }
-        do {
-            await detectPathsIfNeeded()
-            let cmd = bridge.listSubdomainsCmd(domain: domain, sitesEnabled: serverPaths.nginxSitesEnabled)
-            let output = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
-            let lines = output.components(separatedBy: "\n").filter { !$0.isEmpty }
-            subdomains = lines.map { name in
-                SubdomainItem(name: name, fullDomain: "\(name).\(domain)", isActive: true)
-            }
-        } catch { subdomains = [] }
+        await detectPathsIfNeeded()
+        let cmd = bridge.listSubdomainsCmd(domain: domain, sitesEnabled: serverPaths.nginxSitesEnabled)
+        let output = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
+        let lines = output.components(separatedBy: "\n").filter { !$0.isEmpty }
+        subdomains = lines.map { name in
+            SubdomainItem(name: name, fullDomain: "\(name).\(domain)", isActive: true)
+        }
     }
 
     func createSubdomain() async {
         guard !newSubdomain.isEmpty else { return }
         isLoading = true; defer { isLoading = false }
-        do {
-            await detectPathsIfNeeded()
-            let cmds = bridge.createSubdomainCmds(subdomain: newSubdomain, domain: domain, docRoot: docRoot, sitesAvailable: serverPaths.nginxSitesAvailable, sitesEnabled: serverPaths.nginxSitesEnabled, webOwnership: serverPaths.webOwnership)
-            for cmd in cmds {
-                _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
-            }
-            _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.restartNginxCmd())
-            subdomains.append(SubdomainItem(name: newSubdomain, fullDomain: "\(newSubdomain).\(domain)", isActive: true))
-            newSubdomain = ""
-            GlobalToastManager.shared.showSuccess("Subdomain created")
-        } catch { GlobalToastManager.shared.showError(error.localizedDescription) }
+        await detectPathsIfNeeded()
+        let cmds = bridge.createSubdomainCmds(subdomain: newSubdomain, domain: domain, docRoot: docRoot, sitesAvailable: serverPaths.nginxSitesAvailable, sitesEnabled: serverPaths.nginxSitesEnabled, webOwnership: serverPaths.webOwnership)
+        for cmd in cmds {
+            _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
+        }
+        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.restartNginxCmd())
+        subdomains.append(SubdomainItem(name: newSubdomain, fullDomain: "\(newSubdomain).\(domain)", isActive: true))
+        newSubdomain = ""
+        GlobalToastManager.shared.showSuccess("Subdomain created")
     }
 
     func lookupDNS() async {
         isLoading = true; defer { isLoading = false }
-        do {
-            let cmd = bridge.dnsLookupCmd(domain: domain)
-            let output = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
-            let parsedJSON = bridge.parseDNSRecords(domain: domain, output: output)
-            if let data = parsedJSON.data(using: .utf8),
-               let resp = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-               resp["success"] as? Bool == true,
-               let records = resp["data"] as? [[String: String]] {
-                dnsRecords = records.compactMap { dict in
-                    guard let type = dict["type"], let name = dict["name"], let value = dict["value"] else { return nil }
-                    return DNSRecordItem(type: type, name: name, value: value)
-                }
+        let cmd = bridge.dnsLookupCmd(domain: domain)
+        let output = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
+        let parsedJSON = bridge.parseDNSRecords(domain: domain, output: output)
+        if let data = parsedJSON.data(using: .utf8),
+           let resp = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+           resp["success"] as? Bool == true,
+           let records = resp["data"] as? [[String: String]] {
+            dnsRecords = records.compactMap { dict in
+                guard let type = dict["type"], let name = dict["name"], let value = dict["value"] else { return nil }
+                return DNSRecordItem(type: type, name: name, value: value)
             }
-        } catch { dnsRecords = [] }
+        }
     }
 
     func setWWWRedirect(toWWW: Bool) async {
         isLoading = true; defer { isLoading = false }
-        do {
-            let cmd = bridge.setWWWRedirectCmd(domain: domain, toWWW: toWWW)
-            _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
-            _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.restartNginxCmd())
-            GlobalToastManager.shared.showSuccess(toWWW ? "Redirecting to www" : "Redirecting to non-www")
-        } catch { GlobalToastManager.shared.showError(error.localizedDescription) }
+        let cmd = bridge.setWWWRedirectCmd(domain: domain, toWWW: toWWW)
+        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
+        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.restartNginxCmd())
+        GlobalToastManager.shared.showSuccess(toWWW ? "Redirecting to www" : "Redirecting to non-www")
     }
 
     private func detectPathsIfNeeded() async {

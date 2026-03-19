@@ -144,7 +144,7 @@ struct DBActivityLogSection: View {
             VStack(spacing: AXSpacing.md) {
                 Spacer()
                 Image(systemName: "line.3.horizontal.decrease.circle")
-                    .font(.system(size: 32))
+                    .font(AXTypography.largeTitle)
                     .foregroundColor(.axTextMuted.opacity(0.4))
                 Text("No matching entries")
                     .font(AXTypography.subheadline)
@@ -169,7 +169,7 @@ struct DBActivityLogSection: View {
         VStack(spacing: AXSpacing.md) {
             Spacer()
             Image(systemName: "clock")
-                .font(.system(size: 32))
+                .font(AXTypography.largeTitle)
                 .foregroundColor(.axTextMuted.opacity(0.4))
             Text("No Activity Yet")
                 .font(AXTypography.headline)

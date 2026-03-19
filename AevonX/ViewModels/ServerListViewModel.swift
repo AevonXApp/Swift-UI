@@ -108,7 +108,15 @@ class ServerListViewModel: ObservableObject {
             self.subscriptionStatus = status
             self.canAddServer = await SubscriptionManager.shared.canAddServer()
             self.remainingSlots = await SubscriptionManager.shared.remainingServerSlots()
+        } catch {
+            // Subscription check failed (e.g., API fetcher not yet ready during startup race)
+            // Default to allowing server addition for authenticated users — the backend still enforces limits
+            AevonXCoreBridge.CoreLogger.shared.warning("Subscription check failed: \(error.localizedDescription) — defaulting canAddServer=true", module: "ServerList")
+            self.canAddServer = true
+            self.remainingSlots = 10
+        }
 
+        do {
             // Fetch servers via Go HTTP
             let resultJSON = await APIBridge.shared.fetchServersAsync(baseURL: baseURL, token: token!)
             guard let serversData = parseGoServers(resultJSON) else {

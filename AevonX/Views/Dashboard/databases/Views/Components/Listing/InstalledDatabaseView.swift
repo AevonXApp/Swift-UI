@@ -32,7 +32,7 @@ struct InstalledDatabaseView: View {
                             }
                         } label: {
                             Image(systemName: mode == .grid ? "square.grid.2x2.fill" : "list.bullet")
-                                .font(.system(size: 12))
+                                .font(AXTypography.subheadline)
                                 .foregroundColor(viewModel.databaseViewMode == mode ? .axTextPrimary : .axTextMuted)
                                 .frame(width: 32, height: 32)
                                 .background(viewModel.databaseViewMode == mode ? Color.axSurfaceHover : Color.clear)

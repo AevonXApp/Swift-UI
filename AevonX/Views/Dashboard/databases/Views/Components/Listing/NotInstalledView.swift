@@ -19,7 +19,7 @@ struct NotInstalledView: View {
             Spacer()
 
             Image(systemName: type.iconName)
-                .font(.system(size: 64))
+                .font(AXTypography.largeTitle)
                 .foregroundColor(type.brandColor.opacity(0.5))
 
             VStack(spacing: AXSpacing.md) {

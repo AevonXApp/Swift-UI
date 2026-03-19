@@ -71,16 +71,16 @@ struct UnifiedDatabaseDetailView: View {
     private var header: some View {
         HStack(spacing: 12) {
             Image(systemName: databaseType.iconName)
-                .font(.system(size: 20, weight: .semibold))
+                .font(AXTypography.title2).fontWeight(.semibold)
                 .foregroundColor(brandColor)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(databaseType.displayName)
-                    .font(.system(size: 16, weight: .semibold))
+                    .font(AXTypography.title3)
                     .foregroundColor(.axTextPrimary)
 
                 Text("Engine Management")
-                    .font(.system(size: 11))
+                    .font(AXTypography.footnote)
                     .foregroundColor(.axTextMuted)
             }
 
@@ -93,7 +93,7 @@ struct UnifiedDatabaseDetailView: View {
                     .frame(width: 8, height: 8)
 
                 Text(serviceStatus == "active" ? "Running" : "Stopped")
-                    .font(.system(size: 12, weight: .medium))
+                    .font(AXTypography.subheadline)
                     .foregroundColor(serviceStatus == "active" ? .green : .axTextMuted)
             }
             .padding(.horizontal, 10)
@@ -105,7 +105,7 @@ struct UnifiedDatabaseDetailView: View {
 
             Button(action: { onBack?() ?? dismiss() }) {
                 Image(systemName: "xmark.circle.fill")
-                    .font(.system(size: 18))
+                    .font(AXTypography.title2)
                     .foregroundColor(.axTextMuted)
             }
             .buttonStyle(.plain)
@@ -126,11 +126,11 @@ struct UnifiedDatabaseDetailView: View {
                 } label: {
                     HStack(spacing: 10) {
                         Image(systemName: section.icon)
-                            .font(.system(size: 12))
+                            .font(AXTypography.subheadline)
                             .frame(width: 20)
 
                         Text(section.rawValue)
-                            .font(.system(size: 13, weight: selectedSection == section ? .semibold : .regular))
+                            .font(AXTypography.callout).fontWeight(selectedSection == section ? .semibold : .regular)
 
                         Spacer()
                     }
@@ -160,7 +160,7 @@ struct UnifiedDatabaseDetailView: View {
                 ProgressView()
                     .scaleEffect(1.2)
                 Text("Loading \(databaseType.displayName) data…")
-                    .font(.system(size: 13))
+                    .font(AXTypography.callout)
                     .foregroundColor(.axTextMuted)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -181,7 +181,7 @@ struct UnifiedDatabaseDetailView: View {
             // Service Control
             VStack(alignment: .leading, spacing: 12) {
                 Label("Service Control", systemImage: "power")
-                    .font(.system(size: 13, weight: .semibold))
+                    .font(AXTypography.callout).fontWeight(.semibold)
                     .foregroundColor(.axTextPrimary)
 
                 HStack(spacing: 12) {
@@ -206,7 +206,7 @@ struct UnifiedDatabaseDetailView: View {
             // Info Grid
             VStack(alignment: .leading, spacing: 12) {
                 Label("Engine Info", systemImage: "info.circle")
-                    .font(.system(size: 13, weight: .semibold))
+                    .font(AXTypography.callout).fontWeight(.semibold)
                     .foregroundColor(.axTextPrimary)
 
                 infoRow("Engine", databaseType.displayName)
@@ -228,18 +228,18 @@ struct UnifiedDatabaseDetailView: View {
     private var configSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             Label("Configuration", systemImage: "gearshape")
-                .font(.system(size: 13, weight: .semibold))
+                .font(AXTypography.callout).fontWeight(.semibold)
                 .foregroundColor(.axTextPrimary)
 
             if configContent.isEmpty {
                 Text("No configuration loaded")
-                    .font(.system(size: 13))
+                    .font(AXTypography.callout)
                     .foregroundColor(.axTextMuted)
                     .padding()
             } else {
                 ScrollView {
                     Text(configContent)
-                        .font(.system(size: 12, design: .monospaced))
+                        .font(AXTypography.monoMd)
                         .foregroundColor(.axTextPrimary)
                         .textSelection(.enabled)
                         .padding(12)
@@ -265,11 +265,11 @@ struct UnifiedDatabaseDetailView: View {
     private var logsSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             Label("Service Logs", systemImage: "doc.text")
-                .font(.system(size: 13, weight: .semibold))
+                .font(AXTypography.callout).fontWeight(.semibold)
                 .foregroundColor(.axTextPrimary)
 
             Text("Log viewer for \(databaseType.displayName)")
-                .font(.system(size: 13))
+                .font(AXTypography.callout)
                 .foregroundColor(.axTextMuted)
         }
         .padding(16)
@@ -286,13 +286,13 @@ struct UnifiedDatabaseDetailView: View {
     private var versionsSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             Label("Version Management", systemImage: "shippingbox")
-                .font(.system(size: 13, weight: .semibold))
+                .font(AXTypography.callout).fontWeight(.semibold)
                 .foregroundColor(.axTextPrimary)
 
             infoRow("Current Version", version)
 
             Text("Version management for \(databaseType.displayName)")
-                .font(.system(size: 13))
+                .font(AXTypography.callout)
                 .foregroundColor(.axTextMuted)
         }
         .padding(16)
@@ -316,15 +316,15 @@ struct UnifiedDatabaseDetailView: View {
         } label: {
             HStack(spacing: 6) {
                 Image(systemName: icon)
-                    .font(.system(size: 10))
+                    .font(AXTypography.caption)
                 Text(title)
-                    .font(.system(size: 12, weight: .medium))
+                    .font(AXTypography.subheadline)
             }
             .foregroundColor(color)
             .padding(.horizontal, 16)
             .padding(.vertical, 8)
             .background(color.opacity(0.1))
-            .cornerRadius(6)
+            .cornerRadius(AXCornerRadius.sm)
             .overlay(
                 RoundedRectangle(cornerRadius: 6)
                     .stroke(color.opacity(0.3), lineWidth: 1)
@@ -336,11 +336,11 @@ struct UnifiedDatabaseDetailView: View {
     private func infoRow(_ label: String, _ value: String) -> some View {
         HStack {
             Text(label)
-                .font(.system(size: 12))
+                .font(AXTypography.subheadline)
                 .foregroundColor(.axTextMuted)
             Spacer()
             Text(value)
-                .font(.system(size: 12, weight: .medium))
+                .font(AXTypography.subheadline)
                 .foregroundColor(.axTextPrimary)
         }
         .padding(.vertical, 4)
@@ -352,51 +352,33 @@ struct UnifiedDatabaseDetailView: View {
         isLoading = true
         defer { isLoading = false }
 
-        // Load version via SSH
-        let sid = serverId
-        let versionCmd: String
-        switch databaseType {
-        case .mysql, .mariadb: versionCmd = "mysql --version 2>/dev/null | awk '{print $3}'"
-        case .postgresql:      versionCmd = "psql --version 2>/dev/null | awk '{print $3}'"
-        case .redis:           versionCmd = "redis-server --version 2>/dev/null | awk '{print $3}' | tr -d 'v='"
-        case .mongodb:         versionCmd = "mongod --version 2>/dev/null | head -1 | awk '{print $3}' | tr -d 'v'"
-        case .elasticsearch:   versionCmd = "curl -s localhost:9200 2>/dev/null | grep number | head -1 | awk -F'\"' '{print $4}'"
-        default:               versionCmd = "echo unknown"
-        }
+        let bridge = DatabasesBridge.shared
+        let engineKey = databaseType.rawValue
 
-        let versionResult = await SSHBridge.shared.executeAsync(serverID: sid, command: versionCmd)
+        // Version via bridge
+        let versionCmd = bridge.getVersionCmd(engine: engineKey)
+        let versionResult = await SSHBridge.shared.executeAsync(serverID: serverId, command: versionCmd)
         let trimmed = versionResult.trimmingCharacters(in: .whitespacesAndNewlines)
         version = trimmed.isEmpty ? "—" : trimmed
 
-        // Check service status
-        let statusCmd: String
-        switch databaseType {
-        case .mysql:           statusCmd = "systemctl is-active mysql 2>/dev/null || systemctl is-active mysqld 2>/dev/null"
-        case .mariadb:         statusCmd = "systemctl is-active mariadb 2>/dev/null"
-        case .postgresql:      statusCmd = "systemctl is-active postgresql 2>/dev/null"
-        case .redis:           statusCmd = "systemctl is-active redis-server 2>/dev/null || systemctl is-active redis 2>/dev/null"
-        case .mongodb:         statusCmd = "systemctl is-active mongod 2>/dev/null"
-        case .elasticsearch:   statusCmd = "systemctl is-active elasticsearch 2>/dev/null"
-        default:               statusCmd = "echo unknown"
-        }
-
-        let statusResult = await SSHBridge.shared.executeAsync(serverID: sid, command: statusCmd)
+        // Status via bridge
+        let statusCmd = bridge.statusCmd(engine: engineKey)
+        let statusResult = await SSHBridge.shared.executeAsync(serverID: serverId, command: statusCmd)
         serviceStatus = statusResult.trimmingCharacters(in: .whitespacesAndNewlines).contains("active") ? "active" : "inactive"
     }
 
     private func controlService(_ action: String) async {
-        let serviceName: String
-        switch databaseType {
-        case .mysql:           serviceName = "mysql"
-        case .mariadb:         serviceName = "mariadb"
-        case .postgresql:      serviceName = "postgresql"
-        case .redis:           serviceName = "redis-server"
-        case .mongodb:         serviceName = "mongod"
-        case .elasticsearch:   serviceName = "elasticsearch"
-        default:               return
+        let bridge = DatabasesBridge.shared
+        let engineKey = databaseType.rawValue
+
+        let cmd: String
+        switch action {
+        case "start":   cmd = bridge.startCmd(engine: engineKey)
+        case "stop":    cmd = bridge.stopCmd(engine: engineKey)
+        case "restart": cmd = bridge.restartCmd(engine: engineKey)
+        default:        return
         }
 
-        let cmd = "sudo systemctl \(action) \(serviceName) 2>&1"
         _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
 
         // Re-check status

@@ -160,41 +160,37 @@ class CronViewModel: ObservableObject {
     // MARK: - Add Job
 
     func addJob(_ job: CronJob) async {
-        do {
-            // Step 1: Write script to server
-            let writeCmds = bridge.writeScriptCmds(
-                scriptDir: scriptDir, logDir: logDir,
-                jobID: job.id.uuidString, userScript: job.command
-            )
-            for cmd in writeCmds {
-                let _ = await SSHBridge.shared.executeAsync(
-                    serverID: serverId, command: cmd
-                )
-            }
-
-            // Step 2: Add crontab entry
-            let scriptPath = "\(scriptDir)/\(job.id.uuidString).sh"
-            let addCmd = bridge.addJobCmd(
-                minute: job.schedule.minute, hour: job.schedule.hour,
-                dom: job.schedule.dayOfMonth, month: job.schedule.month,
-                dow: job.schedule.dayOfWeek, scriptPath: scriptPath,
-                jobName: job.name, taskType: job.taskType.rawValue
-            )
+        // Step 1: Write script to server
+        let writeCmds = bridge.writeScriptCmds(
+            scriptDir: scriptDir, logDir: logDir,
+            jobID: job.id.uuidString, userScript: job.command
+        )
+        for cmd in writeCmds {
             let _ = await SSHBridge.shared.executeAsync(
-                serverID: serverId, command: addCmd
+                serverID: serverId, command: cmd
             )
-
-            // Step 3: Ensure cron service is running
-            let ensureCmd = bridge.ensureRunningCmd()
-            let _ = await SSHBridge.shared.executeAsync(
-                serverID: serverId, command: ensureCmd
-            )
-
-            showToast("Task added: \(job.name)", success: true)
-            await loadJobs()
-        } catch {
-            showToast("Failed: \(error.localizedDescription)", success: false)
         }
+
+        // Step 2: Add crontab entry
+        let scriptPath = "\(scriptDir)/\(job.id.uuidString).sh"
+        let addCmd = bridge.addJobCmd(
+            minute: job.schedule.minute, hour: job.schedule.hour,
+            dom: job.schedule.dayOfMonth, month: job.schedule.month,
+            dow: job.schedule.dayOfWeek, scriptPath: scriptPath,
+            jobName: job.name, taskType: job.taskType.rawValue
+        )
+        let _ = await SSHBridge.shared.executeAsync(
+            serverID: serverId, command: addCmd
+        )
+
+        // Step 3: Ensure cron service is running
+        let ensureCmd = bridge.ensureRunningCmd()
+        let _ = await SSHBridge.shared.executeAsync(
+            serverID: serverId, command: ensureCmd
+        )
+
+        showToast("Task added: \(job.name)", success: true)
+        await loadJobs()
     }
 
     // MARK: - Delete Job

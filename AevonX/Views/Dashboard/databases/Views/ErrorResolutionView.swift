@@ -63,7 +63,7 @@ public struct ErrorResolutionView: View {
             
             Button(action: { dismiss() }) {
                 Image(systemName: "xmark")
-                    .font(.system(size: 14))
+                    .font(AXTypography.body)
                     .foregroundColor(.axTextSecondary)
                     .frame(width: 28, height: 28)
                     .background(Color.axSurface)
@@ -171,7 +171,7 @@ public struct ErrorResolutionView: View {
     private var successView: some View {
         VStack(spacing: AXSpacing.xl) {
             Image(systemName: "checkmark.circle.fill")
-                .font(.system(size: 64))
+                .font(AXTypography.largeTitle)
                 .foregroundColor(.axSuccess)
             
             Text("Issue Resolved")
@@ -189,7 +189,7 @@ public struct ErrorResolutionView: View {
     private var errorView: some View {
         VStack(spacing: AXSpacing.lg) {
             Image(systemName: "exclamationmark.triangle.fill")
-                .font(.system(size: 48))
+                .font(AXTypography.largeTitle)
                 .foregroundColor(.axError)
             
             Text("Resolution Failed")
@@ -272,7 +272,7 @@ private struct RiskBadge: View {
             .padding(.vertical, 4)
             .background(color.opacity(0.1))
             .foregroundColor(color)
-            .cornerRadius(4)
+            .cornerRadius(AXCornerRadius.xs)
     }
     
     var color: Color {

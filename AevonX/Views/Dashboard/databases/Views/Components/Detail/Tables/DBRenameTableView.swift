@@ -25,17 +25,17 @@ struct DBRenameTableView: View {
                             .fill(Color.axWarning.opacity(0.12))
                             .frame(width: 28, height: 28)
                         Image(systemName: "pencil")
-                            .font(.system(size: 12, weight: .medium))
+                            .font(AXTypography.subheadline)
                             .foregroundColor(.axWarning)
                     }
                     Text("Rename Table")
-                        .font(.system(size: 15, weight: .bold))
+                        .font(AXTypography.headline).fontWeight(.bold)
                         .foregroundColor(.axTextPrimary)
                 }
                 Spacer()
                 Button { dismiss() } label: {
                     Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: 16))
+                        .font(AXTypography.title3)
                         .foregroundColor(.axTextMuted)
                 }
                 .buttonStyle(.plain)
@@ -48,10 +48,10 @@ struct DBRenameTableView: View {
                 // Current name
                 VStack(alignment: .leading, spacing: AXSpacing.xs) {
                     Text("Current Name")
-                        .font(.system(size: 11, weight: .semibold))
+                        .font(AXTypography.footnote).fontWeight(.semibold)
                         .foregroundColor(.axTextMuted)
                     Text(viewModel.selectedTable?.name ?? "")
-                        .font(.system(size: 13, weight: .medium, design: .monospaced))
+                        .font(AXTypography.monoMd).fontWeight(.medium)
                         .foregroundColor(.axTextSecondary)
                         .padding(.horizontal, AXSpacing.md)
                         .padding(.vertical, AXSpacing.sm)
@@ -63,10 +63,10 @@ struct DBRenameTableView: View {
                 // New name
                 VStack(alignment: .leading, spacing: AXSpacing.xs) {
                     Text("New Name")
-                        .font(.system(size: 11, weight: .semibold))
+                        .font(AXTypography.footnote).fontWeight(.semibold)
                         .foregroundColor(.axTextSecondary)
                     TextField("new_table_name", text: $newName)
-                        .font(.system(size: 13, design: .monospaced))
+                        .font(AXTypography.monoMd)
                         .foregroundColor(.axTextPrimary)
                         .textFieldStyle(.plain)
                         .padding(.horizontal, AXSpacing.md)
@@ -81,9 +81,9 @@ struct DBRenameTableView: View {
                     if !newName.isEmpty && newName.contains(" ") {
                         HStack(spacing: AXSpacing.xxs) {
                             Image(systemName: "exclamationmark.triangle")
-                                .font(.system(size: 9))
+                                .font(AXTypography.caption2)
                             Text("Table names should not contain spaces")
-                                .font(.system(size: 10))
+                                .font(AXTypography.caption)
                         }
                         .foregroundColor(.axWarning)
                     }
@@ -93,10 +93,10 @@ struct DBRenameTableView: View {
                 if !newName.isEmpty {
                     VStack(alignment: .leading, spacing: AXSpacing.xs) {
                         Text("SQL Preview")
-                            .font(.system(size: 11, weight: .semibold))
+                            .font(AXTypography.footnote).fontWeight(.semibold)
                             .foregroundColor(.axTextSecondary)
                         Text(generateSQL())
-                            .font(.system(size: 11, design: .monospaced))
+                            .font(AXTypography.monoSm)
                             .foregroundColor(.axAccentGreen)
                             .textSelection(.enabled)
                             .padding(AXSpacing.md)
@@ -116,7 +116,7 @@ struct DBRenameTableView: View {
             HStack(spacing: AXSpacing.md) {
                 Button { dismiss() } label: {
                     Text("Cancel")
-                        .font(.system(size: 12, weight: .semibold))
+                        .font(AXTypography.subheadline).fontWeight(.semibold)
                         .foregroundColor(.axTextSecondary)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, AXSpacing.sm)
@@ -147,7 +147,7 @@ struct DBRenameTableView: View {
                                 .frame(width: 14, height: 14)
                         }
                         Text(isRenaming ? "Renaming..." : "Rename")
-                            .font(.system(size: 12, weight: .bold))
+                            .font(AXTypography.subheadline).fontWeight(.bold)
                     }
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)

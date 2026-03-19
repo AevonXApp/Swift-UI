@@ -45,7 +45,7 @@ struct VersionPickerSheet: View {
                                                     .padding(.vertical, 2)
                                                     .background(Color.axAccentBlue.opacity(0.2))
                                                     .foregroundColor(.axAccentBlue)
-                                                    .cornerRadius(4)
+                                                    .cornerRadius(AXCornerRadius.xs)
                                             }
                                             
                                             if version.isRecommended {
@@ -55,7 +55,7 @@ struct VersionPickerSheet: View {
                                                     .padding(.vertical, 2)
                                                     .background(Color.axSuccess.opacity(0.2))
                                                     .foregroundColor(.axSuccess)
-                                                    .cornerRadius(4)
+                                                    .cornerRadius(AXCornerRadius.xs)
                                             }
                                         }
                                     }

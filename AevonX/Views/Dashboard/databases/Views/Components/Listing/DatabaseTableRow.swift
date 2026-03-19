@@ -25,7 +25,7 @@ struct DatabaseTableRow: View {
                         .frame(width: 32, height: 32)
                     
                     Image(systemName: database.type.iconName)
-                        .font(.system(size: 14))
+                        .font(AXTypography.body)
                         .foregroundColor(database.type.brandColor)
                 }
                 
@@ -45,7 +45,7 @@ struct DatabaseTableRow: View {
             
             // Version
             Text(database.version ?? "-")
-                .font(.system(size: 11, design: .monospaced))
+                .font(AXTypography.monoSm)
                 .foregroundColor(.axTextTertiary)
                 .frame(width: 100, alignment: .leading)
             
@@ -57,7 +57,7 @@ struct DatabaseTableRow: View {
             
             // Tables
             Text("\(database.tables)")
-                .font(.system(size: 12, weight: .semibold, design: .monospaced))
+                .font(AXTypography.monoMd).fontWeight(.semibold)
                 .foregroundColor(.axTextPrimary)
                 .frame(width: 80, alignment: .trailing)
             
@@ -75,7 +75,7 @@ struct DatabaseTableRow: View {
             HStack(spacing: AXSpacing.sm) {
                 Button { onOpen?() } label: {
                     Image(systemName: "arrow.right.circle")
-                        .font(.system(size: 12))
+                        .font(AXTypography.subheadline)
                         .foregroundColor(.axAccentBlue)
                 }
                 .buttonStyle(.plain)
@@ -83,7 +83,7 @@ struct DatabaseTableRow: View {
 
                 Button { onBackup?() } label: {
                     Image(systemName: "arrow.down.doc")
-                        .font(.system(size: 12))
+                        .font(AXTypography.subheadline)
                         .foregroundColor(.axAccentGreen)
                 }
                 .buttonStyle(.plain)
@@ -91,7 +91,7 @@ struct DatabaseTableRow: View {
 
                 Button { onDelete?() } label: {
                     Image(systemName: "trash")
-                        .font(.system(size: 12))
+                        .font(AXTypography.subheadline)
                         .foregroundColor(.axError)
                 }
                 .buttonStyle(.plain)

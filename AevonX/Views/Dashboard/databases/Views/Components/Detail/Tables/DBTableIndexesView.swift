@@ -94,7 +94,7 @@ struct DBTableIndexesView: View {
                     VStack(spacing: AXSpacing.md) {
                         Spacer(minLength: 60)
                         Image(systemName: "list.bullet.indent")
-                            .font(.system(size: 28))
+                            .font(AXTypography.largeTitle)
                             .foregroundColor(.axTextMuted.opacity(0.4))
                         Text("No Indexes")
                             .font(AXTypography.headline)
@@ -162,7 +162,7 @@ struct DBTableIndexesView: View {
                         .fill(index.isUnique ? Color.axWarning.opacity(0.1) : Color.axTextMuted.opacity(0.1))
                         .frame(width: 22, height: 22)
                     Image(systemName: index.isUnique ? "key.fill" : "list.bullet")
-                        .font(.system(size: 9))
+                        .font(AXTypography.caption2)
                         .foregroundColor(index.isUnique ? .axWarning : .axTextMuted)
                 }
                 Text(index.name)
@@ -176,7 +176,7 @@ struct DBTableIndexesView: View {
             HStack(spacing: AXSpacing.xxs) {
                 ForEach(index.columns, id: \.self) { col in
                     Text(col)
-                        .font(.system(size: 10, weight: .medium, design: .monospaced))
+                        .font(AXTypography.monoXs).fontWeight(.medium)
                         .foregroundColor(.axAccentBlue)
                         .padding(.horizontal, AXSpacing.xs)
                         .padding(.vertical, 2)
@@ -207,7 +207,7 @@ struct DBTableIndexesView: View {
             .padding(.horizontal, AXSpacing.sm)
 
             Text(index.type)
-                .font(.system(size: 10, design: .monospaced))
+                .font(AXTypography.monoXs)
                 .foregroundColor(.axTextMuted)
                 .padding(.horizontal, AXSpacing.sm)
 

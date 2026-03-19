@@ -199,7 +199,8 @@ extension DatabaseType {
         }
     }
     
-    /// Default configuration file paths
+    /// Default config paths — for UI display/reference only.
+    /// Actual paths are resolved dynamically by Go Core's ConfigPathCmd().
     public var defaultConfigPaths: [String] {
         switch self {
         case .mysql:
@@ -225,7 +226,8 @@ extension DatabaseType {
         }
     }
     
-    /// Default data directories
+    /// Default data directories — for UI display/reference only.
+    /// Actual data dirs are detected by Go Core at runtime.
     public var defaultDataDirectories: [String] {
         switch self {
         case .mysql:

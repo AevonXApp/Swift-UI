@@ -58,50 +58,40 @@ public final class TrafficAnalyticsViewModel: ObservableObject {
         await withTaskGroup(of: Void.self) { group in
             // Load statistics
             group.addTask { @MainActor in
-                do {
-                    let cmd = self.bridge.requestStatsCmd(domain: self.website.domain, timeRange: self.selectedTimeRange.rawValue)
-                    let result = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
-                    let parsedJSON = self.bridge.parseRequestStats(output: result)
+                let logPath = "\(self.serverPaths.logDir)/\(self.website.domain).access.log"
+                let cmd = self.bridge.requestStatsCmd(domain: self.website.domain, timeRange: self.selectedTimeRange.rawValue, logPath: logPath)
+                let result = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
+                let parsedJSON = self.bridge.parseRequestStats(output: result)
 
-                    if let data = parsedJSON.data(using: .utf8),
-                       let json = try? JSONDecoder().decode(RequestStatistics.self, from: data) {
-                        self.statistics = json
-                    }
-                } catch {
-                    CoreLogger.shared.debug("Failed to load statistics: \(error)", module: "TrafficAnalytics")
+                if let data = parsedJSON.data(using: String.Encoding.utf8),
+                   let json = try? JSONDecoder().decode(RequestStatistics.self, from: data) {
+                    self.statistics = json
                 }
             }
 
             // Load bandwidth data
             group.addTask { @MainActor in
-                do {
-                    let logPath = "\(self.serverPaths.logDir)/\(self.website.domain).access.log"
-                    let cmd = self.bridge.bandwidthCmd(logPath: logPath)
-                    let result = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
-                    let parsedJSON = self.bridge.parseBandwidth(output: result)
+                let logPath = "\(self.serverPaths.logDir)/\(self.website.domain).access.log"
+                let cmd = self.bridge.bandwidthCmd(logPath: logPath)
+                let result = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
+                let parsedJSON = self.bridge.parseBandwidth(output: result)
 
-                    if let data = parsedJSON.data(using: .utf8),
-                       let points = try? JSONDecoder().decode([BandwidthDataPoint].self, from: data) {
-                        self.bandwidthData = points
-                    }
-                } catch {
-                    CoreLogger.shared.debug("Failed to load bandwidth data: \(error)", module: "TrafficAnalytics")
+                if let data = parsedJSON.data(using: String.Encoding.utf8),
+                   let points = try? JSONDecoder().decode([BandwidthDataPoint].self, from: data) {
+                    self.bandwidthData = points
                 }
             }
 
             // Load top endpoints
             group.addTask { @MainActor in
-                do {
-                    let cmd = self.bridge.topEndpointsCmd(domain: self.website.domain, limit: 10)
-                    let result = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
-                    let parsedJSON = self.bridge.parseTopEndpoints(output: result)
+                let logPath = "\(self.serverPaths.logDir)/\(self.website.domain).access.log"
+                let cmd = self.bridge.topEndpointsCmd(domain: self.website.domain, limit: 10, logPath: logPath)
+                let result = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
+                let parsedJSON = self.bridge.parseTopEndpoints(output: result)
 
-                    if let data = parsedJSON.data(using: .utf8),
-                       let endpoints = try? JSONDecoder().decode([EndpointStat].self, from: data) {
-                        self.topEndpoints = endpoints
-                    }
-                } catch {
-                    CoreLogger.shared.debug("Failed to load top endpoints: \(error)", module: "TrafficAnalytics")
+                if let data = parsedJSON.data(using: String.Encoding.utf8),
+                   let endpoints = try? JSONDecoder().decode([EndpointStat].self, from: data) {
+                    self.topEndpoints = endpoints
                 }
             }
         }

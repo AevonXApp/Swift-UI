@@ -16,7 +16,7 @@ struct AIInstallErrorView: View {
     var body: some View {
         VStack(spacing: AXSpacing.lg) {
             Image(systemName: "exclamationmark.triangle.fill")
-                .font(.system(size: 48))
+                .font(AXTypography.largeTitle)
                 .foregroundColor(.axError)
             
             Text("Analysis Failed")

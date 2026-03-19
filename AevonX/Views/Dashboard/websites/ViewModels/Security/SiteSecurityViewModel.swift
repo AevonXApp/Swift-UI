@@ -31,135 +31,111 @@ class SiteSecurityViewModel: ObservableObject {
     }
 
     func loadSecurityStatus() async {
-        do {
-            await detectPathsIfNeeded()
-            let configPath = resolveConfigPath()
-            let cmd = bridge.securityScanCmd(domain: domain, docRoot: docRoot, sitesAvailable: serverPaths.nginxSitesAvailable)
-            let result = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
-            let parsedJSON = bridge.parseSecurityScan(output: result)
+        await detectPathsIfNeeded()
+        let _ = resolveConfigPath()
+        let cmd = bridge.securityScanCmd(domain: domain, docRoot: docRoot, sitesAvailable: serverPaths.nginxSitesAvailable)
+        let result = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
+        let parsedJSON = bridge.parseSecurityScan(output: result)
 
-            if let data = parsedJSON.data(using: .utf8),
-               let resp = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-               resp["success"] as? Bool == true,
-               let statuses = resp["data"] as? [[String: Any]] {
-                securityStatuses = statuses.compactMap { dict in
-                    guard let feature = dict["feature"] as? String else { return nil }
-                    return SiteSecurityStatus(
-                        feature: SiteSecurityFeature(rawValue: feature) ?? .directoryListing,
-                        enabled: dict["enabled"] as? Bool ?? false,
-                        issues: []
-                    )
-                }
+        if let data = parsedJSON.data(using: .utf8),
+           let resp = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+           resp["success"] as? Bool == true,
+           let statuses = resp["data"] as? [[String: Any]] {
+            securityStatuses = statuses.compactMap { dict in
+                guard let feature = dict["feature"] as? String else { return nil }
+                return SiteSecurityStatus(
+                    feature: SiteSecurityFeature(rawValue: feature) ?? .directoryListing,
+                    enabled: dict["enabled"] as? Bool ?? false,
+                    issues: []
+                )
             }
-        } catch {
-            securityStatuses = []
         }
     }
 
     func toggleHotlinkProtection(enable: Bool) async {
         isScanning = true; scanProgress = "Toggling hotlink protection..."
         defer { isScanning = false; scanProgress = "" }
-        do {
-            await detectPathsIfNeeded()
-            let configPath = resolveConfigPath()
-            let cmd = bridge.toggleHotlinkCmd(enable: enable, domain: domain, configPath: configPath)
-            _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
-            _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.restartNginxCmd())
-            GlobalToastManager.shared.showSuccess(enable ? "Hotlink protection enabled" : "Hotlink protection disabled")
-            await loadSecurityStatus()
-        } catch {
-            GlobalToastManager.shared.showError(error.localizedDescription)
-        }
+        await detectPathsIfNeeded()
+        let configPath = resolveConfigPath()
+        let cmd = bridge.toggleHotlinkCmd(enable: enable, domain: domain, configPath: configPath)
+        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
+        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.restartNginxCmd())
+        GlobalToastManager.shared.showSuccess(enable ? "Hotlink protection enabled" : "Hotlink protection disabled")
+        await loadSecurityStatus()
     }
 
     func toggleSensitiveFilesBlock(enable: Bool) async {
         isScanning = true; scanProgress = "Configuring sensitive files block..."
         defer { isScanning = false; scanProgress = "" }
-        do {
-            await detectPathsIfNeeded()
-            let sa = serverPaths.nginxSitesAvailable
-            let cmd = bridge.toggleSensitiveBlockCmd(enable: enable, domain: domain, sitesAvailable: sa)
-            _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
-            _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.restartNginxCmd())
-            GlobalToastManager.shared.showSuccess("Sensitive files block applied")
-            await loadSecurityStatus()
-        } catch {
-            GlobalToastManager.shared.showError(error.localizedDescription)
-        }
+        await detectPathsIfNeeded()
+        let sa = serverPaths.nginxSitesAvailable
+        let cmd = bridge.toggleSensitiveBlockCmd(enable: enable, domain: domain, sitesAvailable: sa)
+        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
+        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.restartNginxCmd())
+        GlobalToastManager.shared.showSuccess("Sensitive files block applied")
+        await loadSecurityStatus()
     }
 
     func runPermissionAudit() async {
         isScanning = true; scanProgress = "Auditing file permissions..."
         defer { isScanning = false; scanProgress = "" }
-        do {
-            let cmd = bridge.permissionAuditCmd(docRoot: docRoot)
-            let result = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
-            let parsedJSON = bridge.parsePermissionAudit(output: result)
+        let cmd = bridge.permissionAuditCmd(docRoot: docRoot)
+        let result = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
+        let parsedJSON = bridge.parsePermissionAudit(output: result)
 
-            if let data = parsedJSON.data(using: .utf8),
-               let resp = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-               resp["success"] as? Bool == true,
-               let results = resp["data"] as? [[String: Any]] {
-                permissionResults = results.compactMap { dict in
-                    guard let path = dict["path"] as? String,
-                          let perms = dict["permissions"] as? String else { return nil }
-                    let owner = dict["owner"] as? String ?? ""
-                    return PermissionAuditResult(
-                        path: path,
-                        permissions: perms,
-                        owner: owner,
-                        severity: perms.contains("7") ? .critical : .warning
-                    )
-                }
+        if let data = parsedJSON.data(using: .utf8),
+           let resp = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+           resp["success"] as? Bool == true,
+           let results = resp["data"] as? [[String: Any]] {
+            permissionResults = results.compactMap { dict in
+                guard let path = dict["path"] as? String,
+                      let perms = dict["permissions"] as? String else { return nil }
+                let owner = dict["owner"] as? String ?? ""
+                return PermissionAuditResult(
+                    path: path,
+                    permissions: perms,
+                    owner: owner,
+                    severity: perms.contains("7") ? .critical : .warning
+                )
             }
-        } catch {
-            GlobalToastManager.shared.showError(error.localizedDescription)
         }
     }
 
     func fixPermissions() async {
         isScanning = true; scanProgress = "Fixing permissions..."
         defer { isScanning = false; scanProgress = "" }
-        do {
-            await detectPathsIfNeeded()
-            let cmd = bridge.fixPermissionsCmd(docRoot: docRoot)
-            _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
-            let ownership = serverPaths.webOwnership
-            GlobalToastManager.shared.showSuccess("Permissions fixed: dirs=755, files=644, owner=\(ownership)")
-            await runPermissionAudit()
-        } catch {
-            GlobalToastManager.shared.showError(error.localizedDescription)
-        }
+        await detectPathsIfNeeded()
+        let cmd = bridge.fixPermissionsCmd(docRoot: docRoot)
+        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
+        let ownership = serverPaths.webOwnership
+        GlobalToastManager.shared.showSuccess("Permissions fixed: dirs=755, files=644, owner=\(ownership)")
+        await runPermissionAudit()
     }
 
     func runMalwareScan() async {
         isScanning = true; scanProgress = "Scanning for malicious code..."
         defer { isScanning = false; scanProgress = "" }
-        do {
-            let cmd = bridge.malwareScanCmd(docRoot: docRoot)
-            let result = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
-            let parsedJSON = bridge.parseMalwareScan(output: result)
+        let cmd = bridge.malwareScanCmd(docRoot: docRoot)
+        let result = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
+        let parsedJSON = bridge.parseMalwareScan(output: result)
 
-            if let data = parsedJSON.data(using: .utf8),
-               let resp = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-               resp["success"] as? Bool == true,
-               let results = resp["data"] as? [[String: Any]] {
-                malwareResults = results.compactMap { dict in
-                    guard let filePath = dict["file_path"] as? String else { return nil }
-                    return MalwareScanResult(
-                        filePath: filePath,
-                        matchedPattern: "suspicious",
-                        lineNumber: dict["line_number"] as? Int ?? 0,
-                        lineContent: dict["line_content"] as? String ?? "",
-                        severity: .critical
-                    )
-                }
-                if results.isEmpty {
-                    GlobalToastManager.shared.showSuccess("No suspicious code found!")
-                }
+        if let data = parsedJSON.data(using: .utf8),
+           let resp = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+           resp["success"] as? Bool == true,
+           let results = resp["data"] as? [[String: Any]] {
+            malwareResults = results.compactMap { dict in
+                guard let filePath = dict["file_path"] as? String else { return nil }
+                return MalwareScanResult(
+                    filePath: filePath,
+                    matchedPattern: "suspicious",
+                    lineNumber: dict["line_number"] as? Int ?? 0,
+                    lineContent: dict["line_content"] as? String ?? "",
+                    severity: .critical
+                )
             }
-        } catch {
-            GlobalToastManager.shared.showError(error.localizedDescription)
+            if results.isEmpty {
+                GlobalToastManager.shared.showSuccess("No suspicious code found!")
+            }
         }
     }
 

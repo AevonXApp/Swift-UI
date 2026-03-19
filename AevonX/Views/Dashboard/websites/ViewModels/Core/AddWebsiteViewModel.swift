@@ -71,41 +71,35 @@ public final class AddWebsiteViewModel: ObservableObject {
 
         isLoadingCapabilities = true
 
-        do {
-            // Detect installed runtimes via SSH
-            var runtimes: [RuntimeType] = [.static]
-            
-            let phpCheck = await SSHBridge.shared.executeAsync(serverID: serverId, command: "which php 2>/dev/null && echo YES || echo NO")
-            if phpCheck.contains("YES") { runtimes.append(.php) }
-            
-            let nodeCheck = await SSHBridge.shared.executeAsync(serverID: serverId, command: "which node 2>/dev/null && echo YES || echo NO")
-            if nodeCheck.contains("YES") { runtimes.append(.nodejs) }
-            
-            let pyCheck = await SSHBridge.shared.executeAsync(serverID: serverId, command: "which python3 2>/dev/null && echo YES || echo NO")
-            if pyCheck.contains("YES") { runtimes.append(.python) }
-            
-            availableRuntimes = runtimes
+        // Detect installed runtimes via SSH
+        var runtimes: [RuntimeType] = [.static]
+        
+        let phpCheck = await SSHBridge.shared.executeAsync(serverID: serverId, command: "which php 2>/dev/null && echo YES || echo NO")
+        if phpCheck.contains("YES") { runtimes.append(.php) }
+        
+        let nodeCheck = await SSHBridge.shared.executeAsync(serverID: serverId, command: "which node 2>/dev/null && echo YES || echo NO")
+        if nodeCheck.contains("YES") { runtimes.append(.nodejs) }
+        
+        let pyCheck = await SSHBridge.shared.executeAsync(serverID: serverId, command: "which python3 2>/dev/null && echo YES || echo NO")
+        if pyCheck.contains("YES") { runtimes.append(.python) }
+        
+        availableRuntimes = runtimes
 
-            // Set default runtime
-            if availableRuntimes.contains(.php) {
-                runtime = .php
-            } else if let first = availableRuntimes.first {
-                runtime = first
-            }
-
-            // Detect web root using PathResolver
-            let pathCmd = PathResolverBridge.shared.detectCmd()
-            let pathOutput = await SSHBridge.shared.executeAsync(serverID: serverId, command: pathCmd)
-            let detectedPaths = PathResolverBridge.shared.parse(output: pathOutput)
-            detectedWebRoot = detectedPaths.webRoot
-
-            // Load versions for the selected runtime
-            await loadVersionsForRuntime(runtime)
-
-        } catch {
-            CoreLogger.shared.error("Failed to load server capabilities: \(error.localizedDescription)", module: "AddWebsiteViewModel")
-            availableRuntimes = RuntimeType.allCases
+        // Set default runtime
+        if availableRuntimes.contains(.php) {
+            runtime = .php
+        } else if let first = availableRuntimes.first {
+            runtime = first
         }
+
+        // Detect web root using PathResolver
+        let pathCmd = PathResolverBridge.shared.detectCmd()
+        let pathOutput = await SSHBridge.shared.executeAsync(serverID: serverId, command: pathCmd)
+        let detectedPaths = PathResolverBridge.shared.parse(output: pathOutput)
+        detectedWebRoot = detectedPaths.webRoot
+
+        // Load versions for the selected runtime
+        await loadVersionsForRuntime(runtime)
 
         isLoadingCapabilities = false
     }
@@ -114,32 +108,28 @@ public final class AddWebsiteViewModel: ObservableObject {
     private func loadVersionsForRuntime(_ runtime: RuntimeType) async {
         guard let serverId = serverId else { return }
 
-        do {
-            switch runtime {
-            case .php:
-                // Multi-path probe: BT Panel, standard Debian/Ubuntu, RHEL
-                let result = await SSHBridge.shared.executeAsync(serverID: serverId, command:
-                    "(ls /www/server/php/ 2>/dev/null | grep -E '^[0-9]' | sort -V) || " +
-                    "(ls /etc/php/ 2>/dev/null | sort -V) || " +
-                    "(rpm -qa 2>/dev/null | grep -oP 'php\\\\d+' | sort -uV) || echo ''"
-                )
-                phpVersions = result.components(separatedBy: "\n").filter { !$0.isEmpty }
-                selectedVersion = phpVersions.first ?? ""
-            case .nodejs:
-                let result = await SSHBridge.shared.executeAsync(serverID: serverId, command: "node --version 2>/dev/null | tr -d 'v'")
-                let ver = result.trimmingCharacters(in: .whitespacesAndNewlines)
-                nodeVersions = ver.isEmpty ? [] : [ver]
-                selectedVersion = nodeVersions.first ?? ""
-            case .python:
-                let result = await SSHBridge.shared.executeAsync(serverID: serverId, command: "python3 --version 2>/dev/null | awk '{print $2}'")
-                let ver = result.trimmingCharacters(in: .whitespacesAndNewlines)
-                pythonVersions = ver.isEmpty ? [] : [ver]
-                selectedVersion = pythonVersions.first ?? ""
-            default:
-                selectedVersion = ""
-            }
-        } catch {
-            CoreLogger.shared.error("Failed to load versions for \(runtime.rawValue): \(error.localizedDescription)", module: "AddWebsiteViewModel")
+        switch runtime {
+        case .php:
+            // Multi-path probe: BT Panel, standard Debian/Ubuntu, RHEL
+            let result = await SSHBridge.shared.executeAsync(serverID: serverId, command:
+                "(ls /www/server/php/ 2>/dev/null | grep -E '^[0-9]' | sort -V) || " +
+                "(ls /etc/php/ 2>/dev/null | sort -V) || " +
+                "(rpm -qa 2>/dev/null | grep -oP 'php\\\\d+' | sort -uV) || echo ''"
+            )
+            phpVersions = result.components(separatedBy: "\n").filter { !$0.isEmpty }
+            selectedVersion = phpVersions.first ?? ""
+        case .nodejs:
+            let result = await SSHBridge.shared.executeAsync(serverID: serverId, command: "node --version 2>/dev/null | tr -d 'v'")
+            let ver = result.trimmingCharacters(in: .whitespacesAndNewlines)
+            nodeVersions = ver.isEmpty ? [] : [ver]
+            selectedVersion = nodeVersions.first ?? ""
+        case .python:
+            let result = await SSHBridge.shared.executeAsync(serverID: serverId, command: "python3 --version 2>/dev/null | awk '{print $2}'")
+            let ver = result.trimmingCharacters(in: .whitespacesAndNewlines)
+            pythonVersions = ver.isEmpty ? [] : [ver]
+            selectedVersion = pythonVersions.first ?? ""
+        default:
+            selectedVersion = ""
         }
     }
 
@@ -196,13 +186,8 @@ public final class AddWebsiteViewModel: ObservableObject {
         isLoadingDirectories = true
         browserCurrentPath = path
 
-        do {
-            let result = await SSHBridge.shared.executeAsync(serverID: serverId, command: "ls -1 -d \(path)/*/ 2>/dev/null | xargs -I{} basename {}")
-            browserDirectories = result.components(separatedBy: "\n").filter { !$0.isEmpty }
-        } catch {
-            browserDirectories = []
-            CoreLogger.shared.error("Failed to list directories: \(error.localizedDescription)", module: "AddWebsiteViewModel")
-        }
+        let result = await SSHBridge.shared.executeAsync(serverID: serverId, command: "ls -1 -d \(path)/*/ 2>/dev/null | xargs -I{} basename {}")
+        browserDirectories = result.components(separatedBy: "\n").filter { !$0.isEmpty }
 
         isLoadingDirectories = false
     }
@@ -215,13 +200,9 @@ public final class AddWebsiteViewModel: ObservableObject {
 
         let fullPath = "\(browserCurrentPath)/\(sanitizedName)"
 
-        do {
-            _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: "sudo mkdir -p \(fullPath)")
-            newFolderName = ""
-            await loadDirectories(at: browserCurrentPath)
-        } catch {
-            errorMessage = "Failed to create folder: \(error.localizedDescription)"
-        }
+        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: "sudo mkdir -p \(fullPath)")
+        newFolderName = ""
+        await loadDirectories(at: browserCurrentPath)
     }
 
     public func selectDirectory(_ path: String) {

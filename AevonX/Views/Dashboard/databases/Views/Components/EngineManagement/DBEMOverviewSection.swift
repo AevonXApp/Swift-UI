@@ -25,7 +25,7 @@ struct DBEMOverviewSection: View {
 
                     Button(action: { Task { await viewModel.loadData() } }) {
                         Image(systemName: "arrow.clockwise")
-                            .font(.system(size: 14))
+                            .font(AXTypography.body)
                             .foregroundColor(.axTextSecondary)
                             .rotationEffect(.degrees(viewModel.isLoading ? 360 : 0))
                             .animation(viewModel.isLoading ? Animation.linear(duration: 1).repeatForever(autoreverses: false) : .default, value: viewModel.isLoading)

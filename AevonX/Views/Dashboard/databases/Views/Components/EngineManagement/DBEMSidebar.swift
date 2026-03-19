@@ -73,7 +73,7 @@ struct DBEMSidebar: View {
                         .frame(width: 48, height: 48)
 
                     Image(systemName: viewModel.databaseType.iconName)
-                        .font(.system(size: 24))
+                        .font(AXTypography.title)
                         .foregroundColor(.axAccentBlue)
                 }
 
@@ -154,7 +154,7 @@ private struct NavigationRow: View {
         Button(action: action) {
             HStack(spacing: AXSpacing.md) {
                 Image(systemName: icon)
-                    .font(.system(size: 16))
+                    .font(AXTypography.title3)
                     .foregroundColor(isSelected ? themeColor : .axTextMuted)
                     .frame(width: 24)
 
@@ -189,7 +189,7 @@ private struct ServiceButton: View {
     var body: some View {
         Button(action: action) {
             Image(systemName: icon)
-                .font(.system(size: 12))
+                .font(AXTypography.subheadline)
                 .foregroundColor(isEnabled ? color : .axTextMuted)
                 .frame(maxWidth: .infinity)
                 .frame(height: 32)

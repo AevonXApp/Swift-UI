@@ -154,7 +154,7 @@ struct DBTableStructureView: View {
             HStack(spacing: AXSpacing.xs) {
                 if col.isPrimaryKey {
                     Image(systemName: "key.fill")
-                        .font(.system(size: 9))
+                        .font(AXTypography.caption2)
                         .foregroundColor(.axWarning)
                 }
                 Text(col.name)
@@ -166,7 +166,7 @@ struct DBTableStructureView: View {
             .padding(.horizontal, AXSpacing.sm)
 
             Text(col.type)
-                .font(.system(size: 11, weight: .medium, design: .monospaced))
+                .font(AXTypography.monoSm).fontWeight(.medium)
                 .foregroundColor(colorForType(col.type))
                 .padding(.horizontal, AXSpacing.xs)
                 .padding(.vertical, 2)
@@ -179,12 +179,12 @@ struct DBTableStructureView: View {
             Group {
                 if !col.defaultValue.isEmpty {
                     Text(col.defaultValue)
-                        .font(.system(size: 10, design: .monospaced))
+                        .font(AXTypography.monoXs)
                         .foregroundColor(.axTextMuted)
                         .lineLimit(1)
                 } else {
                     Text("—")
-                        .font(.system(size: 10))
+                        .font(AXTypography.caption)
                         .foregroundColor(.axTextMuted.opacity(0.3))
                 }
             }
@@ -242,12 +242,12 @@ struct DBTableStructureView: View {
 
     private func constraintBadge(_ text: String, color: Color) -> some View {
         Text(text)
-            .font(.system(size: 9, weight: .bold))
+            .font(AXTypography.caption2).fontWeight(.bold)
             .foregroundColor(color)
             .padding(.horizontal, 5)
             .padding(.vertical, 2)
             .background(color.opacity(0.1))
-            .cornerRadius(3)
+            .cornerRadius(AXCornerRadius.xs)
             .overlay(
                 RoundedRectangle(cornerRadius: 3)
                     .stroke(color.opacity(0.3), lineWidth: 1)
