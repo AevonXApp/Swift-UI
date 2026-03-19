@@ -18,7 +18,6 @@ struct RemoteFleetGridView: View {
     var body: some View {
         LazyVGrid(columns: [
             GridItem(.flexible(), spacing: AXSpacing.lg),
-            GridItem(.flexible(), spacing: AXSpacing.lg),
             GridItem(.flexible(), spacing: AXSpacing.lg)
         ], spacing: AXSpacing.lg) {
             ForEach(servers) { server in

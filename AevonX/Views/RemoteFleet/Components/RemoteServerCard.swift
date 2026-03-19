@@ -141,6 +141,8 @@ struct RemoteServerCard: View {
                             .font(.system(size: 10, weight: .bold))
                         Text("Connect")
                             .font(.system(size: 11, weight: .semibold))
+                            .lineLimit(1)
+                            .fixedSize(horizontal: true, vertical: false)
                     }
                     .foregroundColor(.white)
                     .padding(.horizontal, AXSpacing.md)
@@ -158,6 +160,7 @@ struct RemoteServerCard: View {
                     )
                 }
                 .buttonStyle(.plain)
+                .fixedSize()
                 
                 // Menu button — small
                 Menu {
