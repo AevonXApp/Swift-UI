@@ -28,7 +28,7 @@ struct HeadersSection: View {
                                 }
                                 Text("Audit")
                             }
-                            .font(.system(size: 12, weight: .medium))
+                            .font(AXTypography.subheadline).fontWeight(.medium)
                         }
                         .buttonStyle(.bordered)
                         .controlSize(.small)
@@ -38,7 +38,7 @@ struct HeadersSection: View {
                                 Image(systemName: "sparkles")
                                 Text("Apply Recommended")
                             }
-                            .font(.system(size: 12, weight: .semibold))
+                            .font(AXTypography.subheadline).fontWeight(.semibold)
                         }
                         .buttonStyle(.borderedProminent)
                         .controlSize(.small)
@@ -52,21 +52,21 @@ struct HeadersSection: View {
                             ForEach(viewModel.auditResults) { result in
                                 HStack {
                                     Image(systemName: result.grade.icon)
-                                        .font(.system(size: 14))
+                                        .font(AXTypography.body)
                                         .foregroundColor(result.grade.color)
                                         .frame(width: 22)
                                     Text(result.headerName)
-                                        .font(.system(size: 13, weight: .medium))
+                                        .font(AXTypography.callout).fontWeight(.medium)
                                         .foregroundColor(.axTextPrimary)
                                     Spacer()
                                     if let value = result.value {
                                         Text(String(value.prefix(40)))
-                                            .font(.system(size: 10, design: .monospaced))
+                                            .font(AXTypography.monoXs)
                                             .foregroundColor(.axTextTertiary)
                                             .lineLimit(1)
                                     } else {
                                         Text(result.grade.rawValue)
-                                            .font(.system(size: 11, weight: .medium))
+                                            .font(AXTypography.footnote).fontWeight(.medium)
                                             .foregroundColor(result.grade.color)
                                     }
                                 }
@@ -85,15 +85,15 @@ struct HeadersSection: View {
                             ForEach(viewModel.headers) { header in
                                 HStack {
                                     Image(systemName: header.type.icon)
-                                        .font(.system(size: 12))
+                                        .font(AXTypography.subheadline)
                                         .foregroundColor(header.type.color)
                                         .frame(width: 20)
                                     Text(header.headerName)
-                                        .font(.system(size: 12, weight: .semibold, design: .monospaced))
+                                        .font(AXTypography.monoMd).fontWeight(.semibold)
                                         .foregroundColor(.axAccentBlue)
                                     Spacer()
                                     Text(String(header.headerValue.prefix(50)))
-                                        .font(.system(size: 11, design: .monospaced))
+                                        .font(AXTypography.monoSm)
                                         .foregroundColor(.axTextSecondary)
                                         .lineLimit(1)
                                 }
@@ -109,17 +109,17 @@ struct HeadersSection: View {
                         ForEach(HTTPHeaderType.allCases.filter { $0 != .custom }) { type in
                             HStack(spacing: AXSpacing.sm) {
                                 Image(systemName: type.icon)
-                                    .font(.system(size: 14, weight: .semibold))
+                                    .font(AXTypography.headline)
                                     .foregroundColor(type.color)
                                     .frame(width: 28, height: 28)
                                     .background(type.color.opacity(0.12))
-                                    .cornerRadius(6)
+                                    .cornerRadius(AXCornerRadius.sm)
                                 VStack(alignment: .leading, spacing: 3) {
                                     Text(type.rawValue)
-                                        .font(.system(size: 12, weight: .semibold))
+                                        .font(AXTypography.subheadline).fontWeight(.semibold)
                                         .foregroundColor(.axTextPrimary)
                                     Text(type.description)
-                                        .font(.system(size: 10))
+                                        .font(AXTypography.caption)
                                         .foregroundColor(.axTextTertiary)
                                         .lineLimit(2)
                                         .fixedSize(horizontal: false, vertical: true)

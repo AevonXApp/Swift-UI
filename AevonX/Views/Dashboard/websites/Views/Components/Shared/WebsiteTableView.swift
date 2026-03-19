@@ -127,14 +127,14 @@ struct WebsiteTableView: View {
                     }) {
                         HStack(spacing: 5) {
                             Image(systemName: filter.icon)
-                                .font(.system(size: 9, weight: .bold))
+                                .font(AXTypography.caption2).fontWeight(.bold)
                             
                             Text(filter.rawValue)
-                                .font(.system(size: 11, weight: .semibold))
+                                .font(AXTypography.footnote).fontWeight(.semibold)
                             
                             if count > 0 || filter == .all {
                                 Text("\(count)")
-                                    .font(.system(size: 9, weight: .heavy, design: .rounded))
+                                    .font(AXTypography.caption2).fontWeight(.heavy)
                                     .foregroundColor(isActive ? .white.opacity(0.9) : filter.color.opacity(0.7))
                                     .padding(.horizontal, 5)
                                     .padding(.vertical, 1)
@@ -167,18 +167,18 @@ struct WebsiteTableView: View {
     private var emptyFilterView: some View {
         VStack(spacing: AXSpacing.md) {
             Image(systemName: "magnifyingglass")
-                .font(.system(size: 32))
+                .font(AXTypography.largeTitle)
                 .foregroundColor(.axTextMuted)
             
             Text("No websites match '\(activeFilter.rawValue)'")
-                .font(.system(size: 13, weight: .medium))
+                .font(AXTypography.callout).fontWeight(.medium)
                 .foregroundColor(.axTextSecondary)
             
             Button(action: {
                 withAnimation { activeFilter = .all }
             }) {
                 Text("Show All")
-                    .font(.system(size: 11, weight: .semibold))
+                    .font(AXTypography.footnote).fontWeight(.semibold)
                     .foregroundColor(.axAccentBlue)
             }
             .buttonStyle(.plain)

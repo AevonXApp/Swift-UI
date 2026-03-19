@@ -86,8 +86,10 @@ class SiteCloningViewModel: ObservableObject {
             await detectPathsIfNeeded()
             let ts = ISO8601DateFormatter().string(from: Date()).replacingOccurrences(of: ":", with: "-")
             let exportFile = "\(serverPaths.backupDir)/\(domain)_migration_\(ts).tar.gz"
-            _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: "sudo mkdir -p \(serverPaths.backupDir)")
-            _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: "sudo tar -czf \(exportFile) -C \(docRoot) . \(serverPaths.nginxSitesAvailable)/\(domain) 2>/dev/null")
+            // Include config file in export — probe both with and without .conf
+            let cfgBase = "\(serverPaths.nginxSitesAvailable)/\(domain)"
+            let cfgProbe = "CFG=\(cfgBase); [ ! -f \"$CFG\" ] && CFG=\(cfgBase).conf; [ ! -f \"$CFG\" ] && CFG=''"
+            _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: "\(cfgProbe); sudo tar -czf \(exportFile) -C \(docRoot) . $CFG 2>/dev/null")
             exportPath = exportFile
             GlobalToastManager.shared.showSuccess("Migration export ready")
         } catch { GlobalToastManager.shared.showError(error.localizedDescription) }

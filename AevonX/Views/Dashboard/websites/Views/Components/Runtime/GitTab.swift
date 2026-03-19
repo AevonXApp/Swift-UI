@@ -35,7 +35,7 @@ struct GitTab: View {
         VStack(spacing: AXSpacing.md) {
             ProgressView().scaleEffect(0.8)
             Text("Detecting Git repository...")
-                .font(.system(size: 12))
+                .font(AXTypography.subheadline)
                 .foregroundColor(.axTextTertiary)
         }
         .frame(maxWidth: .infinity)
@@ -49,24 +49,24 @@ struct GitTab: View {
             // Header
             HStack {
                 Image(systemName: "arrow.up.doc.fill")
-                    .font(.system(size: 14))
+                    .font(AXTypography.body)
                     .foregroundColor(.axAccentBlue)
                 Text("Commit & Push")
-                    .font(.system(size: 14, weight: .bold))
+                    .font(AXTypography.headline).fontWeight(.bold)
                     .foregroundColor(.axTextPrimary)
                 Spacer()
                 if vm.isProPlan {
                     HStack(spacing: 4) {
                         Image(systemName: "sparkles")
-                            .font(.system(size: 9))
+                            .font(AXTypography.caption2)
                         Text("AI")
-                            .font(.system(size: 9, weight: .bold))
+                            .font(AXTypography.caption2).fontWeight(.bold)
                     }
                     .foregroundColor(.axAccentBlue)
                     .padding(.horizontal, 6)
                     .padding(.vertical, 2)
                     .background(Color.axAccentBlue.opacity(0.15))
-                    .cornerRadius(4)
+                    .cornerRadius(AXCornerRadius.sm)
                 }
             }
             .padding(AXSpacing.md)
@@ -77,35 +77,35 @@ struct GitTab: View {
             // Body
             VStack(alignment: .leading, spacing: AXSpacing.sm) {
                 Text(vm.isProPlan ? "AI-generated commit message (editable):" : "Enter commit message:")
-                    .font(.system(size: 11))
+                    .font(AXTypography.footnote)
                     .foregroundColor(.axTextSecondary)
                 
                 if vm.isGeneratingCommitMessage {
                     HStack(spacing: AXSpacing.sm) {
                         ProgressView().scaleEffect(0.6)
                         Text("Generating commit message...")
-                            .font(.system(size: 11))
+                            .font(AXTypography.footnote)
                             .foregroundColor(.axTextMuted)
                     }
                     .frame(maxWidth: .infinity, alignment: .center)
                     .padding(.vertical, AXSpacing.md)
                 } else {
                     TextEditor(text: $vm.commitMessage)
-                        .font(.system(size: 12, design: .monospaced))
+                        .font(AXTypography.monoMd)
                         .scrollContentBackground(.hidden)
                         .padding(AXSpacing.sm)
                         .background(Color.axBackgroundTertiary)
                         .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.axBorder, lineWidth: 1))
-                        .cornerRadius(6)
+                        .cornerRadius(AXCornerRadius.sm)
                         .frame(minHeight: 60, maxHeight: 100)
                 }
                 
                 if !vm.isProPlan {
                     HStack(spacing: 4) {
                         Image(systemName: "lock.fill")
-                            .font(.system(size: 9))
+                            .font(AXTypography.caption2)
                         Text("Upgrade to Pro for AI-generated commit messages")
-                            .font(.system(size: 9))
+                            .font(AXTypography.caption2)
                     }
                     .foregroundColor(.axTextMuted)
                 }
@@ -120,12 +120,12 @@ struct GitTab: View {
                     vm.showCommitSheet = false
                     vm.commitMessage = ""
                 }
-                .font(.system(size: 11, weight: .medium))
+                .font(AXTypography.footnote).fontWeight(.medium)
                 .foregroundColor(.axTextSecondary)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
                 .background(Color.axBackgroundTertiary)
-                .cornerRadius(6)
+                .cornerRadius(AXCornerRadius.sm)
                 .buttonStyle(.plain)
                 
                 Spacer()
@@ -135,15 +135,15 @@ struct GitTab: View {
                 } label: {
                     HStack(spacing: 4) {
                         Image(systemName: "arrow.up.circle.fill")
-                            .font(.system(size: 11))
+                            .font(AXTypography.footnote)
                         Text("Commit & Push")
-                            .font(.system(size: 11, weight: .bold))
+                            .font(AXTypography.footnote).fontWeight(.bold)
                     }
                     .foregroundColor(.white)
                     .padding(.horizontal, 14)
                     .padding(.vertical, 6)
                     .background(Color.axAccentBlue)
-                    .cornerRadius(6)
+                    .cornerRadius(AXCornerRadius.sm)
                 }
                 .buttonStyle(.plain)
                 .disabled(vm.commitMessage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
@@ -170,16 +170,16 @@ struct GitTab: View {
                         )
                         .frame(width: 80, height: 80)
                     Image(systemName: "arrow.triangle.branch")
-                        .font(.system(size: 32, weight: .semibold))
+                        .font(AXTypography.largeTitle).fontWeight(.semibold)
                         .foregroundColor(.orange)
                 }
                 
                 Text("Connect Git Repository")
-                    .font(.system(size: 20, weight: .bold))
+                    .font(AXTypography.title2).fontWeight(.bold)
                     .foregroundColor(.axTextPrimary)
                 
                 Text("Clone an existing repository or initialize a new one.\nSupports GitHub, GitLab, Bitbucket, and any Git server.")
-                    .font(.system(size: 12))
+                    .font(AXTypography.subheadline)
                     .foregroundColor(.axTextTertiary)
                     .multilineTextAlignment(.center)
             }
@@ -195,7 +195,7 @@ struct GitTab: View {
             HStack {
                 Rectangle().fill(Color.axBorder.opacity(0.3)).frame(height: 1)
                 Text("OR")
-                    .font(.system(size: 10, weight: .bold))
+                    .font(AXTypography.caption).fontWeight(.bold)
                     .foregroundColor(.axTextMuted)
                     .padding(.horizontal, 12)
                 Rectangle().fill(Color.axBorder.opacity(0.3)).frame(height: 1)
@@ -205,9 +205,9 @@ struct GitTab: View {
             Button(action: { Task { await vm.initRepository() } }) {
                 HStack(spacing: AXSpacing.sm) {
                     Image(systemName: "plus.circle.fill")
-                        .font(.system(size: 14))
+                        .font(AXTypography.body)
                     Text("Initialize Empty Repository")
-                        .font(.system(size: 13, weight: .semibold))
+                        .font(AXTypography.callout).fontWeight(.semibold)
                 }
                 .foregroundColor(.axAccentBlue)
                 .frame(maxWidth: .infinity)
@@ -230,14 +230,14 @@ struct GitTab: View {
             // Repo URL
             VStack(alignment: .leading, spacing: 4) {
                 Text("Repository URL")
-                    .font(.system(size: 11, weight: .semibold))
+                    .font(AXTypography.footnote).fontWeight(.semibold)
                     .foregroundColor(.axTextSecondary)
                 
                 HStack(spacing: AXSpacing.sm) {
                     providerIcon
                     
                     TextField("https://github.com/user/repo.git", text: $vm.cloneConfig.repoURL)
-                        .font(.system(size: 12, design: .monospaced))
+                        .font(AXTypography.monoMd)
                         .textFieldStyle(.plain)
                 }
                 .padding(.horizontal, AXSpacing.md)
@@ -251,10 +251,10 @@ struct GitTab: View {
             HStack(spacing: AXSpacing.md) {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Branch")
-                        .font(.system(size: 11, weight: .semibold))
+                        .font(AXTypography.footnote).fontWeight(.semibold)
                         .foregroundColor(.axTextSecondary)
                     TextField("main", text: $vm.cloneConfig.branch)
-                        .font(.system(size: 12, design: .monospaced))
+                        .font(AXTypography.monoMd)
                         .textFieldStyle(.plain)
                         .padding(.horizontal, AXSpacing.md)
                         .padding(.vertical, 8)
@@ -266,7 +266,7 @@ struct GitTab: View {
                 // Private toggle
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Private Repo")
-                        .font(.system(size: 11, weight: .semibold))
+                        .font(AXTypography.footnote).fontWeight(.semibold)
                         .foregroundColor(.axTextSecondary)
                     Toggle("", isOn: $vm.cloneConfig.isPrivate)
                         .toggleStyle(SwitchToggleStyle(tint: .orange))
@@ -282,10 +282,10 @@ struct GitTab: View {
                     HStack(spacing: AXSpacing.sm) {
                         VStack(alignment: .leading, spacing: 4) {
                             Text("Username")
-                                .font(.system(size: 11, weight: .semibold))
+                                .font(AXTypography.footnote).fontWeight(.semibold)
                                 .foregroundColor(.axTextSecondary)
                             TextField("username", text: $vm.cloneConfig.username)
-                                .font(.system(size: 12))
+                                .font(AXTypography.subheadline)
                                 .textFieldStyle(.plain)
                                 .padding(.horizontal, AXSpacing.md)
                                 .padding(.vertical, 8)
@@ -296,10 +296,10 @@ struct GitTab: View {
                         
                         VStack(alignment: .leading, spacing: 4) {
                             Text("Access Token")
-                                .font(.system(size: 11, weight: .semibold))
+                                .font(AXTypography.footnote).fontWeight(.semibold)
                                 .foregroundColor(.axTextSecondary)
                             SecureField("ghp_xxxx...", text: $vm.cloneConfig.token)
-                                .font(.system(size: 12))
+                                .font(AXTypography.subheadline)
                                 .textFieldStyle(.plain)
                                 .padding(.horizontal, AXSpacing.md)
                                 .padding(.vertical, 8)
@@ -316,9 +316,9 @@ struct GitTab: View {
             Button(action: { Task { await vm.cloneRepository() } }) {
                 HStack(spacing: AXSpacing.sm) {
                     Image(systemName: "arrow.down.circle.fill")
-                        .font(.system(size: 14, weight: .semibold))
+                        .font(AXTypography.headline)
                     Text("Clone Repository")
-                        .font(.system(size: 13, weight: .bold))
+                        .font(AXTypography.callout).fontWeight(.bold)
                 }
                 .foregroundColor(.white)
                 .frame(maxWidth: .infinity)
@@ -339,7 +339,7 @@ struct GitTab: View {
     private var providerIcon: some View {
         let provider = vm.cloneConfig.provider
         return Image(systemName: provider == .unknown ? "link" : provider.icon)
-            .font(.system(size: 14, weight: .semibold))
+            .font(AXTypography.headline)
             .foregroundColor(provider == .github ? .white : provider == .gitlab ? .orange : .axAccentBlue)
             .frame(width: 28, height: 28)
             .background(
@@ -370,12 +370,12 @@ struct GitTab: View {
                     HStack(spacing: 4) {
                         ProgressView().scaleEffect(0.5)
                         Text(vm.cloneStepMessage)
-                            .font(.system(size: 11))
+                            .font(AXTypography.footnote)
                             .foregroundColor(.axTextTertiary)
                     }
                     Spacer()
                     Text("\(Int(vm.cloneProgress * 100))%")
-                        .font(.system(size: 11, weight: .bold, design: .monospaced))
+                        .font(AXTypography.monoSm).fontWeight(.bold)
                         .foregroundColor(.orange)
                 }
             }
@@ -421,15 +421,15 @@ struct GitTab: View {
                 VStack(alignment: .leading, spacing: 2) {
                     if !vm.repoInfo.remoteURL.isEmpty {
                         Text(repoDisplayName)
-                            .font(.system(size: 13, weight: .bold))
+                            .font(AXTypography.callout).fontWeight(.bold)
                             .foregroundColor(.axTextPrimary)
                             .lineLimit(1)
                     }
                     HStack(spacing: 4) {
                         Image(systemName: "arrow.triangle.branch")
-                            .font(.system(size: 9, weight: .bold))
+                            .font(AXTypography.caption2).fontWeight(.bold)
                         Text(vm.repoInfo.currentBranch)
-                            .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                            .font(AXTypography.monoSm).fontWeight(.semibold)
                     }
                     .foregroundColor(.orange)
                 }
@@ -454,11 +454,11 @@ struct GitTab: View {
             // Refresh
             Button(action: { Task { await vm.loadAll() } }) {
                 Image(systemName: "arrow.clockwise")
-                    .font(.system(size: 11, weight: .bold))
+                    .font(AXTypography.footnote).fontWeight(.bold)
                     .foregroundColor(.axAccentBlue)
                     .frame(width: 28, height: 28)
                     .background(Color.axAccentBlue.opacity(0.08))
-                    .cornerRadius(6)
+                    .cornerRadius(AXCornerRadius.sm)
             }
             .buttonStyle(.plain)
             .help("Refresh")
@@ -478,7 +478,7 @@ struct GitTab: View {
                 .fill(p == .github ? Color.white.opacity(0.1) : Color.orange.opacity(0.12))
                 .frame(width: 36, height: 36)
             Image(systemName: p.icon)
-                .font(.system(size: 16, weight: .semibold))
+                .font(AXTypography.title3)
                 .foregroundColor(p == .github ? .white : .orange)
         }
     }
@@ -504,9 +504,9 @@ struct GitTab: View {
                 }) {
                     HStack(spacing: 4) {
                         Image(systemName: section.icon)
-                            .font(.system(size: 10, weight: .bold))
+                            .font(AXTypography.caption).fontWeight(.bold)
                         Text(section.rawValue)
-                            .font(.system(size: 11, weight: .semibold))
+                            .font(AXTypography.footnote).fontWeight(.semibold)
                     }
                     .foregroundColor(isActive ? .white : .axTextSecondary)
                     .padding(.horizontal, 12)
@@ -553,18 +553,18 @@ struct GitTab: View {
             if !vm.repoInfo.lastCommitMessage.isEmpty {
                 HStack(spacing: AXSpacing.sm) {
                     Image(systemName: "clock")
-                        .font(.system(size: 10))
+                        .font(AXTypography.caption)
                         .foregroundColor(.axTextMuted)
                     Text("Last commit:")
-                        .font(.system(size: 10))
+                        .font(AXTypography.caption)
                         .foregroundColor(.axTextMuted)
                     Text(vm.repoInfo.lastCommitMessage)
-                        .font(.system(size: 11, weight: .medium))
+                        .font(AXTypography.footnote).fontWeight(.medium)
                         .foregroundColor(.axTextSecondary)
                         .lineLimit(1)
                     Spacer()
                     Text(vm.repoInfo.lastCommitDate)
-                        .font(.system(size: 10))
+                        .font(AXTypography.caption)
                         .foregroundColor(.axTextTertiary)
                 }
                 .padding(AXSpacing.sm)
@@ -578,12 +578,12 @@ struct GitTab: View {
             if !vm.operationOutput.isEmpty {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Output")
-                        .font(.system(size: 10, weight: .bold))
+                        .font(AXTypography.caption).fontWeight(.bold)
                         .foregroundColor(.axTextMuted)
                     
                     ScrollView(.vertical, showsIndicators: true) {
                         Text(vm.operationOutput)
-                            .font(.system(size: 10, design: .monospaced))
+                            .font(AXTypography.monoXs)
                             .foregroundColor(.axTextSecondary)
                             .frame(maxWidth: .infinity, alignment: .leading)
                     }
@@ -607,31 +607,31 @@ struct GitTab: View {
             // Header
             HStack {
                 Text("Branches")
-                    .font(.system(size: 13, weight: .bold))
+                    .font(AXTypography.callout).fontWeight(.bold)
                     .foregroundColor(.axTextPrimary)
                 
                 Text("\(vm.branches.filter { !$0.isRemote }.count) local")
-                    .font(.system(size: 10))
+                    .font(AXTypography.caption)
                     .foregroundColor(.axTextTertiary)
                     .padding(.horizontal, 6)
                     .padding(.vertical, 2)
                     .background(Color.axBackgroundTertiary)
-                    .cornerRadius(4)
+                    .cornerRadius(AXCornerRadius.sm)
                 
                 Spacer()
                 
                 Button(action: { vm.showCreateBranchSheet = true }) {
                     HStack(spacing: 4) {
                         Image(systemName: "plus")
-                            .font(.system(size: 10, weight: .bold))
+                            .font(AXTypography.caption).fontWeight(.bold)
                         Text("New Branch")
-                            .font(.system(size: 11, weight: .semibold))
+                            .font(AXTypography.footnote).fontWeight(.semibold)
                     }
                     .foregroundColor(.orange)
                     .padding(.horizontal, 10)
                     .padding(.vertical, 5)
                     .background(Color.orange.opacity(0.08))
-                    .cornerRadius(6)
+                    .cornerRadius(AXCornerRadius.sm)
                 }
                 .buttonStyle(.plain)
             }
@@ -640,7 +640,7 @@ struct GitTab: View {
             if vm.showCreateBranchSheet {
                 HStack(spacing: AXSpacing.sm) {
                     TextField("new-branch-name", text: $vm.newBranchName)
-                        .font(.system(size: 12, design: .monospaced))
+                        .font(AXTypography.monoMd)
                         .textFieldStyle(.plain)
                         .padding(.horizontal, AXSpacing.md)
                         .padding(.vertical, 7)
@@ -649,17 +649,17 @@ struct GitTab: View {
                         .cornerRadius(AXCornerRadius.sm)
                     
                     Button("Create") { Task { await vm.createBranch() } }
-                        .font(.system(size: 11, weight: .bold))
+                        .font(AXTypography.footnote).fontWeight(.bold)
                         .foregroundColor(.white)
                         .padding(.horizontal, 12)
                         .padding(.vertical, 7)
                         .background(Color.orange)
-                        .cornerRadius(6)
+                        .cornerRadius(AXCornerRadius.sm)
                         .buttonStyle(.plain)
                     
                     Button(action: { vm.showCreateBranchSheet = false; vm.newBranchName = "" }) {
                         Image(systemName: "xmark")
-                            .font(.system(size: 9, weight: .bold))
+                            .font(AXTypography.caption2).fontWeight(.bold)
                             .foregroundColor(.axTextMuted)
                     }
                     .buttonStyle(.plain)
@@ -682,9 +682,9 @@ struct GitTab: View {
                 } label: {
                     HStack(spacing: 4) {
                         Image(systemName: "cloud")
-                            .font(.system(size: 10))
+                            .font(AXTypography.caption)
                         Text("Remote Branches (\(remoteBranches.count))")
-                            .font(.system(size: 11, weight: .medium))
+                            .font(AXTypography.footnote).fontWeight(.medium)
                     }
                     .foregroundColor(.axTextSecondary)
                 }
@@ -695,26 +695,26 @@ struct GitTab: View {
     private func branchRow(_ branch: GitBranch) -> some View {
         HStack(spacing: AXSpacing.sm) {
             Image(systemName: branch.isCurrent ? "checkmark.circle.fill" : "circle")
-                .font(.system(size: 12))
+                .font(AXTypography.subheadline)
                 .foregroundColor(branch.isCurrent ? .axSuccess : .axTextMuted)
             
             Text(branch.displayName)
-                .font(.system(size: 12, weight: branch.isCurrent ? .bold : .medium, design: .monospaced))
+                .font(AXTypography.monoMd).fontWeight(branch.isCurrent ? .bold : .medium)
                 .foregroundColor(branch.isCurrent ? .axTextPrimary : .axTextSecondary)
             
             if branch.isCurrent {
                 Text("CURRENT")
-                    .font(.system(size: 7, weight: .heavy))
+                    .font(AXTypography.caption2).fontWeight(.heavy)
                     .foregroundColor(.axSuccess)
                     .padding(.horizontal, 4)
                     .padding(.vertical, 1)
                     .background(Color.axSuccess.opacity(0.1))
-                    .cornerRadius(3)
+                    .cornerRadius(AXCornerRadius.xs)
             }
             
             if branch.isRemote {
                 Image(systemName: "cloud.fill")
-                    .font(.system(size: 8))
+                    .font(AXTypography.caption2)
                     .foregroundColor(.axTextMuted)
             }
             
@@ -724,34 +724,34 @@ struct GitTab: View {
                 HStack(spacing: 4) {
                     Button(action: { Task { await vm.switchBranch(branch) } }) {
                         Text("Switch")
-                            .font(.system(size: 10, weight: .semibold))
+                            .font(AXTypography.caption).fontWeight(.semibold)
                             .foregroundColor(.axAccentBlue)
                             .padding(.horizontal, 8)
                             .padding(.vertical, 3)
                             .background(Color.axAccentBlue.opacity(0.08))
-                            .cornerRadius(4)
+                            .cornerRadius(AXCornerRadius.sm)
                     }
                     .buttonStyle(.plain)
                     
                     if !branch.isRemote {
                         Button(action: { Task { await vm.mergeBranch(branch) } }) {
                             Image(systemName: "arrow.triangle.merge")
-                                .font(.system(size: 9, weight: .bold))
+                                .font(AXTypography.caption2).fontWeight(.bold)
                                 .foregroundColor(.purple)
                                 .frame(width: 22, height: 22)
                                 .background(Color.purple.opacity(0.08))
-                                .cornerRadius(4)
+                                .cornerRadius(AXCornerRadius.sm)
                         }
                         .buttonStyle(.plain)
                         .help("Merge into current branch")
                         
                         Button(action: { Task { await vm.deleteBranch(branch) } }) {
                             Image(systemName: "trash")
-                                .font(.system(size: 9, weight: .bold))
+                                .font(AXTypography.caption2).fontWeight(.bold)
                                 .foregroundColor(.axError)
                                 .frame(width: 22, height: 22)
                                 .background(Color.axError.opacity(0.08))
-                                .cornerRadius(4)
+                                .cornerRadius(AXCornerRadius.sm)
                         }
                         .buttonStyle(.plain)
                         .help("Delete branch")
@@ -783,10 +783,10 @@ struct GitTab: View {
                             ForEach(vm.commitDetail) { file in
                                 HStack(spacing: 6) {
                                     Image(systemName: file.status.icon)
-                                        .font(.system(size: 9))
+                                        .font(AXTypography.caption2)
                                         .foregroundColor(fileStatusColor(file.status))
                                     Text(file.path)
-                                        .font(.system(size: 10, design: .monospaced))
+                                        .font(AXTypography.monoXs)
                                         .foregroundColor(.axTextSecondary)
                                         .lineLimit(1)
                                 }
@@ -819,13 +819,13 @@ struct GitTab: View {
             
             // Hash
             Text(commit.shortHash)
-                .font(.system(size: 10, weight: .bold, design: .monospaced))
+                .font(AXTypography.monoXs).fontWeight(.bold)
                 .foregroundColor(.orange)
                 .frame(width: 55, alignment: .leading)
             
             // Message
             Text(commit.message)
-                .font(.system(size: 11, weight: .medium))
+                .font(AXTypography.footnote).fontWeight(.medium)
                 .foregroundColor(.axTextPrimary)
                 .lineLimit(1)
             
@@ -833,12 +833,12 @@ struct GitTab: View {
             
             // Author
             Text(commit.author)
-                .font(.system(size: 10))
+                .font(AXTypography.caption)
                 .foregroundColor(.axTextTertiary)
             
             // Date
             Text(commit.relativeDate)
-                .font(.system(size: 10))
+                .font(AXTypography.caption)
                 .foregroundColor(.axTextMuted)
                 .frame(width: 70, alignment: .trailing)
             
@@ -846,22 +846,22 @@ struct GitTab: View {
             HStack(spacing: 3) {
                 Button(action: { Task { await vm.loadCommitDetail(commit) } }) {
                     Image(systemName: vm.expandedCommitId == commit.id ? "chevron.up" : "chevron.down")
-                        .font(.system(size: 8, weight: .bold))
+                        .font(AXTypography.caption2).fontWeight(.bold)
                         .foregroundColor(.axTextMuted)
                         .frame(width: 20, height: 20)
                         .background(Color.axBackgroundTertiary)
-                        .cornerRadius(4)
+                        .cornerRadius(AXCornerRadius.sm)
                 }
                 .buttonStyle(.plain)
                 .help("Show files")
                 
                 Button(action: { Task { await vm.checkoutCommit(commit) } }) {
                     Image(systemName: "arrow.uturn.backward")
-                        .font(.system(size: 8, weight: .bold))
+                        .font(AXTypography.caption2).fontWeight(.bold)
                         .foregroundColor(.axWarning)
                         .frame(width: 20, height: 20)
                         .background(Color.axWarning.opacity(0.08))
-                        .cornerRadius(4)
+                        .cornerRadius(AXCornerRadius.sm)
                 }
                 .buttonStyle(.plain)
                 .help("Checkout this commit")
@@ -880,13 +880,13 @@ struct GitTab: View {
             if vm.fileChanges.isEmpty {
                 VStack(spacing: AXSpacing.sm) {
                     Image(systemName: "checkmark.circle.fill")
-                        .font(.system(size: 28))
+                        .font(AXTypography.largeTitle)
                         .foregroundColor(.axSuccess)
                     Text("Working tree clean")
-                        .font(.system(size: 13, weight: .medium))
+                        .font(AXTypography.callout).fontWeight(.medium)
                         .foregroundColor(.axTextSecondary)
                     Text("No modified, added, or untracked files")
-                        .font(.system(size: 11))
+                        .font(AXTypography.footnote)
                         .foregroundColor(.axTextTertiary)
                 }
                 .frame(maxWidth: .infinity)
@@ -908,23 +908,23 @@ struct GitTab: View {
                 ForEach(vm.fileChanges) { file in
                     HStack(spacing: AXSpacing.sm) {
                         Image(systemName: file.status.icon)
-                            .font(.system(size: 11))
+                            .font(AXTypography.footnote)
                             .foregroundColor(fileStatusColor(file.status))
                         
                         Text(file.path)
-                            .font(.system(size: 11, design: .monospaced))
+                            .font(AXTypography.monoSm)
                             .foregroundColor(.axTextSecondary)
                             .lineLimit(1)
                         
                         Spacer()
                         
                         Text(file.status.displayName)
-                            .font(.system(size: 9, weight: .semibold))
+                            .font(AXTypography.caption2).fontWeight(.semibold)
                             .foregroundColor(fileStatusColor(file.status))
                             .padding(.horizontal, 6)
                             .padding(.vertical, 2)
                             .background(fileStatusColor(file.status).opacity(0.08))
-                            .cornerRadius(3)
+                            .cornerRadius(AXCornerRadius.xs)
                     }
                     .padding(.horizontal, AXSpacing.sm)
                     .padding(.vertical, 4)
@@ -944,30 +944,30 @@ struct GitTab: View {
                 VStack(spacing: AXSpacing.sm) {
                     HStack(spacing: AXSpacing.sm) {
                         TextField("Stash message (optional)", text: $vm.stashMessage)
-                            .font(.system(size: 11))
+                            .font(AXTypography.footnote)
                             .textFieldStyle(.plain)
                             .padding(.horizontal, AXSpacing.sm)
                             .padding(.vertical, 6)
                             .background(Color.axBackgroundTertiary)
                             .overlay(RoundedRectangle(cornerRadius: 4).stroke(Color.axBorder, lineWidth: 1))
-                            .cornerRadius(4)
+                            .cornerRadius(AXCornerRadius.sm)
                         
                         Button("Save") { Task { await vm.stashSave() } }
-                            .font(.system(size: 10, weight: .bold))
+                            .font(AXTypography.caption).fontWeight(.bold)
                             .foregroundColor(.white)
                             .padding(.horizontal, 10)
                             .padding(.vertical, 6)
                             .background(Color.orange)
-                            .cornerRadius(4)
+                            .cornerRadius(AXCornerRadius.sm)
                             .buttonStyle(.plain)
                         
                         Button("Pop") { Task { await vm.stashPop() } }
-                            .font(.system(size: 10, weight: .bold))
+                            .font(AXTypography.caption).fontWeight(.bold)
                             .foregroundColor(.orange)
                             .padding(.horizontal, 10)
                             .padding(.vertical, 6)
                             .background(Color.orange.opacity(0.08))
-                            .cornerRadius(4)
+                            .cornerRadius(AXCornerRadius.sm)
                             .buttonStyle(.plain)
                     }
                     
@@ -975,16 +975,16 @@ struct GitTab: View {
                         ForEach(vm.stashes) { stash in
                             HStack {
                                 Text(stash.index)
-                                    .font(.system(size: 9, weight: .bold, design: .monospaced))
+                                    .font(AXTypography.monoXxs).fontWeight(.bold)
                                     .foregroundColor(.orange)
                                 Text(stash.message)
-                                    .font(.system(size: 10))
+                                    .font(AXTypography.caption)
                                     .foregroundColor(.axTextSecondary)
                                     .lineLimit(1)
                                 Spacer()
                                 Button(action: { Task { await vm.stashDrop(stash) } }) {
                                     Image(systemName: "trash")
-                                        .font(.system(size: 9))
+                                        .font(AXTypography.caption2)
                                         .foregroundColor(.axError)
                                 }
                                 .buttonStyle(.plain)
@@ -998,7 +998,7 @@ struct GitTab: View {
             advancedCard(title: "Tags", icon: "tag.fill", color: .cyan) {
                 if vm.tags.isEmpty {
                     Text("No tags found")
-                        .font(.system(size: 11))
+                        .font(AXTypography.footnote)
                         .foregroundColor(.axTextTertiary)
                 } else {
                     LazyVGrid(columns: [GridItem(.adaptive(minimum: 100))], spacing: 6) {
@@ -1006,15 +1006,15 @@ struct GitTab: View {
                             Button(action: { Task { await vm.checkoutTag(tag) } }) {
                                 HStack(spacing: 3) {
                                     Image(systemName: "tag")
-                                        .font(.system(size: 8))
+                                        .font(AXTypography.caption2)
                                     Text(tag.name)
-                                        .font(.system(size: 10, weight: .medium, design: .monospaced))
+                                        .font(AXTypography.monoXs).fontWeight(.medium)
                                 }
                                 .foregroundColor(.cyan)
                                 .padding(.horizontal, 8)
                                 .padding(.vertical, 4)
                                 .background(Color.cyan.opacity(0.08))
-                                .cornerRadius(4)
+                                .cornerRadius(AXCornerRadius.sm)
                             }
                             .buttonStyle(.plain)
                             .help(tag.message.isEmpty ? "Checkout tag" : tag.message)
@@ -1029,19 +1029,19 @@ struct GitTab: View {
                     ForEach(vm.remotes) { remote in
                         HStack(spacing: AXSpacing.sm) {
                             Text(remote.name)
-                                .font(.system(size: 11, weight: .bold, design: .monospaced))
+                                .font(AXTypography.monoSm).fontWeight(.bold)
                                 .foregroundColor(.purple)
                             Text(remote.url)
-                                .font(.system(size: 10, design: .monospaced))
+                                .font(AXTypography.monoXs)
                                 .foregroundColor(.axTextTertiary)
                                 .lineLimit(1)
                             Text("(\(remote.type))")
-                                .font(.system(size: 9))
+                                .font(AXTypography.caption2)
                                 .foregroundColor(.axTextMuted)
                             Spacer()
                             Button(action: { Task { await vm.removeRemote(remote) } }) {
                                 Image(systemName: "trash")
-                                    .font(.system(size: 9))
+                                    .font(AXTypography.caption2)
                                     .foregroundColor(.axError)
                             }
                             .buttonStyle(.plain)
@@ -1052,34 +1052,34 @@ struct GitTab: View {
                     if vm.showAddRemoteSheet {
                         HStack(spacing: AXSpacing.sm) {
                             TextField("name", text: $vm.newRemoteName)
-                                .font(.system(size: 11, design: .monospaced))
+                                .font(AXTypography.monoSm)
                                 .textFieldStyle(.plain)
                                 .padding(.horizontal, 6)
                                 .padding(.vertical, 5)
                                 .background(Color.axBackgroundTertiary)
-                                .cornerRadius(4)
+                                .cornerRadius(AXCornerRadius.sm)
                                 .frame(width: 80)
                             TextField("https://...", text: $vm.newRemoteURL)
-                                .font(.system(size: 11, design: .monospaced))
+                                .font(AXTypography.monoSm)
                                 .textFieldStyle(.plain)
                                 .padding(.horizontal, 6)
                                 .padding(.vertical, 5)
                                 .background(Color.axBackgroundTertiary)
-                                .cornerRadius(4)
+                                .cornerRadius(AXCornerRadius.sm)
                             Button("Add") { Task { await vm.addRemote() } }
-                                .font(.system(size: 10, weight: .bold))
+                                .font(AXTypography.caption).fontWeight(.bold)
                                 .foregroundColor(.white)
                                 .padding(.horizontal, 10)
                                 .padding(.vertical, 5)
                                 .background(Color.purple)
-                                .cornerRadius(4)
+                                .cornerRadius(AXCornerRadius.sm)
                                 .buttonStyle(.plain)
                         }
                     } else {
                         Button(action: { vm.showAddRemoteSheet = true }) {
                             HStack(spacing: 3) {
-                                Image(systemName: "plus").font(.system(size: 9, weight: .bold))
-                                Text("Add Remote").font(.system(size: 10, weight: .semibold))
+                                Image(systemName: "plus").font(AXTypography.caption2).fontWeight(.bold)
+                                Text("Add Remote").font(AXTypography.caption).fontWeight(.semibold)
                             }
                             .foregroundColor(.purple)
                         }
@@ -1095,27 +1095,27 @@ struct GitTab: View {
                     VStack(spacing: AXSpacing.sm) {
                         HStack(spacing: AXSpacing.sm) {
                             TextField("commit hash or HEAD~N", text: $vm.resetRef)
-                                .font(.system(size: 11, design: .monospaced))
+                                .font(AXTypography.monoSm)
                                 .textFieldStyle(.plain)
                                 .padding(.horizontal, AXSpacing.sm)
                                 .padding(.vertical, 6)
                                 .background(Color.axBackgroundTertiary)
                                 .overlay(RoundedRectangle(cornerRadius: 4).stroke(Color.axError.opacity(0.2), lineWidth: 1))
-                                .cornerRadius(4)
+                                .cornerRadius(AXCornerRadius.sm)
                             
                             Button("Hard Reset") { Task { await vm.resetHard() } }
-                                .font(.system(size: 10, weight: .bold))
+                                .font(AXTypography.caption).fontWeight(.bold)
                                 .foregroundColor(.white)
                                 .padding(.horizontal, 10)
                                 .padding(.vertical, 6)
                                 .background(Color.axError)
-                                .cornerRadius(4)
+                                .cornerRadius(AXCornerRadius.sm)
                                 .buttonStyle(.plain)
                                 .disabled(vm.resetRef.isEmpty)
                         }
                         
                         Text("⚠️ Hard reset is destructive and cannot be undone. All uncommitted changes will be lost.")
-                            .font(.system(size: 9))
+                            .font(AXTypography.caption2)
                             .foregroundColor(.axError.opacity(0.7))
                     }
                     
@@ -1126,9 +1126,9 @@ struct GitTab: View {
                         Button(action: { Task { await vm.disconnectGit() } }) {
                             HStack(spacing: 6) {
                                 Image(systemName: "xmark.circle.fill")
-                                    .font(.system(size: 12))
+                                    .font(AXTypography.subheadline)
                                 Text("Disconnect Git Repository")
-                                    .font(.system(size: 11, weight: .bold))
+                                    .font(AXTypography.footnote).fontWeight(.bold)
                             }
                             .foregroundColor(.axError)
                             .frame(maxWidth: .infinity)
@@ -1140,7 +1140,7 @@ struct GitTab: View {
                         .buttonStyle(.plain)
                         
                         Text("Removes the .git directory. Your website files remain untouched.")
-                            .font(.system(size: 9))
+                            .font(AXTypography.caption2)
                             .foregroundColor(.axError.opacity(0.7))
                     }
                 }
@@ -1160,10 +1160,10 @@ struct GitTab: View {
                         .frame(width: 20, height: 20)
                 } else {
                     Image(systemName: icon)
-                        .font(.system(size: 16, weight: .semibold))
+                        .font(AXTypography.title3)
                 }
                 Text(label)
-                    .font(.system(size: 9, weight: .semibold))
+                    .font(AXTypography.caption2).fontWeight(.semibold)
             }
             .foregroundColor(color)
             .frame(maxWidth: .infinity)
@@ -1181,42 +1181,42 @@ struct GitTab: View {
     private func statChip(icon: String, value: String, label: String, color: Color) -> some View {
         HStack(spacing: 3) {
             Image(systemName: icon)
-                .font(.system(size: 8))
+                .font(AXTypography.caption2)
             Text(value)
-                .font(.system(size: 10, weight: .bold))
+                .font(AXTypography.caption).fontWeight(.bold)
             Text(label)
-                .font(.system(size: 9))
+                .font(AXTypography.caption2)
                 .foregroundColor(.axTextTertiary)
         }
         .foregroundColor(color)
         .padding(.horizontal, 8)
         .padding(.vertical, 3)
         .background(color.opacity(0.06))
-        .cornerRadius(4)
+        .cornerRadius(AXCornerRadius.sm)
     }
     
     private func changeStatBadge(count: Int, label: String, color: Color) -> some View {
         HStack(spacing: 3) {
             Text("\(count)")
-                .font(.system(size: 10, weight: .bold))
+                .font(AXTypography.caption).fontWeight(.bold)
             Text(label)
-                .font(.system(size: 10))
+                .font(AXTypography.caption)
         }
         .foregroundColor(color)
         .padding(.horizontal, 8)
         .padding(.vertical, 3)
         .background(color.opacity(0.08))
-        .cornerRadius(4)
+        .cornerRadius(AXCornerRadius.sm)
     }
     
     private func advancedCard<Content: View>(title: String, icon: String, color: Color, @ViewBuilder content: () -> Content) -> some View {
         VStack(alignment: .leading, spacing: AXSpacing.sm) {
             HStack(spacing: 6) {
                 Image(systemName: icon)
-                    .font(.system(size: 11, weight: .bold))
+                    .font(AXTypography.footnote).fontWeight(.bold)
                     .foregroundColor(color)
                 Text(title)
-                    .font(.system(size: 12, weight: .bold))
+                    .font(AXTypography.subheadline).fontWeight(.bold)
                     .foregroundColor(.axTextPrimary)
             }
             
@@ -1255,9 +1255,9 @@ struct GitTab: View {
     private func toastView(_ message: String, isSuccess: Bool) -> some View {
         HStack(spacing: AXSpacing.sm) {
             Image(systemName: isSuccess ? "checkmark.circle.fill" : "exclamationmark.circle.fill")
-                .font(.system(size: 14))
+                .font(AXTypography.body)
             Text(message)
-                .font(.system(size: 12, weight: .medium))
+                .font(AXTypography.subheadline).fontWeight(.medium)
                 .lineLimit(2)
         }
         .foregroundColor(.white)

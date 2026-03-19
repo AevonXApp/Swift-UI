@@ -2,8 +2,9 @@
 //  WebsiteRuntimeServices.swift
 //  AevonX
 //
-//  Service stubs for Node.js and Monitoring services.
-//  These replace the AevonXCore services and use SSHBridge (Go Core) for SSH.
+//  Runtime services for Websites section.
+//  ALL commands come from Go Core — no hardcoded SSH commands here.
+//  These actors are thin wrappers around SSHBridge + Go Core command builders.
 //
 
 import Foundation
@@ -15,6 +16,7 @@ public actor NodeJSConfigService {
     public static let shared = NodeJSConfigService()
     private var serverPaths: ServerPaths = .defaults
     private var pathsDetected = false
+    private let bridge = GenericBridge.shared
     public init() {}
 
     private func detectPathsIfNeeded(serverId: String) async {
@@ -26,7 +28,8 @@ public actor NodeJSConfigService {
     }
 
     public func readPackageJSON(appPath: String, serverId: String) async throws -> PackageJSON? {
-        let output = await SSHBridge.shared.executeAsync(serverID: serverId, command: "cat \(appPath)/package.json 2>/dev/null")
+        let cmd = bridge.callSync("websites.readPackageJSONCmd", ["app_path": appPath])
+        let output = await SSHBridge.shared.executeAsync(serverID: serverId, command: extractCmd(cmd))
         let trimmed = output.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty, let data = trimmed.data(using: .utf8) else { return nil }
         return try JSONDecoder().decode(PackageJSON.self, from: data)
@@ -36,16 +39,15 @@ public actor NodeJSConfigService {
         if let pkg = try await readPackageJSON(appPath: appPath, serverId: serverId) {
             return pkg.entryFile
         }
-        let commonFiles = ["server.js", "app.js", "index.js", "main.js", "src/index.js", "dist/index.js"]
-        for file in commonFiles {
-            let result = await SSHBridge.shared.executeAsync(serverID: serverId, command: "test -f \(appPath)/\(file) && echo 'found'")
-            if result.contains("found") { return file }
-        }
-        return "index.js"
+        let cmd = bridge.callSync("websites.detectEntryFileCmd", ["app_path": appPath])
+        let output = await SSHBridge.shared.executeAsync(serverID: serverId, command: extractCmd(cmd))
+        let trimmed = output.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? "index.js" : trimmed
     }
 
     public func readEnvFile(appPath: String, serverId: String) async throws -> [EnvironmentVariable] {
-        let output = await SSHBridge.shared.executeAsync(serverID: serverId, command: "cat \(appPath)/.env 2>/dev/null")
+        let cmd = bridge.callSync("websites.readEnvFileCmd", ["app_path": appPath])
+        let output = await SSHBridge.shared.executeAsync(serverID: serverId, command: extractCmd(cmd))
         let trimmed = output.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return [] }
         let secretKeys = ["SECRET", "KEY", "PASSWORD", "TOKEN", "API_KEY", "PRIVATE", "CREDENTIALS"]
@@ -66,87 +68,45 @@ public actor NodeJSConfigService {
 
     public func writeEnvFile(variables: [EnvironmentVariable], appPath: String, serverId: String) async throws {
         let content = variables.map { "\($0.key)=\($0.value)" }.joined(separator: "\n")
-        let escaped = content.replacingOccurrences(of: "'", with: "'\\''")
-        let output = await SSHBridge.shared.executeAsync(serverID: serverId, command: "printf '%s\\n' '\(escaped)' > \(appPath)/.env")
-        _ = output
+        let cmd = bridge.callSync("websites.writeEnvFileCmd", ["app_path": appPath, "content": content])
+        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: extractCmd(cmd))
     }
 
     public func npmInstall(appPath: String, serverId: String) async throws -> String {
-        await SSHBridge.shared.executeAsync(serverID: serverId, command: "cd \(appPath) && npm install 2>&1")
+        let cmd = bridge.callSync("websites.npmInstallCmd", ["app_path": appPath])
+        return await SSHBridge.shared.executeAsync(serverID: serverId, command: extractCmd(cmd))
     }
 
     public func npmRun(script: String, appPath: String, serverId: String) async throws -> String {
-        await SSHBridge.shared.executeAsync(serverID: serverId, command: "cd \(appPath) && npm run \(script) 2>&1")
+        let cmd = bridge.callSync("websites.npmRunCmd", ["script": script, "app_path": appPath])
+        return await SSHBridge.shared.executeAsync(serverID: serverId, command: extractCmd(cmd))
     }
 
     // MARK: - Nginx Reverse Proxy
 
-    public func generateNginxConfig(domain: String, port: Int, sslEnabled: Bool = false, sslBasePath: String = "/etc/letsencrypt/live") -> String {
-        var config = """
-        server {
-            listen 80;
-            server_name \(domain);
-        
-            location / {
-                proxy_pass http://127.0.0.1:\(port);
-                proxy_http_version 1.1;
-                proxy_set_header Upgrade $http_upgrade;
-                proxy_set_header Connection 'upgrade';
-                proxy_set_header Host $host;
-                proxy_set_header X-Real-IP $remote_addr;
-                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-                proxy_set_header X-Forwarded-Proto $scheme;
-                proxy_cache_bypass $http_upgrade;
-                proxy_read_timeout 86400;
-            }
-        }
-        """
-        if sslEnabled {
-            config += """
-            
-            server {
-                listen 443 ssl;
-                server_name \(domain);
-            
-                ssl_certificate \(sslBasePath)/\(domain)/fullchain.pem;
-                ssl_certificate_key \(sslBasePath)/\(domain)/privkey.pem;
-            
-                location / {
-                    proxy_pass http://127.0.0.1:\(port);
-                    proxy_http_version 1.1;
-                    proxy_set_header Upgrade $http_upgrade;
-                    proxy_set_header Connection 'upgrade';
-                    proxy_set_header Host $host;
-                    proxy_set_header X-Real-IP $remote_addr;
-                    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-                    proxy_set_header X-Forwarded-Proto $scheme;
-                    proxy_cache_bypass $http_upgrade;
-                    proxy_read_timeout 86400;
-                }
-            }
-            """
-        }
-        return config
-    }
-
     public func applyNginxReverseProxy(domain: String, port: Int, sslEnabled: Bool, serverId: String) async throws {
         await detectPathsIfNeeded(serverId: serverId)
-        let config = generateNginxConfig(domain: domain, port: port, sslEnabled: sslEnabled)
-        let escaped = config.replacingOccurrences(of: "'", with: "'\\''")
-        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: "printf '%s\\n' '\(escaped)' | sudo tee \(serverPaths.nginxSitesAvailable)/\(domain) > /dev/null")
-        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: "sudo ln -sf \(serverPaths.nginxSitesAvailable)/\(domain) \(serverPaths.nginxSitesEnabled)/\(domain)")
-        let testOutput = await SSHBridge.shared.executeAsync(serverID: serverId, command: "sudo nginx -t 2>&1")
-        guard testOutput.contains("successful") || testOutput.contains("ok") else {
-            throw NSError(domain: "NodeJSConfig", code: 3, userInfo: [NSLocalizedDescriptionKey: "Nginx config test failed: \(testOutput)"])
+        let result = bridge.callSync("websites.applyNodeProxyCmds", [
+            "domain": domain, "port": port, "ssl_enabled": sslEnabled,
+            "sites_available": serverPaths.nginxSitesAvailable,
+            "sites_enabled": serverPaths.nginxSitesEnabled,
+            "ssl_base_path": serverPaths.letsEncryptDir
+        ])
+        let cmds = extractCmds(result)
+        for cmd in cmds {
+            let output = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
+            if cmd.contains("nginx -t") && !output.contains("successful") && !output.contains("ok") {
+                throw NSError(domain: "NodeJSConfig", code: 3, userInfo: [NSLocalizedDescriptionKey: "Nginx config test failed: \(output)"])
+            }
         }
-        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: "sudo systemctl reload nginx")
     }
 }
 
-// MARK: - Website Analytics Service (stub)
+// MARK: - Website Analytics Service
 
 public actor WebsiteAnalyticsService {
     public static let shared = WebsiteAnalyticsService()
+    private let bridge = GenericBridge.shared
     public init() {}
 
     public struct HealthResult {
@@ -169,7 +129,8 @@ public actor WebsiteAnalyticsService {
     }
 
     public func checkWebsiteHealth(websiteId: String, serverId: String) async throws -> HealthResult {
-        let output = await SSHBridge.shared.executeAsync(serverID: serverId, command: "curl -sS -o /dev/null -w '%{http_code} %{time_total}' --max-time 15 https://\(websiteId) 2>/dev/null || curl -sS -o /dev/null -w '%{http_code} %{time_total}' --max-time 15 http://\(websiteId) 2>/dev/null")
+        let cmd = bridge.callSync("websites.siteHealthCheckCmd", ["domain": websiteId])
+        let output = await SSHBridge.shared.executeAsync(serverID: serverId, command: extractCmd(cmd))
         let parts = output.trimmingCharacters(in: .whitespacesAndNewlines).components(separatedBy: " ")
         let status = Int(parts.first ?? "") ?? 0
         let time = Double(parts.last ?? "") ?? 0
@@ -177,14 +138,16 @@ public actor WebsiteAnalyticsService {
     }
 }
 
-// MARK: - Website SSL Service (stub)
+// MARK: - Website SSL Service
 
 public actor WebsiteSSLService {
     public static let shared = WebsiteSSLService()
+    private let bridge = GenericBridge.shared
     public init() {}
 
     public func renewSSL(websiteId: String, serverId: String) async throws {
-        let output = await SSHBridge.shared.executeAsync(serverID: serverId, command: "sudo certbot renew --cert-name \(websiteId) --force-renewal 2>&1")
+        let cmd = bridge.callSync("websites.certbotRenewCmd", ["domain": websiteId])
+        let output = await SSHBridge.shared.executeAsync(serverID: serverId, command: extractCmd(cmd))
         if output.contains("FAILED") || output.contains("error") {
             throw NSError(domain: "SSL", code: 1, userInfo: [NSLocalizedDescriptionKey: "SSL renewal failed: \(output)"])
         }
@@ -195,62 +158,63 @@ public actor WebsiteSSLService {
 
 public actor NodeJSVersionService {
     public static let shared = NodeJSVersionService()
+    private let bridge = GenericBridge.shared
     public init() {}
 
-    private let nvmPrefix = """
-    export NVM_DIR="$HOME/.nvm"; \
-    [ -s "$NVM_DIR/nvm.sh" ] && source "$NVM_DIR/nvm.sh" 2>/dev/null; \
-    export PATH="$HOME/.nvm/versions/node/$(ls -1 $HOME/.nvm/versions/node/ 2>/dev/null | tail -1)/bin:$PATH" 2>/dev/null;
-    """
-
     public func getInstalledVersion(serverId: String) async -> String? {
-        let output = await SSHBridge.shared.executeAsync(serverID: serverId, command: "\(nvmPrefix) node -v 2>/dev/null")
+        let cmd = bridge.callSync("websites.nvmGetVersionCmd", [:])
+        let output = await SSHBridge.shared.executeAsync(serverID: serverId, command: extractCmd(cmd))
         let trimmed = output.trimmingCharacters(in: .whitespacesAndNewlines)
         return trimmed.isEmpty ? nil : trimmed
     }
 
-    /// Alias used by NodeJSConfigTab
     public func detectCurrentVersion(serverId: String) async throws -> String? {
         return await getInstalledVersion(serverId: serverId)
     }
 
     public func getNPMVersion(serverId: String) async -> String? {
-        let output = await SSHBridge.shared.executeAsync(serverID: serverId, command: "\(nvmPrefix) npm -v 2>/dev/null")
+        let cmd = bridge.callSync("websites.nvmGetNPMVersionCmd", [:])
+        let output = await SSHBridge.shared.executeAsync(serverID: serverId, command: extractCmd(cmd))
         let trimmed = output.trimmingCharacters(in: .whitespacesAndNewlines)
         return trimmed.isEmpty ? nil : trimmed
     }
 
-    /// Alias used by NodeJSConfigTab
     public func detectNPMVersion(serverId: String) async throws -> String? {
         return await getNPMVersion(serverId: serverId)
     }
 
     public func getInstalledVersions(serverId: String) async throws -> [String] {
-        let output = await SSHBridge.shared.executeAsync(serverID: serverId, command: "\(nvmPrefix) nvm ls --no-colors 2>/dev/null | grep -oE 'v[0-9]+\\.[0-9]+\\.[0-9]+'")
+        let cmd = bridge.callSync("websites.nvmGetInstalledVersionsCmd", [:])
+        let output = await SSHBridge.shared.executeAsync(serverID: serverId, command: extractCmd(cmd))
         return output.components(separatedBy: "\n")
             .map { $0.trimmingCharacters(in: .whitespacesAndNewlines).replacingOccurrences(of: "v", with: "") }
             .filter { !$0.isEmpty }
     }
 
     public func isNvmInstalled(serverId: String) async throws -> Bool {
-        let output = await SSHBridge.shared.executeAsync(serverID: serverId, command: "[ -s \"$HOME/.nvm/nvm.sh\" ] && echo 'yes' || echo 'no'")
+        let cmd = bridge.callSync("websites.nvmIsInstalledCmd", [:])
+        let output = await SSHBridge.shared.executeAsync(serverID: serverId, command: extractCmd(cmd))
         return output.trimmingCharacters(in: .whitespacesAndNewlines) == "yes"
     }
 
     public func installNvm(serverId: String) async throws {
-        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: "curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash 2>&1")
+        let cmd = bridge.callSync("websites.nvmInstallCmd", [:])
+        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: extractCmd(cmd))
     }
 
     public func installVersion(_ version: String, serverId: String) async throws {
-        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: "\(nvmPrefix) nvm install \(version) 2>&1")
+        let cmd = bridge.callSync("websites.nvmInstallVersionCmd", ["version": version])
+        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: extractCmd(cmd))
     }
 
     public func switchVersion(_ version: String, serverId: String) async throws {
-        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: "\(nvmPrefix) nvm use \(version) && nvm alias default \(version) 2>&1")
+        let cmd = bridge.callSync("websites.nvmSwitchVersionCmd", ["version": version])
+        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: extractCmd(cmd))
     }
 
     public func getAvailableVersions(serverId: String) async throws -> [String] {
-        let output = await SSHBridge.shared.executeAsync(serverID: serverId, command: "\(nvmPrefix) nvm ls-remote --lts --no-colors 2>/dev/null | grep -oE 'v[0-9]+\\.[0-9]+\\.[0-9]+' | tail -20")
+        let cmd = bridge.callSync("websites.nvmGetAvailableVersionsCmd", [:])
+        let output = await SSHBridge.shared.executeAsync(serverID: serverId, command: extractCmd(cmd))
         return output.components(separatedBy: "\n")
             .map { $0.trimmingCharacters(in: .whitespacesAndNewlines).replacingOccurrences(of: "v", with: "") }
             .filter { !$0.isEmpty }
@@ -261,28 +225,26 @@ public actor NodeJSVersionService {
 
 public actor NodeJSProcessService {
     public static let shared = NodeJSProcessService()
+    private let bridge = GenericBridge.shared
     public init() {}
 
-    private let nvmPrefix = """
-    export NVM_DIR="$HOME/.nvm"; \
-    [ -s "$NVM_DIR/nvm.sh" ] && source "$NVM_DIR/nvm.sh" 2>/dev/null; \
-    export PATH="$HOME/.nvm/versions/node/$(ls -1 $HOME/.nvm/versions/node/ 2>/dev/null | tail -1)/bin:$PATH" 2>/dev/null;
-    """
-
     public func isPM2Installed(serverId: String) async throws -> Bool {
-        let output = await SSHBridge.shared.executeAsync(serverID: serverId, command: "\(nvmPrefix) which pm2 2>/dev/null")
+        let cmd = bridge.callSync("websites.pm2IsInstalledCmd", [:])
+        let output = await SSHBridge.shared.executeAsync(serverID: serverId, command: extractCmd(cmd))
         return !output.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
     public func installPM2(serverId: String) async throws {
-        let output = await SSHBridge.shared.executeAsync(serverID: serverId, command: "\(nvmPrefix) npm install -g pm2 2>&1")
+        let cmd = bridge.callSync("websites.pm2InstallCmd", [:])
+        let output = await SSHBridge.shared.executeAsync(serverID: serverId, command: extractCmd(cmd))
         if output.contains("ERR!") {
             throw NSError(domain: "PM2", code: 1, userInfo: [NSLocalizedDescriptionKey: "Failed to install PM2: \(output)"])
         }
     }
 
     public func listProcesses(serverId: String) async throws -> [PM2Process] {
-        let output = await SSHBridge.shared.executeAsync(serverID: serverId, command: "\(nvmPrefix) pm2 jlist 2>/dev/null")
+        let cmd = bridge.callSync("websites.pm2ListCmd", [:])
+        let output = await SSHBridge.shared.executeAsync(serverID: serverId, command: extractCmd(cmd))
         let trimmed = output.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty, trimmed.first == "[", let data = trimmed.data(using: .utf8) else { return [] }
         let raw = (try? JSONSerialization.jsonObject(with: data) as? [[String: Any]]) ?? []
@@ -294,61 +256,56 @@ public actor NodeJSProcessService {
     }
 
     public func startProcess(name: String, entryFile: String? = nil, cwd: String? = nil, serverId: String) async throws -> String {
-        var cmd = "\(nvmPrefix) pm2 start"
-        if let e = entryFile { cmd += " \(e) --name \"\(name)\"" } else { cmd += " \(name)" }
-        if let c = cwd { cmd += " --cwd \"\(c)\"" }
-        cmd += " 2>&1"
-        return await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
+        let cmd = bridge.callSync("websites.pm2StartCmd", ["name": name, "entry_file": entryFile ?? "", "cwd": cwd ?? ""])
+        return await SSHBridge.shared.executeAsync(serverID: serverId, command: extractCmd(cmd))
     }
 
     public func stopProcess(name: String, serverId: String) async throws {
-        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: "\(nvmPrefix) pm2 stop \"\(name)\" 2>&1")
+        let cmd = bridge.callSync("websites.pm2StopCmd", ["name": name])
+        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: extractCmd(cmd))
     }
 
     public func restartProcess(name: String, serverId: String) async throws {
-        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: "\(nvmPrefix) pm2 restart \"\(name)\" 2>&1")
+        let cmd = bridge.callSync("websites.pm2RestartCmd", ["name": name])
+        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: extractCmd(cmd))
     }
 
     public func deleteProcess(name: String, serverId: String) async throws {
-        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: "\(nvmPrefix) pm2 delete \"\(name)\" 2>&1")
+        let cmd = bridge.callSync("websites.pm2DeleteCmd", ["name": name])
+        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: extractCmd(cmd))
     }
 
     public func getProcessLogs(name: String, lines: Int = 50, serverId: String) async throws -> String {
-        await SSHBridge.shared.executeAsync(serverID: serverId, command: "\(nvmPrefix) pm2 logs \"\(name)\" --lines \(lines) --nostream 2>&1")
+        let cmd = bridge.callSync("websites.pm2LogsCmd", ["name": name, "lines": lines])
+        return await SSHBridge.shared.executeAsync(serverID: serverId, command: extractCmd(cmd))
     }
 
     public func saveProcessList(serverId: String) async throws {
-        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: "\(nvmPrefix) pm2 save 2>&1")
-        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: "\(nvmPrefix) pm2 startup 2>&1 | tail -1 | bash 2>/dev/null")
+        let result = bridge.callSync("websites.pm2SaveCmds", [:])
+        let cmds = extractCmds(result)
+        for cmd in cmds {
+            _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
+        }
     }
 
     public func reloadProcess(name: String, serverId: String) async throws {
-        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: "\(nvmPrefix) pm2 reload \"\(name)\" 2>&1")
+        let cmd = bridge.callSync("websites.pm2ReloadCmd", ["name": name])
+        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: extractCmd(cmd))
     }
 
     public func scaleProcess(name: String, instances: Int, serverId: String) async throws {
-        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: "\(nvmPrefix) pm2 scale \"\(name)\" \(instances) 2>&1")
+        let cmd = bridge.callSync("websites.pm2ScaleCmd", ["name": name, "instances": instances])
+        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: extractCmd(cmd))
     }
 
     public func startCluster(name: String, entryFile: String, instances: Int, cwd: String, serverId: String) async throws {
-        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: "\(nvmPrefix) pm2 start \(entryFile) --name \"\(name)\" -i \(instances) --cwd \"\(cwd)\" 2>&1")
+        let cmd = bridge.callSync("websites.pm2StartClusterCmd", ["name": name, "entry_file": entryFile, "instances": instances, "cwd": cwd])
+        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: extractCmd(cmd))
     }
 
     public func generateEcosystemConfig(name: String, script: String, cwd: String, serverId: String) async throws {
-        let config = """
-        module.exports = {
-          apps: [{
-            name: '\(name)',
-            script: '\(script)',
-            cwd: '\(cwd)',
-            instances: 'max',
-            exec_mode: 'cluster',
-            env: { NODE_ENV: 'production' }
-          }]
-        };
-        """
-        let escaped = config.replacingOccurrences(of: "'", with: "'\\''")
-        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: "echo '\(escaped)' > \(cwd)/ecosystem.config.js")
+        let cmd = bridge.callSync("websites.pm2EcosystemCmd", ["name": name, "script": script, "cwd": cwd])
+        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: extractCmd(cmd))
     }
 }
 
@@ -356,15 +313,18 @@ public actor NodeJSProcessService {
 
 public actor SiteMonitoringService {
     public static let shared = SiteMonitoringService()
+    private let bridge = GenericBridge.shared
     public init() {}
 
     public func measureResponseTime(domain: String, serverId: String) async throws -> Double {
-        let output = await SSHBridge.shared.executeAsync(serverID: serverId, command: "curl -sS -o /dev/null -w '%{time_total}' --max-time 15 https://\(domain) 2>/dev/null || curl -sS -o /dev/null -w '%{time_total}' --max-time 15 http://\(domain) 2>/dev/null")
+        let cmd = bridge.callSync("websites.siteResponseTimeCmd", ["domain": domain])
+        let output = await SSHBridge.shared.executeAsync(serverID: serverId, command: extractCmd(cmd))
         return Double(output.trimmingCharacters(in: .whitespacesAndNewlines)) ?? 0
     }
 
     public func analyzeDiskUsage(docRoot: String, serverId: String) async throws -> [CoreDiskEntry] {
-        let output = await SSHBridge.shared.executeAsync(serverID: serverId, command: "du -sh \(docRoot)/* 2>/dev/null | sort -rh | head -20")
+        let cmd = bridge.callSync("websites.siteDiskUsageCmd", ["doc_root": docRoot])
+        let output = await SSHBridge.shared.executeAsync(serverID: serverId, command: extractCmd(cmd))
         return output.components(separatedBy: "\n")
             .filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
             .compactMap { line -> CoreDiskEntry? in
@@ -375,7 +335,8 @@ public actor SiteMonitoringService {
     }
 
     public func findLargeFiles(docRoot: String, serverId: String) async throws -> [String] {
-        let output = await SSHBridge.shared.executeAsync(serverID: serverId, command: "find \(docRoot) -type f -size +10M -exec ls -lh {} \\; 2>/dev/null | awk '{print $5\" \"$NF}' | head -20")
+        let cmd = bridge.callSync("websites.siteLargeFilesCmd", ["doc_root": docRoot])
+        let output = await SSHBridge.shared.executeAsync(serverID: serverId, command: extractCmd(cmd))
         return output.components(separatedBy: "\n").filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
     }
 }
@@ -392,18 +353,31 @@ public struct CoreDiskEntry: Sendable {
 
 public actor SiteQuickActionsService {
     public static let shared = SiteQuickActionsService()
+    private var serverPaths: ServerPaths = .defaults
+    private var pathsDetected = false
+    private let bridge = GenericBridge.shared
     public init() {}
 
+    private func detectPathsIfNeeded(serverId: String) async {
+        guard !pathsDetected else { return }
+        let cmd = PathResolverBridge.shared.detectCmd()
+        let output = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
+        serverPaths = PathResolverBridge.shared.parse(output: output)
+        pathsDetected = true
+    }
+
     public func restartPHPFPM(version: String, serverId: String) async throws {
-        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: "sudo systemctl restart php\(version)-fpm")
+        let cmd = bridge.callSync("websites.restartPHPCmd", ["version": version])
+        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: extractCmd(cmd))
     }
 
     public func restartPM2(serverId: String) async throws {
-        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: "pm2 restart all")
+        let cmd = bridge.callSync("websites.pm2RestartCmd", ["name": "all"])
+        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: extractCmd(cmd))
     }
 
     public func restartNginx(serverId: String) async throws {
-        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: "sudo systemctl restart nginx")
+        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: WebsitesBridge.shared.restartNginxCmd())
     }
 
     public func reloadNginx(serverId: String) async throws {
@@ -411,15 +385,19 @@ public actor SiteQuickActionsService {
     }
 
     public func fixOwnership(docRoot: String, serverId: String) async throws {
-        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: "sudo chown -R www-data:www-data \(docRoot)")
+        await detectPathsIfNeeded(serverId: serverId)
+        let cmd = bridge.callSync("websites.fixOwnershipCmd", ["doc_root": docRoot, "web_ownership": serverPaths.webOwnership])
+        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: extractCmd(cmd))
     }
 
     public func clearAppCache(docRoot: String, serverId: String) async throws -> String {
-        let output = await SSHBridge.shared.executeAsync(serverID: serverId, command: "cd \(docRoot) && php artisan cache:clear 2>/dev/null && php artisan config:clear 2>/dev/null && echo 'Laravel cache cleared' || wp cache flush 2>/dev/null && echo 'WP cache flushed' || echo 'No framework cache found'")
+        let cmd = bridge.callSync("websites.clearAppCacheCmd", ["doc_root": docRoot])
+        let output = await SSHBridge.shared.executeAsync(serverID: serverId, command: extractCmd(cmd))
         return output.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     public func getDiskUsage(docRoot: String, serverId: String) async throws -> String {
+        let cmd = WebsitesBridge.shared.findLargeFilesCmd(docRoot: docRoot)
         let output = await SSHBridge.shared.executeAsync(serverID: serverId, command: "du -sh \(docRoot) 2>/dev/null | awk '{print $1}'")
         return output.trimmingCharacters(in: .whitespacesAndNewlines)
     }
@@ -437,6 +415,7 @@ public actor WebsiteLifecycleService {
     public static let shared = WebsiteLifecycleService()
     private var serverPaths: ServerPaths = .defaults
     private var pathsDetected = false
+    private let bridge = GenericBridge.shared
     public init() {}
 
     private func detectPathsIfNeeded(serverId: String) async {
@@ -450,22 +429,35 @@ public actor WebsiteLifecycleService {
     public func deleteWebsite(websiteId: String, serverId: String) async throws {
         await detectPathsIfNeeded(serverId: serverId)
         CoreLogger.shared.info("Deleting website: \(websiteId)", module: "WebsiteLifecycleService")
-        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: "sudo rm -f \(serverPaths.nginxSitesEnabled)/\(websiteId)")
-        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: "sudo rm -f \(serverPaths.nginxSitesAvailable)/\(websiteId)")
-        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: "sudo nginx -t && sudo systemctl reload nginx")
+        let result = bridge.callSync("websites.siteDeleteCmds", [
+            "domain": websiteId,
+            "sites_available": serverPaths.nginxSitesAvailable,
+            "sites_enabled": serverPaths.nginxSitesEnabled
+        ])
+        let cmds = extractCmds(result)
+        for cmd in cmds {
+            _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
+        }
         CoreLogger.shared.info("Website deleted successfully", module: "WebsiteLifecycleService")
     }
 
     public func startWebsite(websiteId: String, serverId: String) async throws {
         await detectPathsIfNeeded(serverId: serverId)
-        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: "sudo ln -sf \(serverPaths.nginxSitesAvailable)/\(websiteId) \(serverPaths.nginxSitesEnabled)/\(websiteId)")
-        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: "sudo nginx -t && sudo systemctl reload nginx")
+        let cmd = bridge.callSync("websites.siteStartCmd", [
+            "domain": websiteId,
+            "sites_available": serverPaths.nginxSitesAvailable,
+            "sites_enabled": serverPaths.nginxSitesEnabled
+        ])
+        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: extractCmd(cmd))
     }
 
     public func stopWebsite(websiteId: String, serverId: String) async throws {
         await detectPathsIfNeeded(serverId: serverId)
-        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: "sudo rm -f \(serverPaths.nginxSitesEnabled)/\(websiteId)")
-        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: "sudo nginx -t && sudo systemctl reload nginx")
+        let cmd = bridge.callSync("websites.siteStopCmd", [
+            "domain": websiteId,
+            "sites_enabled": serverPaths.nginxSitesEnabled
+        ])
+        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: extractCmd(cmd))
     }
 }
 
@@ -487,45 +479,24 @@ public actor DatabaseManagementService {
     public init() {}
 
     /// Multi-source MySQL/MariaDB auth prefix — probes 7 credential sources.
-    /// Priority: (1) BT Panel default.pl, (2) BT Panel SQLite db, (3) BT tools.py,
-    ///           (4) Debian .cnf, (5) Unix socket, (6) sudo root, + --skip-ssl for MariaDB.
     private let mysqlAuthPrefix: String = {
-        // Each step only runs if MYSQL_AUTH is still empty (first match wins)
         let steps = [
-            // Init
             #"MYSQL_AUTH=""; MYSQL_SUDO=""; MYSQL_SSL="";"#,
-
-            // 1. BT Panel classic: /www/server/panel/data/default.pl (plain-text password)
             #"[ -z "$MYSQL_AUTH" ] && [ -f /www/server/panel/data/default.pl ] && MYSQL_AUTH="-uroot -p$(cat /www/server/panel/data/default.pl 2>/dev/null)";"#,
-
-            // 2. BT Panel newer: SQLite db at /www/server/panel/data/default.db
-            //    The root MySQL password is stored in the `config` table, column `mysql_root`
             #"[ -z "$MYSQL_AUTH" ] && [ -f /www/server/panel/data/default.db ] && command -v sqlite3 >/dev/null 2>&1 && { BTPW=$(sqlite3 /www/server/panel/data/default.db "SELECT mysql_root FROM config LIMIT 1" 2>/dev/null); [ -n "$BTPW" ] && MYSQL_AUTH="-uroot -p${BTPW}"; };"#,
-
-            // 3. BT Panel Python tool (fallback if sqlite3 not available)
             #"[ -z "$MYSQL_AUTH" ] && [ -f /www/server/panel/tools.py ] && { BTPW=$(python3 /www/server/panel/tools.py root_mysql 2>/dev/null); [ -n "$BTPW" ] && MYSQL_AUTH="-uroot -p${BTPW}"; };"#,
-
-            // 4. Debian/Ubuntu maintenance credentials
             #"[ -z "$MYSQL_AUTH" ] && [ -f /etc/mysql/debian.cnf ] && MYSQL_AUTH="--defaults-extra-file=/etc/mysql/debian.cnf";"#,
-
-            // 5. Unix socket auth (try common socket paths)
             #"if [ -z "$MYSQL_AUTH" ]; then for sock in /var/run/mysqld/mysqld.sock /tmp/mysql.sock /var/lib/mysql/mysql.sock /run/mysqld/mysqld.sock; do [ -S "$sock" ] && MYSQL_AUTH="-uroot --socket=$sock" && break; done; fi;"#,
-
-            // 6. Final fallback: sudo root (Debian 13+ unix_socket plugin)
             #"[ -z "$MYSQL_AUTH" ] && MYSQL_SUDO="sudo" && MYSQL_AUTH="-uroot";"#,
-
-            // 7. MariaDB --skip-ssl to avoid ERROR 2026 TLS
             #"command -v mariadb >/dev/null 2>&1 && MYSQL_SSL="--skip-ssl";"#,
         ]
         return steps.joined(separator: " ")
     }()
 
-    /// Returns the correct mysql client binary name for the given type.
     private func mysqlBinary(for type: String) -> String {
         return type.lowercased() == "mariadb" ? "mariadb" : "mysql"
     }
 
-    /// Builds a full auth-aware command for mysql/mariadb.
     private func mysqlCommand(for type: String, args: String) -> String {
         let bin = mysqlBinary(for: type)
         return "\(mysqlAuthPrefix) $MYSQL_SUDO \(bin) $MYSQL_AUTH $MYSQL_SSL \(args)"
@@ -534,15 +505,11 @@ public actor DatabaseManagementService {
     public func listDatabases(type: String, serverId: String) async throws -> [CoreDatabaseInfo] {
         let typeLower = type.lowercased()
         let systemMySQL = ["information_schema", "performance_schema", "mysql", "sys"]
-        let systemPG = ["postgres"]
-        
+
         if typeLower == "mysql" || typeLower == "mariadb" {
             let cmd = mysqlCommand(for: typeLower, args: "-NBe \"SELECT s.schema_name, COALESCE(ROUND(SUM(t.data_length + t.index_length)/1024/1024, 2), 0), COUNT(t.table_name) FROM information_schema.schemata s LEFT JOIN information_schema.tables t ON s.schema_name = t.table_schema GROUP BY s.schema_name\" 2>&1")
-            print("[DatabaseManagementService] \(typeLower) cmd: \(cmd)")
             let output = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
-            print("[DatabaseManagementService] \(typeLower) raw output: '\(output)'")
             return output.components(separatedBy: "\n").filter { !$0.isEmpty }.compactMap { line in
-                // Skip error/warning lines that got merged via 2>&1
                 let lower = line.lowercased()
                 if lower.contains("error") || lower.contains("warning") || lower.contains("access denied") || lower.contains("using a password") { return nil }
                 let parts = line.split(separator: "\t")
@@ -550,18 +517,14 @@ public actor DatabaseManagementService {
                 let name = String(parts[0])
                 guard !systemMySQL.contains(name) else { return nil }
                 return CoreDatabaseInfo(name: name, size: Double(parts[1]) ?? 0, tables: Int(parts[2]) ?? 0)
-
             }
         } else if typeLower == "postgresql" {
             let cmd = "sudo -u postgres psql -tAc \"SELECT datname, pg_database_size(datname)/1024/1024 FROM pg_database WHERE datistemplate = false AND datname != 'postgres'\" 2>/dev/null"
-            print("[DatabaseManagementService] PG cmd: \(cmd)")
             let output = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
-            print("[DatabaseManagementService] PG raw output: '\(output)'")
             return output.components(separatedBy: "\n").filter { !$0.isEmpty }.compactMap { line in
                 let parts = line.split(separator: "|")
                 guard parts.count >= 2 else { return nil }
                 let name = String(parts[0]).trimmingCharacters(in: .whitespaces)
-                guard !systemPG.contains(name) else { return nil }
                 return CoreDatabaseInfo(name: name, size: Double(parts[1]) ?? 0, tables: 0)
             }
         } else {
@@ -606,4 +569,30 @@ public actor DatabaseManagementService {
             throw NSError(domain: "DatabaseManagementService", code: -1, userInfo: [NSLocalizedDescriptionKey: output])
         }
     }
+}
+
+// MARK: - Helpers
+
+/// Extracts a single command string from a Go Core dispatch response.
+private func extractCmd(_ json: String) -> String {
+    guard let data = json.data(using: .utf8),
+          let resp = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+          resp["success"] as? Bool == true,
+          let innerData = resp["data"] as? [String: Any],
+          let command = innerData["command"] as? String else {
+        return ""
+    }
+    return command
+}
+
+/// Extracts a command array from a Go Core dispatch response.
+private func extractCmds(_ json: String) -> [String] {
+    guard let data = json.data(using: .utf8),
+          let resp = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+          resp["success"] as? Bool == true,
+          let innerData = resp["data"] as? [String: Any],
+          let cmds = innerData["commands"] as? [String] else {
+        return []
+    }
+    return cmds
 }

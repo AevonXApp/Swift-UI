@@ -39,7 +39,7 @@ class SiteConfigViewModel: ObservableObject {
         defer { isLoading = false }
         do {
             await detectPathsIfNeeded()
-            let path = "\(serverPaths.nginxSitesAvailable)/\(domain)"
+            let path = resolveConfigPath()
             configPath = path
             let cmd = bridge.loadNginxConfigCmd(configPath: path)
             let result = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
@@ -68,7 +68,7 @@ class SiteConfigViewModel: ObservableObject {
         isSaving = true
         defer { isSaving = false }
         do {
-            let path = configPath.isEmpty ? "\(serverPaths.nginxSitesAvailable)/\(domain)" : configPath
+            let path = configPath.isEmpty ? resolveConfigPath() : configPath
             // Backup current
             let ts = ISO8601DateFormatter().string(from: Date()).replacingOccurrences(of: ":", with: "-")
             _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: "sudo cp \(path) \(path).bak.\(ts)")
@@ -97,7 +97,7 @@ class SiteConfigViewModel: ObservableObject {
 
     func loadBackups() async {
         do {
-            let path = configPath.isEmpty ? "\(serverPaths.nginxSitesAvailable)/\(domain)" : configPath
+            let path = configPath.isEmpty ? resolveConfigPath() : configPath
             let result = await SSHBridge.shared.executeAsync(serverID: serverId, command: "ls -1 \(path).bak.* 2>/dev/null | sort -r | head -10")
             configBackups = result.components(separatedBy: "\n").filter { !$0.isEmpty }.map {
                 let filename = ($0 as NSString).lastPathComponent
@@ -111,7 +111,7 @@ class SiteConfigViewModel: ObservableObject {
 
     func restoreBackup(_ backup: ConfigBackupItem) async {
         do {
-            let path = configPath.isEmpty ? "\(serverPaths.nginxSitesAvailable)/\(domain)" : configPath
+            let path = configPath.isEmpty ? resolveConfigPath() : configPath
             let dir = (path as NSString).deletingLastPathComponent
             _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: "sudo cp \(dir)/\(backup.filename) \(path)")
             await loadConfig()
@@ -136,6 +136,14 @@ class SiteConfigViewModel: ObservableObject {
         let output = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
         serverPaths = PathResolverBridge.shared.parse(output: output)
         pathsDetected = true
+    }
+
+    private func resolveConfigPath() -> String {
+        let sa = serverPaths.nginxSitesAvailable
+        if serverPaths.serverType == "bt_panel" || sa.contains("/www/server") || sa.contains("/conf.d") || sa.contains("/vhost") {
+            return "\(sa)/\(domain).conf"
+        }
+        return "\(sa)/\(domain)"
     }
 }
 

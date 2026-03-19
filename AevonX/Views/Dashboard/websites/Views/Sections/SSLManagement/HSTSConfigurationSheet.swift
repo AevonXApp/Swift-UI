@@ -41,7 +41,7 @@ struct HSTSConfigurationSheet: View {
                     HStack(alignment: .top, spacing: AXSpacing.md) {
                         Image(systemName: "shield.lefthalf.filled")
                             .foregroundColor(.axAccentBlue)
-                            .font(.system(size: 24))
+                            .font(AXTypography.title)
 
                         VStack(alignment: .leading, spacing: 4) {
                             Text("HTTP Strict Transport Security")
@@ -97,7 +97,7 @@ struct HSTSConfigurationSheet: View {
                                 HStack(alignment: .top, spacing: AXSpacing.sm) {
                                     Image(systemName: "exclamationmark.triangle.fill")
                                         .foregroundColor(.axWarning)
-                                        .font(.system(size: 12))
+                                        .font(AXTypography.subheadline)
 
                                     Text("Preload is a permanent commitment. Removal from the preload list can take months.")
                                         .font(AXTypography.caption)

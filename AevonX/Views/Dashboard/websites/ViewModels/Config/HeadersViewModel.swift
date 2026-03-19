@@ -29,7 +29,7 @@ class HeadersViewModel: ObservableObject {
     func loadHeaders() async {
         do {
             await detectPathsIfNeeded()
-            let configPath = "\(serverPaths.nginxSitesAvailable)/\(domain)"
+            let configPath = resolveConfigPath()
             let cmd = bridge.loadHeadersCmd(configPath: configPath)
             let result = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
             let parsedJSON = bridge.parseHeaders(output: result)
@@ -85,16 +85,26 @@ class HeadersViewModel: ObservableObject {
 
     func applyRecommendedHeaders() async {
         do {
-            let configPath = "\(serverPaths.nginxSitesAvailable)/\(domain)"
+            let configPath = resolveConfigPath()
             let cmd = bridge.applyRecommendedHeadersCmd(configPath: configPath)
             _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
             _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.restartNginxCmd())
-            GlobalToastManager.shared.showSuccess("Security headers applied & Nginx reloaded")
+            GlobalToastManager.shared.showSuccess("Security headers applied & server reloaded")
             await loadHeaders()
             await runSecurityAudit()
         } catch {
             GlobalToastManager.shared.showError(error.localizedDescription)
         }
+    }
+
+    /// Resolves the config path for the domain, checking both standard and BT Panel formats
+    private func resolveConfigPath() -> String {
+        let sa = serverPaths.nginxSitesAvailable
+        // BT Panel uses .conf extension, standard Nginx often doesn't
+        if serverPaths.serverType == "bt_panel" || sa.contains("/www/server") {
+            return "\(sa)/\(domain).conf"
+        }
+        return "\(sa)/\(domain)"
     }
 
     private func detectPathsIfNeeded() async {

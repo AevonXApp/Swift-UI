@@ -387,7 +387,14 @@ public final class WebsiteDetailViewModel: ObservableObject {
         isLoadingPHPVersions = true
         
         do {
-            let result = await SSHBridge.shared.executeAsync(serverID: serverId, command: "ls /etc/php/ 2>/dev/null | sort -V")
+            // Multi-path probe: BT Panel, standard Debian/Ubuntu, RHEL/CentOS
+            let cmd = """
+            (ls /www/server/php/ 2>/dev/null | grep -E '^[0-9]' | sed 's/^/php/' | sort -V) || \
+            (ls /etc/php/ 2>/dev/null | sort -V) || \
+            (rpm -qa 2>/dev/null | grep -oP 'php\\d+' | sort -uV) || \
+            echo ''
+            """
+            let result = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
             let versions = result.components(separatedBy: "\n").filter { !$0.isEmpty }
             installedPHPVersions = versions
         } catch {

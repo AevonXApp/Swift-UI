@@ -39,17 +39,17 @@ struct DatabaseLinkSection: View {
                         HStack(spacing: AXSpacing.md) {
                             VStack(alignment: .leading, spacing: 4) {
                                 Text("Database Name")
-                                    .font(.system(size: 11)).foregroundColor(.axTextSecondary)
+                                    .font(AXTypography.footnote).foregroundColor(.axTextSecondary)
                                 TextField("database_name", text: $dbName)
                                     .textFieldStyle(.roundedBorder)
-                                    .font(.system(size: 13, design: .monospaced))
+                                    .font(AXTypography.monoMd)
                             }
                             VStack(alignment: .leading, spacing: 4) {
                                 Text("Username")
-                                    .font(.system(size: 11)).foregroundColor(.axTextSecondary)
+                                    .font(AXTypography.footnote).foregroundColor(.axTextSecondary)
                                 TextField("db_user", text: $dbUser)
                                     .textFieldStyle(.roundedBorder)
-                                    .font(.system(size: 13, design: .monospaced))
+                                    .font(AXTypography.monoMd)
                             }
                         }
 
@@ -57,7 +57,7 @@ struct DatabaseLinkSection: View {
                             Spacer()
                             Button(action: linkDatabase) {
                                 Label("Link Database", systemImage: "link")
-                                    .font(.system(size: 12, weight: .semibold))
+                                    .font(AXTypography.subheadline).fontWeight(.semibold)
                             }
                             .buttonStyle(.borderedProminent)
                             .controlSize(.small)
@@ -74,15 +74,15 @@ struct DatabaseLinkSection: View {
                                 HStack(spacing: AXSpacing.xl) {
                                     VStack(spacing: 4) {
                                         Text(stats.sizeFormatted)
-                                            .font(.system(size: 20, weight: .bold))
+                                            .font(AXTypography.title2).fontWeight(.bold)
                                             .foregroundColor(.axAccentBlue)
-                                        Text("Size").font(.system(size: 11)).foregroundColor(.axTextTertiary)
+                                        Text("Size").font(AXTypography.footnote).foregroundColor(.axTextTertiary)
                                     }
                                     VStack(spacing: 4) {
                                         Text("\(stats.tableCount)")
-                                            .font(.system(size: 20, weight: .bold))
+                                            .font(AXTypography.title2).fontWeight(.bold)
                                             .foregroundColor(.axSuccess)
-                                        Text("Tables").font(.system(size: 11)).foregroundColor(.axTextTertiary)
+                                        Text("Tables").font(AXTypography.footnote).foregroundColor(.axTextTertiary)
                                     }
                                 }
 
@@ -92,14 +92,14 @@ struct DatabaseLinkSection: View {
                             HStack(spacing: AXSpacing.sm) {
                                 Button(action: { Task { await refreshStats() } }) {
                                     Label("Refresh Stats", systemImage: "arrow.clockwise")
-                                        .font(.system(size: 11))
+                                        .font(AXTypography.footnote)
                                 }
                                 .buttonStyle(.bordered)
                                 .controlSize(.mini)
 
                                 Button(action: { showConnectionString.toggle() }) {
                                     Label("Connection String", systemImage: "doc.on.clipboard")
-                                        .font(.system(size: 11))
+                                        .font(AXTypography.footnote)
                                 }
                                 .buttonStyle(.bordered)
                                 .controlSize(.mini)
@@ -119,7 +119,7 @@ struct DatabaseLinkSection: View {
                             }
 
                             Text(selectedFormat.generate(link: db))
-                                .font(.system(size: 12, design: .monospaced))
+                                .font(AXTypography.monoMd)
                                 .padding(AXSpacing.md)
                                 .frame(maxWidth: .infinity, alignment: .leading)
                                 .background(Color.axBackground)

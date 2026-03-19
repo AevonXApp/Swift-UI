@@ -94,7 +94,8 @@ class AdvancedDomainViewModel: ObservableObject {
         guard !newSubdomain.isEmpty else { return }
         isLoading = true; defer { isLoading = false }
         do {
-            let cmds = bridge.createSubdomainCmds(subdomain: newSubdomain, domain: domain, docRoot: docRoot)
+            await detectPathsIfNeeded()
+            let cmds = bridge.createSubdomainCmds(subdomain: newSubdomain, domain: domain, docRoot: docRoot, sitesAvailable: serverPaths.nginxSitesAvailable, sitesEnabled: serverPaths.nginxSitesEnabled, webOwnership: serverPaths.webOwnership)
             for cmd in cmds {
                 _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
             }

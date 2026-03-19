@@ -53,7 +53,7 @@ struct DomainSection: View {
         }) {
             VStack(spacing: 4) {
                 Text(tab.rawValue)
-                    .font(.system(size: 12, weight: viewModel.selectedTab == tab ? .semibold : .regular))
+                    .font(AXTypography.subheadline).fontWeight(viewModel.selectedTab == tab ? .semibold : .regular)
                     .foregroundColor(viewModel.selectedTab == tab ? .axAccentBlue : .axTextSecondary)
                 Rectangle()
                     .fill(viewModel.selectedTab == tab ? Color.axAccentBlue : Color.clear)
@@ -72,25 +72,25 @@ struct DomainSection: View {
             // Primary domain display
             HStack(spacing: AXSpacing.sm) {
                 Image(systemName: "star.fill")
-                    .font(.system(size: 10))
+                    .font(AXTypography.caption)
                     .foregroundColor(.axWarning)
                 Text("Primary Domain")
-                    .font(.system(size: 10, weight: .semibold))
+                    .font(AXTypography.caption).fontWeight(.semibold)
                     .foregroundColor(.axTextMuted)
             }
 
             HStack {
                 Text(viewModel.domain)
-                    .font(.system(size: 15, weight: .bold, design: .monospaced))
+                    .font(AXTypography.monoLg).fontWeight(.bold)
                     .foregroundColor(.axTextPrimary)
                 Spacer()
                 Text("PRIMARY")
-                    .font(.system(size: 9, weight: .bold))
+                    .font(AXTypography.caption2).fontWeight(.bold)
                     .foregroundColor(.axSuccess)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 3)
                     .background(Color.axSuccess.opacity(0.1))
-                    .cornerRadius(4)
+                    .cornerRadius(AXCornerRadius.sm)
             }
             .padding(AXSpacing.md)
             .background(Color.axSurface)
@@ -103,10 +103,10 @@ struct DomainSection: View {
                     HStack {
                         TextField("alias.example.com", text: $viewModel.newAlias)
                             .textFieldStyle(.roundedBorder)
-                            .font(.system(size: 12, design: .monospaced))
+                            .font(AXTypography.monoMd)
                         Button(action: { Task { await viewModel.addAlias() } }) {
                             Label("Add Alias", systemImage: "plus.circle.fill")
-                                .font(.system(size: 11))
+                                .font(AXTypography.footnote)
                         }
                         .buttonStyle(.borderedProminent)
                         .controlSize(.small)
@@ -119,15 +119,15 @@ struct DomainSection: View {
                         ForEach(viewModel.aliases, id: \.self) { alias in
                             HStack {
                                 Image(systemName: "arrow.turn.down.right")
-                                    .font(.system(size: 10))
+                                    .font(AXTypography.caption)
                                     .foregroundColor(.axAccentBlue.opacity(0.6))
                                 Text(alias)
-                                    .font(.system(size: 13, design: .monospaced))
+                                    .font(AXTypography.monoMd)
                                     .foregroundColor(.axTextPrimary)
                                 Spacer()
                                 Button(action: { Task { await viewModel.removeAlias(alias) } }) {
                                     Image(systemName: "xmark.circle.fill")
-                                        .font(.system(size: 13))
+                                        .font(AXTypography.callout)
                                         .foregroundColor(.axError.opacity(0.7))
                                 }
                                 .buttonStyle(.plain)
@@ -150,17 +150,17 @@ struct DomainSection: View {
                         HStack(spacing: 0) {
                             TextField("blog", text: $viewModel.newSubdomain)
                                 .textFieldStyle(.roundedBorder)
-                                .font(.system(size: 12, design: .monospaced))
+                                .font(AXTypography.monoMd)
                                 .frame(maxWidth: 200)
                             Text(".\(viewModel.domain)")
-                                .font(.system(size: 12, weight: .medium, design: .monospaced))
+                                .font(AXTypography.monoMd).fontWeight(.medium)
                                 .foregroundColor(.axTextMuted)
                                 .padding(.leading, 4)
                         }
                         Spacer()
                         Button(action: { Task { await viewModel.createSubdomain() } }) {
                             Label("Create", systemImage: "plus.circle.fill")
-                                .font(.system(size: 11))
+                                .font(AXTypography.footnote)
                         }
                         .buttonStyle(.borderedProminent)
                         .controlSize(.small)
@@ -176,16 +176,16 @@ struct DomainSection: View {
                                     .fill(sub.isActive ? Color.axSuccess : Color.axTextMuted)
                                     .frame(width: 6, height: 6)
                                 Text(sub.fullDomain)
-                                    .font(.system(size: 13, weight: .medium, design: .monospaced))
+                                    .font(AXTypography.monoMd).fontWeight(.medium)
                                     .foregroundColor(.axTextPrimary)
                                 Spacer()
                                 Text(sub.isActive ? "Active" : "Inactive")
-                                    .font(.system(size: 10, weight: .medium))
+                                    .font(AXTypography.caption)
                                     .foregroundColor(sub.isActive ? .axSuccess : .axTextMuted)
                                     .padding(.horizontal, 8)
                                     .padding(.vertical, 3)
                                     .background((sub.isActive ? Color.axSuccess : Color.axTextMuted).opacity(0.1))
-                                    .cornerRadius(4)
+                                    .cornerRadius(AXCornerRadius.sm)
                             }
                             .padding(.vertical, 3)
                         }
@@ -201,11 +201,11 @@ struct DomainSection: View {
         VStack(alignment: .leading, spacing: AXSpacing.md) {
             HStack {
                 Text("DNS Records for \(viewModel.domain)")
-                    .font(.system(size: 13, weight: .semibold))
+                    .font(AXTypography.callout).fontWeight(.semibold)
                 Spacer()
                 Button(action: { Task { await viewModel.lookupDNS() } }) {
                     Label(viewModel.isLoading ? "Loading..." : "Lookup", systemImage: "magnifyingglass")
-                        .font(.system(size: 11))
+                        .font(AXTypography.footnote)
                 }
                 .buttonStyle(.borderedProminent)
                 .controlSize(.small)
@@ -224,7 +224,7 @@ struct DomainSection: View {
                                 ForEach(records) { record in
                                     HStack {
                                         Text(record.value)
-                                            .font(.system(size: 12, design: .monospaced))
+                                            .font(AXTypography.monoMd)
                                             .foregroundColor(.axTextPrimary)
                                             .textSelection(.enabled)
                                         Spacer()
@@ -258,13 +258,13 @@ struct DomainSection: View {
         return Button(action: { Task { await viewModel.setWWWRedirect(toWWW: toWWW) } }) {
             VStack(spacing: 6) {
                 Image(systemName: icon)
-                    .font(.system(size: 20))
+                    .font(AXTypography.title2)
                     .foregroundColor(color)
                 Text(toWWW ? "Force WWW" : "Force non-WWW")
-                    .font(.system(size: 11, weight: .semibold))
+                    .font(AXTypography.footnote).fontWeight(.semibold)
                     .foregroundColor(.axTextPrimary)
                 Text("\(from) → \(to)")
-                    .font(.system(size: 9, design: .monospaced))
+                    .font(AXTypography.monoXxs)
                     .foregroundColor(.axTextTertiary)
                     .lineLimit(1)
             }

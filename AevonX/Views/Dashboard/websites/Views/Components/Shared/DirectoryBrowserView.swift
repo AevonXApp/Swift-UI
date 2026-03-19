@@ -90,7 +90,7 @@ struct DirectoryBrowserView: View {
                                     .foregroundColor(.axTextPrimary)
                                 Spacer()
                                 Image(systemName: "chevron.right")
-                                    .font(.system(size: 10))
+                                    .font(AXTypography.caption)
                                     .foregroundColor(.axTextMuted)
                             }
                             .padding(.vertical, AXSpacing.xxs)

@@ -137,7 +137,7 @@ struct URLRewriteRuleEditor: View {
                         .foregroundColor(.axTextPrimary)
 
                     Image(systemName: "arrow.right")
-                        .font(.system(size: 10))
+                        .font(AXTypography.caption)
                         .foregroundColor(.axTextTertiary)
 
                     Text(destination)

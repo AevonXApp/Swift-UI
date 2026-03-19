@@ -20,7 +20,7 @@ struct SiteCloningSection: View {
                     HStack(spacing: AXSpacing.sm) {
                         ProgressView().scaleEffect(0.8)
                         Text(viewModel.cloningProgress)
-                            .font(.system(size: 12))
+                            .font(AXTypography.subheadline)
                             .foregroundColor(.axAccentBlue)
                     }
                     .padding(AXSpacing.md)
@@ -34,26 +34,26 @@ struct SiteCloningSection: View {
                     VStack(spacing: AXSpacing.sm) {
                         HStack {
                             Text("Source:")
-                                .font(.system(size: 11))
+                                .font(AXTypography.footnote)
                                 .foregroundColor(.axTextMuted)
                                 .frame(width: 60, alignment: .trailing)
                             Text(viewModel.domain)
-                                .font(.system(size: 12, weight: .medium, design: .monospaced))
+                                .font(AXTypography.monoMd).fontWeight(.medium)
                                 .foregroundColor(.axTextSecondary)
                             Spacer()
                         }
                         HStack {
                             Text("Target:")
-                                .font(.system(size: 11))
+                                .font(AXTypography.footnote)
                                 .foregroundColor(.axTextMuted)
                                 .frame(width: 60, alignment: .trailing)
                             TextField("newsite.com", text: $viewModel.targetDomain)
                                 .textFieldStyle(.roundedBorder)
-                                .font(.system(size: 12, design: .monospaced))
+                                .font(AXTypography.monoMd)
                         }
                         Button(action: { Task { await viewModel.cloneSite() } }) {
                             Label("Clone Site", systemImage: "doc.on.doc.fill")
-                                .font(.system(size: 12, weight: .semibold))
+                                .font(AXTypography.subheadline).fontWeight(.semibold)
                                 .frame(maxWidth: .infinity)
                         }
                         .buttonStyle(.borderedProminent)
@@ -87,10 +87,10 @@ struct SiteCloningSection: View {
                 Toggle(isOn: $viewModel.includeDBInExport) {
                     HStack(spacing: AXSpacing.xs) {
                         Image(systemName: "cylinder.fill")
-                            .font(.system(size: 12))
+                            .font(AXTypography.subheadline)
                             .foregroundColor(.axAccentBlue)
                         Text("Include database in export")
-                            .font(.system(size: 12))
+                            .font(AXTypography.subheadline)
                     }
                 }
                 .toggleStyle(.switch)
@@ -113,10 +113,10 @@ struct SiteCloningSection: View {
                         Image(systemName: "checkmark.circle.fill")
                             .foregroundColor(.axSuccess)
                         Text("Export saved: ")
-                            .font(.system(size: 12))
+                            .font(AXTypography.subheadline)
                             .foregroundColor(.axTextSecondary)
                         Text(path)
-                            .font(.system(size: 11, design: .monospaced))
+                            .font(AXTypography.monoSm)
                             .foregroundColor(.axAccentBlue)
                             .textSelection(.enabled)
                     }
@@ -134,13 +134,13 @@ struct SiteCloningSection: View {
         Button(action: action) {
             VStack(spacing: AXSpacing.sm) {
                 Image(systemName: icon)
-                    .font(.system(size: 24))
+                    .font(AXTypography.title)
                     .foregroundColor(color)
                 Text(title)
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(AXTypography.subheadline).fontWeight(.semibold)
                     .foregroundColor(.axTextPrimary)
                 Text(subtitle)
-                    .font(.system(size: 10))
+                    .font(AXTypography.caption)
                     .foregroundColor(.axTextTertiary)
             }
             .frame(maxWidth: .infinity)
@@ -156,11 +156,11 @@ struct SiteCloningSection: View {
     private func infoRow(_ label: String, _ value: String) -> some View {
         HStack {
             Text(label)
-                .font(.system(size: 11, weight: .medium))
+                .font(AXTypography.footnote).fontWeight(.medium)
                 .foregroundColor(.axTextMuted)
                 .frame(width: 60, alignment: .trailing)
             Text(value)
-                .font(.system(size: 12, design: .monospaced))
+                .font(AXTypography.monoMd)
                 .foregroundColor(.axTextPrimary)
                 .textSelection(.enabled)
         }

@@ -272,7 +272,7 @@ struct ModernWebsitePanel: View {
                         Button(action: onBack) {
                             HStack(spacing: AXSpacing.xs) {
                                 Image(systemName: "chevron.left")
-                                    .font(.system(size: 11, weight: .bold))
+                                    .font(AXTypography.footnote).fontWeight(.bold)
                                 Text("Back")
                                     .font(AXTypography.caption)
                                     .fontWeight(.semibold)
@@ -302,7 +302,7 @@ struct ModernWebsitePanel: View {
                                     .lineLimit(1)
 
                                 Text(viewModel.website.domain)
-                                    .font(.system(size: 11))
+                                    .font(AXTypography.footnote)
                                     .foregroundColor(.axTextTertiary)
                                     .lineLimit(1)
                             }
@@ -354,10 +354,10 @@ struct ModernWebsitePanel: View {
     private func quickStat(icon: String, value: String, color: Color) -> some View {
         HStack(spacing: 4) {
             Image(systemName: icon)
-                .font(.system(size: 10))
+                .font(AXTypography.caption)
                 .foregroundColor(color)
             Text(value)
-                .font(.system(size: 10, weight: .medium))
+                .font(AXTypography.caption)
                 .foregroundColor(.axTextSecondary)
         }
     }
@@ -368,7 +368,7 @@ struct ModernWebsitePanel: View {
                 .fill(statusColor)
                 .frame(width: 6, height: 6)
             Text(viewModel.website.status.rawValue.capitalized)
-                .font(.system(size: 10, weight: .semibold))
+                .font(AXTypography.caption).fontWeight(.semibold)
                 .foregroundColor(statusColor)
         }
         .padding(.horizontal, AXSpacing.xs)
@@ -395,16 +395,16 @@ struct ModernWebsitePanel: View {
 
             HStack(spacing: AXSpacing.sm) {
                 Image(systemName: "info.circle.fill")
-                    .font(.system(size: 12))
+                    .font(AXTypography.subheadline)
                     .foregroundColor(.axAccentBlue.opacity(0.7))
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(viewModel.website.domain)
-                        .font(.system(size: 10, weight: .medium))
+                        .font(AXTypography.caption)
                         .foregroundColor(.axTextSecondary)
                         .lineLimit(1)
                     Text("Runtime: \(viewModel.website.runtime.rawValue)")
-                        .font(.system(size: 9))
+                        .font(AXTypography.caption2)
                         .foregroundColor(.axTextTertiary)
                 }
 
@@ -422,7 +422,7 @@ struct ModernWebsitePanel: View {
             // Section Title
             VStack(alignment: .leading, spacing: 4) {
                 Text(selectedItem.displayName(for: viewModel.website.runtime))
-                    .font(.system(size: 24, weight: .bold))
+                    .font(AXTypography.title)
                     .foregroundColor(.axTextPrimary)
 
                 Text(selectedItem.description(for: viewModel.website.runtime))
@@ -443,10 +443,10 @@ struct ModernWebsitePanel: View {
                 // Domain Badge
                 HStack(spacing: 6) {
                     Image(systemName: "globe")
-                        .font(.system(size: 11))
+                        .font(AXTypography.footnote)
                         .foregroundColor(.axAccentBlue)
                     Text(viewModel.website.domain)
-                        .font(.system(size: 12, weight: .medium))
+                        .font(AXTypography.subheadline).fontWeight(.medium)
                         .foregroundColor(.axTextPrimary)
                 }
                 .padding(.horizontal, AXSpacing.sm)
@@ -457,7 +457,7 @@ struct ModernWebsitePanel: View {
                 // Refresh Button (context-aware)
                 Button(action: { Task { await refreshCurrentSection() } }) {
                     Image(systemName: "arrow.clockwise")
-                        .font(.system(size: 12, weight: .semibold))
+                        .font(AXTypography.subheadline).fontWeight(.semibold)
                         .foregroundColor(.axTextSecondary)
                         .frame(width: 28, height: 28)
                         .background(Color.axSurface)
@@ -698,7 +698,7 @@ struct ModernWebsitePanel: View {
                                         .scaleEffect(0.7)
                                 } else {
                                     Image(systemName: "checkmark.circle.fill")
-                                        .font(.system(size: 12))
+                                        .font(AXTypography.subheadline)
                                 }
                                 Text("Update Port")
                                     .font(AXTypography.caption)
@@ -745,7 +745,7 @@ struct ModernWebsitePanel: View {
             AXCard(padding: AXSpacing.lg) {
                 HStack(spacing: AXSpacing.md) {
                     Image(systemName: "folder.fill.badge.gearshape")
-                        .font(.system(size: 28))
+                        .font(AXTypography.largeTitle)
                         .foregroundColor(.axAccentBlue)
 
                     VStack(alignment: .leading, spacing: 4) {
@@ -776,7 +776,7 @@ struct ModernWebsitePanel: View {
                         // Back Button
                         Button(action: { viewModel.backToParent() }) {
                             Image(systemName: "chevron.left")
-                                .font(.system(size: 12, weight: .bold))
+                                .font(AXTypography.subheadline).fontWeight(.bold)
                                 .foregroundColor(viewModel.currentBrowsingPath == "/" ? .axTextMuted : .axTextPrimary)
                                 .frame(width: 28, height: 28)
                                 .background(Color.axBackground)
@@ -788,7 +788,7 @@ struct ModernWebsitePanel: View {
                         // Up Button
                         Button(action: { viewModel.backToParent() }) {
                             Image(systemName: "arrow.up")
-                                .font(.system(size: 12, weight: .bold))
+                                .font(AXTypography.subheadline).fontWeight(.bold)
                                 .foregroundColor(viewModel.currentBrowsingPath == "/" ? .axTextMuted : .axTextPrimary)
                                 .frame(width: 28, height: 28)
                                 .background(Color.axBackground)
@@ -808,14 +808,14 @@ struct ModernWebsitePanel: View {
                                     Task { await viewModel.fetchBrowsingItems(path: "/") }
                                 }) {
                                     Text("/")
-                                        .font(.system(size: 12, weight: .medium, design: .monospaced))
+                                        .font(AXTypography.monoMd).fontWeight(.medium)
                                         .foregroundColor(.axAccentBlue)
                                 }
                                 .buttonStyle(PlainButtonStyle())
 
                                 ForEach(Array(pathComponents.enumerated()), id: \.offset) { index, component in
                                     Image(systemName: "chevron.right")
-                                        .font(.system(size: 8))
+                                        .font(AXTypography.caption2)
                                         .foregroundColor(.axTextMuted)
                                     
                                     Button(action: {
@@ -824,7 +824,7 @@ struct ModernWebsitePanel: View {
                                         Task { await viewModel.fetchBrowsingItems(path: targetPath) }
                                     }) {
                                         Text(String(component))
-                                            .font(.system(size: 12, weight: index == pathComponents.count - 1 ? .bold : .medium, design: .monospaced))
+                                            .font(AXTypography.monoMd).fontWeight(index == pathComponents.count - 1 ? .bold : .medium)
                                             .foregroundColor(index == pathComponents.count - 1 ? .axTextPrimary : .axAccentBlue)
                                     }
                                     .buttonStyle(PlainButtonStyle())
@@ -839,7 +839,7 @@ struct ModernWebsitePanel: View {
                             Task { await viewModel.fetchBrowsingItems(path: viewModel.currentBrowsingPath) }
                         }) {
                             Image(systemName: "arrow.clockwise")
-                                .font(.system(size: 11, weight: .semibold))
+                                .font(AXTypography.footnote).fontWeight(.semibold)
                                 .foregroundColor(.axTextSecondary)
                                 .frame(width: 28, height: 28)
                                 .background(Color.axBackground)
@@ -854,9 +854,9 @@ struct ModernWebsitePanel: View {
                         }) {
                             HStack(spacing: 4) {
                                 Image(systemName: "checkmark.circle.fill")
-                                    .font(.system(size: 11))
+                                    .font(AXTypography.footnote)
                                 Text("Set as Root")
-                                    .font(.system(size: 11, weight: .semibold))
+                                    .font(AXTypography.footnote).fontWeight(.semibold)
                             }
                             .foregroundColor(.white)
                             .padding(.horizontal, AXSpacing.md)
@@ -883,13 +883,13 @@ struct ModernWebsitePanel: View {
                     } else if viewModel.browsingItems.isEmpty {
                         VStack(spacing: AXSpacing.md) {
                             Image(systemName: "folder")
-                                .font(.system(size: 36))
+                                .font(AXTypography.largeTitle)
                                 .foregroundColor(.axTextMuted)
                             Text("No subdirectories found")
                                 .font(AXTypography.body)
                                 .foregroundColor(.axTextMuted)
                             Text(viewModel.currentBrowsingPath)
-                                .font(.system(size: 11, design: .monospaced))
+                                .font(AXTypography.monoSm)
                                 .foregroundColor(.axTextTertiary)
                         }
                         .frame(maxWidth: .infinity, minHeight: 200)
@@ -900,18 +900,18 @@ struct ModernWebsitePanel: View {
                                     Button(action: { viewModel.navigateToPath(folder) }) {
                                         HStack(spacing: AXSpacing.md) {
                                             Image(systemName: "folder.fill")
-                                                .font(.system(size: 16))
+                                                .font(AXTypography.title3)
                                                 .foregroundColor(.axWarning)
                                                 .frame(width: 24)
 
                                             Text(folder)
-                                                .font(.system(size: 13, weight: .medium))
+                                                .font(AXTypography.callout).fontWeight(.medium)
                                                 .foregroundColor(.axTextPrimary)
 
                                             Spacer()
 
                                             Image(systemName: "chevron.right")
-                                                .font(.system(size: 10, weight: .semibold))
+                                                .font(AXTypography.caption).fontWeight(.semibold)
                                                 .foregroundColor(.axTextMuted)
                                         }
                                         .padding(.horizontal, AXSpacing.lg)
@@ -964,20 +964,20 @@ struct ModernWebsitePanel: View {
                         HStack {
                             ProgressView().scaleEffect(0.7)
                             Text("Loading PHP versions...")
-                                .font(.system(size: 12))
+                                .font(AXTypography.subheadline)
                                 .foregroundColor(.axTextSecondary)
                         }
                         .padding()
                     } else if viewModel.installedPHPVersions.isEmpty {
                         VStack(spacing: AXSpacing.sm) {
                             Image(systemName: "exclamationmark.triangle")
-                                .font(.system(size: 24))
+                                .font(AXTypography.title)
                                 .foregroundColor(.axWarning)
                             Text("No PHP versions found")
-                                .font(.system(size: 13, weight: .medium))
+                                .font(AXTypography.callout).fontWeight(.medium)
                                 .foregroundColor(.axTextPrimary)
                             Text("PHP may not be installed on this server")
-                                .font(.system(size: 11))
+                                .font(AXTypography.footnote)
                                 .foregroundColor(.axTextSecondary)
                         }
                         .padding(AXSpacing.lg)
@@ -988,10 +988,10 @@ struct ModernWebsitePanel: View {
                         // Current active version display
                         HStack {
                             Text("Current:")
-                                .font(.system(size: 12, weight: .medium))
+                                .font(AXTypography.subheadline).fontWeight(.medium)
                                 .foregroundColor(.axTextSecondary)
                             Text("PHP \(viewModel.phpVersion)")
-                                .font(.system(size: 16, weight: .bold, design: .monospaced))
+                                .font(AXTypography.monoLg).fontWeight(.bold)
                                 .foregroundColor(.axSuccess)
                         }
                         .padding(.bottom, AXSpacing.sm)
@@ -1009,23 +1009,23 @@ struct ModernWebsitePanel: View {
                             ForEach(viewModel.installedPHPVersions, id: \.self) { version in
                                 HStack {
                                     Image(systemName: "chevron.left.forwardslash.chevron.right")
-                                        .font(.system(size: 10))
+                                        .font(AXTypography.caption)
                                         .foregroundColor(.axAccentBlue)
 
                                     Text("PHP \(version)")
-                                        .font(.system(size: 12, weight: .semibold, design: .monospaced))
+                                        .font(AXTypography.monoMd).fontWeight(.semibold)
                                         .foregroundColor(.axTextPrimary)
 
                                     Spacer()
 
                                     if version == viewModel.phpVersion {
                                         Text("Active")
-                                            .font(.system(size: 10, weight: .semibold))
+                                            .font(AXTypography.caption).fontWeight(.semibold)
                                             .foregroundColor(.axSuccess)
                                             .padding(.horizontal, 8)
                                             .padding(.vertical, 3)
                                             .background(Color.axSuccess.opacity(0.1))
-                                            .cornerRadius(4)
+                                            .cornerRadius(AXCornerRadius.sm)
                                     } else {
                                         Button(action: {
                                             Task { await viewModel.switchWebsitePHPVersion(to: version) }
@@ -1035,16 +1035,16 @@ struct ModernWebsitePanel: View {
                                                     ProgressView().scaleEffect(0.5)
                                                 } else {
                                                     Image(systemName: "arrow.right.circle.fill")
-                                                        .font(.system(size: 10))
+                                                        .font(AXTypography.caption)
                                                 }
                                                 Text("Switch")
-                                                    .font(.system(size: 10, weight: .semibold))
+                                                    .font(AXTypography.caption).fontWeight(.semibold)
                                             }
                                             .foregroundColor(.white)
                                             .padding(.horizontal, 10)
                                             .padding(.vertical, 4)
                                             .background(Color.axAccentBlue)
-                                            .cornerRadius(4)
+                                            .cornerRadius(AXCornerRadius.sm)
                                         }
                                         .buttonStyle(.plain)
                                         .disabled(viewModel.isSavingConfig)
@@ -1135,10 +1135,10 @@ struct ModernWebsitePanel: View {
             } else {
                 VStack(spacing: AXSpacing.md) {
                     Image(systemName: "exclamationmark.triangle")
-                        .font(.system(size: 28))
+                        .font(AXTypography.largeTitle)
                         .foregroundColor(.axWarning)
                     Text("Server not connected")
-                        .font(.system(size: 13, weight: .medium))
+                        .font(AXTypography.callout).fontWeight(.medium)
                         .foregroundColor(.axTextSecondary)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -1180,14 +1180,14 @@ struct ModernWebsitePanel: View {
                             Image(systemName: "chevron.left.forwardslash.chevron.right")
                                 .foregroundColor(.axWarning)
                             Text("Python")
-                                .font(.system(size: 14, weight: .bold))
+                                .font(AXTypography.headline).fontWeight(.bold)
                                 .foregroundColor(.axTextPrimary)
                             Text("(detection pending)")
-                                .font(.system(size: 12))
+                                .font(AXTypography.subheadline)
                                 .foregroundColor(.axTextTertiary)
                         }
                         Text("Full Python version management coming soon.")
-                            .font(.system(size: 11))
+                            .font(AXTypography.footnote)
                             .foregroundColor(.axTextSecondary)
                     }
                 }

@@ -60,7 +60,7 @@ struct SiteSecuritySection: View {
                     HStack(spacing: AXSpacing.sm) {
                         ProgressView().scaleEffect(0.8)
                         Text(viewModel.scanProgress)
-                            .font(.system(size: 12))
+                            .font(AXTypography.subheadline)
                             .foregroundColor(.axTextSecondary)
                     }
                     .padding(AXSpacing.md)
@@ -76,16 +76,16 @@ struct SiteSecuritySection: View {
                             ForEach(viewModel.permissionResults) { result in
                                 HStack {
                                     Text(result.permissions)
-                                        .font(.system(size: 12, weight: .bold, design: .monospaced))
+                                        .font(AXTypography.monoMd).fontWeight(.bold)
                                         .foregroundColor(result.severity.color)
                                         .frame(width: 40)
                                     Text(result.path)
-                                        .font(.system(size: 11, design: .monospaced))
+                                        .font(AXTypography.monoSm)
                                         .foregroundColor(.axTextPrimary)
                                         .lineLimit(1)
                                     Spacer()
                                     Text(result.owner)
-                                        .font(.system(size: 10))
+                                        .font(AXTypography.caption)
                                         .foregroundColor(.axTextTertiary)
                                 }
                                 .padding(.vertical, 2)
@@ -102,19 +102,19 @@ struct SiteSecuritySection: View {
                                 VStack(alignment: .leading, spacing: 4) {
                                     HStack {
                                         Text(result.filePath.components(separatedBy: "/").last ?? "")
-                                            .font(.system(size: 12, weight: .semibold))
+                                            .font(AXTypography.subheadline).fontWeight(.semibold)
                                             .foregroundColor(.axError)
                                         Spacer()
                                         Text("Line \(result.lineNumber)")
-                                            .font(.system(size: 10))
+                                            .font(AXTypography.caption)
                                             .foregroundColor(.axTextTertiary)
                                     }
                                     Text(String(result.lineContent.prefix(120)))
-                                        .font(.system(size: 10, design: .monospaced))
+                                        .font(AXTypography.monoXs)
                                         .foregroundColor(.axTextSecondary)
                                         .lineLimit(2)
                                     Text("Pattern: \(result.matchedPattern)")
-                                        .font(.system(size: 9))
+                                        .font(AXTypography.caption2)
                                         .foregroundColor(.axWarning)
                                 }
                                 .padding(AXSpacing.sm)
@@ -141,13 +141,13 @@ struct SiteSecuritySection: View {
         return HStack(spacing: AXSpacing.xl) {
             VStack(alignment: .leading, spacing: 4) {
                 Text("Security Score")
-                    .font(.system(size: 12))
+                    .font(AXTypography.subheadline)
                     .foregroundColor(.axTextSecondary)
                 Text("\(Int(score))%")
-                    .font(.system(size: 36, weight: .bold))
+                    .font(AXTypography.largeTitle).fontWeight(.bold)
                     .foregroundColor(score >= 70 ? .axSuccess : (score >= 40 ? .axWarning : .axError))
                 Text("\(enabled) of \(total) protections active")
-                    .font(.system(size: 11))
+                    .font(AXTypography.footnote)
                     .foregroundColor(.axTextTertiary)
             }
             Spacer()
@@ -166,7 +166,7 @@ struct SiteSecuritySection: View {
         VStack(alignment: .leading, spacing: AXSpacing.md) {
             HStack {
                 Image(systemName: status.feature.icon)
-                    .font(.system(size: 18))
+                    .font(AXTypography.title2)
                     .foregroundColor(status.feature.color)
                 Spacer()
                 Circle()
@@ -174,14 +174,14 @@ struct SiteSecuritySection: View {
                     .frame(width: 8, height: 8)
             }
             Text(status.feature.rawValue)
-                .font(.system(size: 13, weight: .semibold))
+                .font(AXTypography.callout).fontWeight(.semibold)
                 .foregroundColor(.axTextPrimary)
             Text(status.statusText)
-                .font(.system(size: 11))
+                .font(AXTypography.footnote)
                 .foregroundColor(status.statusColor)
             if !status.issues.isEmpty {
                 Text(status.issues.first ?? "")
-                    .font(.system(size: 10))
+                    .font(AXTypography.caption)
                     .foregroundColor(.axWarning)
                     .lineLimit(1)
             }
@@ -198,20 +198,20 @@ struct SiteSecuritySection: View {
         Button(action: action) {
             HStack(spacing: AXSpacing.md) {
                 Image(systemName: icon)
-                    .font(.system(size: 14))
+                    .font(AXTypography.body)
                     .foregroundColor(color)
                     .frame(width: 28)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(title)
-                        .font(.system(size: 13, weight: .medium))
+                        .font(AXTypography.callout).fontWeight(.medium)
                         .foregroundColor(.axTextPrimary)
                     Text(description)
-                        .font(.system(size: 10))
+                        .font(AXTypography.caption)
                         .foregroundColor(.axTextTertiary)
                 }
                 Spacer()
                 Image(systemName: "play.fill")
-                    .font(.system(size: 10))
+                    .font(AXTypography.caption)
                     .foregroundColor(.axTextMuted)
             }
             .padding(AXSpacing.sm)
@@ -237,7 +237,7 @@ struct CircularProgressView: View {
                 .stroke(color, style: StrokeStyle(lineWidth: 6, lineCap: .round))
                 .rotationEffect(.degrees(-90))
             Text("\(Int(progress * 100))")
-                .font(.system(size: 18, weight: .bold))
+                .font(AXTypography.title2).fontWeight(.bold)
                 .foregroundColor(color)
         }
     }

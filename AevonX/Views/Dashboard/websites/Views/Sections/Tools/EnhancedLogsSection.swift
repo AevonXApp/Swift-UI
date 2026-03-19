@@ -117,10 +117,10 @@ struct EnhancedLogsSection: View {
         HStack(spacing: AXSpacing.md) {
             VStack(alignment: .leading, spacing: 2) {
                 Text("Logs")
-                    .font(.system(size: 18, weight: .bold))
+                    .font(AXTypography.title2).fontWeight(.bold)
                     .foregroundColor(.axTextPrimary)
                 Text("Log viewer, search & filtering")
-                    .font(.system(size: 11))
+                    .font(AXTypography.footnote)
                     .foregroundColor(.axTextTertiary)
             }
 
@@ -143,7 +143,7 @@ struct EnhancedLogsSection: View {
 
             Button(action: { Task { await viewModel.loadLogLines() } }) {
                 Image(systemName: "arrow.clockwise")
-                    .font(.system(size: 12))
+                    .font(AXTypography.subheadline)
             }
             .buttonStyle(.bordered)
             .controlSize(.small)
@@ -156,14 +156,14 @@ struct EnhancedLogsSection: View {
                     Image(systemName: "brain")
                     Text("AI Analysis")
                 }
-                .font(.system(size: 11, weight: .semibold))
+                .font(AXTypography.footnote).fontWeight(.semibold)
             }
             .buttonStyle(.borderedProminent)
             .controlSize(.small)
 
             Button(action: { showClearConfirmation = true }) {
                 Image(systemName: "trash")
-                    .font(.system(size: 11))
+                    .font(AXTypography.footnote)
             }
             .buttonStyle(.bordered)
             .tint(.red)
@@ -185,15 +185,15 @@ struct EnhancedLogsSection: View {
 
             HStack(spacing: 4) {
                 Image(systemName: "magnifyingglass")
-                    .font(.system(size: 11))
+                    .font(AXTypography.footnote)
                     .foregroundColor(.axTextMuted)
                 TextField("Filter logs...", text: $searchText)
                     .textFieldStyle(.plain)
-                    .font(.system(size: 12, design: .monospaced))
+                    .font(AXTypography.monoMd)
                 if !searchText.isEmpty {
                     Button(action: { searchText = "" }) {
                         Image(systemName: "xmark.circle.fill")
-                            .font(.system(size: 11))
+                            .font(AXTypography.footnote)
                             .foregroundColor(.axTextMuted)
                     }
                     .buttonStyle(.plain)
@@ -202,7 +202,7 @@ struct EnhancedLogsSection: View {
             .padding(.horizontal, 8)
             .padding(.vertical, 4)
             .background(Color.axSurface)
-            .cornerRadius(6)
+            .cornerRadius(AXCornerRadius.sm)
             .frame(maxWidth: 280)
 
             Spacer()
@@ -214,6 +214,9 @@ struct EnhancedLogsSection: View {
                 Text("500").tag(500)
             }
             .frame(width: 100)
+            .onChange(of: viewModel.lineCount) { _, _ in
+                Task { await viewModel.loadLogLines() }
+            }
         }
     }
 
@@ -226,21 +229,21 @@ struct EnhancedLogsSection: View {
         return Button(action: { withAnimation(.easeInOut(duration: 0.15)) { levelFilter = level } }) {
             HStack(spacing: 3) {
                 Text(level.rawValue)
-                    .font(.system(size: 10, weight: levelFilter == level ? .bold : .medium))
+                    .font(AXTypography.caption).fontWeight(levelFilter == level ? .bold : .medium)
                 if count > 0 {
                     Text("\(count)")
-                        .font(.system(size: 9, weight: .bold, design: .monospaced))
+                        .font(AXTypography.monoXxs).fontWeight(.bold)
                         .padding(.horizontal, 4)
                         .padding(.vertical, 1)
                         .background(level.color.opacity(levelFilter == level ? 0.3 : 0.1))
-                        .cornerRadius(3)
+                        .cornerRadius(AXCornerRadius.xs)
                 }
             }
             .foregroundColor(levelFilter == level ? level.color : .axTextMuted)
             .padding(.horizontal, 8)
             .padding(.vertical, 4)
             .background(levelFilter == level ? level.color.opacity(0.1) : Color.axSurface.opacity(0.5))
-            .cornerRadius(6)
+            .cornerRadius(AXCornerRadius.sm)
             .overlay(
                 RoundedRectangle(cornerRadius: 6)
                     .stroke(levelFilter == level ? level.color.opacity(0.3) : Color.clear, lineWidth: 1)
@@ -275,7 +278,7 @@ struct EnhancedLogsSection: View {
                     .padding(.leading, 8)
                     .overlay(alignment: .leading) { Color.axBorder.opacity(0.15).frame(width: 1) }
             }
-            .font(.system(size: 9, weight: .bold))
+            .font(AXTypography.caption2).fontWeight(.bold)
             .foregroundColor(.axTextMuted)
             .textCase(.uppercase)
             .padding(.vertical, 6)
@@ -289,15 +292,15 @@ struct EnhancedLogsSection: View {
                     if viewModel.isLoading {
                         HStack {
                             ProgressView().scaleEffect(0.8)
-                            Text("Loading logs...").font(.system(size: 12)).foregroundColor(.axTextMuted)
+                            Text("Loading logs...").font(AXTypography.subheadline).foregroundColor(.axTextMuted)
                         }
                         .padding(AXSpacing.xl).frame(maxWidth: .infinity)
                     } else if filteredLines.isEmpty {
                         VStack(spacing: AXSpacing.md) {
                             Image(systemName: "doc.text.magnifyingglass")
-                                .font(.system(size: 28)).foregroundColor(.axTextMuted.opacity(0.4))
+                                .font(AXTypography.largeTitle).foregroundColor(.axTextMuted.opacity(0.4))
                             Text(viewModel.logLines.isEmpty ? "No log entries found" : "No entries match filter")
-                                .font(.system(size: 13)).foregroundColor(.axTextMuted)
+                                .font(AXTypography.callout).foregroundColor(.axTextMuted)
                         }
                         .padding(AXSpacing.xl).frame(maxWidth: .infinity)
                     } else {
@@ -325,7 +328,7 @@ struct EnhancedLogsSection: View {
             }) {
                 HStack(alignment: .center, spacing: 0) {
                     Text("\(line.index + 1)")
-                        .font(.system(size: 10, design: .monospaced))
+                        .font(AXTypography.monoXs)
                         .foregroundColor(.axTextMuted.opacity(0.5))
                         .frame(width: 35, alignment: .center)
 
@@ -334,7 +337,7 @@ struct EnhancedLogsSection: View {
                         .overlay(alignment: .leading) { Color.axBorder.opacity(0.06).frame(width: 1) }
 
                     Text(parsed.timestamp)
-                        .font(.system(size: 10, design: .monospaced))
+                        .font(AXTypography.monoXs)
                         .foregroundColor(.axTextSecondary)
                         .frame(width: 120, alignment: .leading)
                         .padding(.leading, 8)
@@ -345,13 +348,13 @@ struct EnhancedLogsSection: View {
                         .overlay(alignment: .leading) { Color.axBorder.opacity(0.06).frame(width: 1) }
 
                     Text(parsed.method.isEmpty ? "—" : parsed.method)
-                        .font(.system(size: 9, weight: .bold, design: .monospaced))
+                        .font(AXTypography.monoXxs).fontWeight(.bold)
                         .foregroundColor(EnhancedLogParser.methodColor(parsed.method))
                         .frame(width: 55, alignment: .center)
                         .overlay(alignment: .leading) { Color.axBorder.opacity(0.06).frame(width: 1) }
 
                     Text(parsed.url.isEmpty ? parsed.message : parsed.url)
-                        .font(.system(size: 11, design: .monospaced))
+                        .font(AXTypography.monoSm)
                         .foregroundColor(.axTextPrimary)
                         .lineLimit(1)
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -359,7 +362,7 @@ struct EnhancedLogsSection: View {
                         .overlay(alignment: .leading) { Color.axBorder.opacity(0.06).frame(width: 1) }
 
                     Image(systemName: isExpanded ? "chevron.down" : "chevron.right")
-                        .font(.system(size: 8))
+                        .font(AXTypography.caption2)
                         .foregroundColor(.axTextMuted.opacity(0.4))
                         .frame(width: 18)
                 }
@@ -396,12 +399,12 @@ struct EnhancedLogsSection: View {
                             Image(systemName: "hand.raised.fill")
                             Text("Block IP")
                         }
-                        .font(.system(size: 10, weight: .semibold))
+                        .font(AXTypography.caption).fontWeight(.semibold)
                         .foregroundColor(.white)
                         .padding(.horizontal, 10)
                         .padding(.vertical, 5)
                         .background(Color.red)
-                        .cornerRadius(6)
+                        .cornerRadius(AXCornerRadius.sm)
                     }
                     .buttonStyle(.plain)
                 }
@@ -412,10 +415,10 @@ struct EnhancedLogsSection: View {
 
             VStack(alignment: .leading, spacing: 2) {
                 Text("RAW")
-                    .font(.system(size: 8, weight: .bold))
+                    .font(AXTypography.caption2).fontWeight(.bold)
                     .foregroundColor(.axTextMuted)
                 Text(parsed.raw)
-                    .font(.system(size: 9, design: .monospaced))
+                    .font(AXTypography.monoXxs)
                     .foregroundColor(.axTextTertiary)
                     .textSelection(.enabled)
                     .lineLimit(3)
@@ -433,11 +436,11 @@ struct EnhancedLogsSection: View {
     private func detailField(_ label: String, _ value: String) -> some View {
         VStack(alignment: .leading, spacing: 1) {
             Text(label)
-                .font(.system(size: 8, weight: .bold))
+                .font(AXTypography.caption2).fontWeight(.bold)
                 .foregroundColor(.axTextMuted)
                 .textCase(.uppercase)
             Text(value.isEmpty ? "—" : value)
-                .font(.system(size: 11, design: .monospaced))
+                .font(AXTypography.monoSm)
                 .foregroundColor(.axTextPrimary)
                 .textSelection(.enabled)
         }
@@ -447,17 +450,17 @@ struct EnhancedLogsSection: View {
 
     private func levelBadge(_ level: String) -> some View {
         Text(level.uppercased())
-            .font(.system(size: 8, weight: .bold, design: .monospaced))
+            .font(AXTypography.monoXxxs).fontWeight(.bold)
             .foregroundColor(EnhancedLogParser.levelColor(level))
             .padding(.horizontal, 5)
             .padding(.vertical, 2)
             .background(EnhancedLogParser.levelColor(level).opacity(0.12))
-            .cornerRadius(3)
+            .cornerRadius(AXCornerRadius.xs)
     }
 
     private func statusBadge(_ code: String) -> some View {
         Text(code.isEmpty ? "—" : code)
-            .font(.system(size: 10, weight: .bold, design: .monospaced))
+            .font(AXTypography.monoXs).fontWeight(.bold)
             .foregroundColor(code.isEmpty ? .axTextMuted : EnhancedLogParser.statusColor(code))
     }
 
@@ -466,26 +469,26 @@ struct EnhancedLogsSection: View {
     private var statusBar: some View {
         HStack(spacing: AXSpacing.md) {
             Text("\(filteredLines.count) of \(viewModel.logLines.count) entries")
-                .font(.system(size: 10)).foregroundColor(.axTextMuted)
+                .font(AXTypography.caption).foregroundColor(.axTextMuted)
 
             if levelFilter != .all {
                 HStack(spacing: 2) {
                     Circle().fill(levelFilter.color).frame(width: 5, height: 5)
-                    Text(levelFilter.rawValue).font(.system(size: 10, weight: .medium)).foregroundColor(levelFilter.color)
+                    Text(levelFilter.rawValue).font(AXTypography.caption).foregroundColor(levelFilter.color)
                 }
             }
 
             if !searchText.isEmpty {
                 HStack(spacing: 2) {
-                    Image(systemName: "magnifyingglass").font(.system(size: 8))
-                    Text("\"\(searchText)\"").font(.system(size: 10))
+                    Image(systemName: "magnifyingglass").font(AXTypography.caption2)
+                    Text("\"\(searchText)\"").font(AXTypography.caption)
                 }.foregroundColor(.axAccentBlue)
             }
 
             Spacer()
 
             if let log = viewModel.selectedLog {
-                Text(log.filename).font(.system(size: 10, design: .monospaced)).foregroundColor(.axTextMuted)
+                Text(log.filename).font(AXTypography.monoXs).foregroundColor(.axTextMuted)
             }
         }
     }

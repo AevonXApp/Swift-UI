@@ -47,7 +47,7 @@ struct AdvancedDomainSection: View {
                             .textFieldStyle(.roundedBorder)
                         Button(action: { Task { await viewModel.addAlias() } }) {
                             Label("Add", systemImage: "plus.circle.fill")
-                                .font(.system(size: 12))
+                                .font(AXTypography.subheadline)
                         }
                         .buttonStyle(.borderedProminent)
                         .controlSize(.small)
@@ -60,14 +60,14 @@ struct AdvancedDomainSection: View {
                             HStack {
                                 Image(systemName: "globe")
                                     .foregroundColor(.axAccentBlue)
-                                    .font(.system(size: 12))
+                                    .font(AXTypography.subheadline)
                                 Text(alias)
-                                    .font(.system(size: 13, design: .monospaced))
+                                    .font(AXTypography.monoMd)
                                 Spacer()
                                 Button(action: { Task { await viewModel.removeAlias(alias) } }) {
                                     Image(systemName: "xmark.circle.fill")
                                         .foregroundColor(.axError)
-                                        .font(.system(size: 14))
+                                        .font(AXTypography.body)
                                 }
                                 .buttonStyle(.plain)
                             }
@@ -90,11 +90,11 @@ struct AdvancedDomainSection: View {
                         TextField("subdomain", text: $viewModel.newSubdomain)
                             .textFieldStyle(.roundedBorder)
                         Text(".\(viewModel.domain)")
-                            .font(.system(size: 12))
+                            .font(AXTypography.subheadline)
                             .foregroundColor(.axTextMuted)
                         Button(action: { Task { await viewModel.createSubdomain() } }) {
                             Label("Create", systemImage: "plus.circle.fill")
-                                .font(.system(size: 12))
+                                .font(AXTypography.subheadline)
                         }
                         .buttonStyle(.borderedProminent)
                         .controlSize(.small)
@@ -106,10 +106,10 @@ struct AdvancedDomainSection: View {
                                 .fill(sub.isActive ? Color.axSuccess : Color.axTextMuted)
                                 .frame(width: 6, height: 6)
                             Text(sub.fullDomain)
-                                .font(.system(size: 13, design: .monospaced))
+                                .font(AXTypography.monoMd)
                             Spacer()
                             Text(sub.isActive ? "Active" : "Inactive")
-                                .font(.system(size: 10))
+                                .font(AXTypography.caption)
                                 .foregroundColor(sub.isActive ? .axSuccess : .axTextMuted)
                         }
                         .padding(.vertical, 4)
@@ -126,11 +126,11 @@ struct AdvancedDomainSection: View {
         VStack(alignment: .leading, spacing: AXSpacing.md) {
             HStack {
                 Text("DNS Records")
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(AXTypography.headline)
                 Spacer()
                 Button(action: { Task { await viewModel.lookupDNS() } }) {
                     Label("Lookup", systemImage: "magnifyingglass")
-                        .font(.system(size: 12))
+                        .font(AXTypography.subheadline)
                 }
                 .buttonStyle(.borderedProminent)
                 .controlSize(.small)
@@ -142,11 +142,11 @@ struct AdvancedDomainSection: View {
                 ForEach(viewModel.dnsRecords) { record in
                     HStack {
                         Text(record.type)
-                            .font(.system(size: 11, weight: .bold, design: .monospaced))
+                            .font(AXTypography.monoSm).fontWeight(.bold)
                             .foregroundColor(.axAccentBlue)
                             .frame(width: 50)
                         Text(record.value)
-                            .font(.system(size: 12, design: .monospaced))
+                            .font(AXTypography.monoMd)
                             .foregroundColor(.axTextPrimary)
                         Spacer()
                     }
@@ -168,12 +168,12 @@ struct AdvancedDomainSection: View {
                     Button(action: { Task { await viewModel.setWWWRedirect(toWWW: true) } }) {
                         VStack(spacing: 4) {
                             Image(systemName: "arrow.right")
-                                .font(.system(size: 18))
+                                .font(AXTypography.title2)
                                 .foregroundColor(.axAccentBlue)
                             Text("→ www")
-                                .font(.system(size: 11, weight: .semibold))
+                                .font(AXTypography.footnote).fontWeight(.semibold)
                             Text("\(viewModel.domain) → www.\(viewModel.domain)")
-                                .font(.system(size: 9))
+                                .font(AXTypography.caption2)
                                 .foregroundColor(.axTextMuted)
                         }
                         .frame(maxWidth: .infinity)
@@ -186,12 +186,12 @@ struct AdvancedDomainSection: View {
                     Button(action: { Task { await viewModel.setWWWRedirect(toWWW: false) } }) {
                         VStack(spacing: 4) {
                             Image(systemName: "arrow.left")
-                                .font(.system(size: 18))
+                                .font(AXTypography.title2)
                                 .foregroundColor(.orange)
                             Text("→ non-www")
-                                .font(.system(size: 11, weight: .semibold))
+                                .font(AXTypography.footnote).fontWeight(.semibold)
                             Text("www.\(viewModel.domain) → \(viewModel.domain)")
-                                .font(.system(size: 9))
+                                .font(AXTypography.caption2)
                                 .foregroundColor(.axTextMuted)
                         }
                         .frame(maxWidth: .infinity)

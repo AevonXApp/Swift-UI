@@ -32,7 +32,7 @@ struct PerformanceSection: View {
                             else { Image(systemName: "play.fill") }
                             Text("Run Analysis")
                         }
-                        .font(.system(size: 12, weight: .medium))
+                        .font(AXTypography.subheadline).fontWeight(.medium)
                     }
                     .buttonStyle(.borderedProminent)
                     .controlSize(.small)
@@ -48,11 +48,11 @@ struct PerformanceSection: View {
                             ForEach(diskBreakdown, id: \.path) { entry in
                                 HStack {
                                     Text(entry.size)
-                                        .font(.system(size: 12, weight: .bold, design: .monospaced))
+                                        .font(AXTypography.monoMd).fontWeight(.bold)
                                         .foregroundColor(.axAccentBlue)
                                         .frame(width: 60, alignment: .trailing)
                                     Text(entry.path.replacingOccurrences(of: docRoot + "/", with: "./"))
-                                        .font(.system(size: 12, design: .monospaced))
+                                        .font(AXTypography.monoMd)
                                         .foregroundColor(.axTextPrimary)
                                         .lineLimit(1)
                                     Spacer()
@@ -70,10 +70,10 @@ struct PerformanceSection: View {
                             ForEach(largeFiles, id: \.self) { file in
                                 HStack {
                                     Image(systemName: "doc.fill")
-                                        .font(.system(size: 11))
+                                        .font(AXTypography.footnote)
                                         .foregroundColor(.axWarning)
                                     Text(file.replacingOccurrences(of: docRoot + "/", with: "./"))
-                                        .font(.system(size: 11, design: .monospaced))
+                                        .font(AXTypography.monoSm)
                                         .foregroundColor(.axTextPrimary)
                                         .lineLimit(1)
                                     Spacer()

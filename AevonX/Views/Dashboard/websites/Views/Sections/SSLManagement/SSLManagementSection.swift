@@ -98,7 +98,7 @@ struct SSLManagementSection: View {
     private var noSSLView: some View {
         VStack(spacing: AXSpacing.lg) {
             Image(systemName: "lock.slash")
-                .font(.system(size: 60))
+                .font(AXTypography.largeTitle)
                 .foregroundColor(.axWarning)
 
             VStack(spacing: AXSpacing.xs) {
@@ -135,7 +135,7 @@ struct SSLManagementSection: View {
         VStack(alignment: .leading, spacing: AXSpacing.md) {
             HStack {
                 Image(systemName: cert.status.icon)
-                    .font(.system(size: 40))
+                    .font(AXTypography.largeTitle)
                     .foregroundColor(Color(cert.status.color))
 
                 VStack(alignment: .leading, spacing: 4) {
@@ -152,7 +152,7 @@ struct SSLManagementSection: View {
                             .padding(.horizontal, 8)
                             .padding(.vertical, 3)
                             .background(cert.isLetsEncrypt ? Color.axSuccess : Color.axAccentBlue)
-                            .cornerRadius(4)
+                            .cornerRadius(AXCornerRadius.sm)
                     }
 
                     HStack(spacing: AXSpacing.sm) {
@@ -176,7 +176,7 @@ struct SSLManagementSection: View {
                         // Expiry badge
                         HStack(spacing: 4) {
                             Image(systemName: "clock")
-                                .font(.system(size: 10))
+                                .font(AXTypography.caption)
                             Text("Exp in \(cert.daysUntilExpiry) days")
                                 .font(AXTypography.caption)
                                 .fontWeight(.medium)
@@ -189,7 +189,7 @@ struct SSLManagementSection: View {
 
                 VStack(alignment: .trailing, spacing: 4) {
                     Text(cert.securityGrade)
-                        .font(.system(size: 32, weight: .bold))
+                        .font(AXTypography.largeTitle).fontWeight(.bold)
                         .foregroundColor(gradeColor(cert.securityGrade))
 
                     Text("Security Grade")
@@ -409,7 +409,7 @@ struct SSLManagementSection: View {
                 // Force HTTPS Toggle
                 HStack(spacing: AXSpacing.md) {
                     Image(systemName: "lock.fill")
-                        .font(.system(size: 24))
+                        .font(AXTypography.title)
                         .foregroundColor(viewModel.isForceSSLEnabled ? .axSuccess : .axTextSecondary)
                         .frame(width: 40)
 
@@ -498,7 +498,7 @@ struct PEMContentBlock: View {
             HStack {
                 Image(systemName: icon)
                     .foregroundColor(.axTextTertiary)
-                    .font(.system(size: 14))
+                    .font(AXTypography.body)
 
                 Text(title)
                     .font(AXTypography.caption)
@@ -514,7 +514,7 @@ struct PEMContentBlock: View {
                                 Image(systemName: isRevealed ? "eye.slash" : "eye")
                                 Text(isRevealed ? "Hide" : "Show")
                             }
-                            .font(.system(size: 11))
+                            .font(AXTypography.footnote)
                             .foregroundColor(.axAccentBlue)
                         }
                         .buttonStyle(PlainButtonStyle())
@@ -532,7 +532,7 @@ struct PEMContentBlock: View {
                             Image(systemName: copied ? "checkmark" : "doc.on.doc")
                             Text(copied ? "Copied!" : "Copy")
                         }
-                        .font(.system(size: 11))
+                        .font(AXTypography.footnote)
                         .foregroundColor(copied ? .axSuccess : .axTextTertiary)
                     }
                     .buttonStyle(PlainButtonStyle())
@@ -542,7 +542,7 @@ struct PEMContentBlock: View {
             if !isSensitive || isRevealed {
                 ScrollView {
                     Text(content)
-                        .font(.system(size: 10, design: .monospaced))
+                        .font(AXTypography.monoXs)
                         .foregroundColor(.axTextPrimary)
                         .textSelection(.enabled)
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -612,7 +612,7 @@ struct SSLActionButton: View {
         Button(action: action) {
             HStack(spacing: AXSpacing.md) {
                 Image(systemName: icon)
-                    .font(.system(size: 24))
+                    .font(AXTypography.title)
                     .foregroundColor(color)
                     .frame(width: 40)
 

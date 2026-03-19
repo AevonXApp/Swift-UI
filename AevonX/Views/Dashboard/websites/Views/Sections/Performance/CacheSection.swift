@@ -27,7 +27,7 @@ struct CacheSection: View {
                             }
                             Text("Purge All")
                         }
-                        .font(.system(size: 12, weight: .medium))
+                        .font(AXTypography.subheadline).fontWeight(.medium)
                     }
                     .buttonStyle(.bordered)
                     .tint(.axError)
@@ -47,18 +47,18 @@ struct CacheSection: View {
                         ForEach(viewModel.browserCacheRules) { rule in
                             HStack {
                                 Text(rule.fileTypes)
-                                    .font(.system(size: 12, design: .monospaced))
+                                    .font(AXTypography.monoMd)
                                     .foregroundColor(.axAccentBlue)
                                 Spacer()
                                 Text(rule.duration)
-                                    .font(.system(size: 12, weight: .semibold))
+                                    .font(AXTypography.subheadline).fontWeight(.semibold)
                                     .foregroundColor(.axSuccess)
                                     .padding(.horizontal, 8)
                                     .padding(.vertical, 3)
                                     .background(Color.axSuccess.opacity(0.1))
-                                    .cornerRadius(4)
+                                    .cornerRadius(AXCornerRadius.sm)
                                 Text(rule.cacheControl)
-                                    .font(.system(size: 10))
+                                    .font(AXTypography.caption)
                                     .foregroundColor(.axTextTertiary)
                             }
                             .padding(.vertical, 4)
@@ -70,7 +70,7 @@ struct CacheSection: View {
                 if let error = viewModel.errorMessage {
                     HStack(spacing: AXSpacing.sm) {
                         Image(systemName: "exclamationmark.triangle.fill").foregroundColor(.axError)
-                        Text(error).font(.system(size: 12)).foregroundColor(.axError)
+                        Text(error).font(AXTypography.subheadline).foregroundColor(.axError)
                     }
                     .padding(AXSpacing.md)
                     .background(Color.axError.opacity(0.08))
@@ -87,7 +87,7 @@ struct CacheSection: View {
         VStack(alignment: .leading, spacing: AXSpacing.md) {
             HStack {
                 Image(systemName: status.type.icon)
-                    .font(.system(size: 20))
+                    .font(AXTypography.title2)
                     .foregroundColor(status.type.color)
                 Spacer()
                 Circle()
@@ -95,17 +95,17 @@ struct CacheSection: View {
                     .frame(width: 8, height: 8)
             }
             Text(status.type.rawValue)
-                .font(.system(size: 13, weight: .semibold))
+                .font(AXTypography.callout).fontWeight(.semibold)
                 .foregroundColor(.axTextPrimary)
             Text(status.enabled ? "Active" : "Inactive")
-                .font(.system(size: 11))
+                .font(AXTypography.footnote)
                 .foregroundColor(status.enabled ? .axSuccess : .axTextTertiary)
 
             Button(action: {
                 Task { await viewModel.purgeSpecificCache(status.type) }
             }) {
                 Text("Purge")
-                    .font(.system(size: 10, weight: .medium))
+                    .font(AXTypography.caption)
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.bordered)

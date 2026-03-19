@@ -41,7 +41,7 @@ struct CustomCertificateUploadSheet: View {
                     HStack(alignment: .top, spacing: AXSpacing.md) {
                         Image(systemName: "doc.badge.plus")
                             .foregroundColor(.axWarning)
-                            .font(.system(size: 24))
+                            .font(AXTypography.title)
 
                         VStack(alignment: .leading, spacing: 4) {
                             Text("Upload Requirements")

@@ -31,7 +31,7 @@ class PerformanceTuningViewModel: ObservableObject {
         isLoading = true; defer { isLoading = false }
         do {
             await detectPathsIfNeeded()
-            let configPath = "\(serverPaths.nginxSitesAvailable)/\(domain)"
+            let configPath = resolveConfigPath()
             let cmd = bridge.readPerfCmd(configPath: configPath)
             let result = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
             let parsedJSON = bridge.parsePerfSettings(content: result)
@@ -49,7 +49,7 @@ class PerformanceTuningViewModel: ObservableObject {
 
             // Worker info
             let cpuResult = await SSHBridge.shared.executeAsync(serverID: serverId, command: "nproc")
-            let workerResult = await SSHBridge.shared.executeAsync(serverID: serverId, command: "grep -E 'worker_processes|worker_connections' /etc/nginx/nginx.conf 2>/dev/null")
+            let workerResult = await SSHBridge.shared.executeAsync(serverID: serverId, command: "grep -E 'worker_processes|worker_connections' \(serverPaths.nginxMainConf) 2>/dev/null")
             let cpuCores = Int(cpuResult.trimmingCharacters(in: .whitespacesAndNewlines)) ?? 1
             var procs = "auto"
             var conns = 1024
@@ -68,7 +68,7 @@ class PerformanceTuningViewModel: ObservableObject {
     func applyDirective(_ name: String, value: String) async {
         isLoading = true; defer { isLoading = false }
         do {
-            let configPath = "\(serverPaths.nginxSitesAvailable)/\(domain)"
+            let configPath = resolveConfigPath()
             let cmd = bridge.applyPerfSettingCmd(configPath: configPath, directive: name, value: value)
             _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
             _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.restartNginxCmd())
@@ -82,7 +82,7 @@ class PerformanceTuningViewModel: ObservableObject {
     func applyPreset() async {
         isLoading = true; defer { isLoading = false }
         do {
-            let configPath = "\(serverPaths.nginxSitesAvailable)/\(domain)"
+            let configPath = resolveConfigPath()
             let cmds = bridge.applyPresetCmds(configPath: configPath, preset: selectedPreset)
             for cmd in cmds {
                 _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
@@ -95,7 +95,7 @@ class PerformanceTuningViewModel: ObservableObject {
 
     func toggleGzip(_ enable: Bool) async {
         do {
-            let configPath = "/etc/nginx/nginx.conf"
+            let configPath = serverPaths.nginxMainConf
             let value = enable ? "on" : "off"
             let cmd = bridge.applyPerfSettingCmd(configPath: configPath, directive: "gzip", value: value)
             _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
@@ -111,6 +111,15 @@ class PerformanceTuningViewModel: ObservableObject {
         let output = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
         serverPaths = PathResolverBridge.shared.parse(output: output)
         pathsDetected = true
+    }
+
+    /// Returns the resolved config path for this domain, adding .conf for BT Panel.
+    private func resolveConfigPath() -> String {
+        let sa = serverPaths.nginxSitesAvailable
+        if serverPaths.serverType == "bt_panel" || sa.contains("/www/server") || sa.contains("/conf.d") || sa.contains("/vhost") {
+            return "\(sa)/\(domain).conf"
+        }
+        return "\(sa)/\(domain)"
     }
 }
 

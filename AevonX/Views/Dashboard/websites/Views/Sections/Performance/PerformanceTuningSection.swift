@@ -65,13 +65,13 @@ struct PerformanceTuningSection: View {
         }) {
             VStack(spacing: 6) {
                 Image(systemName: icon)
-                    .font(.system(size: 22))
+                    .font(AXTypography.title)
                     .foregroundColor(color)
                 Text(name.capitalized)
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(AXTypography.subheadline).fontWeight(.semibold)
                     .foregroundColor(.axTextPrimary)
                 Text(description)
-                    .font(.system(size: 9))
+                    .font(AXTypography.caption2)
                     .foregroundColor(.axTextTertiary)
             }
             .frame(maxWidth: .infinity)
@@ -95,21 +95,21 @@ struct PerformanceTuningSection: View {
                 .fill(item.isSet ? Color.axSuccess : Color.axTextMuted.opacity(0.3))
                 .frame(width: 6, height: 6)
             Text(item.name)
-                .font(.system(size: 12, weight: .medium, design: .monospaced))
+                .font(AXTypography.monoMd).fontWeight(.medium)
                 .foregroundColor(.axTextPrimary)
                 .frame(width: 200, alignment: .leading)
             Text(item.value)
-                .font(.system(size: 12, design: .monospaced))
+                .font(AXTypography.monoMd)
                 .foregroundColor(item.isSet ? .axAccentBlue : .axTextMuted)
             Spacer()
             if !item.isSet {
                 Text("default")
-                    .font(.system(size: 9))
+                    .font(AXTypography.caption2)
                     .foregroundColor(.axTextMuted)
                     .padding(.horizontal, 6)
                     .padding(.vertical, 2)
                     .background(Color.axTextMuted.opacity(0.1))
-                    .cornerRadius(4)
+                    .cornerRadius(AXCornerRadius.sm)
             }
         }
         .padding(.vertical, 2)
@@ -118,10 +118,10 @@ struct PerformanceTuningSection: View {
     private func infoStat(label: String, value: String, color: Color) -> some View {
         VStack(spacing: 4) {
             Text(value)
-                .font(.system(size: 22, weight: .bold, design: .monospaced))
+                .font(AXTypography.title).fontWeight(.bold)
                 .foregroundColor(color)
             Text(label)
-                .font(.system(size: 10))
+                .font(AXTypography.caption)
                 .foregroundColor(.axTextMuted)
         }
         .frame(maxWidth: .infinity)

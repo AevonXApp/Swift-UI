@@ -29,14 +29,14 @@ struct AIAnalysisSheet: View {
         HStack {
             HStack(spacing: AXSpacing.sm) {
                 Image(systemName: "brain")
-                    .font(.system(size: 18))
+                    .font(AXTypography.title2)
                     .foregroundColor(.axAccentBlue)
                 VStack(alignment: .leading, spacing: 2) {
                     Text("AI Log Analysis")
-                        .font(.system(size: 16, weight: .bold))
+                        .font(AXTypography.title3).fontWeight(.bold)
                         .foregroundColor(.axTextPrimary)
                     Text(viewModel.domain)
-                        .font(.system(size: 11, design: .monospaced))
+                        .font(AXTypography.monoSm)
                         .foregroundColor(.axTextMuted)
                 }
             }
@@ -49,7 +49,7 @@ struct AIAnalysisSheet: View {
                         Image(systemName: copied ? "checkmark" : "doc.on.doc")
                         Text(copied ? "Copied!" : "Copy Report")
                     }
-                    .font(.system(size: 11, weight: .semibold))
+                    .font(AXTypography.footnote).fontWeight(.semibold)
                 }
                 .buttonStyle(.bordered)
                 .controlSize(.small)
@@ -58,7 +58,7 @@ struct AIAnalysisSheet: View {
 
             Button(action: { dismiss() }) {
                 Image(systemName: "xmark.circle.fill")
-                    .font(.system(size: 18))
+                    .font(AXTypography.title2)
                     .foregroundColor(.axTextMuted)
             }
             .buttonStyle(.plain)
@@ -76,10 +76,10 @@ struct AIAnalysisSheet: View {
             VStack(spacing: AXSpacing.lg) {
                 ProgressView().scaleEffect(1.5)
                 Text("Analyzing log patterns...")
-                    .font(.system(size: 14, weight: .medium))
+                    .font(AXTypography.body).fontWeight(.medium)
                     .foregroundColor(.axTextSecondary)
                 Text("\(viewModel.logLines.count) log entries")
-                    .font(.system(size: 12, design: .monospaced))
+                    .font(AXTypography.monoMd)
                     .foregroundColor(.axTextMuted)
             }
             Spacer()
@@ -102,10 +102,10 @@ struct AIAnalysisSheet: View {
             Spacer()
             VStack(spacing: AXSpacing.md) {
                 Image(systemName: "waveform.path.ecg")
-                    .font(.system(size: 32))
+                    .font(AXTypography.largeTitle)
                     .foregroundColor(.axTextMuted.opacity(0.4))
                 Text("No analysis data")
-                    .font(.system(size: 14))
+                    .font(AXTypography.body)
                     .foregroundColor(.axTextMuted)
                 Button("Run Analysis") {
                     Task { await viewModel.runSmartAnalysis() }
@@ -135,20 +135,20 @@ struct AIAnalysisSheet: View {
                     .rotationEffect(.degrees(-90))
                 VStack(spacing: 0) {
                     Text("\(analysis.healthScore)")
-                        .font(.system(size: 22, weight: .bold, design: .monospaced))
+                        .font(AXTypography.title).fontWeight(.bold)
                         .foregroundColor(.axTextPrimary)
                     Text("%")
-                        .font(.system(size: 10, weight: .medium))
+                        .font(AXTypography.caption)
                         .foregroundColor(.axTextMuted)
                 }
             }
 
             VStack(alignment: .leading, spacing: 4) {
                 Text("Health Score")
-                    .font(.system(size: 14, weight: .bold))
+                    .font(AXTypography.headline).fontWeight(.bold)
                     .foregroundColor(.axTextPrimary)
                 Text("Based on \(analysis.totalRequests) requests — \(analysis.errorCount) errors, \(analysis.warningCount) warnings")
-                    .font(.system(size: 11))
+                    .font(AXTypography.footnote)
                     .foregroundColor(.axTextTertiary)
             }
 
@@ -178,13 +178,13 @@ struct AIAnalysisSheet: View {
     private func statCard(icon: String, value: String, label: String, color: Color) -> some View {
         VStack(spacing: 6) {
             Image(systemName: icon)
-                .font(.system(size: 16))
+                .font(AXTypography.title3)
                 .foregroundColor(color)
             Text(value)
-                .font(.system(size: 20, weight: .bold, design: .monospaced))
+                .font(AXTypography.title2).fontWeight(.bold)
                 .foregroundColor(.axTextPrimary)
             Text(label)
-                .font(.system(size: 10, weight: .medium))
+                .font(AXTypography.caption)
                 .foregroundColor(.axTextMuted)
         }
         .frame(maxWidth: .infinity)
@@ -199,20 +199,20 @@ struct AIAnalysisSheet: View {
     private func statusSection(_ stats: [LogStatusStat]) -> some View {
         VStack(alignment: .leading, spacing: AXSpacing.sm) {
             Text("HTTP Status Distribution")
-                .font(.system(size: 13, weight: .bold))
+                .font(AXTypography.callout).fontWeight(.bold)
                 .foregroundColor(.axTextPrimary)
 
             HStack(spacing: AXSpacing.sm) {
                 ForEach(stats) { stat in
                     VStack(spacing: 4) {
                         Text("\(stat.count)")
-                            .font(.system(size: 18, weight: .bold, design: .monospaced))
+                            .font(AXTypography.title2).fontWeight(.bold)
                             .foregroundColor(stat.color)
                         Text(stat.code)
-                            .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                            .font(AXTypography.monoSm).fontWeight(.semibold)
                             .foregroundColor(.axTextPrimary)
                         Text(statusLabel(stat.code))
-                            .font(.system(size: 9))
+                            .font(AXTypography.caption2)
                             .foregroundColor(.axTextMuted)
                     }
                     .frame(maxWidth: .infinity)
@@ -249,13 +249,13 @@ struct AIAnalysisSheet: View {
     private func insightsSection(_ insights: [LogInsight]) -> some View {
         VStack(alignment: .leading, spacing: AXSpacing.sm) {
             Text("Insights")
-                .font(.system(size: 13, weight: .bold))
+                .font(AXTypography.callout).fontWeight(.bold)
                 .foregroundColor(.axTextPrimary)
 
             ForEach(insights) { insight in
                 HStack(spacing: AXSpacing.md) {
                     Image(systemName: insight.icon)
-                        .font(.system(size: 16))
+                        .font(AXTypography.title3)
                         .foregroundColor(insight.level.color)
                         .frame(width: 30, height: 30)
                         .background(insight.level.color.opacity(0.1))
@@ -263,10 +263,10 @@ struct AIAnalysisSheet: View {
 
                     VStack(alignment: .leading, spacing: 2) {
                         Text(insight.title)
-                            .font(.system(size: 12, weight: .semibold))
+                            .font(AXTypography.subheadline).fontWeight(.semibold)
                             .foregroundColor(.axTextPrimary)
                         Text(insight.detail)
-                            .font(.system(size: 11))
+                            .font(AXTypography.footnote)
                             .foregroundColor(.axTextTertiary)
                     }
 

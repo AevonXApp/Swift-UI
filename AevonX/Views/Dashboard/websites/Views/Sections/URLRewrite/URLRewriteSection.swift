@@ -154,7 +154,7 @@ struct URLRewriteSection: View {
     private var emptyStateView: some View {
         VStack(spacing: AXSpacing.lg) {
             Image(systemName: "arrow.triangle.turn.up.right.circle")
-                .font(.system(size: 60))
+                .font(AXTypography.largeTitle)
                 .foregroundColor(.axTextMuted)
 
             VStack(spacing: AXSpacing.xs) {
@@ -284,7 +284,7 @@ struct URLRewriteRuleRow: View {
                         .lineLimit(1)
 
                     Image(systemName: "arrow.right")
-                        .font(.system(size: 10))
+                        .font(AXTypography.caption)
                         .foregroundColor(.axTextTertiary)
 
                     Text(rule.destination)
@@ -325,14 +325,14 @@ struct URLRewriteRuleRow: View {
                 Button(action: onEdit) {
                     Image(systemName: "pencil.circle.fill")
                         .foregroundColor(.axAccentBlue)
-                        .font(.system(size: 20))
+                        .font(AXTypography.title2)
                 }
                 .buttonStyle(PlainButtonStyle())
 
                 Button(action: onDelete) {
                     Image(systemName: "trash.circle.fill")
                         .foregroundColor(.axError)
-                        .font(.system(size: 20))
+                        .font(AXTypography.title2)
                 }
                 .buttonStyle(PlainButtonStyle())
             }
@@ -371,7 +371,7 @@ struct StatusCodeBadge: View {
             .padding(.horizontal, 8)
             .padding(.vertical, 4)
             .background(color.opacity(0.1))
-            .cornerRadius(6)
+            .cornerRadius(AXCornerRadius.sm)
     }
 }
 
@@ -387,7 +387,7 @@ struct FlagBadge: View {
             .padding(.horizontal, 6)
             .padding(.vertical, 2)
             .background(Color.axBackground)
-            .cornerRadius(4)
+            .cornerRadius(AXCornerRadius.sm)
             .overlay(
                 RoundedRectangle(cornerRadius: 4)
                     .stroke(Color.axBorder, lineWidth: 1)

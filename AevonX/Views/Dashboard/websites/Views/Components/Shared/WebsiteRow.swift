@@ -47,12 +47,12 @@ struct WebsiteCard: View {
                 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(website.name)
-                        .font(.system(size: 13, weight: .semibold))
+                        .font(AXTypography.callout).fontWeight(.semibold)
                         .foregroundColor(.axTextPrimary)
                         .lineLimit(1)
                     
                     Text(website.domain)
-                        .font(.system(size: 10, weight: .medium, design: .monospaced))
+                        .font(AXTypography.monoXs).fontWeight(.medium)
                         .foregroundColor(.axTextTertiary)
                         .lineLimit(1)
                 }
@@ -111,15 +111,15 @@ struct WebsiteCard: View {
                 Button(action: openInBrowser) {
                     HStack(spacing: 4) {
                         Image(systemName: "safari")
-                            .font(.system(size: 9, weight: .bold))
+                            .font(AXTypography.caption2).fontWeight(.bold)
                         Text("Visit")
-                            .font(.system(size: 10, weight: .semibold))
+                            .font(AXTypography.caption).fontWeight(.semibold)
                     }
                     .foregroundColor(.axAccentBlue)
                     .padding(.horizontal, 10)
                     .padding(.vertical, 5)
                     .background(Color.axAccentBlue.opacity(0.08))
-                    .cornerRadius(6)
+                    .cornerRadius(AXCornerRadius.sm)
                 }
                 .buttonStyle(.plain)
                 
@@ -213,15 +213,15 @@ struct ChipBadge: View {
     var body: some View {
         HStack(spacing: 4) {
             Image(systemName: icon)
-                .font(.system(size: 8, weight: .bold))
+                .font(AXTypography.caption2).fontWeight(.bold)
             Text(text)
-                .font(.system(size: 10, weight: .semibold))
+                .font(AXTypography.caption).fontWeight(.semibold)
         }
         .foregroundColor(color)
         .padding(.horizontal, 7)
         .padding(.vertical, 3)
         .background(color.opacity(0.08))
-        .cornerRadius(5)
+        .cornerRadius(AXCornerRadius.sm)
     }
 }
 
@@ -238,11 +238,11 @@ struct ActionButton: View {
     var body: some View {
         Button(action: action) {
             Image(systemName: icon)
-                .font(.system(size: 10, weight: .bold))
+                .font(AXTypography.caption).fontWeight(.bold)
                 .foregroundColor(isHovered ? .white : color)
                 .frame(width: 26, height: 26)
                 .background(isHovered ? color : color.opacity(0.08))
-                .cornerRadius(7)
+                .cornerRadius(AXCornerRadius.md)
         }
         .buttonStyle(PlainButtonStyle())
         .help(tooltip)

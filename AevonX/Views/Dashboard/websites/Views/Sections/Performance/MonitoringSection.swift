@@ -26,7 +26,7 @@ struct MonitoringSection: View {
                             }
                             Text("Refresh")
                         }
-                        .font(.system(size: 12, weight: .medium))
+                        .font(AXTypography.subheadline).fontWeight(.medium)
                     }
                     .buttonStyle(.bordered)
                     .controlSize(.small)
@@ -89,15 +89,15 @@ struct MonitoringSection: View {
                         ForEach(viewModel.topURLs.prefix(15)) { entry in
                             HStack {
                                 Text(entry.url)
-                                    .font(.system(size: 12, design: .monospaced))
+                                    .font(AXTypography.monoMd)
                                     .foregroundColor(.axTextPrimary)
                                     .lineLimit(1)
                                 Spacer()
                                 Text("\(entry.count)")
-                                    .font(.system(size: 12, weight: .bold))
+                                    .font(AXTypography.subheadline).fontWeight(.bold)
                                     .foregroundColor(.axAccentBlue)
                                 Text(String(format: "%.1f%%", entry.percentage))
-                                    .font(.system(size: 10))
+                                    .font(AXTypography.caption)
                                     .foregroundColor(.axTextTertiary)
                                     .frame(width: 45, alignment: .trailing)
                             }
@@ -113,11 +113,11 @@ struct MonitoringSection: View {
                         ForEach(viewModel.topIPs.prefix(10)) { entry in
                             HStack {
                                 Text(entry.ip)
-                                    .font(.system(size: 12, design: .monospaced))
+                                    .font(AXTypography.monoMd)
                                     .foregroundColor(.axTextPrimary)
                                 Spacer()
                                 Text("\(entry.count) requests")
-                                    .font(.system(size: 11))
+                                    .font(AXTypography.footnote)
                                     .foregroundColor(.axTextSecondary)
                             }
                             .padding(.vertical, 2)
@@ -133,12 +133,12 @@ struct MonitoringSection: View {
                             HStack {
                                 Circle().fill(bot.color).frame(width: 6, height: 6)
                                 Text(bot.botName)
-                                    .font(.system(size: 11))
+                                    .font(AXTypography.footnote)
                                     .foregroundColor(.axTextPrimary)
                                     .lineLimit(1)
                                 Spacer()
                                 Text("\(bot.requestCount)")
-                                    .font(.system(size: 11, weight: .bold))
+                                    .font(AXTypography.footnote).fontWeight(.bold)
                                     .foregroundColor(.axTextSecondary)
                             }
                             .padding(.vertical, 2)
@@ -163,11 +163,11 @@ struct MonitoringSection: View {
                         ForEach(viewModel.statusCodes) { entry in
                             HStack {
                                 Text("\(entry.code)")
-                                    .font(.system(size: 14, weight: .bold, design: .monospaced))
+                                    .font(AXTypography.monoLg).fontWeight(.bold)
                                     .foregroundColor(entry.color)
                                     .frame(width: 40)
                                 Text(entry.category)
-                                    .font(.system(size: 12))
+                                    .font(AXTypography.subheadline)
                                     .foregroundColor(.axTextSecondary)
                                 Spacer()
                                 GeometryReader { geo in
@@ -178,11 +178,11 @@ struct MonitoringSection: View {
                                 }
                                 .frame(width: 120, height: 16)
                                 Text("\(entry.count)")
-                                    .font(.system(size: 12, weight: .semibold))
+                                    .font(AXTypography.subheadline).fontWeight(.semibold)
                                     .foregroundColor(.axTextPrimary)
                                     .frame(width: 60, alignment: .trailing)
                                 Text(String(format: "%.1f%%", entry.percentage))
-                                    .font(.system(size: 10))
+                                    .font(AXTypography.caption)
                                     .foregroundColor(.axTextTertiary)
                                     .frame(width: 45, alignment: .trailing)
                             }
@@ -211,13 +211,13 @@ struct MonitoringSection: View {
 
     private func infoChip(icon: String, label: String, value: String, color: Color) -> some View {
         HStack(spacing: 4) {
-            Image(systemName: icon).font(.system(size: 10)).foregroundColor(color)
-            Text(label).font(.system(size: 10)).foregroundColor(.axTextTertiary)
-            Text(value).font(.system(size: 10, weight: .semibold)).foregroundColor(color)
+            Image(systemName: icon).font(AXTypography.caption).foregroundColor(color)
+            Text(label).font(AXTypography.caption).foregroundColor(.axTextTertiary)
+            Text(value).font(AXTypography.caption).fontWeight(.semibold).foregroundColor(color)
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 4)
         .background(color.opacity(0.08))
-        .cornerRadius(6)
+        .cornerRadius(AXCornerRadius.sm)
     }
 }

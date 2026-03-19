@@ -32,10 +32,10 @@ struct BackupSection: View {
                         HStack {
                             VStack(alignment: .leading, spacing: 4) {
                                 Text(selectedType.rawValue)
-                                    .font(.system(size: 13, weight: .semibold))
+                                    .font(AXTypography.callout).fontWeight(.semibold)
                                     .foregroundColor(.axTextPrimary)
                                 Text(backupDescription(selectedType))
-                                    .font(.system(size: 11))
+                                    .font(AXTypography.footnote)
                                     .foregroundColor(.axTextTertiary)
                             }
                             Spacer()
@@ -48,7 +48,7 @@ struct BackupSection: View {
                                     }
                                     Text("Create Now")
                                 }
-                                .font(.system(size: 12, weight: .semibold))
+                                .font(AXTypography.subheadline).fontWeight(.semibold)
                             }
                             .buttonStyle(.borderedProminent)
                             .controlSize(.small)
@@ -59,7 +59,7 @@ struct BackupSection: View {
                             HStack(spacing: AXSpacing.sm) {
                                 ProgressView().scaleEffect(0.7)
                                 Text(viewModel.backupProgress)
-                                    .font(.system(size: 11))
+                                    .font(AXTypography.footnote)
                                     .foregroundColor(.axTextSecondary)
                             }
                         }
@@ -75,23 +75,23 @@ struct BackupSection: View {
                             ForEach(viewModel.backups) { backup in
                                 HStack {
                                     Image(systemName: backup.type.icon)
-                                        .font(.system(size: 14))
+                                        .font(AXTypography.body)
                                         .foregroundColor(backup.type.color)
                                         .frame(width: 24)
                                     VStack(alignment: .leading, spacing: 2) {
                                         Text(backup.filename)
-                                            .font(.system(size: 12, weight: .medium, design: .monospaced))
+                                            .font(AXTypography.monoMd).fontWeight(.medium)
                                             .foregroundColor(.axTextPrimary)
                                             .lineLimit(1)
                                         HStack(spacing: AXSpacing.sm) {
                                             Text(backup.size)
-                                                .font(.system(size: 10))
+                                                .font(AXTypography.caption)
                                                 .foregroundColor(.axTextTertiary)
                                             Text("•")
-                                                .font(.system(size: 10))
+                                                .font(AXTypography.caption)
                                                 .foregroundColor(.axTextMuted)
                                             Text(backup.relativeDate)
-                                                .font(.system(size: 10))
+                                                .font(AXTypography.caption)
                                                 .foregroundColor(.axTextTertiary)
                                         }
                                     }
@@ -101,7 +101,7 @@ struct BackupSection: View {
                                         .controlSize(.mini)
                                     Button(action: { confirmDelete = backup }) {
                                         Image(systemName: "trash")
-                                            .font(.system(size: 11))
+                                            .font(AXTypography.footnote)
                                             .foregroundColor(.axError)
                                     }
                                     .buttonStyle(.plain)
@@ -122,7 +122,7 @@ struct BackupSection: View {
                             Image(systemName: "trash.circle")
                             Text("Delete backups older than 30 days")
                         }
-                        .font(.system(size: 11))
+                        .font(AXTypography.footnote)
                     }
                     .buttonStyle(.bordered)
                     .tint(.axWarning)
@@ -133,7 +133,7 @@ struct BackupSection: View {
                 if let error = viewModel.errorMessage {
                     HStack(spacing: AXSpacing.sm) {
                         Image(systemName: "exclamationmark.triangle.fill").foregroundColor(.axError)
-                        Text(error).font(.system(size: 12)).foregroundColor(.axError)
+                        Text(error).font(AXTypography.subheadline).foregroundColor(.axError)
                     }
                     .padding(AXSpacing.md)
                     .background(Color.axError.opacity(0.08))

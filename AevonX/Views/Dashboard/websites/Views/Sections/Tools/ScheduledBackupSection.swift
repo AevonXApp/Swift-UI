@@ -26,18 +26,18 @@ struct ScheduledBackupSection: View {
                                 HStack {
                                     VStack(alignment: .leading, spacing: 2) {
                                         Text(schedule.displayText)
-                                            .font(.system(size: 13, weight: .medium))
+                                            .font(AXTypography.callout).fontWeight(.medium)
                                             .foregroundColor(.axTextPrimary)
                                         HStack(spacing: AXSpacing.xs) {
                                             Text(schedule.cronExpression)
-                                                .font(.system(size: 10, design: .monospaced))
+                                                .font(AXTypography.monoXs)
                                                 .foregroundColor(.axTextMuted)
                                             if schedule.includesDatabase {
                                                 HStack(spacing: 2) {
                                                     Image(systemName: "cylinder.fill")
                                                     Text("+ DB")
                                                 }
-                                                .font(.system(size: 9))
+                                                .font(AXTypography.caption2)
                                                 .foregroundColor(.axAccentBlue)
                                             }
                                         }
@@ -45,7 +45,7 @@ struct ScheduledBackupSection: View {
                                     Spacer()
                                     Button(action: { Task { await viewModel.deleteSchedule(schedule) } }) {
                                         Image(systemName: "trash")
-                                            .font(.system(size: 12))
+                                            .font(AXTypography.subheadline)
                                             .foregroundColor(.axError)
                                     }
                                     .buttonStyle(.plain)
@@ -64,7 +64,7 @@ struct ScheduledBackupSection: View {
                         // Frequency picker
                         HStack {
                             Text("Frequency")
-                                .font(.system(size: 12, weight: .medium))
+                                .font(AXTypography.subheadline).fontWeight(.medium)
                                 .frame(width: 100, alignment: .trailing)
                             Picker("", selection: $viewModel.selectedFrequency) {
                                 Text("Daily").tag("daily")
@@ -77,7 +77,7 @@ struct ScheduledBackupSection: View {
                         // Retention
                         HStack {
                             Text("Keep for")
-                                .font(.system(size: 12, weight: .medium))
+                                .font(AXTypography.subheadline).fontWeight(.medium)
                                 .frame(width: 100, alignment: .trailing)
                             Picker("", selection: $viewModel.retentionDays) {
                                 Text("7 days").tag(7)
@@ -93,10 +93,10 @@ struct ScheduledBackupSection: View {
                         Toggle(isOn: $viewModel.includeDatabase) {
                             HStack(spacing: AXSpacing.xs) {
                                 Image(systemName: "cylinder.fill")
-                                    .font(.system(size: 12))
+                                    .font(AXTypography.subheadline)
                                     .foregroundColor(.axAccentBlue)
                                 Text("Include database dump")
-                                    .font(.system(size: 12))
+                                    .font(AXTypography.subheadline)
                             }
                         }
                         .toggleStyle(.switch)
@@ -104,7 +104,7 @@ struct ScheduledBackupSection: View {
                         HStack(spacing: AXSpacing.md) {
                             Button(action: { Task { await viewModel.createSchedule() } }) {
                                 Label("Create Schedule", systemImage: "calendar.badge.plus")
-                                    .font(.system(size: 12, weight: .semibold))
+                                    .font(AXTypography.subheadline).fontWeight(.semibold)
                                     .frame(maxWidth: .infinity)
                             }
                             .buttonStyle(.borderedProminent)
@@ -113,7 +113,7 @@ struct ScheduledBackupSection: View {
 
                             Button(action: { Task { await viewModel.runBackupNow() } }) {
                                 Label("Backup Now", systemImage: "archivebox.fill")
-                                    .font(.system(size: 12, weight: .semibold))
+                                    .font(AXTypography.subheadline).fontWeight(.semibold)
                             }
                             .buttonStyle(.bordered)
                             .controlSize(.regular)

@@ -204,15 +204,15 @@ struct ProcessManagerTab: View {
     private var pm2NotInstalledView: some View {
         VStack(spacing: AXSpacing.lg) {
             Image(systemName: "gearshape.2")
-                .font(.system(size: 48))
+                .font(AXTypography.largeTitle)
                 .foregroundColor(.axTextMuted)
             
             Text("PM2 Not Installed")
-                .font(.system(size: 18, weight: .bold))
+                .font(AXTypography.title2).fontWeight(.bold)
                 .foregroundColor(.axTextPrimary)
             
             Text("PM2 is a process manager for Node.js applications.\nIt keeps your app running and auto-restarts on crashes.")
-                .font(.system(size: 13))
+                .font(AXTypography.callout)
                 .foregroundColor(.axTextSecondary)
                 .multilineTextAlignment(.center)
             
@@ -224,7 +224,7 @@ struct ProcessManagerTab: View {
                         Image(systemName: "arrow.down.circle.fill")
                     }
                     Text("Install PM2")
-                        .font(.system(size: 14, weight: .semibold))
+                        .font(AXTypography.headline)
                 }
                 .foregroundColor(.white)
                 .padding(.horizontal, AXSpacing.xl)
@@ -246,9 +246,9 @@ struct ProcessManagerTab: View {
             Button(action: { Task { await viewModel.startProcess() } }) {
                 HStack(spacing: 6) {
                     Image(systemName: "play.fill")
-                        .font(.system(size: 11))
+                        .font(AXTypography.footnote)
                     Text("Start App")
-                        .font(.system(size: 12, weight: .semibold))
+                        .font(AXTypography.subheadline).fontWeight(.semibold)
                 }
                 .foregroundColor(.white)
                 .padding(.horizontal, AXSpacing.md)
@@ -264,9 +264,9 @@ struct ProcessManagerTab: View {
             Button(action: { Task { await viewModel.savePM2List() } }) {
                 HStack(spacing: 6) {
                     Image(systemName: "arrow.down.doc.fill")
-                        .font(.system(size: 11))
+                        .font(AXTypography.footnote)
                     Text("Save & Auto-Start")
-                        .font(.system(size: 12, weight: .semibold))
+                        .font(AXTypography.subheadline).fontWeight(.semibold)
                 }
                 .foregroundColor(.axAccentBlue)
                 .padding(.horizontal, AXSpacing.md)
@@ -278,7 +278,7 @@ struct ProcessManagerTab: View {
             
             Button(action: { Task { await viewModel.loadAll() } }) {
                 Image(systemName: "arrow.clockwise")
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(AXTypography.subheadline).fontWeight(.semibold)
                     .foregroundColor(.axTextSecondary)
                     .frame(width: 28, height: 28)
                     .background(Color.axSurface)
@@ -293,13 +293,13 @@ struct ProcessManagerTab: View {
     private var noProcessesView: some View {
         VStack(spacing: AXSpacing.md) {
             Image(systemName: "square.stack.3d.up.slash")
-                .font(.system(size: 32))
+                .font(AXTypography.largeTitle)
                 .foregroundColor(.axTextMuted)
             Text("No Running Processes")
-                .font(.system(size: 14, weight: .semibold))
+                .font(AXTypography.headline)
                 .foregroundColor(.axTextPrimary)
             Text("Start your application using the 'Start App' button above.")
-                .font(.system(size: 12))
+                .font(AXTypography.subheadline)
                 .foregroundColor(.axTextSecondary)
         }
         .frame(maxWidth: .infinity, minHeight: 150)
@@ -327,22 +327,22 @@ struct ProcessManagerTab: View {
             // Info
             VStack(alignment: .leading, spacing: 2) {
                 Text(process.name)
-                    .font(.system(size: 13, weight: .semibold))
+                    .font(AXTypography.callout).fontWeight(.semibold)
                     .foregroundColor(.axTextPrimary)
                 
                 HStack(spacing: AXSpacing.md) {
                     Text("PID: \(process.pid ?? 0)")
-                        .font(.system(size: 10, design: .monospaced))
+                        .font(AXTypography.monoXs)
                     Text("CPU: \(process.cpuFormatted)")
-                        .font(.system(size: 10, design: .monospaced))
+                        .font(AXTypography.monoXs)
                     Text("Mem: \(process.memoryFormatted)")
-                        .font(.system(size: 10, design: .monospaced))
+                        .font(AXTypography.monoXs)
                     if let uptime = process.uptimeFormatted {
                         Text("Up: \(uptime)")
-                            .font(.system(size: 10, design: .monospaced))
+                            .font(AXTypography.monoXs)
                     }
                     Text("↻ \(process.restarts)")
-                        .font(.system(size: 10, design: .monospaced))
+                        .font(AXTypography.monoXs)
                 }
                 .foregroundColor(.axTextTertiary)
             }
@@ -353,53 +353,53 @@ struct ProcessManagerTab: View {
             HStack(spacing: AXSpacing.xs) {
                 Button(action: { Task { await viewModel.loadLogs(process.name) } }) {
                     Image(systemName: "doc.text")
-                        .font(.system(size: 11))
+                        .font(AXTypography.footnote)
                         .foregroundColor(.axAccentBlue)
                         .frame(width: 26, height: 26)
                         .background(Color.axAccentBlue.opacity(0.1))
-                        .cornerRadius(4)
+                        .cornerRadius(AXCornerRadius.sm)
                 }
                 .buttonStyle(.plain)
                 
                 Button(action: { Task { await viewModel.restartProcess(process.name) } }) {
                     Image(systemName: "arrow.clockwise")
-                        .font(.system(size: 11))
+                        .font(AXTypography.footnote)
                         .foregroundColor(.axWarning)
                         .frame(width: 26, height: 26)
                         .background(Color.axWarning.opacity(0.1))
-                        .cornerRadius(4)
+                        .cornerRadius(AXCornerRadius.sm)
                 }
                 .buttonStyle(.plain)
                 
                 if process.status == .online {
                     Button(action: { Task { await viewModel.stopProcess(process.name) } }) {
                         Image(systemName: "stop.fill")
-                            .font(.system(size: 11))
+                            .font(AXTypography.footnote)
                             .foregroundColor(.axError)
                             .frame(width: 26, height: 26)
                             .background(Color.axError.opacity(0.1))
-                            .cornerRadius(4)
+                            .cornerRadius(AXCornerRadius.sm)
                     }
                     .buttonStyle(.plain)
                 } else {
                     Button(action: { Task { await viewModel.restartProcess(process.name) } }) {
                         Image(systemName: "play.fill")
-                            .font(.system(size: 11))
+                            .font(AXTypography.footnote)
                             .foregroundColor(.axSuccess)
                             .frame(width: 26, height: 26)
                             .background(Color.axSuccess.opacity(0.1))
-                            .cornerRadius(4)
+                            .cornerRadius(AXCornerRadius.sm)
                     }
                     .buttonStyle(.plain)
                 }
                 
                 Button(action: { Task { await viewModel.deleteProcess(process.name) } }) {
                     Image(systemName: "trash")
-                        .font(.system(size: 11))
+                        .font(AXTypography.footnote)
                         .foregroundColor(.axError)
                         .frame(width: 26, height: 26)
                         .background(Color.axError.opacity(0.05))
-                        .cornerRadius(4)
+                        .cornerRadius(AXCornerRadius.sm)
                 }
                 .buttonStyle(.plain)
             }
@@ -429,12 +429,12 @@ struct ProcessManagerTab: View {
         VStack(alignment: .leading, spacing: AXSpacing.sm) {
             HStack {
                 Text("Process Logs")
-                    .font(.system(size: 14, weight: .bold))
+                    .font(AXTypography.headline).fontWeight(.bold)
                     .foregroundColor(.axTextPrimary)
                 Spacer()
                 Button(action: { viewModel.processLogs = nil }) {
                     Image(systemName: "xmark")
-                        .font(.system(size: 10, weight: .bold))
+                        .font(AXTypography.caption).fontWeight(.bold)
                         .foregroundColor(.axTextMuted)
                 }
                 .buttonStyle(.plain)
@@ -442,7 +442,7 @@ struct ProcessManagerTab: View {
             
             ScrollView {
                 Text(logs)
-                    .font(.system(size: 10, design: .monospaced))
+                    .font(AXTypography.monoXs)
                     .foregroundColor(.axTextSecondary)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }

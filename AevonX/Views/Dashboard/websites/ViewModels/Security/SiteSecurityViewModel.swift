@@ -32,7 +32,9 @@ class SiteSecurityViewModel: ObservableObject {
 
     func loadSecurityStatus() async {
         do {
-            let cmd = bridge.securityScanCmd(domain: domain, docRoot: docRoot)
+            await detectPathsIfNeeded()
+            let configPath = resolveConfigPath()
+            let cmd = bridge.securityScanCmd(domain: domain, docRoot: docRoot, sitesAvailable: serverPaths.nginxSitesAvailable)
             let result = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
             let parsedJSON = bridge.parseSecurityScan(output: result)
 
@@ -59,7 +61,7 @@ class SiteSecurityViewModel: ObservableObject {
         defer { isScanning = false; scanProgress = "" }
         do {
             await detectPathsIfNeeded()
-            let configPath = "\(serverPaths.nginxSitesAvailable)/\(domain)"
+            let configPath = resolveConfigPath()
             let cmd = bridge.toggleHotlinkCmd(enable: enable, domain: domain, configPath: configPath)
             _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
             _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.restartNginxCmd())
@@ -74,7 +76,9 @@ class SiteSecurityViewModel: ObservableObject {
         isScanning = true; scanProgress = "Configuring sensitive files block..."
         defer { isScanning = false; scanProgress = "" }
         do {
-            let cmd = bridge.toggleSensitiveBlockCmd(enable: enable, domain: domain)
+            await detectPathsIfNeeded()
+            let sa = serverPaths.nginxSitesAvailable
+            let cmd = bridge.toggleSensitiveBlockCmd(enable: enable, domain: domain, sitesAvailable: sa)
             _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
             _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.restartNginxCmd())
             GlobalToastManager.shared.showSuccess("Sensitive files block applied")
@@ -117,9 +121,11 @@ class SiteSecurityViewModel: ObservableObject {
         isScanning = true; scanProgress = "Fixing permissions..."
         defer { isScanning = false; scanProgress = "" }
         do {
+            await detectPathsIfNeeded()
             let cmd = bridge.fixPermissionsCmd(docRoot: docRoot)
             _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
-            GlobalToastManager.shared.showSuccess("Permissions fixed: dirs=755, files=644, owner=www-data")
+            let ownership = serverPaths.webOwnership
+            GlobalToastManager.shared.showSuccess("Permissions fixed: dirs=755, files=644, owner=\(ownership)")
             await runPermissionAudit()
         } catch {
             GlobalToastManager.shared.showError(error.localizedDescription)
@@ -155,6 +161,15 @@ class SiteSecurityViewModel: ObservableObject {
         } catch {
             GlobalToastManager.shared.showError(error.localizedDescription)
         }
+    }
+
+    /// Resolves config path for the domain (BT Panel uses .conf extension)
+    private func resolveConfigPath() -> String {
+        let sa = serverPaths.nginxSitesAvailable
+        if serverPaths.serverType == "bt_panel" || sa.contains("/www/server") {
+            return "\(sa)/\(domain).conf"
+        }
+        return "\(sa)/\(domain)"
     }
 
     private func detectPathsIfNeeded() async {

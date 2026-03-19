@@ -27,10 +27,10 @@ struct URLRewriteTemplateSelector: View {
                         HStack(spacing: AXSpacing.sm) {
                             Image(systemName: "checkmark.circle.fill")
                                 .foregroundColor(.axSuccess)
-                                .font(.system(size: 18))
+                                .font(AXTypography.title2)
 
                             Text("Template saved successfully! The rewrite rule has been applied.")
-                                .font(.system(size: 13, weight: .medium))
+                                .font(AXTypography.callout).fontWeight(.medium)
                                 .foregroundColor(.axTextPrimary)
 
                             Spacer()
@@ -55,7 +55,7 @@ struct URLRewriteTemplateSelector: View {
                     // Template Type Selection
                     VStack(alignment: .leading, spacing: AXSpacing.sm) {
                         Text("1. Select Template Type")
-                            .font(.system(size: 13, weight: .semibold))
+                            .font(AXTypography.callout).fontWeight(.semibold)
                             .foregroundColor(.axTextPrimary)
 
                         Picker("Template", selection: $selectedTemplate) {
@@ -73,10 +73,10 @@ struct URLRewriteTemplateSelector: View {
                         HStack(spacing: AXSpacing.xs) {
                             Image(systemName: "info.circle")
                                 .foregroundColor(.axAccentBlue)
-                                .font(.system(size: 12))
+                                .font(AXTypography.subheadline)
 
                             Text(selectedTemplate.description)
-                                .font(.system(size: 12))
+                                .font(AXTypography.subheadline)
                                 .foregroundColor(.axTextSecondary)
                         }
                         .padding(.top, 4)
@@ -89,7 +89,7 @@ struct URLRewriteTemplateSelector: View {
                     VStack(alignment: .leading, spacing: AXSpacing.sm) {
                         HStack {
                             Text("2. Preview Code")
-                                .font(.system(size: 13, weight: .semibold))
+                                .font(AXTypography.callout).fontWeight(.semibold)
                                 .foregroundColor(.axTextPrimary)
 
                             Spacer()
@@ -103,14 +103,14 @@ struct URLRewriteTemplateSelector: View {
                                     Image(systemName: "doc.on.doc")
                                     Text("Copy")
                                 }
-                                .font(.system(size: 11, weight: .medium))
+                                .font(AXTypography.footnote).fontWeight(.medium)
                                 .foregroundColor(.axAccentBlue)
                             }
                             .buttonStyle(PlainButtonStyle())
                         }
 
                         TextEditor(text: $ruleCode)
-                            .font(.system(size: 12, design: .monospaced))
+                            .font(AXTypography.monoMd)
                             .foregroundColor(.axTextPrimary)
                             .frame(minHeight: 120)
                             .padding(AXSpacing.md)
@@ -122,7 +122,7 @@ struct URLRewriteTemplateSelector: View {
                             )
 
                         Text("You can edit the code above before saving")
-                            .font(.system(size: 11))
+                            .font(AXTypography.footnote)
                             .foregroundColor(.axTextSecondary)
                     }
                     .padding(AXSpacing.lg)
@@ -155,7 +155,7 @@ struct URLRewriteTemplateSelector: View {
                             Text(isSaving ? "Saving..." : "Save & Apply")
                                 .fontWeight(.semibold)
                         }
-                        .font(.system(size: 14))
+                        .font(AXTypography.body)
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, AXSpacing.md)

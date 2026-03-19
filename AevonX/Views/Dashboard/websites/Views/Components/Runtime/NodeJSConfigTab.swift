@@ -199,32 +199,32 @@ struct NodeJSConfigTab: View {
             HStack(spacing: AXSpacing.xl) {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Node.js")
-                        .font(.system(size: 11, weight: .medium))
+                        .font(AXTypography.footnote).fontWeight(.medium)
                         .foregroundColor(.axTextSecondary)
                     Text(viewModel.currentVersion ?? "Not detected")
-                        .font(.system(size: 20, weight: .bold, design: .monospaced))
+                        .font(AXTypography.title2).fontWeight(.bold)
                         .foregroundColor(viewModel.currentVersion != nil ? .axSuccess : .axWarning)
                 }
                 
                 VStack(alignment: .leading, spacing: 4) {
                     Text("NPM")
-                        .font(.system(size: 11, weight: .medium))
+                        .font(AXTypography.footnote).fontWeight(.medium)
                         .foregroundColor(.axTextSecondary)
                     Text(viewModel.npmVersion ?? "N/A")
-                        .font(.system(size: 20, weight: .bold, design: .monospaced))
+                        .font(AXTypography.title2).fontWeight(.bold)
                         .foregroundColor(.axTextPrimary)
                 }
                 
                 VStack(alignment: .leading, spacing: 4) {
                     Text("nvm")
-                        .font(.system(size: 11, weight: .medium))
+                        .font(AXTypography.footnote).fontWeight(.medium)
                         .foregroundColor(.axTextSecondary)
                     HStack(spacing: 4) {
                         Circle()
                             .fill(viewModel.hasNvm ? Color.axSuccess : Color.axError)
                             .frame(width: 8, height: 8)
                         Text(viewModel.hasNvm ? "Installed" : "Not found")
-                            .font(.system(size: 13, weight: .medium))
+                            .font(AXTypography.callout).fontWeight(.medium)
                             .foregroundColor(viewModel.hasNvm ? .axSuccess : .axError)
                     }
                 }
@@ -252,16 +252,16 @@ struct NodeJSConfigTab: View {
                 
                 if let desc = pkg.description {
                     Text(desc)
-                        .font(.system(size: 11))
+                        .font(AXTypography.footnote)
                         .foregroundColor(.axTextTertiary)
                 }
                 
                 if let engine = pkg.engines?.node {
                     HStack(spacing: 4) {
                         Image(systemName: "gearshape.fill")
-                            .font(.system(size: 10))
+                            .font(AXTypography.caption)
                         Text("Requires Node.js \(engine)")
-                            .font(.system(size: 11, weight: .medium))
+                            .font(AXTypography.footnote).fontWeight(.medium)
                     }
                     .foregroundColor(.axWarning)
                 }
@@ -272,10 +272,10 @@ struct NodeJSConfigTab: View {
     private func infoItem(_ label: String, value: String) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(label)
-                .font(.system(size: 10, weight: .medium))
+                .font(AXTypography.caption)
                 .foregroundColor(.axTextTertiary)
             Text(value)
-                .font(.system(size: 13, weight: .semibold, design: .monospaced))
+                .font(AXTypography.monoMd).fontWeight(.semibold)
                 .foregroundColor(.axTextPrimary)
         }
     }
@@ -292,11 +292,11 @@ struct NodeJSConfigTab: View {
                 ForEach(scripts.sorted(by: { $0.key < $1.key }), id: \.key) { key, value in
                     HStack {
                         Text("npm run \(key)")
-                            .font(.system(size: 12, weight: .semibold, design: .monospaced))
+                            .font(AXTypography.monoMd).fontWeight(.semibold)
                             .foregroundColor(.axTextPrimary)
                         
                         Text("→ \(value)")
-                            .font(.system(size: 11, design: .monospaced))
+                            .font(AXTypography.monoSm)
                             .foregroundColor(.axTextTertiary)
                             .lineLimit(1)
                         
@@ -304,11 +304,11 @@ struct NodeJSConfigTab: View {
                         
                         Button(action: { Task { await viewModel.runNpmScript(key) } }) {
                             Image(systemName: "play.fill")
-                                .font(.system(size: 10))
+                                .font(AXTypography.caption)
                                 .foregroundColor(.white)
                                 .frame(width: 22, height: 22)
                                 .background(Color.axSuccess)
-                                .cornerRadius(4)
+                                .cornerRadius(AXCornerRadius.sm)
                         }
                         .buttonStyle(.plain)
                         .disabled(viewModel.isRunningScript)
@@ -320,7 +320,7 @@ struct NodeJSConfigTab: View {
                 if let output = viewModel.npmScriptOutput {
                     Divider().padding(.vertical, AXSpacing.xs)
                     Text(output)
-                        .font(.system(size: 10, design: .monospaced))
+                        .font(AXTypography.monoXs)
                         .foregroundColor(.axTextSecondary)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(AXSpacing.sm)
@@ -344,32 +344,32 @@ struct NodeJSConfigTab: View {
                 ForEach(viewModel.installedVersions, id: \.self) { version in
                     HStack {
                         Image(systemName: "terminal")
-                            .font(.system(size: 10))
+                            .font(AXTypography.caption)
                             .foregroundColor(.axAccentBlue)
                         
                         Text("v\(version)")
-                            .font(.system(size: 12, design: .monospaced))
+                            .font(AXTypography.monoMd)
                             .foregroundColor(.axTextPrimary)
                         
                         Spacer()
                         
                         if version == viewModel.currentVersion || viewModel.currentVersion?.hasPrefix(version) == true {
                             Text("Active")
-                                .font(.system(size: 10, weight: .semibold))
+                                .font(AXTypography.caption).fontWeight(.semibold)
                                 .foregroundColor(.axSuccess)
                                 .padding(.horizontal, 6)
                                 .padding(.vertical, 2)
                                 .background(Color.axSuccess.opacity(0.1))
-                                .cornerRadius(4)
+                                .cornerRadius(AXCornerRadius.sm)
                         } else {
                             Button(action: { Task { await viewModel.switchVersion(version) } }) {
                                 Text("Use")
-                                    .font(.system(size: 10, weight: .semibold))
+                                    .font(AXTypography.caption).fontWeight(.semibold)
                                     .foregroundColor(.axAccentBlue)
                                     .padding(.horizontal, 8)
                                     .padding(.vertical, 2)
                                     .background(Color.axAccentBlue.opacity(0.1))
-                                    .cornerRadius(4)
+                                    .cornerRadius(AXCornerRadius.sm)
                             }
                             .buttonStyle(.plain)
                         }

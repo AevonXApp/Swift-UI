@@ -23,7 +23,7 @@ struct QuickActionsSection: View {
                     HStack(spacing: AXSpacing.sm) {
                         ProgressView().scaleEffect(0.8)
                         Text(viewModel.runningAction)
-                            .font(.system(size: 12))
+                            .font(AXTypography.subheadline)
                             .foregroundColor(.axAccentBlue)
                     }
                     .padding(AXSpacing.md)
@@ -75,13 +75,13 @@ struct QuickActionsSection: View {
                         }
                         VStack(spacing: 4) {
                             Image(systemName: "internaldrive")
-                                .font(.system(size: 20))
+                                .font(AXTypography.title2)
                                 .foregroundColor(.axAccentBlue)
                             Text("Disk Usage")
-                                .font(.system(size: 11, weight: .semibold))
+                                .font(AXTypography.footnote).fontWeight(.semibold)
                                 .foregroundColor(.axTextPrimary)
                             Text(viewModel.diskUsage)
-                                .font(.system(size: 18, weight: .bold, design: .monospaced))
+                                .font(AXTypography.title2).fontWeight(.bold)
                                 .foregroundColor(.axAccentBlue)
                         }
                         .frame(maxWidth: .infinity)
@@ -97,7 +97,7 @@ struct QuickActionsSection: View {
                         Image(systemName: viewModel.nginxTestPassed ? "checkmark.circle.fill" : "xmark.circle.fill")
                             .foregroundColor(viewModel.nginxTestPassed ? .axSuccess : .axError)
                         Text(result)
-                            .font(.system(size: 11, design: .monospaced))
+                            .font(AXTypography.monoSm)
                             .foregroundColor(.axTextSecondary)
                             .lineLimit(3)
                     }
@@ -118,13 +118,13 @@ struct QuickActionsSection: View {
         Button(action: action) {
             VStack(spacing: 6) {
                 Image(systemName: icon)
-                    .font(.system(size: 22))
+                    .font(AXTypography.title)
                     .foregroundColor(color)
                 Text(title)
-                    .font(.system(size: 11, weight: .semibold))
+                    .font(AXTypography.footnote).fontWeight(.semibold)
                     .foregroundColor(.axTextPrimary)
                 Text(subtitle)
-                    .font(.system(size: 9))
+                    .font(AXTypography.caption2)
                     .foregroundColor(.axTextTertiary)
             }
             .frame(maxWidth: .infinity)

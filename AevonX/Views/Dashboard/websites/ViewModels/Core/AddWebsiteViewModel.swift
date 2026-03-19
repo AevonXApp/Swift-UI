@@ -117,7 +117,12 @@ public final class AddWebsiteViewModel: ObservableObject {
         do {
             switch runtime {
             case .php:
-                let result = await SSHBridge.shared.executeAsync(serverID: serverId, command: "ls /etc/php/ 2>/dev/null | sort -V")
+                // Multi-path probe: BT Panel, standard Debian/Ubuntu, RHEL
+                let result = await SSHBridge.shared.executeAsync(serverID: serverId, command:
+                    "(ls /www/server/php/ 2>/dev/null | grep -E '^[0-9]' | sort -V) || " +
+                    "(ls /etc/php/ 2>/dev/null | sort -V) || " +
+                    "(rpm -qa 2>/dev/null | grep -oP 'php\\\\d+' | sort -uV) || echo ''"
+                )
                 phpVersions = result.components(separatedBy: "\n").filter { !$0.isEmpty }
                 selectedVersion = phpVersions.first ?? ""
             case .nodejs:

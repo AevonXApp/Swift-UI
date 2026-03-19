@@ -53,10 +53,10 @@ struct SSLOverviewCard: View {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Provider")
-                        .font(.system(size: 11))
+                        .font(AXTypography.footnote)
                         .foregroundColor(.axTextSecondary)
                     Text(ssl.provider.rawValue)
-                        .font(.system(size: 14, weight: .semibold))
+                        .font(AXTypography.headline)
                         .foregroundColor(.axTextPrimary)
                 }
 
@@ -64,10 +64,10 @@ struct SSLOverviewCard: View {
 
                 VStack(alignment: .trailing, spacing: 4) {
                     Text("Status")
-                        .font(.system(size: 11))
+                        .font(AXTypography.footnote)
                         .foregroundColor(.axTextSecondary)
                     Text(ssl.status.rawValue.capitalized)
-                        .font(.system(size: 14, weight: .semibold))
+                        .font(AXTypography.headline)
                         .foregroundColor(ssl.status == .active ? .axSuccess : .axWarning)
                 }
             }
@@ -75,10 +75,10 @@ struct SSLOverviewCard: View {
             if ssl.isExpiringSoon, let days = ssl.daysUntilExpiry {
                 HStack(spacing: AXSpacing.sm) {
                     Image(systemName: "exclamationmark.triangle.fill")
-                        .font(.system(size: 12))
+                        .font(AXTypography.subheadline)
                         .foregroundColor(.axWarning)
                     Text("Certificate expires in \(days) days")
-                        .font(.system(size: 12))
+                        .font(AXTypography.subheadline)
                         .foregroundColor(.axWarning)
                 }
                 .padding(AXSpacing.sm)
@@ -105,21 +105,21 @@ struct HealthIssueRow: View {
     var body: some View {
         HStack(alignment: .top, spacing: AXSpacing.md) {
             Image(systemName: severityIcon)
-                .font(.system(size: 16))
+                .font(AXTypography.title3)
                 .foregroundColor(severityColor)
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(issue.title)
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(AXTypography.headline)
                     .foregroundColor(.axTextPrimary)
 
                 Text(issue.description)
-                    .font(.system(size: 12))
+                    .font(AXTypography.subheadline)
                     .foregroundColor(.axTextSecondary)
 
                 if let recommendation = issue.recommendation {
                     Text(recommendation)
-                        .font(.system(size: 11))
+                        .font(AXTypography.footnote)
                         .foregroundColor(.axTextTertiary)
                         .italic()
                 }
@@ -161,11 +161,11 @@ struct AliasRow: View {
     var body: some View {
         HStack {
             Image(systemName: "link")
-                .font(.system(size: 11))
+                .font(AXTypography.footnote)
                 .foregroundColor(.axAccentBlue)
 
             Text(alias)
-                .font(.system(size: 13, design: .monospaced))
+                .font(AXTypography.monoMd)
                 .foregroundColor(.axTextPrimary)
 
             Spacer()
@@ -185,7 +185,7 @@ struct ConnectionRow: View {
     var body: some View {
         HStack {
             Image(systemName: "wifi")
-                .font(.system(size: 12))
+                .font(AXTypography.subheadline)
                 .foregroundColor(.axAccentBlue)
 
             Text(connection.ip)
@@ -195,12 +195,12 @@ struct ConnectionRow: View {
             Spacer()
 
             Text("\(connection.count)")
-                .font(.system(size: 13, weight: .bold))
+                .font(AXTypography.callout).fontWeight(.bold)
                 .foregroundColor(.white)
                 .padding(.horizontal, 8)
                 .padding(.vertical, 4)
                 .background(Color.axAccentBlue)
-                .cornerRadius(6)
+                .cornerRadius(AXCornerRadius.sm)
         }
         .padding(AXSpacing.md)
         .background(Color.axSurface)
@@ -220,16 +220,16 @@ struct EmptyStateCard: View {
     var body: some View {
         VStack(spacing: AXSpacing.md) {
             Image(systemName: icon)
-                .font(.system(size: 48))
+                .font(AXTypography.largeTitle)
                 .foregroundColor(.axTextTertiary.opacity(0.5))
 
             VStack(spacing: 4) {
                 Text(title)
-                    .font(.system(size: 16, weight: .semibold))
+                    .font(AXTypography.title3)
                     .foregroundColor(.axTextPrimary)
 
                 Text(message)
-                    .font(.system(size: 12))
+                    .font(AXTypography.subheadline)
                     .foregroundColor(.axTextSecondary)
                     .multilineTextAlignment(.center)
             }

@@ -83,7 +83,7 @@ struct AddWebsiteView: View {
 
             Button(action: { dismiss() }) {
                 Image(systemName: "xmark")
-                    .font(.system(size: 14))
+                    .font(AXTypography.body)
                     .foregroundColor(.axTextSecondary)
                     .frame(width: 28, height: 28)
                     .background(Color.axSurface)
@@ -184,7 +184,7 @@ struct AddWebsiteView: View {
                 .foregroundColor(.axTextSecondary)
 
             HStack(spacing: AXSpacing.sm) {
-                TextField("/var/www/example.com", text: $viewModel.documentRoot)
+                TextField("\(viewModel.detectedWebRoot)/example.com", text: $viewModel.documentRoot)
                     .font(AXTypography.body)
                     .foregroundColor(.axTextPrimary)
                     .padding(AXSpacing.md)
@@ -208,7 +208,7 @@ struct AddWebsiteView: View {
                     }
                 }) {
                     Image(systemName: "folder.badge.questionmark")
-                        .font(.system(size: 16))
+                        .font(AXTypography.title3)
                         .foregroundColor(.axAccentBlue)
                         .frame(width: 38, height: 38)
                         .background(Color.axSurface)
@@ -339,7 +339,7 @@ struct DirectoryBrowserSheet: View {
 
                 Button(action: { dismiss() }) {
                     Image(systemName: "xmark")
-                        .font(.system(size: 12))
+                        .font(AXTypography.subheadline)
                         .foregroundColor(.axTextSecondary)
                         .frame(width: 24, height: 24)
                         .background(Color.axSurface)
@@ -376,7 +376,7 @@ struct DirectoryBrowserSheet: View {
                             Button(action: navigateUp) {
                                 HStack(spacing: AXSpacing.sm) {
                                     Image(systemName: "arrow.left")
-                                        .font(.system(size: 12))
+                                        .font(AXTypography.subheadline)
                                         .foregroundColor(.axAccentBlue)
                                     Text("..")
                                         .font(AXTypography.body)
@@ -412,14 +412,14 @@ struct DirectoryBrowserSheet: View {
                                 }) {
                                     HStack(spacing: AXSpacing.sm) {
                                         Image(systemName: "folder.fill")
-                                            .font(.system(size: 14))
+                                            .font(AXTypography.body)
                                             .foregroundColor(.axAccentBlue.opacity(0.8))
                                         Text(dir)
                                             .font(AXTypography.body)
                                             .foregroundColor(.axTextPrimary)
                                         Spacer()
                                         Image(systemName: "chevron.right")
-                                            .font(.system(size: 10))
+                                            .font(AXTypography.caption)
                                             .foregroundColor(.axTextTertiary)
                                     }
                                     .padding(.horizontal, AXSpacing.lg)
@@ -440,7 +440,7 @@ struct DirectoryBrowserSheet: View {
             // New folder
             HStack(spacing: AXSpacing.sm) {
                 Image(systemName: "folder.badge.plus")
-                    .font(.system(size: 14))
+                    .font(AXTypography.body)
                     .foregroundColor(.axTextSecondary)
 
                 TextField("New folder name", text: $viewModel.newFolderName)
@@ -474,7 +474,7 @@ struct DirectoryBrowserSheet: View {
                         .font(AXTypography.caption)
                         .foregroundColor(.axTextTertiary)
                     Text(viewModel.browserCurrentPath)
-                        .font(.system(size: 12, design: .monospaced))
+                        .font(AXTypography.monoMd)
                         .foregroundColor(.axTextPrimary)
                         .lineLimit(1)
                 }
@@ -512,7 +512,7 @@ struct DirectoryBrowserSheet: View {
                 ForEach(Array(components.enumerated()), id: \.offset) { index, component in
                     if index > 0 {
                         Image(systemName: "chevron.right")
-                            .font(.system(size: 8))
+                            .font(AXTypography.caption2)
                             .foregroundColor(.axTextTertiary)
                     }
 

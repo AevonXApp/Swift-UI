@@ -87,6 +87,13 @@ public struct AXTypography {
     public static let footnote = Font.system(size: 11, weight: .regular, design: .default)
     public static let caption = Font.system(size: 10, weight: .medium, design: .default)
     public static let caption2 = Font.system(size: 9, weight: .medium, design: .default)
+    // Monospaced — for code, logs, config, terminal output
+    public static let monoLg = Font.system(size: 14, weight: .regular, design: .monospaced)
+    public static let monoMd = Font.system(size: 12, weight: .regular, design: .monospaced)
+    public static let monoSm = Font.system(size: 11, weight: .regular, design: .monospaced)
+    public static let monoXs = Font.system(size: 10, weight: .regular, design: .monospaced)
+    public static let monoXxs = Font.system(size: 9, weight: .regular, design: .monospaced)
+    public static let monoXxxs = Font.system(size: 8, weight: .regular, design: .monospaced)
 }
 
 // MARK: - Spacing

@@ -142,10 +142,10 @@ struct EnvVariablesTab: View {
         HStack {
             VStack(alignment: .leading, spacing: 2) {
                 Text(".env Configuration")
-                    .font(.system(size: 16, weight: .bold))
+                    .font(AXTypography.title3).fontWeight(.bold)
                     .foregroundColor(.axTextPrimary)
                 Text(viewModel.appPath)
-                    .font(.system(size: 11, design: .monospaced))
+                    .font(AXTypography.monoSm)
                     .foregroundColor(.axTextTertiary)
             }
             
@@ -158,10 +158,10 @@ struct EnvVariablesTab: View {
                             ProgressView().scaleEffect(0.6)
                         } else {
                             Image(systemName: "checkmark.circle.fill")
-                                .font(.system(size: 11))
+                                .font(AXTypography.footnote)
                         }
                         Text("Save Changes")
-                            .font(.system(size: 12, weight: .semibold))
+                            .font(AXTypography.subheadline).fontWeight(.semibold)
                     }
                     .foregroundColor(.white)
                     .padding(.horizontal, AXSpacing.md)
@@ -176,9 +176,9 @@ struct EnvVariablesTab: View {
             Button(action: { viewModel.showAddForm.toggle() }) {
                 HStack(spacing: 6) {
                     Image(systemName: "plus")
-                        .font(.system(size: 11, weight: .bold))
+                        .font(AXTypography.footnote).fontWeight(.bold)
                     Text("Add Variable")
-                        .font(.system(size: 12, weight: .semibold))
+                        .font(AXTypography.subheadline).fontWeight(.semibold)
                 }
                 .foregroundColor(.axAccentBlue)
                 .padding(.horizontal, AXSpacing.md)
@@ -195,13 +195,13 @@ struct EnvVariablesTab: View {
     private var emptyState: some View {
         VStack(spacing: AXSpacing.md) {
             Image(systemName: "key")
-                .font(.system(size: 32))
+                .font(AXTypography.largeTitle)
                 .foregroundColor(.axTextMuted)
             Text("No Environment Variables")
-                .font(.system(size: 14, weight: .semibold))
+                .font(AXTypography.headline)
                 .foregroundColor(.axTextPrimary)
             Text("No .env file found. Add variables to create one.")
-                .font(.system(size: 12))
+                .font(AXTypography.subheadline)
                 .foregroundColor(.axTextSecondary)
         }
         .frame(maxWidth: .infinity, minHeight: 150)
@@ -216,18 +216,18 @@ struct EnvVariablesTab: View {
             // Table Header
             HStack {
                 Text("KEY")
-                    .font(.system(size: 10, weight: .bold, design: .monospaced))
+                    .font(AXTypography.monoXs).fontWeight(.bold)
                     .foregroundColor(.axTextTertiary)
                     .frame(width: 200, alignment: .leading)
                 
                 Text("VALUE")
-                    .font(.system(size: 10, weight: .bold, design: .monospaced))
+                    .font(AXTypography.monoXs).fontWeight(.bold)
                     .foregroundColor(.axTextTertiary)
                 
                 Spacer()
                 
                 Text("ACTIONS")
-                    .font(.system(size: 10, weight: .bold, design: .monospaced))
+                    .font(AXTypography.monoXs).fontWeight(.bold)
                     .foregroundColor(.axTextTertiary)
                     .frame(width: 60)
             }
@@ -246,7 +246,7 @@ struct EnvVariablesTab: View {
         HStack(spacing: AXSpacing.sm) {
             // Key
             Text(variable.key)
-                .font(.system(size: 12, weight: .semibold, design: .monospaced))
+                .font(AXTypography.monoMd).fontWeight(.semibold)
                 .foregroundColor(.axAccentBlue)
                 .frame(width: 200, alignment: .leading)
             
@@ -254,26 +254,26 @@ struct EnvVariablesTab: View {
             if variable.isSecret && !revealedSecrets.contains(variable.id) {
                 HStack(spacing: 4) {
                     Text("••••••••")
-                        .font(.system(size: 12, design: .monospaced))
+                        .font(AXTypography.monoMd)
                         .foregroundColor(.axTextMuted)
                     
                     Button(action: { revealedSecrets.insert(variable.id) }) {
                         Image(systemName: "eye")
-                            .font(.system(size: 10))
+                            .font(AXTypography.caption)
                             .foregroundColor(.axTextTertiary)
                     }
                     .buttonStyle(.plain)
                 }
             } else {
                 Text(variable.value)
-                    .font(.system(size: 12, design: .monospaced))
+                    .font(AXTypography.monoMd)
                     .foregroundColor(.axTextPrimary)
                     .lineLimit(1)
                 
                 if variable.isSecret {
                     Button(action: { revealedSecrets.remove(variable.id) }) {
                         Image(systemName: "eye.slash")
-                            .font(.system(size: 10))
+                            .font(AXTypography.caption)
                             .foregroundColor(.axTextTertiary)
                     }
                     .buttonStyle(.plain)
@@ -285,11 +285,11 @@ struct EnvVariablesTab: View {
             // Delete
             Button(action: { viewModel.removeVariable(variable) }) {
                 Image(systemName: "trash")
-                    .font(.system(size: 11))
+                    .font(AXTypography.footnote)
                     .foregroundColor(.axError)
                     .frame(width: 26, height: 26)
                     .background(Color.axError.opacity(0.05))
-                    .cornerRadius(4)
+                    .cornerRadius(AXCornerRadius.sm)
             }
             .buttonStyle(.plain)
             .frame(width: 60)
@@ -305,31 +305,31 @@ struct EnvVariablesTab: View {
     private var addForm: some View {
         VStack(alignment: .leading, spacing: AXSpacing.md) {
             Text("Add Variable")
-                .font(.system(size: 14, weight: .bold))
+                .font(AXTypography.headline).fontWeight(.bold)
                 .foregroundColor(.axTextPrimary)
             
             HStack(spacing: AXSpacing.md) {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Key")
-                        .font(.system(size: 10, weight: .medium))
+                        .font(AXTypography.caption)
                         .foregroundColor(.axTextTertiary)
                     TextField("DATABASE_URL", text: $viewModel.newKey)
                         .textFieldStyle(AXTextFieldStyle())
-                        .font(.system(size: 12, design: .monospaced))
+                        .font(AXTypography.monoMd)
                 }
                 
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Value")
-                        .font(.system(size: 10, weight: .medium))
+                        .font(AXTypography.caption)
                         .foregroundColor(.axTextTertiary)
                     TextField("postgres://...", text: $viewModel.newValue)
                         .textFieldStyle(AXTextFieldStyle())
-                        .font(.system(size: 12, design: .monospaced))
+                        .font(AXTypography.monoMd)
                 }
                 
                 Button(action: { viewModel.addVariable() }) {
                     Text("Add")
-                        .font(.system(size: 12, weight: .semibold))
+                        .font(AXTypography.subheadline).fontWeight(.semibold)
                         .foregroundColor(.white)
                         .padding(.horizontal, AXSpacing.lg)
                         .padding(.vertical, AXSpacing.sm)

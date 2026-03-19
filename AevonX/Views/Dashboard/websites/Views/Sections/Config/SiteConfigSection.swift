@@ -24,7 +24,7 @@ struct SiteConfigSection: View {
                         // Templates
                         Button(action: { showTemplates.toggle() }) {
                             Label("Templates", systemImage: "doc.on.doc")
-                                .font(.system(size: 12, weight: .medium))
+                                .font(AXTypography.subheadline).fontWeight(.medium)
                         }
                         .buttonStyle(.bordered)
                         .controlSize(.small)
@@ -32,7 +32,7 @@ struct SiteConfigSection: View {
                         // Backups
                         Button(action: { showBackups.toggle() }) {
                             Label("Backups (\(viewModel.configBackups.count))", systemImage: "clock.arrow.circlepath")
-                                .font(.system(size: 12, weight: .medium))
+                                .font(AXTypography.subheadline).fontWeight(.medium)
                         }
                         .buttonStyle(.bordered)
                         .controlSize(.small)
@@ -47,7 +47,7 @@ struct SiteConfigSection: View {
                                 }
                                 Text("Validate")
                             }
-                            .font(.system(size: 12, weight: .medium))
+                            .font(AXTypography.subheadline).fontWeight(.medium)
                         }
                         .buttonStyle(.bordered)
                         .controlSize(.small)
@@ -62,7 +62,7 @@ struct SiteConfigSection: View {
                                 }
                                 Text("Save & Reload")
                             }
-                            .font(.system(size: 12, weight: .semibold))
+                            .font(AXTypography.subheadline).fontWeight(.semibold)
                         }
                         .buttonStyle(.borderedProminent)
                         .controlSize(.small)
@@ -76,7 +76,7 @@ struct SiteConfigSection: View {
                         Image(systemName: viewModel.validationPassed ? "checkmark.circle.fill" : "xmark.circle.fill")
                             .foregroundColor(viewModel.validationPassed ? .axSuccess : .axError)
                         Text(result)
-                            .font(.system(size: 12, design: .monospaced))
+                            .font(AXTypography.monoMd)
                             .foregroundColor(viewModel.validationPassed ? .axSuccess : .axError)
                     }
                     .padding(AXSpacing.md)
@@ -91,7 +91,7 @@ struct SiteConfigSection: View {
                         Image(systemName: "exclamationmark.triangle.fill")
                             .foregroundColor(.axError)
                         Text(error)
-                            .font(.system(size: 12))
+                            .font(AXTypography.subheadline)
                             .foregroundColor(.axError)
                     }
                     .padding(AXSpacing.md)
@@ -103,15 +103,15 @@ struct SiteConfigSection: View {
                 // Config Path Info
                 HStack(spacing: AXSpacing.sm) {
                     Image(systemName: "folder")
-                        .font(.system(size: 11))
+                        .font(AXTypography.footnote)
                         .foregroundColor(.axTextTertiary)
                     Text(viewModel.configPath)
-                        .font(.system(size: 11, design: .monospaced))
+                        .font(AXTypography.monoSm)
                         .foregroundColor(.axTextSecondary)
                     Spacer()
                     if viewModel.hasUnsavedChanges {
                         Text("● Modified")
-                            .font(.system(size: 10, weight: .bold))
+                            .font(AXTypography.caption).fontWeight(.bold)
                             .foregroundColor(.axWarning)
                     }
                 }
@@ -121,14 +121,14 @@ struct SiteConfigSection: View {
                     VStack(spacing: AXSpacing.md) {
                         ProgressView()
                         Text("Loading configuration...")
-                            .font(.system(size: 12))
+                            .font(AXTypography.subheadline)
                             .foregroundColor(.axTextSecondary)
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .padding(AXSpacing.xxl)
                 } else {
                     TextEditor(text: $viewModel.configContent)
-                        .font(.system(size: 13, design: .monospaced))
+                        .font(AXTypography.monoMd)
                         .scrollContentBackground(.hidden)
                         .padding(AXSpacing.md)
                         .background(Color.axBackground)
@@ -157,7 +157,7 @@ struct SiteConfigSection: View {
         VStack(spacing: 0) {
             HStack {
                 Text("Config Templates")
-                    .font(.system(size: 16, weight: .bold))
+                    .font(AXTypography.title3).fontWeight(.bold)
                 Spacer()
                 Button("Close") { showTemplates = false }
                     .buttonStyle(.plain)
@@ -175,20 +175,20 @@ struct SiteConfigSection: View {
                         }) {
                             HStack(spacing: AXSpacing.md) {
                                 Image(systemName: template.icon)
-                                    .font(.system(size: 20))
+                                    .font(AXTypography.title2)
                                     .foregroundColor(.axAccentBlue)
                                     .frame(width: 36)
                                 VStack(alignment: .leading, spacing: 4) {
                                     Text(template.rawValue)
-                                        .font(.system(size: 14, weight: .semibold))
+                                        .font(AXTypography.headline)
                                         .foregroundColor(.axTextPrimary)
                                     Text(template.description)
-                                        .font(.system(size: 11))
+                                        .font(AXTypography.footnote)
                                         .foregroundColor(.axTextSecondary)
                                 }
                                 Spacer()
                                 Image(systemName: "chevron.right")
-                                    .font(.system(size: 11))
+                                    .font(AXTypography.footnote)
                                     .foregroundColor(.axTextMuted)
                             }
                             .padding(AXSpacing.md)
@@ -211,7 +211,7 @@ struct SiteConfigSection: View {
         VStack(spacing: 0) {
             HStack {
                 Text("Config Backups")
-                    .font(.system(size: 16, weight: .bold))
+                    .font(AXTypography.title3).fontWeight(.bold)
                 Spacer()
                 Button("Close") { showBackups = false }
                     .buttonStyle(.plain)
@@ -230,10 +230,10 @@ struct SiteConfigSection: View {
                             HStack {
                                 VStack(alignment: .leading, spacing: 2) {
                                     Text(backup.filename)
-                                        .font(.system(size: 12, weight: .medium, design: .monospaced))
+                                        .font(AXTypography.monoMd).fontWeight(.medium)
                                         .foregroundColor(.axTextPrimary)
                                     Text(backup.formattedDate)
-                                        .font(.system(size: 10))
+                                        .font(AXTypography.caption)
                                         .foregroundColor(.axTextTertiary)
                                 }
                                 Spacer()

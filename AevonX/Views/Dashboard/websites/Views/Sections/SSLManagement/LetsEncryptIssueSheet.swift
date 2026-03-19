@@ -65,7 +65,7 @@ struct LetsEncryptIssueSheet: View {
                     HStack(alignment: .top, spacing: AXSpacing.md) {
                         Image(systemName: "info.circle.fill")
                             .foregroundColor(.axAccentBlue)
-                            .font(.system(size: 24))
+                            .font(AXTypography.title)
 
                         VStack(alignment: .leading, spacing: 4) {
                             Text("Let's Encrypt")
@@ -146,7 +146,7 @@ struct LetsEncryptIssueSheet: View {
             HStack(alignment: .top, spacing: AXSpacing.sm) {
                 Image(systemName: "info.circle.fill")
                     .foregroundColor(.axAccentBlue)
-                    .font(.system(size: 16))
+                    .font(AXTypography.title3)
 
                 Text("Please add the following DNS records for verification")
                     .font(AXTypography.body)
@@ -268,7 +268,7 @@ struct DNSRecordRow: View {
                     }
                 }) {
                     Image(systemName: copied ? "checkmark" : "doc.on.doc")
-                        .font(.system(size: 11))
+                        .font(AXTypography.footnote)
                         .foregroundColor(copied ? .axSuccess : .axTextTertiary)
                 }
                 .buttonStyle(PlainButtonStyle())
@@ -304,7 +304,7 @@ struct ChallengeTypeRow: View {
         Button(action: onSelect) {
             HStack(spacing: AXSpacing.md) {
                 Image(systemName: challenge.icon)
-                    .font(.system(size: 20))
+                    .font(AXTypography.title2)
                     .foregroundColor(isSelected ? .axAccentBlue : .axTextSecondary)
                     .frame(width: 30)
 

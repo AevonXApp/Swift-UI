@@ -281,7 +281,7 @@ struct EmptyStateView: View {
     var body: some View {
         VStack(spacing: AXSpacing.lg) {
             Image(systemName: searchText.isEmpty ? "globe" : "magnifyingglass")
-                .font(.system(size: 48))
+                .font(AXTypography.largeTitle)
                 .foregroundColor(.axTextMuted)
 
             if searchText.isEmpty {
