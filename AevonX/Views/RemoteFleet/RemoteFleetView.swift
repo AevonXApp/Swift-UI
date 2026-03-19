@@ -54,12 +54,13 @@ struct RemoteFleetView: View {
     @State private var sortOption: ServerSortOption = .nameAsc
     @State private var serverToEdit: ServerViewModel?
     @State private var showEditServer = false
+    @State private var showPaywall = false
     
     var body: some View {
         VStack(spacing: 0) {
             // Header & Filter Section
             VStack(spacing: AXSpacing.lg) {
-                RemoteFleetHeader(viewModel: viewModel, showAddServer: $showAddServer)
+                RemoteFleetHeader(viewModel: viewModel, showAddServer: $showAddServer, showPaywall: $showPaywall)
                 RemoteFleetFilterBar(
                     searchText: $searchText,
                     selectedFilter: $selectedFilter,
@@ -98,6 +99,15 @@ struct RemoteFleetView: View {
             Button("OK", role: .cancel) {}
         } message: {
             Text(viewModel.errorMessage ?? "An error occurred")
+        }
+        .overlay {
+            if showPaywall {
+                FeaturePaywallView(
+                    featureTitle: "Unlock Server Management",
+                    featureDescription: "You've reached the server limit for your plan. Upgrade to Pro for unlimited servers and more.",
+                    isPresented: $showPaywall
+                )
+            }
         }
         .sheet(item: $serverToEdit) { server in
             EditServerView(server: server) { updatedRequest in

@@ -9,6 +9,7 @@ import AevonXCoreBridge
 struct RemoteFleetHeader: View {
     @ObservedObject var viewModel: ServerListViewModel
     @Binding var showAddServer: Bool
+    @Binding var showPaywall: Bool
     
     var body: some View {
         HStack(alignment: .center) {
@@ -60,14 +61,18 @@ struct RemoteFleetHeader: View {
 
             Spacer()
 
-            // Add Server Button
+            // Add Server Button — shows paywall if locked
             Button(action: {
-                showAddServer = true
+                if viewModel.canAddServer {
+                    showAddServer = true
+                } else {
+                    showPaywall = true
+                }
             }) {
                 HStack(spacing: AXSpacing.sm) {
-                    Image(systemName: "plus.circle.fill")
+                    Image(systemName: viewModel.canAddServer ? "plus.circle.fill" : "lock.fill")
                         .font(.system(size: 14))
-                    Text("Add Server")
+                    Text(viewModel.canAddServer ? "Add Server" : "Upgrade")
                 }
                 .font(AXTypography.subheadline)
                 .fontWeight(.semibold)
@@ -78,16 +83,15 @@ struct RemoteFleetHeader: View {
                     LinearGradient(
                         colors: viewModel.canAddServer
                             ? [Color.axAccentBlue, Color.axAccentBlue.opacity(0.8)]
-                            : [Color.axTextMuted, Color.axTextMuted.opacity(0.8)],
+                            : [Color.orange, Color.orange.opacity(0.8)],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     )
                 )
                 .cornerRadius(AXCornerRadius.md)
-                .shadow(color: viewModel.canAddServer ? Color.axAccentBlue.opacity(0.3) : .clear, radius: 8, y: 4)
+                .shadow(color: (viewModel.canAddServer ? Color.axAccentBlue : Color.orange).opacity(0.3), radius: 8, y: 4)
             }
             .buttonStyle(PlainButtonStyle())
-            .disabled(!viewModel.canAddServer)
         }
     }
 }

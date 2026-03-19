@@ -45,6 +45,12 @@ struct ContentView: View {
             }
         }
         .task {
+            // Inject API fetcher + SSH BEFORE anything else (eliminates race condition)
+            await SubscriptionManager.shared.setApiFetcher { baseURL, token in
+                await APIBridge.shared.fetchSubscriptionStatusAsync(baseURL: baseURL, token: token)
+            }
+            await SystemControlService.shared.setSSHService(SSHBridge.shared)
+            
             // Initialize Go Core engine
             CoreBridge.shared.initialize()
             print("🟢 Go Core v\(CoreBridge.shared.version()) initialized")

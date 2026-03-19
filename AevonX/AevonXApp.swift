@@ -21,14 +21,8 @@ struct AevonXApp: App {
         print("[AevonXApp] INFO: AevonX App Started - v\(BuildConfiguration.appVersion) (\(BuildConfiguration.buildNumber)) on \(BuildConfiguration.platform)")
         print("[AevonXApp] INFO: API URL: \(AevonXCoreBridge.ConfigurationManager.shared.currentConfiguration.fullBaseURL)")
         
-        // Inject API fetcher into SubscriptionManager (breaks circular dependency)
-        // Inject Go SSH into SystemControlService
-        Task {
-            await SubscriptionManager.shared.setApiFetcher { baseURL, token in
-                await APIBridge.shared.fetchSubscriptionStatusAsync(baseURL: baseURL, token: token)
-            }
-            await SystemControlService.shared.setSSHService(SSHBridge.shared)
-        }
+        // Inject API fetcher + SSH service synchronously outside Task
+        // (Moved to ContentView.task to eliminate race condition with ServerListViewModel.refresh)
         
         // Setup app lifecycle notifications
         setupLifecycleNotifications()

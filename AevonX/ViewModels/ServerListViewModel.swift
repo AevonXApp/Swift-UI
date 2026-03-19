@@ -41,7 +41,7 @@ class ServerListViewModel: ObservableObject {
     
     private var isInitialized = false
     private var statusPollingTask: Task<Void, Never>?
-    private let statusPollInterval: TimeInterval = 60
+    private let statusPollInterval: TimeInterval = 600 // 10 minutes (matches permit TTL)
     private var isInForeground = true
     
     // MARK: - Initialization
@@ -102,22 +102,18 @@ class ServerListViewModel: ObservableObject {
         isAuthenticated = true
         let baseURL = AevonXCoreBridge.ConfigurationManager.shared.currentConfiguration.fullBaseURL
 
+        // 1. Fetch subscription status (separate error handling)
         do {
-            // Fetch subscription status (still via SubscriptionManager for business logic)
             let status = try await SubscriptionManager.shared.getSubscriptionStatus(forceRefresh: true)
             self.subscriptionStatus = status
             self.canAddServer = await SubscriptionManager.shared.canAddServer()
             self.remainingSlots = await SubscriptionManager.shared.remainingServerSlots()
         } catch {
-            // Subscription check failed (e.g., API fetcher not yet ready during startup race)
-            // Default to allowing server addition for authenticated users — the backend still enforces limits
-            AevonXCoreBridge.CoreLogger.shared.warning("Subscription check failed: \(error.localizedDescription) — defaulting canAddServer=true", module: "ServerList")
-            self.canAddServer = true
-            self.remainingSlots = 10
+            AevonXCoreBridge.CoreLogger.shared.warning("Subscription check failed: \(error.localizedDescription)", module: "ServerList")
         }
 
+        // 2. Fetch servers (always runs regardless of subscription check)
         do {
-            // Fetch servers via Go HTTP
             let resultJSON = await APIBridge.shared.fetchServersAsync(baseURL: baseURL, token: token!)
             guard let serversData = parseGoServers(resultJSON) else {
                 errorMessage = extractGoError(resultJSON)
@@ -134,7 +130,6 @@ class ServerListViewModel: ObservableObject {
                 AevonXCoreBridge.CoreLogger.shared.warning("Encryption key not available, skipping server decryption", module: "ServerList")
                 self.decryptedServers = []
             }
-            
         } catch {
             errorMessage = "Failed to load servers: \(error.localizedDescription)"
             showError = true
@@ -164,21 +159,26 @@ class ServerListViewModel: ObservableObject {
     func onEnterBackground() { isInForeground = false }
     
     private func refreshServerStatuses() async {
+        // 1. Refresh subscription status
         do {
             let status = try await SubscriptionManager.shared.getSubscriptionStatus(forceRefresh: true)
             self.subscriptionStatus = status
             self.canAddServer = await SubscriptionManager.shared.canAddServer()
             self.remainingSlots = await SubscriptionManager.shared.remainingServerSlots()
-            
+        } catch {
+            AevonXCoreBridge.CoreLogger.shared.warning("Subscription poll failed: \(error.localizedDescription)", module: "ServerList")
+        }
+        
+        // 2. Refresh server list
+        do {
             let token = await AevonXCoreBridge.AuthService.shared.getToken() ?? ""
             let baseURL = AevonXCoreBridge.ConfigurationManager.shared.currentConfiguration.fullBaseURL
             let resultJSON = await APIBridge.shared.fetchServersAsync(baseURL: baseURL, token: token)
             if let serversData = parseGoServers(resultJSON) {
                 self.servers = await SubscriptionManager.shared.getAccessibleServers(from: serversData)
             }
-            
         } catch {
-            AevonXCoreBridge.CoreLogger.shared.warning("Status poll failed: \(error.localizedDescription)", module: "ServerList")
+            AevonXCoreBridge.CoreLogger.shared.warning("Server poll failed: \(error.localizedDescription)", module: "ServerList")
         }
     }
     
