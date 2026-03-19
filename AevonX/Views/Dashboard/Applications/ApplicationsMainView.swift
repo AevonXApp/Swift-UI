@@ -295,7 +295,13 @@ struct ApplicationsMainView: View {
 
             VStack(spacing: 2) {
                 ForEach(filteredNotInstalled) { app in
-                    AvailableAppRow(app: app, accentColor: accentColor(for: app))
+                    AvailableAppRow(
+                        app: app,
+                        accentColor: accentColor(for: app),
+                        serverId: serverId ?? "",
+                        connectionViewModel: connectionViewModel,
+                        onInstalled: { Task { await discoverApps() } }
+                    )
                 }
             }
         }
@@ -366,6 +372,12 @@ struct ApplicationsMainView: View {
                 connectionViewModel: connectionViewModel,
                 onBack: { withAnimation { selectedApp = nil } }
             )
+        case "apache":
+            ApacheDetailView(
+                serverId: serverId ?? "",
+                app: app,
+                onBack: { withAnimation { selectedApp = nil } }
+            )
         default:
             VStack(spacing: AXSpacing.lg) {
                 Text("\(app.name) Detail View").font(AXTypography.headline).foregroundColor(.axTextPrimary)
@@ -383,6 +395,7 @@ struct ApplicationsMainView: View {
         guard let sid = serverId else { return }
         isLoading = true
         errorMessage = nil
+        bridge.invalidateDiscoveryCache(serverID: sid)
         let json = await bridge.discoverApps(serverID: sid)
         if let data = json.data(using: .utf8),
            let response = try? JSONDecoder().decode(BridgeDataResponse<[BridgeAppInfo]>.self, from: data),
@@ -655,7 +668,14 @@ private struct AppCard3D: View {
 private struct AvailableAppRow: View {
     let app: BridgeAppInfo
     let accentColor: Color
+    let serverId: String
+    @ObservedObject var connectionViewModel: ServerConnectionViewModel
+    var onInstalled: (() -> Void)?
+
     @State private var isHovered = false
+    @State private var isInstalling = false
+
+    private let toast = GlobalToastManager.shared
 
     var body: some View {
         HStack(spacing: AXSpacing.md) {
@@ -684,18 +704,26 @@ private struct AvailableAppRow: View {
                 .padding(.horizontal, 6).padding(.vertical, 3)
                 .background(Color.axSurface).cornerRadius(4)
 
-            HStack(spacing: 3) {
-                Image(systemName: "arrow.down.circle.fill")
-                    .font(.system(size: 10))
-                    .foregroundColor(.axTextMuted)
-                Text("Not Installed")
-                    .font(.system(size: 10, weight: .medium))
-                    .foregroundColor(.axTextMuted)
+            Button {
+                installViaQuickInstall()
+            } label: {
+                HStack(spacing: 4) {
+                    if isInstalling {
+                        ProgressView().controlSize(.small)
+                    } else {
+                        Image(systemName: "arrow.down.circle.fill")
+                            .font(.system(size: 11))
+                    }
+                    Text("Install")
+                        .font(.system(size: 11, weight: .semibold))
+                }
+                .foregroundColor(.white)
+                .padding(.horizontal, 12).padding(.vertical, 5)
+                .background(accentColor)
+                .cornerRadius(AXCornerRadius.sm)
             }
-            .padding(.horizontal, AXSpacing.sm).padding(.vertical, 3)
-            .background(Color.axSurface)
-            .cornerRadius(AXCornerRadius.sm)
-            .overlay(RoundedRectangle(cornerRadius: AXCornerRadius.sm).stroke(Color.axBorder.opacity(0.25), lineWidth: 1))
+            .buttonStyle(PlainButtonStyle())
+            .disabled(isInstalling)
         }
         .padding(.horizontal, AXSpacing.md).padding(.vertical, AXSpacing.sm)
         .background(isHovered ? accentColor.opacity(0.03) : Color.axSurface.opacity(0.3))
@@ -703,6 +731,48 @@ private struct AvailableAppRow: View {
         .overlay(RoundedRectangle(cornerRadius: AXCornerRadius.md).stroke(Color.axBorder.opacity(0.08), lineWidth: 1))
         .animation(.easeOut(duration: 0.18), value: isHovered)
         .onHover { isHovered = $0 }
+    }
+
+    // MARK: - Quick Install
+
+    private func installViaQuickInstall() {
+        let qi: QuickInstallViewModel
+        if let existing = connectionViewModel.quickInstallVM {
+            qi = existing
+        } else {
+            qi = QuickInstallViewModel(serverId: serverId, profile: connectionViewModel.serverProfile)
+            connectionViewModel.quickInstallVM = qi
+        }
+
+        // Find matching package in QI catalog by app ID or name
+        let appId = app.id.lowercased()
+        guard let pkg = qi.bridgePackages.first(where: {
+            $0.id.lowercased() == appId ||
+            $0.id.lowercased().contains(appId) ||
+            $0.name.lowercased().contains(appId)
+        }) else {
+            toast.showError("\(app.name) package not found in Quick Install catalog")
+            return
+        }
+
+        // Pick the first (default) version or match
+        let selectedVersion = pkg.versions.first
+        let selection = BridgeQISelection(
+            package_id: pkg.id,
+            package_name: pkg.name,
+            version_id: selectedVersion?.id ?? "",
+            version_label: selectedVersion?.label ?? app.name
+        )
+        qi.selections = [selection]
+        qi.isVisible = true
+        qi.isMinimized = false
+
+        isInstalling = true
+        Task {
+            await qi.beginInstallation()
+            isInstalling = false
+            onInstalled?()
+        }
     }
 }
 
