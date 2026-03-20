@@ -1,16 +1,15 @@
 //
-//  NginxOverviewSection.swift
+//  MySQLOverviewSection.swift
 //  AevonX
 //
 //  Overview dashboard: service status, stat cards, and quick actions.
-//  Receives pre-fetched data from NginxDetailView — zero SSH calls.
-//  Premium design: glass stat cards, gradient status banner, animated actions.
+//  Receives pre-fetched data from MySQLDetailView — zero SSH calls.
 //
 
 import SwiftUI
 import AevonXCoreBridge
 
-struct NginxOverviewSection: View {
+struct MySQLOverviewSection: View {
     let serverId: String
     let app: BridgeAppInfo
     @Binding var status: BridgeAppStatus?
@@ -18,7 +17,7 @@ struct NginxOverviewSection: View {
 
     @State private var actionInProgress: String?
 
-    private let nginxGreen = Color(red: 0, green: 0.59, blue: 0.22)
+    private let mysqlBlue = Color(red: 0.27, green: 0.47, blue: 0.63)
     private let toast = GlobalToastManager.shared
     private let bridge = ApplicationBridge.shared
 
@@ -27,17 +26,14 @@ struct NginxOverviewSection: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: AXSpacing.xl) {
-                // Premium status banner
                 statusBanner
 
-                // Stat cards
                 if let status = status {
                     statCardsSection(status)
                 } else {
                     skeletonStats
                 }
 
-                // Quick actions
                 quickActionsSection
 
                 Spacer()
@@ -50,14 +46,13 @@ struct NginxOverviewSection: View {
 
     private var statusBanner: some View {
         HStack(spacing: AXSpacing.lg) {
-            // Animated status orb
             ZStack {
                 Circle()
                     .fill(
                         RadialGradient(
                             colors: [
-                                isRunning ? nginxGreen : Color.axError,
-                                isRunning ? nginxGreen.opacity(0.3) : Color.axError.opacity(0.3),
+                                isRunning ? mysqlBlue : Color.axError,
+                                isRunning ? mysqlBlue.opacity(0.3) : Color.axError.opacity(0.3),
                             ],
                             center: .center,
                             startRadius: 0,
@@ -65,37 +60,17 @@ struct NginxOverviewSection: View {
                         )
                     )
                     .frame(width: 60, height: 60)
-                    .shadow(color: (isRunning ? nginxGreen : Color.axError).opacity(0.4), radius: 12, y: 4)
+                    .shadow(color: (isRunning ? mysqlBlue : Color.axError).opacity(0.4), radius: 12, y: 4)
 
                 Image(systemName: isRunning ? "checkmark" : "xmark")
                     .font(.system(size: 22, weight: .black))
                     .foregroundColor(.white)
             }
 
-            // Service info
             VStack(alignment: .leading, spacing: AXSpacing.xs) {
-                HStack(spacing: AXSpacing.sm) {
-                    Text("Nginx Service")
-                        .font(.system(size: 18, weight: .bold))
-                        .foregroundColor(.axTextPrimary)
-
-                    // Config validity badge
-                    if let s = status {
-                        HStack(spacing: 3) {
-                            Image(systemName: s.configValid ? "checkmark.seal.fill" : "xmark.seal.fill")
-                                .font(.system(size: 10))
-                            Text(s.configValid ? "Config OK" : "Config Error")
-                                .font(.system(size: 10, weight: .semibold))
-                        }
-                        .foregroundColor(s.configValid ? nginxGreen : .axWarning)
-                        .padding(.horizontal, 7)
-                        .padding(.vertical, 3)
-                        .background(
-                            Capsule()
-                                .fill(s.configValid ? nginxGreen.opacity(0.12) : Color.axWarning.opacity(0.12))
-                        )
-                    }
-                }
+                Text("MySQL Service")
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundColor(.axTextPrimary)
 
                 Text(isRunning ? "Active & Healthy" : "Service Stopped")
                     .font(AXTypography.body)
@@ -115,13 +90,12 @@ struct NginxOverviewSection: View {
 
             Spacer()
 
-            // PID + version pills
             VStack(alignment: .trailing, spacing: AXSpacing.xs) {
                 if let s = status {
                     infoPill(icon: "number", label: "PID \(s.pid)", color: .axAccentBlue)
-                    infoPill(icon: "shippingbox.fill", label: "v\(s.version)", color: nginxGreen)
+                    infoPill(icon: "shippingbox.fill", label: "v\(s.version)", color: mysqlBlue)
                 } else if let version = app.version, !version.isEmpty {
-                    infoPill(icon: "shippingbox.fill", label: "v\(version)", color: nginxGreen)
+                    infoPill(icon: "shippingbox.fill", label: "v\(version)", color: mysqlBlue)
                 }
             }
         }
@@ -131,7 +105,7 @@ struct NginxOverviewSection: View {
                 .fill(
                     LinearGradient(
                         colors: [
-                            isRunning ? nginxGreen.opacity(0.08) : Color.axError.opacity(0.08),
+                            isRunning ? mysqlBlue.opacity(0.08) : Color.axError.opacity(0.08),
                             Color.axSurface,
                         ],
                         startPoint: .leading,
@@ -141,7 +115,7 @@ struct NginxOverviewSection: View {
                 .overlay(
                     RoundedRectangle(cornerRadius: AXCornerRadius.lg)
                         .stroke(
-                            (isRunning ? nginxGreen : Color.axError).opacity(0.2),
+                            (isRunning ? mysqlBlue : Color.axError).opacity(0.2),
                             lineWidth: 1
                         )
                 )
@@ -205,12 +179,12 @@ struct NginxOverviewSection: View {
             ) {
                 AXStatCard(icon: "link.circle.fill", label: "Connections",
                            value: "\(s.connections)", color: .axAccentBlue, style: .glass)
-                AXStatCard(icon: "cpu.fill", label: "Workers",
+                AXStatCard(icon: "cpu.fill", label: "Threads",
                            value: "\(s.workerCount)", color: .cyan, style: .glass)
                 AXStatCard(icon: "memorychip.fill", label: "Memory",
                            value: s.memoryUsage ?? "N/A", color: .purple, style: .glass)
-                AXStatCard(icon: "bolt.fill", label: "Req/sec",
-                           value: String(format: "%.1f", s.requestsPerSec), color: nginxGreen, style: .glass)
+                AXStatCard(icon: "bolt.fill", label: "Queries/sec",
+                           value: String(format: "%.1f", s.requestsPerSec), color: mysqlBlue, style: .glass)
             }
         }
     }
@@ -238,7 +212,7 @@ struct NginxOverviewSection: View {
                 )
                 quickAction(icon: "arrow.clockwise", title: "Restart", color: .axWarning, action: "restart")
                 quickAction(icon: "arrow.triangle.2.circlepath", title: "Reload", color: .axAccentBlue, action: "reload")
-                quickAction(icon: "doc.text.magnifyingglass", title: "Test Config", color: .purple, action: "configtest")
+                quickAction(icon: "doc.text.magnifyingglass", title: "Config Test", color: .purple, action: "configtest")
             }
         }
     }
@@ -261,11 +235,11 @@ struct NginxOverviewSection: View {
 
         let resultJSON: String
         switch action {
-        case "start":      resultJSON = await bridge.start(serverID: serverId, appID: "nginx")
-        case "stop":       resultJSON = await bridge.stop(serverID: serverId, appID: "nginx")
-        case "restart":    resultJSON = await bridge.restart(serverID: serverId, appID: "nginx")
-        case "reload":     resultJSON = await bridge.reload(serverID: serverId, appID: "nginx")
-        case "configtest": resultJSON = await bridge.configTest(serverID: serverId, appID: "nginx")
+        case "start":      resultJSON = await bridge.start(serverID: serverId, appID: "mysql")
+        case "stop":       resultJSON = await bridge.stop(serverID: serverId, appID: "mysql")
+        case "restart":    resultJSON = await bridge.restart(serverID: serverId, appID: "mysql")
+        case "reload":     resultJSON = await bridge.reload(serverID: serverId, appID: "mysql")
+        case "configtest": resultJSON = await bridge.configTest(serverID: serverId, appID: "mysql")
         default:           resultJSON = ""
         }
 
@@ -273,72 +247,14 @@ struct NginxOverviewSection: View {
            let resp = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
             let success = resp["success"] as? Bool ?? false
             if success {
-                toast.showSuccess("Nginx \(title.lowercased()) — success")
+                toast.showSuccess("MySQL \(title.lowercased()) — success")
             } else {
                 let errStr = resp["error"] as? String ?? "Unknown error"
-                toast.showError("Nginx \(title.lowercased()) failed: \(errStr)")
+                toast.showError("MySQL \(title.lowercased()) failed: \(errStr)")
             }
         }
 
         onAction(action)
         actionInProgress = nil
-    }
-}
-
-// MARK: - NginxQuickActionButton (extracted for hover state)
-
-struct NginxQuickActionButton: View {
-    let icon: String
-    let title: String
-    let color: Color
-    let isLoading: Bool
-    let isDisabled: Bool
-    let onTap: () -> Void
-
-    @State private var isHovered = false
-
-    var body: some View {
-        Button(action: onTap) {
-            VStack(spacing: AXSpacing.sm) {
-                ZStack {
-                    RoundedRectangle(cornerRadius: AXCornerRadius.md)
-                        .fill(
-                            LinearGradient(
-                                colors: [color.opacity(isHovered ? 0.2 : 0.1), color.opacity(0.05)],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                        .frame(width: 48, height: 48)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: AXCornerRadius.md)
-                                .stroke(color.opacity(isHovered ? 0.4 : 0.2), lineWidth: 1)
-                        )
-
-                    if isLoading {
-                        ProgressView().scaleEffect(0.7)
-                    } else {
-                        Image(systemName: icon)
-                            .font(.system(size: 18, weight: .semibold))
-                            .foregroundColor(color)
-                    }
-                }
-
-                Text(title)
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundColor(.axTextSecondary)
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, AXSpacing.md)
-            .background(
-                RoundedRectangle(cornerRadius: AXCornerRadius.lg)
-                    .fill(isHovered ? color.opacity(0.04) : Color.clear)
-            )
-            .scaleEffect(isHovered ? 1.02 : 1.0)
-            .animation(.spring(response: 0.25), value: isHovered)
-        }
-        .buttonStyle(PlainButtonStyle())
-        .disabled(isDisabled)
-        .onHover { isHovered = $0 }
     }
 }
