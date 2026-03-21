@@ -197,4 +197,48 @@ serverPaths = PathResolverBridge.shared.parse(output: output)
 
 ---
 
-> **Last Updated:** 2026-03-19
+## 8. Activity Logging API
+
+Log client-side events to the backend via Go Core bridge (encrypted binary).
+Fire-and-forget — never blocks the caller. Silent failure if network is unavailable.
+
+### Usage (via Go Core — encrypted)
+
+```swift
+Task {
+    guard let token = await AevonXCoreBridge.AuthService.shared.getToken() else { return }
+    let baseURL = AevonXCoreBridge.ConfigurationManager.shared.currentConfiguration.fullBaseURL
+    _ = await APIBridge.shared.logActivityAsync(
+        baseURL: baseURL, token: token,
+        type: "ssh_command",
+        description: "Executed command",
+        context: "apt update"
+    )
+}
+```
+
+### Supported Types
+
+| Type | Description | Icon | Color |
+|------|-------------|------|-------|
+| `ssh_connect` | Server connection | bolt.fill | green |
+| `ssh_disconnect` | Server disconnection | bolt.slash | gray |
+| `ssh_command` | SSH command executed | terminal | cyan |
+| `ssh_error` | SSH error occurred | exclamationmark.triangle | red |
+| `registration` | Account created | person.badge.plus | blue |
+| `login` | User signed in | arrow.right.circle | green |
+| `logout` | User signed out | arrow.left.circle | gray |
+| `password_changed` | Password changed | lock.rotation | orange |
+| `server_added` | Server added | server.rack | blue |
+| `server_deleted` | Server deleted | trash | red |
+
+### Backend
+
+- **Endpoint:** `POST /api/v1/user/activity`
+- **Body:** `{ "type": string, "description": string, "context"?: string }`
+- Custom types are accepted — add icon/color mapping in `ActivityLog.php`
+
+---
+
+> **Last Updated:** 2026-03-21
+

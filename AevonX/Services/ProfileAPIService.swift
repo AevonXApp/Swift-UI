@@ -15,12 +15,21 @@ import AevonXCoreBridge
 public struct UserSession: Codable, Identifiable {
     public let id: Int
     public let name: String
+    public let deviceType: String?
+    public let os: String?
+    public let ipAddress: String?
+    public let country: String?
+    public let city: String?
+    public let appVersion: String?
     public let lastUsedAt: Date?
     public let createdAt: Date
     public let isCurrent: Bool
 
     enum CodingKeys: String, CodingKey {
-        case id, name
+        case id, name, os, country, city
+        case deviceType  = "device_type"
+        case ipAddress   = "ip_address"
+        case appVersion  = "app_version"
         case lastUsedAt  = "last_used_at"
         case createdAt   = "created_at"
         case isCurrent   = "is_current"
@@ -38,13 +47,22 @@ public struct UserSession: Codable, Identifiable {
         }
     }
 
-    /// Device icon guess from session name
+    /// Device icon based on device_type from server
     public var deviceIcon: String {
-        let lower = name.lowercased()
-        if lower.contains("iphone") { return "iphone" }
-        if lower.contains("ipad")   { return "ipad" }
-        if lower.contains("mac")    { return "laptopcomputer" }
+        let type = (deviceType ?? "").lowercased()
+        if type.contains("macbook")   { return "laptopcomputer" }
+        if type.contains("imac")      { return "desktopcomputer" }
+        if type.contains("mac_mini")  { return "macmini" }
+        if type.contains("mac_studio") { return "macstudio" }
+        if type.contains("mac_pro")   { return "macpro.gen3" }
+        if type.contains("iphone")    { return "iphone" }
+        if type.contains("ipad")      { return "ipad" }
         return "desktopcomputer"
+    }
+    
+    /// Location string
+    public var locationLabel: String {
+        [city, country].compactMap { $0 }.joined(separator: ", ")
     }
 }
 
@@ -195,5 +213,28 @@ class ProfileAPIService: ObservableObject {
             throw URLError(.badServerResponse)
         }
         return data
+    }
+
+    // MARK: - Log Activity (fire-and-forget)
+    
+    /// Log a client-side activity event to the backend.
+    /// Call from anywhere — runs in background, never blocks.
+    nonisolated func logActivity(type: String, description: String, context: String? = nil) {
+        Task { @MainActor in
+            do {
+                let token = try await self.getToken()
+                var req = URLRequest(url: URL(string: "\(self.baseURL)/user/activity")!)
+                req.httpMethod = "POST"
+                req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+                req.setValue("application/json", forHTTPHeaderField: "Accept")
+                req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+                var body: [String: String] = ["type": type, "description": description]
+                if let ctx = context { body["context"] = ctx }
+                req.httpBody = try JSONSerialization.data(withJSONObject: body)
+                try await self.perform(req)
+            } catch {
+                // Silent failure — activity logging should never disrupt the app
+            }
+        }
     }
 }

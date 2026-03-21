@@ -420,6 +420,17 @@ public class ServerConnectionViewModel: ObservableObject {
             
             AevonXCoreBridge.CoreLogger.shared.info("Connected to server: \(server.name)", module: "ServerConnection")
             
+            // Log activity via Go Core (fire-and-forget, encrypted binary)
+            Task {
+                guard let token = await AevonXCoreBridge.AuthService.shared.getToken() else { return }
+                let baseURL = AevonXCoreBridge.ConfigurationManager.shared.currentConfiguration.fullBaseURL
+                _ = await APIBridge.shared.logActivityAsync(
+                    baseURL: baseURL, token: token,
+                    type: "ssh_connect", description: "Connected to server",
+                    context: server.name
+                )
+            }
+            
             // Start health monitoring for this server
             await ConnectionHealthMonitor.shared.startMonitoring(serverId: serverId)
             
@@ -528,6 +539,17 @@ public class ServerConnectionViewModel: ObservableObject {
         activeTerminalIndex = 0
         
         AevonXCoreBridge.CoreLogger.shared.info("Disconnected from server: \(server.name)", module: "ServerConnection")
+        
+        // Log activity via Go Core (fire-and-forget, encrypted binary)
+        Task {
+            guard let token = await AevonXCoreBridge.AuthService.shared.getToken() else { return }
+            let baseURL = AevonXCoreBridge.ConfigurationManager.shared.currentConfiguration.fullBaseURL
+            _ = await APIBridge.shared.logActivityAsync(
+                baseURL: baseURL, token: token,
+                type: "ssh_disconnect", description: "Disconnected from server",
+                context: server.name
+            )
+        }
     }
     
     // MARK: - Terminal Sessions Management

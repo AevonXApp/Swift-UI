@@ -113,9 +113,6 @@ struct ContentView: View {
                             }
                         }
                         
-                    case .localWorkspace:
-                        WorkspaceView()
-                        
                     case .userProfile:
                         ProfileView()
                         
@@ -132,6 +129,12 @@ struct ContentView: View {
             GlobalToastOverlay()
         }
         .preferredColorScheme(.dark)
+        .onChange(of: serverListViewModel.needsLogin) { _, needsLogin in
+            if needsLogin {
+                selectedNavigation = .userProfile
+                serverListViewModel.needsLogin = false
+            }
+        }
         .sheet(isPresented: $showAddServer) {
             AddServerView { request in
                 Task {

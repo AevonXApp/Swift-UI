@@ -6,10 +6,10 @@
 //
 
 import SwiftUI
+import AevonXCoreBridge
 
 enum NavigationItem: String, CaseIterable, Identifiable {
     case remoteFleet = "Remote Fleet"
-    case localWorkspace = "Local Workspace"
     case userProfile = "User Profile"
     case settings = "Settings"
     
@@ -18,7 +18,6 @@ enum NavigationItem: String, CaseIterable, Identifiable {
     var icon: String {
         switch self {
         case .remoteFleet: return "server.rack"
-        case .localWorkspace: return "folder.badge.gear"
         case .userProfile: return "person.crop.circle"
         case .settings: return "gearshape.2"
         }
@@ -27,8 +26,7 @@ enum NavigationItem: String, CaseIterable, Identifiable {
     var shortcut: String {
         switch self {
         case .remoteFleet: return "⌘1"
-        case .localWorkspace: return "⌘2"
-        case .userProfile: return "⌘3"
+        case .userProfile: return "⌘2"
         case .settings: return "⌘,"
         }
     }
@@ -36,7 +34,6 @@ enum NavigationItem: String, CaseIterable, Identifiable {
     var subtitle: String {
         switch self {
         case .remoteFleet: return "Manage servers"
-        case .localWorkspace: return "Local development"
         case .userProfile: return "Account & API"
         case .settings: return "Preferences"
         }
@@ -46,11 +43,36 @@ enum NavigationItem: String, CaseIterable, Identifiable {
 struct SidebarView: View {
     @Binding var selectedItem: NavigationItem
     @Binding var selectedServer: Server?
+    @EnvironmentObject var authViewModel: AuthViewModel
     
     @State private var isLogoHovered = true
     
     private var appVersion: String {
         Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0.0"
+    }
+    
+    private var currentPlanLabel: String {
+        if let remaining = authViewModel.trialRemainingDays, remaining > 0 {
+            return "Trial"
+        }
+        return authViewModel.currentUser?.plan?.capitalized ?? "Free"
+    }
+    
+    private var planBadgeColor: Color {
+        if isTrialActive { return .axAccentGreen }
+        switch currentPlanLabel.lowercased() {
+        case "pro": return .axAccentBlue
+        case "team": return .axAccentGreen
+        case "enterprise": return .orange
+        default: return .axTextMuted
+        }
+    }
+    
+    private var isTrialActive: Bool {
+        if let remaining = authViewModel.trialRemainingDays, remaining > 0 {
+            return true
+        }
+        return false
     }
     
     var body: some View {
@@ -80,6 +102,11 @@ struct SidebarView: View {
             }
             
             Spacer()
+            
+            // ─── Subscription / Trial Info ──────────────────────
+            if authViewModel.isAuthenticated {
+                subscriptionSection
+            }
             
             // ─── Footer ────────────────────────────────────────
             footerStatus
@@ -149,12 +176,12 @@ struct SidebarView: View {
                             .font(.system(size: 8))
                             .foregroundColor(.axTextMuted)
                         
-                        Text("Pro")
+                        Text(currentPlanLabel)
                             .font(.system(size: 9, weight: .black, design: .rounded))
-                            .foregroundColor(.axAccentBlue)
+                            .foregroundColor(planBadgeColor)
                             .padding(.horizontal, 5)
                             .padding(.vertical, 1)
-                            .background(Color.axAccentBlue.opacity(0.12))
+                            .background(planBadgeColor.opacity(0.12))
                             .clipShape(Capsule())
                     }
                 }
@@ -192,6 +219,147 @@ struct SidebarView: View {
         .padding(.horizontal, AXSpacing.sm)
         .padding(.top, AXSpacing.sm)
         .padding(.bottom, AXSpacing.xxs)
+    }
+    
+    // MARK: - Subscription / Trial Section
+    
+    private var subscriptionSection: some View {
+        VStack(spacing: AXSpacing.sm) {
+            Rectangle()
+                .fill(
+                    LinearGradient(
+                        colors: [.clear, Color.axBorder.opacity(0.5), .clear],
+                        startPoint: .leading, endPoint: .trailing
+                    )
+                )
+                .frame(height: 1)
+                .padding(.horizontal, AXSpacing.lg)
+            
+            VStack(spacing: AXSpacing.sm) {
+                if isTrialActive {
+                    // Trial active — show countdown
+                    HStack(spacing: AXSpacing.sm) {
+                        Image(systemName: "clock.badge.checkmark")
+                            .font(.system(size: 13))
+                            .foregroundColor(.axAccentGreen)
+                        
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text("Trial Active")
+                                .font(.system(size: 11, weight: .semibold))
+                                .foregroundColor(.axTextPrimary)
+                            
+                            Text("\(authViewModel.trialRemainingDays ?? 0) days remaining")
+                                .font(.system(size: 10, weight: .medium))
+                                .foregroundColor(.axAccentGreen)
+                        }
+                        
+                        Spacer()
+                    }
+                    .padding(.horizontal, AXSpacing.lg)
+                    
+                    // Renew button
+                    Button(action: { NSWorkspace.shared.open(AevonXCoreBridge.AppURLs.pricing) }) {
+                        HStack(spacing: AXSpacing.xs) {
+                            Image(systemName: "arrow.clockwise")
+                                .font(.system(size: 11, weight: .semibold))
+                            Text("Renew")
+                                .font(.system(size: 11, weight: .semibold))
+                        }
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, AXSpacing.xs)
+                        .background(
+                            LinearGradient(
+                                colors: [.axAccentBlue, .axAccentGreen],
+                                startPoint: .leading, endPoint: .trailing
+                            )
+                        )
+                        .cornerRadius(AXCornerRadius.sm)
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    .padding(.horizontal, AXSpacing.lg)
+                    
+                } else if authViewModel.trialExpired == true {
+                    // Trial expired
+                    HStack(spacing: AXSpacing.sm) {
+                        Image(systemName: "exclamationmark.triangle")
+                            .font(.system(size: 13))
+                            .foregroundColor(.axWarning)
+                        
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text("Trial Expired")
+                                .font(.system(size: 11, weight: .semibold))
+                                .foregroundColor(.axTextPrimary)
+                            
+                            Text("Upgrade to continue")
+                                .font(.system(size: 10, weight: .medium))
+                                .foregroundColor(.axWarning)
+                        }
+                        
+                        Spacer()
+                    }
+                    .padding(.horizontal, AXSpacing.lg)
+                    
+                    Button(action: { NSWorkspace.shared.open(AevonXCoreBridge.AppURLs.pricing) }) {
+                        HStack(spacing: AXSpacing.xs) {
+                            Image(systemName: "sparkles")
+                                .font(.system(size: 11, weight: .semibold))
+                            Text("Upgrade Now")
+                                .font(.system(size: 11, weight: .semibold))
+                        }
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, AXSpacing.xs)
+                        .background(
+                            LinearGradient(
+                                colors: [.axWarning, .axAccentBlue],
+                                startPoint: .leading, endPoint: .trailing
+                            )
+                        )
+                        .cornerRadius(AXCornerRadius.sm)
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    .padding(.horizontal, AXSpacing.lg)
+                    
+                } else if currentPlanLabel.lowercased() == "free" {
+                    // Free plan — no trial
+                    HStack(spacing: AXSpacing.sm) {
+                        Image(systemName: "person.crop.circle")
+                            .font(.system(size: 13))
+                            .foregroundColor(.axTextMuted)
+                        
+                        Text("Free Plan")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundColor(.axTextSecondary)
+                        
+                        Spacer()
+                    }
+                    .padding(.horizontal, AXSpacing.lg)
+                    
+                    Button(action: { NSWorkspace.shared.open(AevonXCoreBridge.AppURLs.pricing) }) {
+                        HStack(spacing: AXSpacing.xs) {
+                            Image(systemName: "sparkles")
+                                .font(.system(size: 11, weight: .semibold))
+                            Text("Upgrade")
+                                .font(.system(size: 11, weight: .semibold))
+                        }
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, AXSpacing.xs)
+                        .background(
+                            LinearGradient(
+                                colors: [.axAccentBlue, .axAccentGreen],
+                                startPoint: .leading, endPoint: .trailing
+                            )
+                        )
+                        .cornerRadius(AXCornerRadius.sm)
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    .padding(.horizontal, AXSpacing.lg)
+                }
+            }
+            .padding(.vertical, AXSpacing.sm)
+        }
     }
     
     // MARK: - Footer Status

@@ -78,7 +78,24 @@ struct RemoteFleetView: View {
             
             // Server Content Area
             Group {
-                if viewModel.isLoading && viewModel.decryptedServers.isEmpty {
+                if !viewModel.isAuthenticated && !viewModel.isLoading {
+                    // Not logged in — show sign-in prompt
+                    VStack(spacing: AXSpacing.xl) {
+                        Image(systemName: "person.crop.circle.badge.exclamationmark")
+                            .font(.system(size: 48))
+                            .foregroundColor(.axTextMuted)
+
+                        Text("Sign In Required")
+                            .font(AXTypography.title2)
+                            .foregroundColor(.axTextPrimary)
+
+                        Text("Sign in or create an account to manage your servers")
+                            .font(AXTypography.body)
+                            .foregroundColor(.axTextSecondary)
+                            .multilineTextAlignment(.center)
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else if viewModel.isLoading && viewModel.decryptedServers.isEmpty {
                     LoadingServersView()
                 } else if viewModel.decryptedServers.isEmpty {
                     RemoteFleetEmptyStateView(showAddServer: $showAddServer)

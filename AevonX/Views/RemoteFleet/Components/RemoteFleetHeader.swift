@@ -61,37 +61,39 @@ struct RemoteFleetHeader: View {
 
             Spacer()
 
-            // Add Server Button — shows paywall if locked
-            Button(action: {
-                if viewModel.canAddServer {
-                    showAddServer = true
-                } else {
-                    showPaywall = true
-                }
-            }) {
-                HStack(spacing: AXSpacing.sm) {
-                    Image(systemName: viewModel.canAddServer ? "plus.circle.fill" : "lock.fill")
-                        .font(.system(size: 14))
-                    Text(viewModel.canAddServer ? "Add Server" : "Upgrade")
-                }
-                .font(AXTypography.subheadline)
-                .fontWeight(.semibold)
-                .foregroundColor(.white)
-                .padding(.horizontal, AXSpacing.lg)
-                .padding(.vertical, AXSpacing.md)
-                .background(
-                    LinearGradient(
-                        colors: viewModel.canAddServer
-                            ? [Color.axAccentBlue, Color.axAccentBlue.opacity(0.8)]
-                            : [Color.orange, Color.orange.opacity(0.8)],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
+            // Add Server Button — hidden if not logged in, shows paywall if locked
+            if viewModel.isAuthenticated {
+                Button(action: {
+                    if viewModel.canAddServer {
+                        showAddServer = true
+                    } else {
+                        showPaywall = true
+                    }
+                }) {
+                    HStack(spacing: AXSpacing.sm) {
+                        Image(systemName: viewModel.canAddServer ? "plus.circle.fill" : "lock.fill")
+                            .font(.system(size: 14))
+                        Text(viewModel.canAddServer ? "Add Server" : "Upgrade")
+                    }
+                    .font(AXTypography.subheadline)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.white)
+                    .padding(.horizontal, AXSpacing.lg)
+                    .padding(.vertical, AXSpacing.md)
+                    .background(
+                        LinearGradient(
+                            colors: viewModel.canAddServer
+                                ? [Color.axAccentBlue, Color.axAccentBlue.opacity(0.8)]
+                                : [Color.orange, Color.orange.opacity(0.8)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
                     )
-                )
-                .cornerRadius(AXCornerRadius.md)
-                .shadow(color: (viewModel.canAddServer ? Color.axAccentBlue : Color.orange).opacity(0.3), radius: 8, y: 4)
+                    .cornerRadius(AXCornerRadius.md)
+                    .shadow(color: (viewModel.canAddServer ? Color.axAccentBlue : Color.orange).opacity(0.3), radius: 8, y: 4)
+                }
+                .buttonStyle(PlainButtonStyle())
             }
-            .buttonStyle(PlainButtonStyle())
         }
     }
 }

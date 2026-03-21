@@ -23,6 +23,7 @@ class ServerListViewModel: ObservableObject {
     @Published var errorMessage: String?
     @Published var showError = false
     @Published var isAuthenticated = false
+    @Published var needsLogin = false
     
     @Published var subscriptionStatus: SubscriptionStatus?
     @Published var canAddServer = false
@@ -95,8 +96,7 @@ class ServerListViewModel: ObservableObject {
         let token = await AevonXCoreBridge.AuthService.shared.getToken()
         if token == nil {
             isAuthenticated = false
-            errorMessage = "Please log in to view your servers"
-            showError = true
+            needsLogin = true
             return
         }
         isAuthenticated = true

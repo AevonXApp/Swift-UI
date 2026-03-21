@@ -102,11 +102,10 @@ struct ProfileView: View {
 struct LoggedInView: View {
     @EnvironmentObject var authViewModel: AuthViewModel
     @ObservedObject var vaultViewModel: VaultStatusViewModel
-    let subscription: SubscriptionTier   // read-only, derived from real user plan
+    let subscription: SubscriptionTier
     @Binding var selectedTab: Int
     @Binding var showVaultSetup: Bool
     
-    // User info from auth view model
     private var userName: String {
         authViewModel.currentUser?.name ?? "User"
     }
@@ -125,192 +124,158 @@ struct LoggedInView: View {
                         endPoint: .bottomTrailing
                     )
                 )
-                .frame(width: 80, height: 80)
+                .frame(width: 56, height: 56)
             
             Text(String(userName.prefix(1)))
-                .font(.system(size: 32, weight: .bold))
+                .font(.system(size: 24, weight: .bold))
                 .foregroundColor(.axTextPrimary)
         }
     }
     
+    private let tabs: [(icon: String, title: String)] = [
+        ("person", "Account"),
+        ("clock.arrow.circlepath", "Activity"),
+        ("lock.shield", "Encryption"),
+    ]
+    
     var body: some View {
-        HStack(spacing: 0) {
-            // Profile Sidebar
-            VStack(spacing: AXSpacing.xl) {
-                // Avatar & Info
-                VStack(spacing: AXSpacing.md) {
-                    ZStack {
-                        if let urlString = authViewModel.currentUser?.avatarUrl,
-                           let url = URL(string: urlString) {
-                            AsyncImage(url: url) { phase in
-                                switch phase {
-                                case .success(let image):
-                                    image
-                                        .resizable()
-                                        .scaledToFill()
-                                        .frame(width: 80, height: 80)
-                                        .clipShape(Circle())
-                                case .failure, .empty:
-                                    avatarFallback
-                                @unknown default:
-                                    avatarFallback
-                                }
+        VStack(spacing: 0) {
+            // ─── User Info Header ───────────────────────────────
+            HStack(spacing: AXSpacing.lg) {
+                ZStack {
+                    if let urlString = authViewModel.currentUser?.avatarUrl,
+                       let url = URL(string: urlString) {
+                        AsyncImage(url: url) { phase in
+                            switch phase {
+                            case .success(let image):
+                                image.resizable().scaledToFill()
+                                    .frame(width: 56, height: 56)
+                                    .clipShape(Circle())
+                            case .failure, .empty:
+                                avatarFallback
+                            @unknown default:
+                                avatarFallback
                             }
-                        } else {
-                            avatarFallback
                         }
-                    }
-                    
-                    VStack(spacing: AXSpacing.xxs) {
-                        Text(userName)
-                            .font(AXTypography.title2)
-                            .foregroundColor(.axTextPrimary)
-                        
-                        Text(userEmail)
-                            .font(AXTypography.callout)
-                            .foregroundColor(.axTextSecondary)
-                        
-                        HStack(spacing: AXSpacing.xs) {
-                            Circle()
-                                .fill(subscription.color)
-                                .frame(width: 6, height: 6)
-                            
-                            Text(subscription.rawValue)
-                                .font(AXTypography.caption)
-                                .fontWeight(.semibold)
-                                .foregroundColor(subscription.color)
-                                .padding(.horizontal, AXSpacing.sm)
-                                .padding(.vertical, AXSpacing.xxxs)
-                                .background(subscription.color.opacity(0.15))
-                                .cornerRadius(AXCornerRadius.sm)
-                        }
-                        
-                        // Upgrade button — visible only on Free plan
-                        if subscription == .free {
-                            Button(action: { NSWorkspace.shared.open(AevonXCoreBridge.AppURLs.pricing) }) {
-                                Text("Upgrade")
-                                    .font(AXTypography.caption)
-                                    .fontWeight(.semibold)
-                                    .foregroundColor(.white)
-                                    .padding(.horizontal, AXSpacing.md)
-                                    .padding(.vertical, AXSpacing.xxs)
-                                    .background(
-                                        LinearGradient(
-                                            colors: [.axAccentBlue, .axAccentGreen],
-                                            startPoint: .leading, endPoint: .trailing
-                                        )
-                                    )
-                                    .cornerRadius(AXCornerRadius.sm)
-                            }
-                            .buttonStyle(PlainButtonStyle())
-                        }
+                    } else {
+                        avatarFallback
                     }
                 }
-                .padding(.top, AXSpacing.xl)
                 
-                Divider()
-                    .background(Color.axBorder)
-                
-                // Navigation
-                VStack(spacing: AXSpacing.xs) {
-                    AXSidebarTabRow(
-                        icon: "person",
-                        title: "Account",
-                        isSelected: selectedTab == 0,
-                        action: { selectedTab = 0 }
-                    )
+                VStack(alignment: .leading, spacing: AXSpacing.xxs) {
+                    Text(userName)
+                        .font(AXTypography.title3)
+                        .foregroundColor(.axTextPrimary)
                     
-                    AXSidebarTabRow(
-                        icon: "clock.arrow.circlepath",
-                        title: "Activity",
-                        isSelected: selectedTab == 1,
-                        action: { selectedTab = 1 }
-                    )
-                    
-                    AXSidebarTabRow(
-                        icon: vaultViewModel.isVaultInitialized ? "lock.shield.fill" : "lock.shield",
-                        title: "Encryption",
-                        isSelected: selectedTab == 2,
-                        action: { 
-                            if !vaultViewModel.isVaultInitialized {
-                                showVaultSetup = true
-                            } else {
-                                selectedTab = 2
-                            }
-                        }
-                    )
-                    .overlay(
-                        HStack {
-                            Spacer()
-                            if !vaultViewModel.isVaultInitialized {
-                                Circle()
-                                    .fill(Color.axWarning)
-                                    .frame(width: 8, height: 8)
-                                    .padding(.trailing, AXSpacing.md)
-                            }
-                        }
-                    )
+                    Text(userEmail)
+                        .font(AXTypography.callout)
+                        .foregroundColor(.axTextSecondary)
                 }
                 
                 Spacer()
                 
+                // Plan badge
+                HStack(spacing: AXSpacing.xs) {
+                    Circle().fill(subscription.color).frame(width: 6, height: 6)
+                    Text(subscription.rawValue)
+                        .font(AXTypography.caption)
+                        .fontWeight(.semibold)
+                        .foregroundColor(subscription.color)
+                }
+                .padding(.horizontal, AXSpacing.sm)
+                .padding(.vertical, AXSpacing.xxxs)
+                .background(subscription.color.opacity(0.15))
+                .cornerRadius(AXCornerRadius.sm)
+                
                 // Sign Out
-                Button(action: {
-                    Task {
-                        await authViewModel.logout()
-                    }
-                }) {
-                    HStack(spacing: AXSpacing.sm) {
+                Button(action: { Task { await authViewModel.logout() } }) {
+                    HStack(spacing: AXSpacing.xs) {
                         Image(systemName: "arrow.right.square")
-                            .font(.system(size: 15, weight: .semibold))
-                        
+                            .font(.system(size: 12, weight: .semibold))
                         Text("Sign Out")
-                            .font(AXTypography.body)
+                            .font(AXTypography.caption)
                             .fontWeight(.semibold)
                     }
-                    .foregroundColor(.white)
-                    .padding(.horizontal, AXSpacing.lg)
-                    .padding(.vertical, AXSpacing.sm)
-                    .frame(maxWidth: .infinity)
-                    .background(Color.axError)
-                    .cornerRadius(AXCornerRadius.md)
+                    .foregroundColor(.axError)
+                    .padding(.horizontal, AXSpacing.md)
+                    .padding(.vertical, AXSpacing.xs)
+                    .background(Color.axError.opacity(0.1))
+                    .cornerRadius(AXCornerRadius.sm)
                     .overlay(
-                        RoundedRectangle(cornerRadius: AXCornerRadius.md)
-                            .stroke(Color.axError.opacity(0.6), lineWidth: 1)
+                        RoundedRectangle(cornerRadius: AXCornerRadius.sm)
+                            .stroke(Color.axError.opacity(0.3), lineWidth: 1)
                     )
                 }
                 .buttonStyle(PlainButtonStyle())
-                .padding(.horizontal, AXSpacing.lg)
-                .padding(.bottom, AXSpacing.lg)
             }
-            .frame(width: 240)
-            .background(Color.axBackgroundSecondary)
+            .padding(.horizontal, AXSpacing.xl)
+            .padding(.vertical, AXSpacing.lg)
+            .background(Color.axBackgroundSecondary.opacity(0.5))
             
-            Divider()
-                .background(Color.axBorder)
+            Divider().background(Color.axBorder)
             
-            // Content
+            // ─── Tab Bar ────────────────────────────────────────
+            HStack(spacing: AXSpacing.xs) {
+                ForEach(Array(tabs.enumerated()), id: \.offset) { index, tab in
+                    Button(action: {
+                        if index == 2 && !vaultViewModel.isVaultInitialized {
+                            showVaultSetup = true
+                        } else {
+                            selectedTab = index
+                        }
+                    }) {
+                        HStack(spacing: AXSpacing.sm) {
+                            Image(systemName: index == 2 && vaultViewModel.isVaultInitialized ? "lock.shield.fill" : tab.icon)
+                                .font(.system(size: 13))
+                            Text(tab.title)
+                                .font(AXTypography.callout)
+                                .fontWeight(selectedTab == index ? .semibold : .medium)
+                        }
+                        .foregroundColor(selectedTab == index ? .axAccentBlue : .axTextSecondary)
+                        .padding(.horizontal, AXSpacing.lg)
+                        .padding(.vertical, AXSpacing.sm)
+                        .background(selectedTab == index ? Color.axAccentBlue.opacity(0.1) : .clear)
+                        .cornerRadius(AXCornerRadius.md)
+                        .overlay(
+                            Group {
+                                if index == 2 && !vaultViewModel.isVaultInitialized {
+                                    Circle().fill(Color.axWarning).frame(width: 6, height: 6)
+                                        .offset(x: 4, y: -4)
+                                }
+                            },
+                            alignment: .topTrailing
+                        )
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                }
+                Spacer()
+            }
+            .padding(.horizontal, AXSpacing.xl)
+            .padding(.vertical, AXSpacing.sm)
+            
+            Divider().background(Color.axBorder)
+            
+            // ─── Content ────────────────────────────────────────
             ScrollView {
                 VStack(spacing: AXSpacing.xl) {
                     switch selectedTab {
-                    case 0:
-                        AccountTab()
-                    case 1:
-                        ActivityTab()
-                    case 2:
-                        EncryptionTab(vaultViewModel: vaultViewModel, showVaultSetup: $showVaultSetup)
-                    default:
-                        AccountTab()
+                    case 0: AccountTab()
+                    case 1: ActivityTab()
+                    case 2: EncryptionTab(vaultViewModel: vaultViewModel, showVaultSetup: $showVaultSetup)
+                    default: AccountTab()
                     }
                 }
                 .padding(AXSpacing.xl)
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
-            .id(selectedTab)          // Reset scroll to top on every tab switch
+            .id(selectedTab)
             .background(Color.axBackground)
         }
     }
 }
+
+
+
 
 // MARK: - Account Tab (Real Data)
 
@@ -577,7 +542,7 @@ struct SessionRow: View {
         HStack {
             Image(systemName: session.deviceIcon)
                 .font(.system(size: 20))
-                .foregroundColor(.axTextSecondary)
+                .foregroundColor(.axAccentBlue)
                 .frame(width: 32)
             
             VStack(alignment: .leading, spacing: AXSpacing.xxs) {
@@ -598,9 +563,28 @@ struct SessionRow: View {
                     }
                 }
                 
-                Text("Last active \(session.lastUsedLabel)")
-                    .font(AXTypography.caption)
-                    .foregroundColor(.axTextTertiary)
+                HStack(spacing: AXSpacing.sm) {
+                    if let os = session.os {
+                        Text(os)
+                            .font(AXTypography.caption)
+                            .foregroundColor(.axTextSecondary)
+                    }
+                    
+                    if !session.locationLabel.isEmpty {
+                        Text("•")
+                            .font(AXTypography.caption)
+                            .foregroundColor(.axTextMuted)
+                        Text(session.locationLabel)
+                            .font(AXTypography.caption)
+                            .foregroundColor(.axTextSecondary)
+                    }
+                }
+                
+                HStack(spacing: AXSpacing.sm) {
+                    Text("Last active \(session.lastUsedLabel)")
+                        .font(AXTypography.caption)
+                        .foregroundColor(.axTextTertiary)
+                }
             }
             
             Spacer()

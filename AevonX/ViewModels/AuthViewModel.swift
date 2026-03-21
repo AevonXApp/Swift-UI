@@ -86,6 +86,22 @@ class AuthViewModel: ObservableObject {
                 self.currentUser = decodeUser(from: userData) as User?
                 self.isAuthenticated = true
                 logBridge.info("[AuthVM] Auth check passed", module: "Auth")
+                
+                // Parse trial info from user data
+                if let remaining = userData["trial_remaining_days"] as? Int, remaining > 0 {
+                    self.trialRemainingDays = remaining
+                    self.trialExpired = false
+                    self.trialMessage = "\(remaining) days remaining in your trial."
+                } else if let trialEndsAtString = userData["trial_ends_at"] as? String,
+                          let trialEndsAt = Self.parseDate(trialEndsAtString) {
+                    let remaining = Calendar.current.dateComponents([.day], from: Date(), to: trialEndsAt).day ?? 0
+                    self.trialRemainingDays = remaining > 0 ? remaining : nil
+                    self.trialExpired = remaining <= 0
+                }
+                if userData["trial_expired"] as? Bool == true {
+                    self.trialExpired = true
+                    self.trialMessage = "Your trial has expired."
+                }
             } else {
                 // Token is invalid, clear it
                 logBridge.warn("[AuthVM] Token invalid, clearing", module: "Auth")
@@ -97,12 +113,12 @@ class AuthViewModel: ObservableObject {
         }
     }
     
-    func login(email: String, password: String) async {
+    func login(login: String, password: String) async {
         isLoading = true
         errorMessage = nil
         
         // Step 1: Validate via Go Core
-        let validationJSON = apiBridge.validateLogin(email: email, password: password)
+        let validationJSON = apiBridge.validateLogin(login: login, password: password)
         if let validationError = extractValidationError(validationJSON) {
             logBridge.warn("[AuthVM] Login validation failed: \(validationError)", module: "Auth")
             self.errorMessage = validationError
@@ -110,8 +126,10 @@ class AuthViewModel: ObservableObject {
             return
         }
         
-        // Step 2: HTTP call via Go net/http (no URLs visible here!)
-        let resultJSON = await apiBridge.loginAsync(baseURL: baseURL, email: email, password: password)
+        let deviceID = await TrialService.shared.getDeviceID() ?? ""
+        
+        // Step 2: HTTP call via Go net/http
+        let resultJSON = await apiBridge.loginAsync(baseURL: baseURL, login: login, password: password, deviceID: deviceID)
         
         guard let authData = parseGoResult(resultJSON) else {
             let errorMsg = extractGoError(resultJSON)
@@ -131,7 +149,7 @@ class AuthViewModel: ObservableObject {
             self.currentUser = decodeUser(from: userData) as User?
         }
         self.isAuthenticated = true
-        logBridge.info("[AuthVM] Login successful for \(apiBridge.maskEmail(email))", module: "Auth")
+        logBridge.info("[AuthVM] Login successful", module: "Auth")
         
         // Trial status from response
         self.trialEndsAt = authData["trial_ends_at"] as? String
@@ -169,13 +187,13 @@ class AuthViewModel: ObservableObject {
         return date
     }
     
-    func register(name: String, email: String, password: String, passwordConfirmation: String) async {
+    func register(name: String, username: String, email: String, password: String, passwordConfirmation: String) async {
         isLoading = true
         errorMessage = nil
         
         // Step 1: Validate via Go Core
         let validationJSON = apiBridge.validateRegistration(
-            name: name, email: email,
+            name: name, username: username, email: email,
             password: password, confirmation: passwordConfirmation
         )
         if let validationError = extractValidationError(validationJSON) {
@@ -188,7 +206,7 @@ class AuthViewModel: ObservableObject {
         // Step 2: HTTP call via Go net/http
         let deviceID = await TrialService.shared.getDeviceID() ?? ""
         let resultJSON = await apiBridge.registerAsync(
-            baseURL: baseURL, name: name, email: email,
+            baseURL: baseURL, name: name, username: username, email: email,
             password: password, confirmation: passwordConfirmation,
             deviceID: deviceID
         )
@@ -219,10 +237,38 @@ class AuthViewModel: ObservableObject {
         
         if authData["trial_eligible"] as? Bool == true {
             self.trialStatus = .used
-            self.trialMessage = "Your 14-day free trial has started!"
+            self.trialMessage = "Your free trial has started!"
             _ = await TrialService.shared.markTrialAsUsed()
+            
+            // Set remaining days from response or parse from date
+            if let remaining = authData["trial_remaining_days"] as? Int, remaining > 0 {
+                self.trialRemainingDays = remaining
+                self.trialExpired = false
+            } else if let trialEndsAtString = authData["trial_ends_at"] as? String,
+                      let trialEndsAt = Self.parseDate(trialEndsAtString) {
+                let remaining = Calendar.current.dateComponents([.day], from: Date(), to: trialEndsAt).day ?? 0
+                self.trialRemainingDays = remaining > 0 ? remaining : nil
+                self.trialExpired = remaining <= 0
+            }
         } else {
             self.trialMessage = "This device is not eligible for a free trial."
+        }
+        
+        isLoading = false
+    }
+    
+    func forgotPassword(email: String) async {
+        isLoading = true
+        errorMessage = nil
+        
+        let deviceID = await TrialService.shared.getDeviceID() ?? ""
+        let resultJSON = await apiBridge.forgotPasswordAsync(baseURL: baseURL, email: email, deviceID: deviceID)
+        
+        if let data = parseGoResult(resultJSON) {
+            self.trialMessage = data["message"] as? String ?? "Password reset link sent."
+        } else {
+            let errorMsg = extractGoError(resultJSON)
+            self.errorMessage = errorMsg
         }
         
         isLoading = false
