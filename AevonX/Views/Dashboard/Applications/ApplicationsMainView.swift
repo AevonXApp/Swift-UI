@@ -390,6 +390,18 @@ struct ApplicationsMainView: View {
                 app: app,
                 onBack: { withAnimation { selectedApp = nil } }
             )
+        case "pgsql":
+            PgSQLDetailView(
+                serverId: serverId ?? "",
+                app: app,
+                onBack: { withAnimation { selectedApp = nil } }
+            )
+        case "redis":
+            RedisDetailView(
+                serverId: serverId ?? "",
+                app: app,
+                onBack: { withAnimation { selectedApp = nil } }
+            )
         default:
             VStack(spacing: AXSpacing.lg) {
                 Text("\(app.name) Detail View").font(AXTypography.headline).foregroundColor(.axTextPrimary)
