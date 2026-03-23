@@ -30,9 +30,10 @@ private extension PluginPricing {
 
 struct PluginsMarketplaceView: View {
     let serverId: String?
+    var serverIP: String = ""
     var showInstalledOnly: Bool = false
     let onSettings: (Plugin) -> Void
-    
+
     @ObservedObject var viewModel: PluginsViewModel
     @State private var pluginToInstall: Plugin?
     
@@ -67,7 +68,7 @@ struct PluginsMarketplaceView: View {
         }
         .sheet(item: $pluginToInstall) { plugin in
             if let sid = serverId {
-                PluginVersionPickerView(plugin: plugin, serverId: sid, viewModel: viewModel)
+                PluginVersionPickerView(plugin: plugin, serverId: sid, serverIP: serverIP, viewModel: viewModel)
             } else {
                 VStack(spacing: AXSpacing.md) {
                     Image(systemName: "exclamationmark.triangle.fill")
@@ -167,7 +168,7 @@ struct PluginsMarketplaceView: View {
                 ForEach(viewModel.categories) { category in
                     FilterChip(
                         label: category.name,
-                        icon: category.icon ?? "folder",
+                        icon: sfSymbol(for: category.icon ?? "folder"),
                         isSelected: viewModel.selectedCategory == category.slug,
                         color: .axAccentBlue,
                         count: category.pluginsCount
@@ -256,10 +257,20 @@ struct PluginsMarketplaceView: View {
                             installSource: source,
                             isInMarketplace: viewModel.plugins.contains(where: { $0.slug == plugin.slug }),
                             onInstall: {
-                                if let versions = plugin.versions, !versions.isEmpty {
+                                // Paid plugins not yet purchased → open web checkout
+                                if plugin.pricing?.isPaid == true && !plugin.isPurchased {
+                                    let slug = plugin.slug
+                                    let config = AevonXCoreBridge.ConfigurationManager.shared.currentConfiguration
+                                    let scheme = config.useHTTPS ? "https" : "http"
+                                    if let url = URL(string: "\(scheme)://\(config.baseURL)/marketplace/\(slug)/checkout") {
+                                        #if os(macOS)
+                                        NSWorkspace.shared.open(url)
+                                        #endif
+                                    }
+                                } else if let versions = plugin.versions, !versions.isEmpty {
                                     pluginToInstall = plugin
                                 } else if let sid = serverId {
-                                    Task { await viewModel.installPlugin(plugin, on: sid) }
+                                    Task { await viewModel.installPlugin(plugin, on: sid, serverIP: serverIP) }
                                 }
                             },
                             onSettings: { onSettings(plugin) },
@@ -280,6 +291,29 @@ struct PluginsMarketplaceView: View {
 
 // MARK: - Filter Chip
 
+/// Maps Lucide icon names (from API) to SF Symbol equivalents.
+private func sfSymbol(for lucideIcon: String) -> String {
+    switch lucideIcon {
+    case "shield-check": return "shield.checkmark"
+    case "activity": return "waveform.path.ecg"
+    case "rocket": return "paperplane.fill"
+    case "database": return "cylinder"
+    case "code": return "chevron.left.forwardslash.chevron.right"
+    case "zap": return "bolt.fill"
+    case "monitor": return "desktopcomputer"
+    case "gauge": return "speedometer"
+    case "wrench": return "wrench"
+    case "server": return "server.rack"
+    case "lock": return "lock"
+    case "globe": return "globe"
+    case "terminal": return "terminal"
+    case "cpu": return "cpu"
+    case "layers": return "square.3.layers.3d"
+    case "box": return "shippingbox"
+    default: return lucideIcon  // pass through if already SF Symbol
+    }
+}
+
 private struct FilterChip: View {
     let label: String
     let icon: String
@@ -287,9 +321,9 @@ private struct FilterChip: View {
     let color: Color
     var count: Int? = nil
     let action: () -> Void
-    
+
     @State private var isHovered = false
-    
+
     var body: some View {
         Button(action: action) {
             HStack(spacing: AXSpacing.xs) {
@@ -341,44 +375,51 @@ struct PluginCard: View {
     let onInstall: () -> Void
     let onSettings: () -> Void
     let onUninstall: () -> Void
-    
+
     /// True = dev-build but NOT in marketplace (brand new plugin by owner)
     private var isDevOnly: Bool {
         installSource == .devBuild && !isInMarketplace
     }
-    
+
     /// True = marketplace plugin that was re-installed via Upload Build
     private var isUploadBuild: Bool {
         installSource == .devBuild && isInMarketplace
     }
-    
+
+    /// Paid plugin that requires purchase before install
+    private var requiresPurchase: Bool {
+        plugin.pricing?.isPaid == true && !isInstalled && !plugin.isPurchased
+    }
+
+    /// Subscribers-only plugin
+    private var requiresSubscription: Bool {
+        plugin.pricing?.isSubscribers == true && !isInstalled
+    }
+
     @State private var isHovered = false
     @State private var showUninstallConfirmation = false
-    
+
     private var accentColor: Color {
         if isDevOnly    { return .purple }
         if isUploadBuild { return .orange }
         return .axAccentBlue
     }
-    
+
     var body: some View {
         AXGlassCard(padding: 0, cornerRadius: AXCornerRadius.lg, accentColor: accentColor) {
             VStack(alignment: .leading, spacing: 0) {
                 // Top — Icon + Info
-                HStack(alignment: .top, spacing: AXSpacing.md) {
-                    // Plugin icon
+                HStack(alignment: .top, spacing: AXSpacing.lg) {
                     pluginIcon
-                    
-                    // Text content
-                    VStack(alignment: .leading, spacing: AXSpacing.xxs) {
-                        // Name row
+
+                    VStack(alignment: .leading, spacing: AXSpacing.xs) {
+                        // Name + badges
                         HStack(spacing: AXSpacing.xs) {
                             Text(plugin.name)
-                                .font(AXTypography.subheadline)
-                                .fontWeight(.bold)
+                                .font(.system(size: 14, weight: .bold))
                                 .foregroundColor(.axTextPrimary)
                                 .lineLimit(1)
-                            
+
                             if plugin.isOfficial {
                                 Image(systemName: "checkmark.seal.fill")
                                     .font(.system(size: 13))
@@ -391,97 +432,90 @@ struct PluginCard: View {
                                     )
                                     .help("Official AevonX Plugin")
                             }
-                            
-                            // Install source badges
+
                             if isDevOnly {
                                 installBadge(icon: "person.circle.fill", label: "By You", color: .purple)
                             } else if isUploadBuild {
                                 installBadge(icon: "arrow.up.circle.fill", label: "Upload Build", color: .orange)
                             }
-                            
+
                             Spacer()
-                            
+
                             pricingBadge
                         }
-                        
+
                         // Developer
                         Text(plugin.user?.name ?? "Community")
-                            .font(AXTypography.caption2)
-                            .foregroundColor(.axAccentBlue)
-                        
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundColor(.axAccentBlue.opacity(0.8))
+
                         // Description
                         Text(plugin.description)
-                            .font(AXTypography.caption2)
+                            .font(.system(size: 11))
                             .foregroundColor(.axTextTertiary)
                             .lineLimit(2)
                             .fixedSize(horizontal: false, vertical: true)
                     }
                 }
-                .padding(AXSpacing.md)
-                
-                // Divider
-                Rectangle()
-                    .fill(Color.axBorder.opacity(0.5))
-                    .frame(height: 1)
-                
+                .padding(AXSpacing.lg)
+
                 // Bottom — Stats + Actions
                 HStack(alignment: .center, spacing: AXSpacing.md) {
-                    // Stats
                     HStack(spacing: AXSpacing.lg) {
                         statItem(icon: "arrow.down.circle", value: formatCount(plugin.downloadsCount), color: .axSuccess)
-                        
+
                         if let rating = plugin.rating, !rating.isEmpty {
                             statItem(icon: "star.fill", value: rating, color: .yellow)
                         }
-                        
+
                         if let cat = plugin.category {
                             HStack(spacing: 3) {
-                                Image(systemName: cat.icon ?? "folder")
+                                Image(systemName: sfSymbol(for: cat.icon ?? "folder"))
                                     .font(.system(size: 9))
                                 Text(cat.name)
                                     .font(.system(size: 9, weight: .medium))
                             }
                             .foregroundColor(.axTextMuted)
                         }
-                        
+
                         if plugin.pricing?.isPaid == true, let limit = plugin.pricing?.serverLimit {
                             statItem(icon: "server.rack", value: "\(limit)", color: .axAccentBlue)
                         }
                     }
-                    
+
                     Spacer()
-                    
-                    // Actions
+
                     actionButtons
                 }
-                .padding(.horizontal, AXSpacing.md)
+                .padding(.horizontal, AXSpacing.lg)
                 .padding(.vertical, AXSpacing.sm + 2)
+                .background(Color.axSurface.opacity(0.3))
             }
         }
+        .onHover { isHovered = $0 }
     }
-    
+
     // MARK: - Sub-views
-    
+
     private var pluginIcon: some View {
         ZStack {
-            RoundedRectangle(cornerRadius: AXCornerRadius.md)
+            RoundedRectangle(cornerRadius: AXCornerRadius.lg)
                 .fill(
                     LinearGradient(
-                        colors: [accentColor.opacity(0.12), accentColor.opacity(0.04)],
+                        colors: [accentColor.opacity(0.15), accentColor.opacity(0.05)],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     )
                 )
-                .frame(width: 56, height: 56)
-            
+                .frame(width: 52, height: 52)
+
             if isDevOnly {
-                // No marketplace image — show AevonX app icon
                 #if os(macOS)
                 Image(nsImage: NSApp.applicationIconImage)
                     .resizable()
                     .aspectRatio(contentMode: .fit)
-                    .frame(width: 42, height: 42)
-                    .cornerRadius(10)
+                    .frame(width: 38, height: 38)
+                    .cornerRadius(AXCornerRadius.md)
                 #else
                 Image(systemName: "hammer.fill")
                     .font(.system(size: 22))
@@ -492,44 +526,45 @@ struct PluginCard: View {
                     image.resizable().aspectRatio(contentMode: .fit)
                 } placeholder: {
                     Image(systemName: "puzzlepiece.fill")
-                        .font(.system(size: 24))
+                        .font(.system(size: 22))
                         .foregroundColor(accentColor.opacity(0.4))
                 }
-                .frame(width: 56, height: 56)
-                .cornerRadius(AXCornerRadius.md)
+                .frame(width: 52, height: 52)
+                .cornerRadius(AXCornerRadius.lg)
                 .clipped()
             } else {
                 Image(systemName: "puzzlepiece.fill")
-                    .font(.system(size: 24))
+                    .font(.system(size: 22))
                     .foregroundColor(accentColor.opacity(0.4))
             }
         }
         .overlay(
-            RoundedRectangle(cornerRadius: AXCornerRadius.md)
-                .stroke(accentColor.opacity(0.15), lineWidth: 1)
+            RoundedRectangle(cornerRadius: AXCornerRadius.lg)
+                .stroke(accentColor.opacity(isHovered ? 0.3 : 0.12), lineWidth: 1)
         )
-        .shadow(color: accentColor.opacity(isHovered ? 0.2 : 0.05), radius: 8)
+        .shadow(color: accentColor.opacity(isHovered ? 0.25 : 0.05), radius: isHovered ? 12 : 6)
+        .animation(.easeOut(duration: 0.2), value: isHovered)
     }
-    
+
     private func installBadge(icon: String, label: String, color: Color) -> some View {
         HStack(spacing: 3) {
             Image(systemName: icon)
-                .font(.system(size: 9, weight: .bold))
+                .font(.system(size: 8, weight: .bold))
             Text(label)
-                .font(.system(size: 9, weight: .black))
+                .font(.system(size: 8, weight: .black))
                 .textCase(.uppercase)
         }
         .foregroundColor(color)
-        .padding(.horizontal, AXSpacing.sm)
-        .padding(.vertical, 3)
+        .padding(.horizontal, AXSpacing.xs + 2)
+        .padding(.vertical, 2)
         .background(color.opacity(0.12))
-        .cornerRadius(AXCornerRadius.sm)
+        .cornerRadius(AXCornerRadius.xs + 1)
         .overlay(
-            RoundedRectangle(cornerRadius: AXCornerRadius.sm)
-                .stroke(color.opacity(0.3), lineWidth: 1)
+            RoundedRectangle(cornerRadius: AXCornerRadius.xs + 1)
+                .stroke(color.opacity(0.25), lineWidth: 0.5)
         )
     }
-    
+
     @ViewBuilder
     private var pricingBadge: some View {
         if let pricing = plugin.pricing {
@@ -547,11 +582,11 @@ struct PluginCard: View {
             .cornerRadius(AXCornerRadius.sm)
             .overlay(
                 RoundedRectangle(cornerRadius: AXCornerRadius.sm)
-                    .stroke(pricing.badgeColor.opacity(0.2), lineWidth: 1)
+                    .stroke(pricing.badgeColor.opacity(0.2), lineWidth: 0.5)
             )
         }
     }
-    
+
     private func statItem(icon: String, value: String, color: Color) -> some View {
         HStack(spacing: 3) {
             Image(systemName: icon)
@@ -562,7 +597,7 @@ struct PluginCard: View {
                 .foregroundColor(.axTextMuted)
         }
     }
-    
+
     @ViewBuilder
     private var actionButtons: some View {
         if isInstalling {
@@ -595,7 +630,7 @@ struct PluginCard: View {
                         secondaryButton: .cancel()
                     )
                 }
-                
+
                 Button(action: onSettings) {
                     HStack(spacing: AXSpacing.xxs) {
                         Image(systemName: "slider.horizontal.3")
@@ -615,7 +650,51 @@ struct PluginCard: View {
                 }
                 .buttonStyle(PlainButtonStyle())
             }
+        } else if requiresPurchase {
+            // Paid plugin — show Buy button
+            Button(action: onInstall) {
+                HStack(spacing: AXSpacing.xxs) {
+                    Image(systemName: "cart.fill")
+                        .font(.system(size: 10))
+                    Text("Buy \(plugin.pricing?.displayLabel ?? "")")
+                        .font(.system(size: 11, weight: .bold))
+                }
+                .foregroundColor(.white)
+                .padding(.horizontal, AXSpacing.md)
+                .padding(.vertical, AXSpacing.xs + 2)
+                .background(
+                    LinearGradient(
+                        colors: [.axAccentBlue, .cyan],
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                )
+                .cornerRadius(AXCornerRadius.sm)
+                .shadow(color: Color.axAccentBlue.opacity(0.3), radius: 4, y: 2)
+            }
+            .buttonStyle(PlainButtonStyle())
+        } else if requiresSubscription {
+            // Subscribers-only — show Pro badge
+            Button(action: onInstall) {
+                HStack(spacing: AXSpacing.xxs) {
+                    Image(systemName: "crown.fill")
+                        .font(.system(size: 10))
+                    Text("Pro Only")
+                        .font(.system(size: 11, weight: .bold))
+                }
+                .foregroundColor(.axWarning)
+                .padding(.horizontal, AXSpacing.md)
+                .padding(.vertical, AXSpacing.xs + 2)
+                .background(Color.axWarning.opacity(0.12))
+                .cornerRadius(AXCornerRadius.sm)
+                .overlay(
+                    RoundedRectangle(cornerRadius: AXCornerRadius.sm)
+                        .stroke(Color.axWarning.opacity(0.3), lineWidth: 1)
+                )
+            }
+            .buttonStyle(PlainButtonStyle())
         } else {
+            // Free plugin — Install
             Button(action: onInstall) {
                 HStack(spacing: AXSpacing.xxs) {
                     Image(systemName: "arrow.down.circle.fill")
@@ -628,20 +707,20 @@ struct PluginCard: View {
                 .padding(.vertical, AXSpacing.xs + 2)
                 .background(
                     LinearGradient(
-                        colors: [accentColor, accentColor.opacity(0.8)],
+                        colors: [.axSuccess, .axSuccess.opacity(0.8)],
                         startPoint: .leading,
                         endPoint: .trailing
                     )
                 )
                 .cornerRadius(AXCornerRadius.sm)
-                .shadow(color: accentColor.opacity(0.3), radius: 4, y: 2)
+                .shadow(color: Color.axSuccess.opacity(0.3), radius: 4, y: 2)
             }
             .buttonStyle(PlainButtonStyle())
         }
     }
-    
+
     // MARK: - Helpers
-    
+
     private func formatCount(_ count: Int) -> String {
         if count >= 1_000_000 {
             return String(format: "%.1fM", Double(count) / 1_000_000)
@@ -657,6 +736,7 @@ struct PluginCard: View {
 struct PluginVersionPickerView: View {
     let plugin: Plugin
     let serverId: String
+    var serverIP: String = ""
     @ObservedObject var viewModel: PluginsViewModel
     @Environment(\.dismiss) var dismiss
     
@@ -720,9 +800,9 @@ struct PluginVersionPickerView: View {
                     if let versions = plugin.versions, !versions.isEmpty {
                         ForEach(versions) { version in
                             Button(action: {
+                                dismiss()
                                 Task {
-                                    await viewModel.installPlugin(plugin, version: version, on: serverId)
-                                    dismiss()
+                                    await viewModel.installPlugin(plugin, version: version, on: serverId, serverIP: serverIP)
                                 }
                             }) {
                                 HStack(spacing: AXSpacing.md) {

@@ -200,8 +200,6 @@ struct SecurityTab: View {
             SystemHardeningSubTab(serverId: serverId)
         case .users:
             UsersSection(serverId: serverId)
-        case .waf:
-            WAFSection(serverId: serverId)
         case .geoip:
             GeoIPSection(serverId: serverId)
         case .malware:

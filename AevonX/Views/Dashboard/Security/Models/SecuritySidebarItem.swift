@@ -50,7 +50,6 @@ enum SecuritySidebarItem: String, CaseIterable, Identifiable {
     // Defense
     case bruteForce      = "Brute Force"
     case antiIntrusion   = "Anti-Intrusion"
-    case waf             = "WAF Protection"
     case geoip           = "GeoIP & Access"
 
     // Scanning
@@ -73,7 +72,7 @@ enum SecuritySidebarItem: String, CaseIterable, Identifiable {
         case .dashboard:                                          return .overview
         case .firewallRules:                                      return .firewall
         case .ssh, .users:                                        return .access
-        case .bruteForce, .antiIntrusion, .waf, .geoip:           return .defense
+        case .bruteForce, .antiIntrusion, .geoip:                  return .defense
         case .malware, .fileIntegrity, .hardening:                return .scanning
         case .network, .auditLog, .certificates:                  return .monitoring
         case .aiAssistant:                                        return .ai
@@ -88,7 +87,6 @@ enum SecuritySidebarItem: String, CaseIterable, Identifiable {
         case .users:          return "person.2.fill"
         case .bruteForce:     return "hand.raised.fill"
         case .antiIntrusion:  return "exclamationmark.shield.fill"
-        case .waf:            return "shield.lefthalf.filled"
         case .geoip:          return "globe.americas.fill"
         case .malware:        return "ant.fill"
         case .fileIntegrity:  return "doc.badge.clock.fill"
@@ -108,7 +106,6 @@ enum SecuritySidebarItem: String, CaseIterable, Identifiable {
         case .users:          return .axAccentBlue
         case .bruteForce:     return .red
         case .antiIntrusion:  return .pink
-        case .waf:            return .purple
         case .geoip:          return .mint
         case .malware:        return .red
         case .fileIntegrity:  return .indigo
@@ -128,7 +125,6 @@ enum SecuritySidebarItem: String, CaseIterable, Identifiable {
         case .users:          return "System users, sudo & permissions"
         case .bruteForce:     return "fail2ban, ban list & whitelist"
         case .antiIntrusion:  return "Jails, attack patterns & IDS"
-        case .waf:            return "ModSecurity, OWASP rules & blocks"
         case .geoip:          return "Country blocking & IP reputation"
         case .malware:        return "ClamAV scan & quarantine"
         case .fileIntegrity:  return "File change & rootkit detection"
@@ -146,7 +142,7 @@ enum SecuritySidebarItem: String, CaseIterable, Identifiable {
             (.overview,   [.dashboard]),
             (.firewall,   [.firewallRules]),
             (.access,     [.ssh, .users]),
-            (.defense,    [.bruteForce, .antiIntrusion, .waf, .geoip]),
+            (.defense,    [.bruteForce, .antiIntrusion, .geoip]),
             (.scanning,   [.malware, .fileIntegrity, .hardening]),
             (.monitoring, [.network, .auditLog, .certificates]),
             (.ai,         [.aiAssistant]),

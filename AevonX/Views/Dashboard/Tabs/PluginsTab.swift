@@ -114,6 +114,7 @@ struct PluginsTab: View {
                         case .marketplace:
                             PluginsMarketplaceView(
                                 serverId: serverId,
+                                serverIP: server?.host ?? "",
                                 showInstalledOnly: false,
                                 onSettings: { plugin in
                                     withAnimation(.easeInOut(duration: 0.25)) {
@@ -125,6 +126,7 @@ struct PluginsTab: View {
                         case .installed:
                             PluginsMarketplaceView(
                                 serverId: serverId,
+                                serverIP: server?.host ?? "",
                                 showInstalledOnly: true,
                                 onSettings: { plugin in
                                     withAnimation(.easeInOut(duration: 0.25)) {

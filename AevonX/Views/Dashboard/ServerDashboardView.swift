@@ -81,6 +81,8 @@ struct ServerDashboardView: View {
                             FilesTab(serverId: serverId, connectionViewModel: viewModel)
                         case .security:
                             SecurityTab(server: server, serverId: serverId, connectionViewModel: viewModel)
+                        case .waf:
+                            CerberusRootView(serverId: serverId)
                         case .cron:
                             CronTab(serverId: serverId, connectionViewModel: viewModel)
                         case .ftp:

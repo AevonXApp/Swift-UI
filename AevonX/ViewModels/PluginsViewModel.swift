@@ -8,6 +8,12 @@ import AevonXCoreBridge
 
 import Combine
 
+/// Error with a user-friendly message that does not expose project internals.
+struct PluginInstallError: LocalizedError {
+    let userMessage: String
+    var errorDescription: String? { userMessage }
+}
+
 @MainActor
 class PluginsViewModel: ObservableObject {
     @Published var plugins: [Plugin] = []
@@ -37,7 +43,11 @@ class PluginsViewModel: ObservableObject {
     func loadMarketplace() async {
         isLoading = true
         errorMessage = nil
-        
+        let log = AevonXCoreBridge.CoreLogger.shared
+
+        log.info("[Marketplace] ▶ Loading plugins (search='\(searchQuery)', pricing=\(selectedPricing ?? "all"), category=\(selectedCategory ?? "all"))", module: "PluginsVM")
+        let start = CFAbsoluteTimeGetCurrent()
+
         let token = await AevonXCoreBridge.AuthService.shared.getToken() ?? ""
         let resultJSON = await apiBridge.fetchPluginsAsync(
             baseURL: baseURL, token: token,
@@ -46,7 +56,9 @@ class PluginsViewModel: ObservableObject {
             pricing: selectedPricing ?? "",
             category: selectedCategory ?? ""
         )
-        
+
+        let duration = CFAbsoluteTimeGetCurrent() - start
+
         if let data = parseGoResult(resultJSON),
            let pluginsData = data["plugins"] as? [String: Any],
            let pluginsArray = pluginsData["data"] as? [[String: Any]],
@@ -57,16 +69,25 @@ class PluginsViewModel: ObservableObject {
             fmt.locale = Locale(identifier: "en_US_POSIX")
             decoder.dateDecodingStrategy = .formatted(fmt)
             self.plugins = (try? decoder.decode([Plugin].self, from: pluginsJSON)) ?? []
+            log.info("[Marketplace] ✓ Loaded \(self.plugins.count) plugins in \(String(format: "%.2f", duration))s", module: "PluginsVM")
         } else {
-            self.errorMessage = "Failed to load plugins: \(extractGoError(resultJSON))"
+            let err = extractGoError(resultJSON)
+            log.error("[Marketplace] ✖ Failed to load plugins after \(String(format: "%.2f", duration))s: \(err)", module: "PluginsVM")
+            self.errorMessage = "Unable to load plugins. Please check your connection and try again."
         }
         self.isLoading = false
     }
     
     func loadCategories() async {
+        let log = AevonXCoreBridge.CoreLogger.shared
+        log.info("[Marketplace] ▶ Loading categories...", module: "PluginsVM")
+        let start = CFAbsoluteTimeGetCurrent()
+
         let token = await AevonXCoreBridge.AuthService.shared.getToken() ?? ""
         let resultJSON = await apiBridge.fetchPluginCategoriesAsync(baseURL: baseURL, token: token)
-        
+
+        let duration = CFAbsoluteTimeGetCurrent() - start
+
         if let data = parseGoResult(resultJSON),
            let catsArray = data["categories"] as? [[String: Any]],
            let catsJSON = try? JSONSerialization.data(withJSONObject: catsArray) {
@@ -76,88 +97,145 @@ class PluginsViewModel: ObservableObject {
             fmt.locale = Locale(identifier: "en_US_POSIX")
             decoder.dateDecodingStrategy = .formatted(fmt)
             self.categories = (try? decoder.decode([PluginCategory].self, from: catsJSON)) ?? []
+            log.info("[Marketplace] ✓ Loaded \(self.categories.count) categories in \(String(format: "%.2f", duration))s", module: "PluginsVM")
         } else {
-            AevonXCoreBridge.CoreLogger.shared.error("Failed to load categories via Go", module: "PluginsViewModel")
+            log.error("[Marketplace] ✖ Failed to load categories after \(String(format: "%.2f", duration))s", module: "PluginsVM")
         }
     }
     
-    func installPlugin(_ plugin: Plugin, version: PluginVersion? = nil, on serverId: String) async {
+    func installPlugin(_ plugin: Plugin, version: PluginVersion? = nil, on serverId: String, serverIP: String = "") async {
         guard !installationProgress.keys.contains(plugin.id) else { return }
-        
+
         let targetVersion = version ?? plugin.activeVersion
         let versionLabel = targetVersion?.versionNumber ?? "latest"
-        
+        let log = AevonXCoreBridge.CoreLogger.shared
+        let startTime = CFAbsoluteTimeGetCurrent()
+        let pricingType = plugin.pricing?.pricingType ?? "free"
+
+        log.info("[PluginInstall] ▶ Starting install: \(plugin.slug) v\(versionLabel) on server \(serverId)", module: "PluginsVM")
+        log.info("[PluginInstall] Pricing: \(pricingType), serverIP: \(serverIP)", module: "PluginsVM")
+
         installationStatus[plugin.id] = "Starting v\(versionLabel)..."
         installationProgress[plugin.id] = 0.1
-        
+
         do {
-            // 1. Get one-time download token via Go HTTP
+            // ── Step 1: Verify license (ALWAYS) ──
+            installationStatus[plugin.id] = "Verifying license..."
+            log.info("[PluginInstall] Step 1: Verifying license for \(plugin.slug)...", module: "PluginsVM")
+
+            let licenseResult = await pluginManager.verifyLicense(slug: plugin.slug, on: serverId)
+            log.info("[PluginInstall] Step 1 result: valid=\(licenseResult.valid), type=\(licenseResult.pricingType), reason=\(licenseResult.reason ?? "none"), ttl=\(licenseResult.ttl ?? 0)", module: "PluginsVM")
+
+            if !licenseResult.valid {
+                let userMsg = licenseResult.userMessage ?? "Plugin license verification failed."
+                log.error("[PluginInstall] ✖ License denied: \(userMsg)", module: "PluginsVM")
+                throw PluginInstallError(userMessage: userMsg)
+            }
+            installationProgress[plugin.id] = 0.2
+
+            // ── Step 2: Get download token ──
             installationStatus[plugin.id] = "Requesting download..."
             let token = await AevonXCoreBridge.AuthService.shared.getToken() ?? ""
+            log.info("[PluginInstall] Step 2: Requesting download token", module: "PluginsVM")
+
             let downloadJSON = await apiBridge.getPluginDownloadInfoAsync(
                 baseURL: baseURL, token: token,
                 pluginID: plugin.id,
                 versionID: targetVersion?.id ?? "",
-                serverID: serverId
+                serverID: serverId,
+                serverIP: ""
             )
-            
+
             guard let dlData = parseGoResult(downloadJSON),
                   let downloadUrl = dlData["download_url"] as? String else {
-                throw NSError(domain: "PluginsViewModel", code: 400, userInfo: [NSLocalizedDescriptionKey: extractGoError(downloadJSON)])
+                let err = extractGoError(downloadJSON)
+                log.error("[PluginInstall] ✖ Download token failed: \(err)", module: "PluginsVM")
+                throw PluginInstallError(userMessage: "Failed to prepare download. Please try again.")
             }
-            installationProgress[plugin.id] = 0.2
-            
-            // 2. Download ZIP locally (stays in Swift — needs URLSession.download)
-            installationStatus[plugin.id] = "Downloading package..."
-            guard let url = URL(string: downloadUrl) else {
-                throw NSError(domain: "PluginsViewModel", code: 400, userInfo: [NSLocalizedDescriptionKey: "Invalid download URL"])
-            }
-            let localZipURL = try await apiService.downloadPluginFile(url: url)
-            installationProgress[plugin.id] = 0.5
-            
-            // 3. Upload ZIP to server + extract + run setup via SSH
-            installationStatus[plugin.id] = "Installing on server..."
-            try await pluginManager.installPlugin(
+
+            let fileSize = dlData["file_size"] as? Int
+            log.info("[PluginInstall] Step 2 ✓ Token received, size: \(fileSize.map { "\($0) bytes" } ?? "?")", module: "PluginsVM")
+            installationProgress[plugin.id] = 0.25
+
+            // ── Step 3: Secure encrypted install pipeline ──
+            installationStatus[plugin.id] = "Preparing secure install..."
+            log.info("[PluginInstall] Step 3: Secure encrypted transit pipeline", module: "PluginsVM")
+
+            let installStart = CFAbsoluteTimeGetCurrent()
+            try await pluginManager.installSecure(
                 plugin: plugin,
                 version: targetVersion,
-                zipURL: localZipURL,
-                on: serverId
+                downloadURL: downloadUrl,
+                serverId: serverId,
+                serverIP: serverIP,
+                baseURL: baseURL,
+                token: token,
+                licenseToken: licenseResult.licenseToken,
+                tokenSignature: licenseResult.tokenSignature,
+                nonce: licenseResult.nonce,
+                onProgress: { [weak self] status, progress in
+                    Task { @MainActor in
+                        self?.installationStatus[plugin.id] = status
+                        self?.installationProgress[plugin.id] = progress
+                    }
+                }
             )
+            let installDuration = CFAbsoluteTimeGetCurrent() - installStart
+            log.info("[PluginInstall] Step 3 ✓ Secure install in \(String(format: "%.1f", installDuration))s", module: "PluginsVM")
+
+            installationProgress[plugin.id] = 0.9
+            installationStatus[plugin.id] = "Finalizing..."
+
+            // Step 4: Post-install
+            log.info("[PluginInstall] Step 4: Refreshing installed plugins list...", module: "PluginsVM")
+            await loadInstalledPlugins(on: serverId)
+
+            log.info("[PluginInstall] Step 5: Reloading hooks...", module: "PluginsVM")
+            await AevonXCoreBridge.HookLoader.shared.load(serverId: serverId, force: true)
+
             installationProgress[plugin.id] = 1.0
             installationStatus[plugin.id] = "Installed"
-            
-            // Refresh installed plugins list
-            await loadInstalledPlugins(on: serverId)
-            
-            // Reload hooks so plugin UI (dashboard, tabs, actions) appears immediately
-            await AevonXCoreBridge.HookLoader.shared.load(serverId: serverId, force: true)
-            
+
+            let totalDuration = CFAbsoluteTimeGetCurrent() - startTime
+            log.info("[PluginInstall] ✅ \(plugin.slug) installed in \(String(format: "%.1f", totalDuration))s", module: "PluginsVM")
+
             // Clear progress after short delay
             try? await Task.sleep(nanoseconds: 3_000_000_000)
             installationProgress.removeValue(forKey: plugin.id)
             installationStatus.removeValue(forKey: plugin.id)
-            
+
+        } catch let error as PluginInstallError {
+            let totalDuration = CFAbsoluteTimeGetCurrent() - startTime
+            log.error("[PluginInstall] ✖ FAILED after \(String(format: "%.1f", totalDuration))s: \(error.userMessage)", module: "PluginsVM")
+            errorMessage = error.userMessage
+            installationStatus[plugin.id] = "Failed"
+            installationProgress.removeValue(forKey: plugin.id)
         } catch {
-            AevonXCoreBridge.CoreLogger.shared.error("Plugin installation failed: \(error.localizedDescription)", module: "PluginsViewModel")
-            errorMessage = "Installation failed: \(error.localizedDescription)"
+            let totalDuration = CFAbsoluteTimeGetCurrent() - startTime
+            log.error("[PluginInstall] ✖ FAILED after \(String(format: "%.1f", totalDuration))s: \(error.localizedDescription)", module: "PluginsVM")
+            errorMessage = "Installation failed. Please try again later."
             installationStatus[plugin.id] = "Failed"
             installationProgress.removeValue(forKey: plugin.id)
         }
     }
     
     func loadInstalledPlugins(on serverId: String) async {
+        let log = AevonXCoreBridge.CoreLogger.shared
+        log.info("[InstalledPlugins] ▶ Loading installed plugins for server \(serverId)...", module: "PluginsVM")
+        let start = CFAbsoluteTimeGetCurrent()
+
         do {
-            // If we don't have marketplace data yet, load it so we can map slugs to plugins
             if plugins.isEmpty {
+                log.info("[InstalledPlugins] Marketplace empty — loading first...", module: "PluginsVM")
                 await loadMarketplace()
             }
-            
-            // Fetch installed slugs and install sources concurrently
+
             async let slugsTask   = pluginManager.listInstalledPluginSlugs(on: serverId)
             async let sourcesTask = pluginManager.listInstalledSources(on: serverId)
-            
+
             let (installedSlugs, sources) = try await (slugsTask, sourcesTask)
             self.installSources = sources
+            log.info("[InstalledPlugins] Found \(installedSlugs.count) installed slugs: \(installedSlugs.joined(separator: ", "))", module: "PluginsVM")
             
             var matchedPlugins: [Plugin] = []
             for slug in installedSlugs {
@@ -191,39 +269,50 @@ class PluginsViewModel: ObservableObject {
             }
             
             self.installedPlugins = matchedPlugins
-            AevonXCoreBridge.CoreLogger.shared.info("Loaded \(matchedPlugins.count) installed plugins for server \(serverId)", module: "PluginsViewModel")
-            
+            let duration = CFAbsoluteTimeGetCurrent() - start
+            log.info("[InstalledPlugins] ✓ Loaded \(matchedPlugins.count) installed plugins in \(String(format: "%.2f", duration))s", module: "PluginsVM")
+
         } catch {
-            AevonXCoreBridge.CoreLogger.shared.error("Failed to load installed plugins: \(error.localizedDescription)", module: "PluginsViewModel")
+            let duration = CFAbsoluteTimeGetCurrent() - start
+            log.error("[InstalledPlugins] ✖ Failed after \(String(format: "%.2f", duration))s: \(error.localizedDescription)", module: "PluginsVM")
         }
     }
     
     func uninstallPlugin(_ plugin: Plugin, on serverId: String) async {
         guard !installationProgress.keys.contains(plugin.id) else { return }
-        
+
+        let log = AevonXCoreBridge.CoreLogger.shared
+        let startTime = CFAbsoluteTimeGetCurrent()
+        log.info("[PluginUninstall] ▶ Starting uninstall: \(plugin.slug) from server \(serverId)", module: "PluginsVM")
+
         installationStatus[plugin.id] = "Uninstalling..."
         installationProgress[plugin.id] = 0.5
-        
+
         do {
             try await pluginManager.uninstallPlugin(plugin: plugin, on: serverId)
-            
+            let duration = CFAbsoluteTimeGetCurrent() - startTime
+            log.info("[PluginUninstall] ✓ Removed \(plugin.slug) in \(String(format: "%.1f", duration))s", module: "PluginsVM")
+
             installationStatus[plugin.id] = "Uninstalled"
             installationProgress[plugin.id] = 1.0
-            
-            // Refresh installed plugins list
+
+            log.info("[PluginUninstall] Refreshing installed plugins list...", module: "PluginsVM")
             await loadInstalledPlugins(on: serverId)
-            
-            // Reload hooks to remove plugin UI elements
+
+            log.info("[PluginUninstall] Reloading hooks...", module: "PluginsVM")
             await AevonXCoreBridge.HookLoader.shared.load(serverId: serverId, force: true)
-            
-            // Clear progress after short delay
+
+            let totalDuration = CFAbsoluteTimeGetCurrent() - startTime
+            log.info("[PluginUninstall] ✅ \(plugin.slug) fully uninstalled in \(String(format: "%.1f", totalDuration))s", module: "PluginsVM")
+
             try? await Task.sleep(nanoseconds: 2_000_000_000)
             installationProgress.removeValue(forKey: plugin.id)
             installationStatus.removeValue(forKey: plugin.id)
-            
+
         } catch {
-            AevonXCoreBridge.CoreLogger.shared.error("Plugin uninstallation failed: \(error.localizedDescription)", module: "PluginsViewModel")
-            errorMessage = "Uninstallation failed: \(error.localizedDescription)"
+            let duration = CFAbsoluteTimeGetCurrent() - startTime
+            log.error("[PluginUninstall] ✖ FAILED after \(String(format: "%.1f", duration))s: \(error.localizedDescription)", module: "PluginsVM")
+            errorMessage = "Uninstallation failed. Please try again later."
             installationStatus[plugin.id] = "Failed"
             installationProgress.removeValue(forKey: plugin.id)
         }

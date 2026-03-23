@@ -40,7 +40,7 @@ struct SecurityOverviewSection: View {
             items.append((icon: "terminal.fill", title: "Harden SSH — disable password login", severity: "High", color: .axWarning))
         }
         if !wafActive {
-            items.append((icon: "shield.lefthalf.filled", title: "Enable WAF (ModSecurity)", severity: "Medium", color: .axWarning))
+            items.append((icon: "shield.checkered", title: "Install AXCerberus WAF", severity: "Medium", color: .axWarning))
         }
         if (score?.failedLogins ?? 0) > 100 {
             items.append((icon: "exclamationmark.triangle.fill", title: "High number of failed logins detected", severity: "High", color: .axWarning))
