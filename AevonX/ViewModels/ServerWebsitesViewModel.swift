@@ -77,9 +77,9 @@ public class ServerWebsitesViewModel: ObservableObject {
                             name: site.domain,
                             domain: site.domain,
                             status: site.enabled ? .online : .offline,
-                            sslEnabled: site.sslEnabled ?? false,
+                            sslEnabled: site.hasSSL ?? false,
                             phpVersion: site.phpVersion,
-                            documentRoot: site.documentRoot ?? "/var/www/\(site.domain)"
+                            documentRoot: site.docRoot ?? "/var/www/\(site.domain)"
                         )
                     }
                 }
@@ -106,20 +106,21 @@ public class ServerWebsitesViewModel: ObservableObject {
 // MARK: - Simple Site Info (bridge decode helper)
 
 /// Lightweight struct to decode Go Core parsed site output.
+/// Keys must match Go WebsiteInfo json tags: doc_root, has_ssl, server_type, php_version
 private struct SimpleSiteInfo: Codable {
     let domain: String
     let enabled: Bool
     let serverType: String?
-    let documentRoot: String?
+    let docRoot: String?
     let phpVersion: String?
-    let sslEnabled: Bool?
-    
+    let hasSSL: Bool?
+
     enum CodingKeys: String, CodingKey {
         case domain
         case enabled
         case serverType = "server_type"
-        case documentRoot = "document_root"
+        case docRoot = "doc_root"
         case phpVersion = "php_version"
-        case sslEnabled = "ssl_enabled"
+        case hasSSL = "has_ssl"
     }
 }

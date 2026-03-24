@@ -99,6 +99,7 @@ public final class DatabaseManagementViewModel: ObservableObject {
     let server: Server?
     let serverId: String?
     private weak var connectionViewModel: ServerConnectionViewModel?
+    private var cancellables = Set<AnyCancellable>()
 
     // MARK: - Initialization
 
@@ -111,35 +112,39 @@ public final class DatabaseManagementViewModel: ObservableObject {
         self.serverId = serverId
         self.connectionViewModel = connectionViewModel
 
+        // Reactive: auto-load when connection state changes
+        connectionViewModel?.$isConnected
+            .removeDuplicates()
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] connected in
+                guard let self else { return }
+                self.isConnected = connected
+                if connected && self.allDatabases.isEmpty && !self.isLoading {
+                    Task { await self.loadData() }
+                }
+            }
+            .store(in: &cancellables)
+    }
+
+    // MARK: - Computed State
+
+    /// True while SSH connection is still being established
+    var isWaitingForConnection: Bool {
+        guard let cv = connectionViewModel else { return false }
+        return !cv.isConnected && (cv.isConnecting || cv.isReconnecting)
     }
 
     // MARK: - Data Loading
 
     /// Loads all database data from the server via Core layer
     public func loadData() async {
-        guard let serverId = serverId else {
-            errorMessage = "Server not configured"
-            return
-        }
+        guard let serverId = serverId else { return }
+        guard !isLoading else { return } // prevent concurrent loads
+        guard connectionViewModel?.isConnected == true else { return }
 
         isLoading = true
+        isConnected = true
         errorMessage = nil
-
-        // Check connection status
-        if let connectionViewModel = connectionViewModel {
-            isConnected = connectionViewModel.isConnected
-        } else {
-            isConnected = false
-            isLoading = false
-            errorMessage = "Not connected to server"
-            return
-        }
-
-        guard isConnected else {
-            isLoading = false
-            errorMessage = "Not connected to server. Please connect first."
-            return
-        }
 
         // Step 1: Load installation states (which database engines are installed)
         // Uses DatabaseEngineService from Core layer

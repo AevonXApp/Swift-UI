@@ -9,24 +9,29 @@
 
 ---
 
-## 1. Architecture — Views ↔ ViewModels ↔ Go Core
+## 1. Architecture — Views ↔ ViewModels ↔ Services ↔ Go Core
 
 ```
-View (SwiftUI)  →  ViewModel (@Published)  →  Go Core Bridge  →  Remote Server
-                                             ← BridgeResponse ←
+View (SwiftUI)  →  ViewModel (@Published)  →  Services (actor)  →  Go Core Bridge  →  Remote Server
+                                                                   ← BridgeResponse ←
 ```
 
 | Layer | Location | Responsibility |
 |-------|----------|----------------|
-| **Views** | `Views/Dashboard/{Feature}/` | UI-only — display data, call VM methods |
-| **ViewModels** | `Views/Dashboard/{Feature}/ViewModels/` | Hold `@Published` state, call bridge |
+| **Views** | `Views/Dashboard/{Feature}/Views/` | UI-only — display data, call VM methods |
+| **ViewModels** | `Views/Dashboard/{Feature}/ViewModels/` | Hold `@Published` state, coordinate Services |
+| **Services** | `Views/Dashboard/{Feature}/Services/` | Bridge-backed business logic actors (singleton `shared`) |
 | **Go Core Bridge** | `AevonXCoreBridge` (SPM) | Swift wrappers around Go C exports |
 
 ### Rules
 - Views do NOT execute SSH commands, parse output, or contain business logic
-- ViewModels use `SSHBridge.shared.executeAsync()` + bridge command builders
+- ViewModels call Services or Bridge methods + `SSHBridge.shared.executeAsync()`
+- Services are `actor` types — they call Bridge methods, NEVER hardcode SSH/SQL commands
 - Use `@StateObject` for ownership, `@ObservedObject` for passed-in VMs
-- All server operations go through Go Core — no direct SSH in Views
+- All server operations go through Go Core — no direct SSH in Views or Services
+- Always check connection before SSH: `guard isConnected else { return }`
+- Guard against concurrent operations: `guard !isInFlight else { return }`
+- Always check SSH results — never silently ignore failures
 
 ---
 
@@ -145,6 +150,7 @@ Views/Dashboard/{Feature}/
 │   ├── Config/                  → Config-related VMs
 │   ├── Security/                → Security VMs
 │   └── Tools/                   → Tool VMs
+├── Services/                    → Bridge-backed actor services
 └── Models/                      → UI-specific models
 ```
 
@@ -164,11 +170,48 @@ let result = await SSHBridge.shared.executeAsync(serverID: id, command: cmd)
 let parsed = bridge.parseCreateResult(output: result)
 ```
 
+### Available Bridges
+| Bridge | Purpose |
+|--------|---------|
+| `SSHBridge` | SSH connect/execute/disconnect |
+| `WebsitesBridge` | Website CRUD, SSL, config (80+ methods) |
+| `DatabasesBridge` | Database CRUD, users, tables, query (40+ methods) |
+| `ApplicationBridge` | App discovery, versions, status |
+| `DockerBridge` | Docker command generation |
+| `SecurityBridge` | Firewall, security rules |
+| `FilesBridge` | File manager operations |
+| `CronBridge` | Cron job management |
+| `PathResolverBridge` | Server path detection |
+| `GenericBridge` | Unified dispatch interface |
+
 ### Path Detection
 ```swift
 let cmd = PathResolverBridge.shared.detectCmd()
 let output = await SSHBridge.shared.executeAsync(serverID: id, command: cmd)
 serverPaths = PathResolverBridge.shared.parse(output: output)
+```
+
+### C String Memory Management
+Every `strdup()` MUST be paired with `free()`:
+```swift
+// ❌ LEAK — strdup never freed:
+extract(SomeCmd(strdup(arg1), strdup(arg2)))
+
+// ✅ CORRECT — defer free after strdup:
+let c1 = strdup(arg1)
+let c2 = strdup(arg2)
+defer { free(c1); free(c2) }
+let result = extract(SomeCmd(c1, c2))
+```
+
+### Handling Go nil Slices
+Go returns `null` for empty slices. Always provide a fallback:
+```swift
+// ❌ CRASH — Go may return null:
+let items = try decoder.decode([Item].self, from: data)
+
+// ✅ SAFE — fallback to empty array:
+let items = (try? decoder.decode([Item].self, from: data)) ?? []
 ```
 
 ---
@@ -180,9 +223,13 @@ serverPaths = PathResolverBridge.shared.parse(output: output)
 | `result.exitStatus` | `result.exitCode` or `.isSuccess` |
 | Raw `.font(.system(size: N))` | `AXTypography.xxx` tokens |
 | Hardcoded `/etc/nginx/` paths | `serverPaths.nginxSitesAvailable` |
-| SSH in Views | SSH only in ViewModels via bridge |
+| SSH in Views or Services | SSH only in ViewModels via bridge |
 | `ProgressView()` for loading | Skeleton components |
 | Copy-paste SSH logic | Shared bridge methods |
+| `strdup()` without `free()` | `defer { free(ptr) }` after every `strdup()` |
+| No connection check before SSH | `guard isConnected else { return }` |
+| Hardcoded SQL/shell commands in Services | Use Go Core bridge methods |
+| `validationPassed = true` without checking | Parse SSH result for success |
 
 ---
 
@@ -192,12 +239,15 @@ serverPaths = PathResolverBridge.shared.parse(output: output)
 - [ ] No raw design values — all AX tokens
 - [ ] No hardcoded server paths
 - [ ] Views are UI-only — no business logic
+- [ ] Services use bridge — no hardcoded SSH/SQL
 - [ ] Existing components reused
 - [ ] `detectPathsIfNeeded()` called before path use
+- [ ] All `strdup()` calls have matching `free()`
+- [ ] SSH results checked — not silently ignored
 
 ---
 
-## 8. Activity Logging API
+## 10. Activity Logging API
 
 Log client-side events to the backend via Go Core bridge (encrypted binary).
 Fire-and-forget — never blocks the caller. Silent failure if network is unavailable.
@@ -240,5 +290,4 @@ Task {
 
 ---
 
-> **Last Updated:** 2026-03-21
-
+> **Last Updated:** 2026-03-24

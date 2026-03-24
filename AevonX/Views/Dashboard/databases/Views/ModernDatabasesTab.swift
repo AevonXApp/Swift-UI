@@ -123,7 +123,7 @@ struct ModernDatabasesTab: View {
 
     @ViewBuilder
     private var contentArea: some View {
-        if viewModel.isLoading {
+        if viewModel.isLoading || viewModel.isWaitingForConnection {
             loadingView
         } else if let error = viewModel.errorMessage {
             errorView(message: error)

@@ -113,9 +113,11 @@ struct ModernWebsitesTab: View {
 
     @ViewBuilder
     private var contentArea: some View {
-        if viewModel.isLoading && viewModel.allWebsites.isEmpty {
+        if viewModel.isLoading || viewModel.isWaitingForConnection {
+            // SSH connecting or data loading → skeleton
             LoadingStateView()
-        } else if !viewModel.isConnected {
+        } else if !viewModel.isConnected && viewModel.allWebsites.isEmpty {
+            // Connection failed → disconnected
             DisconnectedStateView()
         } else if viewModel.filteredWebsites.isEmpty {
             EmptyStateView(searchText: viewModel.searchText)
@@ -186,29 +188,35 @@ struct WebsiteStatsBar: View {
 
     var body: some View {
         HStack(spacing: AXSpacing.lg) {
-            AXStatCard(
-                icon: "globe",
-                label: "Total Sites",
-                value: "\(viewModel.totalWebsiteCount)",
-                color: .axAccentBlue,
-                layout: .horizontal
-            )
+            if viewModel.isLoading || viewModel.isWaitingForConnection {
+                ForEach(0..<3, id: \.self) { _ in
+                    AXSkeletonStatCard()
+                }
+            } else {
+                AXStatCard(
+                    icon: "globe",
+                    label: "Total Sites",
+                    value: "\(viewModel.totalWebsiteCount)",
+                    color: .axAccentBlue,
+                    layout: .horizontal
+                )
 
-            AXStatCard(
-                icon: "checkmark.circle.fill",
-                label: "Online",
-                value: "\(viewModel.onlineCount)",
-                color: .axSuccess,
-                layout: .horizontal
-            )
+                AXStatCard(
+                    icon: "checkmark.circle.fill",
+                    label: "Online",
+                    value: "\(viewModel.onlineCount)",
+                    color: .axSuccess,
+                    layout: .horizontal
+                )
 
-            AXStatCard(
-                icon: "lock.shield.fill",
-                label: "SSL Secured",
-                value: "\(viewModel.sslSecuredCount)",
-                color: .axAccentGreen,
-                layout: .horizontal
-            )
+                AXStatCard(
+                    icon: "lock.shield.fill",
+                    label: "SSL Secured",
+                    value: "\(viewModel.sslSecuredCount)",
+                    color: .axAccentGreen,
+                    layout: .horizontal
+                )
+            }
 
             Spacer()
         }
@@ -256,8 +264,45 @@ struct WebsiteToolbar: View {
 // MARK: - Loading State View
 
 struct LoadingStateView: View {
+    private let columns = [
+        GridItem(.adaptive(minimum: 300, maximum: 400), spacing: AXSpacing.md)
+    ]
+
     var body: some View {
-        AXLoadingState(message: "Loading websites...")
+        ScrollView(showsIndicators: false) {
+            LazyVGrid(columns: columns, spacing: AXSpacing.md) {
+                ForEach(0..<4, id: \.self) { _ in
+                    websiteSkeletonCard
+                }
+            }
+            .padding(.bottom, AXSpacing.xl)
+        }
+        .padding(.horizontal, AXSpacing.xl)
+    }
+
+    private var websiteSkeletonCard: some View {
+        VStack(alignment: .leading, spacing: AXSpacing.md) {
+            HStack(spacing: AXSpacing.md) {
+                Circle()
+                    .fill(Color.axSurface)
+                    .frame(width: 36, height: 36)
+                    .shimmer()
+                VStack(alignment: .leading, spacing: AXSpacing.xs) {
+                    AXSkeletonRow(width: 140, height: 14)
+                    AXSkeletonRow(width: 90, height: 10)
+                }
+                Spacer()
+                AXSkeletonRow(width: 60, height: 22, cornerRadius: AXCornerRadius.lg)
+            }
+            AXSkeletonBlock(lines: 2, height: 10)
+        }
+        .padding(AXSpacing.lg)
+        .background(Color.axSurface.opacity(0.4))
+        .cornerRadius(AXCornerRadius.lg)
+        .overlay(
+            RoundedRectangle(cornerRadius: AXCornerRadius.lg)
+                .stroke(Color.axBorder.opacity(0.15), lineWidth: 1)
+        )
     }
 }
 

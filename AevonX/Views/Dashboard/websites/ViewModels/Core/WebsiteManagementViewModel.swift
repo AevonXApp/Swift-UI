@@ -97,35 +97,40 @@ public final class WebsiteManagementViewModel: ObservableObject {
         self.server = server
         self.serverId = serverId
         self.connectionViewModel = connectionViewModel
+
+        // Reactive: auto-load when connection state changes
+        connectionViewModel?.$isConnected
+            .removeDuplicates()
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] connected in
+                guard let self else { return }
+                self.isConnected = connected
+                if connected && self.allWebsites.isEmpty && !self.isLoading {
+                    Task { await self.loadData() }
+                }
+            }
+            .store(in: &cancellables)
+    }
+
+    // MARK: - Computed State
+
+    /// True while SSH connection is still being established
+    var isWaitingForConnection: Bool {
+        guard let cv = connectionViewModel else { return false }
+        return !cv.isConnected && (cv.isConnecting || cv.isReconnecting)
     }
 
     // MARK: - Data Loading
 
     /// Loads all website data from the server via Core layer
     public func loadData() async {
-        guard let serverId = serverId else {
-            errorMessage = "Server not configured"
-            return
-        }
+        guard let serverId = serverId else { return }
+        guard !isLoading else { return } // prevent concurrent loads
+        guard connectionViewModel?.isConnected == true else { return }
 
         isLoading = true
+        isConnected = true
         errorMessage = nil
-
-        // Check connection status
-        if let connectionViewModel = connectionViewModel {
-            isConnected = connectionViewModel.isConnected
-        } else {
-            isConnected = false
-            isLoading = false
-            errorMessage = "Not connected to server"
-            return
-        }
-
-        guard isConnected else {
-            isLoading = false
-            errorMessage = "Not connected to server. Please connect first."
-            return
-        }
 
         // Detect server paths if not yet done
         if !pathsDetected {
@@ -155,37 +160,46 @@ public final class WebsiteManagementViewModel: ObservableObject {
             let parsedJSON = bridge.parseNginxSites(output: sshOutput)
 
             // Step 4: Decode and convert to UI models
-            if let data = parsedJSON.data(using: .utf8),
-               let response = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-               response["success"] as? Bool == true,
-               let sitesData = response["data"],
-               JSONSerialization.isValidJSONObject(sitesData) {
-                let sitesJSON = try JSONSerialization.data(withJSONObject: sitesData)
-                struct BridgeSite: Codable {
-                    let domain: String
-                    let enabled: Bool
-                    let server_type: String?
-                    let document_root: String?
-                    let php_version: String?
-                    let ssl_enabled: Bool?
-                    let config_path: String?
+            guard let data = parsedJSON.data(using: .utf8),
+                  let response = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                  response["success"] as? Bool == true,
+                  let sitesData = response["data"],
+                  JSONSerialization.isValidJSONObject(sitesData) else {
+                CoreLogger.shared.warning("Website list parse failed — raw: \(parsedJSON.prefix(200))",
+                                          module: "WebsiteManagementViewModel")
+                allWebsites = []
+                filterWebsites()
+                return
+            }
+            let sitesJSON = try JSONSerialization.data(withJSONObject: sitesData)
+            // Keys must match Go WebsiteInfo json tags: doc_root, has_ssl, server_type, php_version
+            struct BridgeSite: Codable {
+                let domain: String
+                let enabled: Bool
+                let server_type: String?
+                let doc_root: String?
+                let php_version: String?
+                let has_ssl: Bool?
+            }
+            if let sites = try? JSONDecoder().decode([BridgeSite].self, from: sitesJSON) {
+                let uiWebsites = sites.map { site in
+                    WebsiteInfo(
+                        name: site.domain,
+                        domain: site.domain,
+                        status: site.enabled ? .online : .offline,
+                        sslEnabled: site.has_ssl ?? false,
+                        phpVersion: site.php_version,
+                        documentRoot: site.doc_root ?? "\(serverPaths.webRoot)/\(site.domain)",
+                        isReachable: site.enabled
+                    )
                 }
-                if let sites = try? JSONDecoder().decode([BridgeSite].self, from: sitesJSON) {
-                    let uiWebsites = sites.map { site in
-                        WebsiteInfo(
-                            name: site.domain,
-                            domain: site.domain,
-                            status: site.enabled ? .online : .offline,
-                            sslEnabled: site.ssl_enabled ?? false,
-                            phpVersion: site.php_version,
-                            documentRoot: site.document_root ?? "\(serverPaths.webRoot)/\(site.domain)",
-                            configPath: site.config_path,
-                            isReachable: site.enabled
-                        )
-                    }
-                    allWebsites = uiWebsites
-                    filterWebsites()
-                }
+                allWebsites = uiWebsites
+                filterWebsites()
+                CoreLogger.shared.info("Loaded \(uiWebsites.count) websites", module: "WebsiteManagementViewModel")
+            } else {
+                CoreLogger.shared.warning("Failed to decode site list JSON", module: "WebsiteManagementViewModel")
+                allWebsites = []
+                filterWebsites()
             }
 
         } catch {
@@ -228,9 +242,17 @@ public final class WebsiteManagementViewModel: ObservableObject {
         }
 
         // Build config JSON for Go Core bridge
+        // Keys must match Go SiteConfig json tags: "root" (not "document_root"), "template", "php_version"
+        let template: String
+        switch runtime {
+        case .php: template = "php"
+        case .nodejs: template = "nodejs"
+        default: template = "static"
+        }
         var config: [String: Any] = [
             "domain": domain,
-            "document_root": documentRoot ?? "\(serverPaths.webRoot)/\(domain)"
+            "root": documentRoot ?? "\(serverPaths.webRoot)/\(domain)",
+            "template": template
         ]
         if let phpVersion = phpVersion { config["php_version"] = phpVersion }
         let configJSON = String(data: try JSONSerialization.data(withJSONObject: config), encoding: .utf8) ?? "{}"
