@@ -50,52 +50,56 @@ class SiteConfigViewModel: ObservableObject {
     func validateConfig() async {
         isValidating = true
         defer { isValidating = false }
-        let result = await SSHBridge.shared.executeAsync(serverID: serverId, command: "sudo nginx -t 2>&1")
+        let result = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.validateNginxCmd())
         validationResult = result
-        validationPassed = true
+        validationPassed = result.contains("successful") || result.contains("syntax is ok")
     }
 
     func saveConfig() async {
         isSaving = true
         defer { isSaving = false }
+        await detectPathsIfNeeded()
         let path = configPath.isEmpty ? resolveConfigPath() : configPath
-        // Backup current
         let ts = ISO8601DateFormatter().string(from: Date()).replacingOccurrences(of: ":", with: "-")
-        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: "sudo cp \(path) \(path).bak.\(ts)")
-        // Write new content via heredoc
-        let escaped = configContent.replacingOccurrences(of: "'", with: "'\\''" )
-        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: "printf '%s' '\(escaped)' | sudo tee \(path) > /dev/null")
+        let backupDir = "/var/backups/aevonx"
+        // Backup + write via bridge
+        let saveCmds = bridge.saveConfigCmds(configPath: path, content: configContent, domain: domain, timestamp: ts, backupDir: backupDir)
+        for cmd in saveCmds {
+            _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
+        }
         // Validate
-        let test = await SSHBridge.shared.executeAsync(serverID: serverId, command: "sudo nginx -t 2>&1")
+        let test = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.validateNginxCmd())
         validationResult = test
-        validationPassed = true
-        if true {
+        validationPassed = test.contains("successful") || test.contains("syntax is ok")
+        if validationPassed {
             _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.restartNginxCmd())
             originalContent = configContent
             hasUnsavedChanges = false
             GlobalToastManager.shared.showSuccess("Config saved & Nginx reloaded")
             await loadBackups()
         } else {
-            // Rollback
-            _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: "sudo cp \(path).bak.\(ts) \(path)")
+            // Rollback via bridge
+            let backupFilename = "\(domain)_\(ts).conf.bak"
+            _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.restoreConfigBackupCmd(configPath: path, backupFilename: backupFilename, backupDir: backupDir))
             errorMessage = "Validation failed — config rolled back"
         }
     }
 
     func loadBackups() async {
-        let path = configPath.isEmpty ? resolveConfigPath() : configPath
-        let result = await SSHBridge.shared.executeAsync(serverID: serverId, command: "ls -1 \(path).bak.* 2>/dev/null | sort -r | head -10")
+        let backupDir = "/var/backups/aevonx"
+        let result = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.listConfigBackupsCmd(domain: domain, backupDir: backupDir))
         configBackups = result.components(separatedBy: "\n").filter { !$0.isEmpty }.map {
             let filename = ($0 as NSString).lastPathComponent
-            let date = filename.replacingOccurrences(of: "\(domain).bak.", with: "")
+            let parts = $0.components(separatedBy: " ")
+            let date = parts.count > 1 ? parts.dropFirst().joined(separator: " ") : filename
             return ConfigBackupItem(filename: filename, formattedDate: date)
         }
     }
 
     func restoreBackup(_ backup: ConfigBackupItem) async {
         let path = configPath.isEmpty ? resolveConfigPath() : configPath
-        let dir = (path as NSString).deletingLastPathComponent
-        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: "sudo cp \(dir)/\(backup.filename) \(path)")
+        let backupDir = "/var/backups/aevonx"
+        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.restoreConfigBackupCmd(configPath: path, backupFilename: backup.filename, backupDir: backupDir))
         await loadConfig()
         GlobalToastManager.shared.showSuccess("Backup restored")
     }

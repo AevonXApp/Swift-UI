@@ -20,9 +20,9 @@ public actor DatabaseRowService {
 
     public func browseRows(database: String, table: String, type: DatabaseType, serverId: String, page: Int = 1, pageSize: Int = 50, orderBy: String = "", ascending: Bool = true) async throws -> BridgeQueryResult {
         let cmd = bridge.browseRowsCmd(engine: type.rawValue, database: database, table: table, page: page, pageSize: pageSize, orderBy: orderBy, ascending: ascending)
-        print("[DatabaseRowService] browseRows cmd: \(cmd)")
+        CoreLogger.shared.debug("browseRows: \(database).\(table) page=\(page)", module: "DatabaseRowService")
         let output = await ssh.executeAsync(serverID: serverId, command: cmd)
-        print("[DatabaseRowService] browseRows raw output (\(output.count) chars): '\(output.prefix(500))'")
+        CoreLogger.shared.debug("browseRows response: \(output.count) chars", module: "DatabaseRowService")
         return parseQueryResult(output, isSelect: true)
     }
 

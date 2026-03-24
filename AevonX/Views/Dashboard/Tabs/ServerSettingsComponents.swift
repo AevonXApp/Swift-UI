@@ -249,33 +249,40 @@ class ServerSettingsViewModel: ObservableObject {
     
     func changeHostname() async {
         guard !newHostname.isEmpty, newHostname != hostname else { return }
+        let safeHostname = ShellSanitizer.sanitizeIdentifier(newHostname)
+        guard !safeHostname.isEmpty else { hostnameMsg = ("Invalid hostname", false); return }
         isChangingHostname = true; defer { isChangingHostname = false }
-        let out = await ssh("sudo hostnamectl set-hostname '\(newHostname)' 2>&1 && echo 'OK' || echo 'FAIL'")
+        let out = await ssh("sudo hostnamectl set-hostname \(ShellSanitizer.quote(safeHostname)) 2>&1 && echo 'OK' || echo 'FAIL'")
         if out.contains("OK") {
-            hostname = newHostname; isEditingHostname = false
+            hostname = safeHostname; isEditingHostname = false
             hostnameMsg = ("Hostname changed", true)
         } else { hostnameMsg = ("Failed", false) }
         DispatchQueue.main.asyncAfter(deadline: .now() + 4) { self.hostnameMsg = nil }
     }
-    
+
     func changeTimezone() async {
         guard !selectedTimezone.isEmpty, selectedTimezone != currentTimezone else { return }
+        // Timezones are alphanumeric + / + _ + - (e.g. "America/New_York")
+        let safeTZ = String(selectedTimezone.unicodeScalars.filter { scalar in
+            CharacterSet.alphanumerics.contains(scalar) || scalar == "/" || scalar == "_" || scalar == "-"
+        })
+        guard !safeTZ.isEmpty else { return }
         isChangingTimezone = true; defer { isChangingTimezone = false }
-        let _ = await ssh("sudo timedatectl set-timezone '\(selectedTimezone)' 2>&1")
-        currentTimezone = selectedTimezone; isEditingTimezone = false
+        let _ = await ssh("sudo timedatectl set-timezone \(ShellSanitizer.quote(safeTZ)) 2>&1")
+        currentTimezone = safeTZ; isEditingTimezone = false
     }
-    
+
     func changeRootPassword() async {
         guard validatePwd(rootNewPwd, rootConfirmPwd, setMsg: { self.rootMsg = $0 }) else { return }
         isChangingRoot = true; defer { isChangingRoot = false }
-        let esc = rootNewPwd.replacingOccurrences(of: "'", with: "'\\''")
-        let out = await ssh("echo 'root:\(esc)' | sudo chpasswd 2>&1 && echo 'OK' || echo 'FAIL'")
+        let safePwd = ShellSanitizer.quote(rootNewPwd)
+        let out = await ssh("echo root:\(safePwd) | sudo chpasswd 2>&1 && echo 'OK' || echo 'FAIL'")
         if out.contains("OK") {
             rootMsg = ("Root password changed", true); rootNewPwd = ""; rootConfirmPwd = ""
         } else { rootMsg = ("Failed: \(out)", false) }
         DispatchQueue.main.asyncAfter(deadline: .now() + 5) { self.rootMsg = nil }
     }
-    
+
     func changeMySQLPassword() async {
         guard validatePwd(mysqlNewPwd, mysqlConfirmPwd, setMsg: { self.mysqlMsg = $0 }) else { return }
         isChangingMySQL = true; defer { isChangingMySQL = false }
@@ -286,7 +293,7 @@ class ServerSettingsViewModel: ObservableObject {
         } else { mysqlMsg = ("Failed: \(out)", false) }
         DispatchQueue.main.asyncAfter(deadline: .now() + 5) { self.mysqlMsg = nil }
     }
-    
+
     func changePGPassword() async {
         guard validatePwd(pgNewPwd, pgConfirmPwd, setMsg: { self.pgMsg = $0 }) else { return }
         isChangingPG = true; defer { isChangingPG = false }
@@ -313,31 +320,37 @@ class ServerSettingsViewModel: ObservableObject {
     
     func addUser() async {
         guard !newUsername.isEmpty, !newUserPassword.isEmpty else { return }
+        let safeUser = ShellSanitizer.sanitizeIdentifier(newUsername)
+        guard !safeUser.isEmpty else { userMsg = ("Invalid username", false); return }
         isAddingUser = true; defer { isAddingUser = false }
-        let esc = newUserPassword.replacingOccurrences(of: "'", with: "'\\''")
-        let out = await ssh("sudo useradd -m -s /bin/bash '\(newUsername)' 2>&1 && echo '\(newUsername):\(esc)' | sudo chpasswd 2>&1 && echo 'OK' || echo 'FAIL'")
+        let safePwd = ShellSanitizer.quote(newUserPassword)
+        let out = await ssh("sudo useradd -m -s /bin/bash \(ShellSanitizer.quote(safeUser)) 2>&1 && echo \(ShellSanitizer.quote(safeUser)):\(safePwd) | sudo chpasswd 2>&1 && echo 'OK' || echo 'FAIL'")
         if out.contains("OK") {
-            userMsg = ("User '\(newUsername)' created", true); newUsername = ""; newUserPassword = ""
+            userMsg = ("User '\(safeUser)' created", true); newUsername = ""; newUserPassword = ""
             await loadUsers()
         } else { userMsg = ("Failed: \(out)", false) }
         DispatchQueue.main.asyncAfter(deadline: .now() + 5) { self.userMsg = nil }
     }
-    
+
     func deleteUser(_ name: String) async {
-        let _ = await ssh("sudo userdel -r '\(name)' 2>&1")
+        let safeName = ShellSanitizer.sanitizeIdentifier(name)
+        guard !safeName.isEmpty else { return }
+        let _ = await ssh("sudo userdel -r \(ShellSanitizer.quote(safeName)) 2>&1")
         await loadUsers()
     }
-    
 
-    
     func toggleService(_ name: String, start: Bool) async {
+        let safeName = ShellSanitizer.sanitizeServiceName(name)
+        guard !safeName.isEmpty else { return }
         let action = start ? "start" : "stop"
-        let _ = await ssh("sudo systemctl \(action) \(name).service 2>&1")
+        let _ = await ssh("sudo systemctl \(action) \(ShellSanitizer.quote(safeName)).service 2>&1")
         await loadServices()
     }
-    
+
     func restartService(_ name: String) async {
-        let _ = await ssh("sudo systemctl restart \(name).service 2>&1")
+        let safeName = ShellSanitizer.sanitizeServiceName(name)
+        guard !safeName.isEmpty else { return }
+        let _ = await ssh("sudo systemctl restart \(ShellSanitizer.quote(safeName)).service 2>&1")
         await loadServices()
     }
     

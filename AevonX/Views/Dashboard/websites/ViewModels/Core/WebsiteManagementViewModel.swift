@@ -123,10 +123,18 @@ public final class WebsiteManagementViewModel: ObservableObject {
     // MARK: - Data Loading
 
     /// Loads all website data from the server via Core layer
-    public func loadData() async {
+    public func loadData(forceRefresh: Bool = false) async {
         guard let serverId = serverId else { return }
         guard !isLoading else { return } // prevent concurrent loads
         guard connectionViewModel?.isConnected == true else { return }
+
+        // Check cache first (unless force-refreshing)
+        let cacheKey = SSHResultCache.key(serverId, "websites:list")
+        if !forceRefresh, let cached: [WebsiteInfo] = await SSHResultCache.shared.get(cacheKey) {
+            allWebsites = cached
+            filterWebsites()
+            return
+        }
 
         isLoading = true
         isConnected = true
@@ -146,8 +154,8 @@ public final class WebsiteManagementViewModel: ObservableObject {
     /// Loads all websites from the server via Go Core bridge
     private func loadAllWebsites(serverId: String) async {
         do {
-            // Step 1: Get list command from Go Core
-            let listCmd = bridge.nginxListCmd(serverID: serverId)
+            // Step 1: Get detailed list command from Go Core (returns doc_root, SSL, PHP version)
+            let listCmd = bridge.listWithDetailsCmd()
             guard !listCmd.isEmpty else {
                 errorMessage = "Failed to get website list command"
                 return
@@ -156,8 +164,8 @@ public final class WebsiteManagementViewModel: ObservableObject {
             // Step 2: Execute via SSH
             let sshOutput = await SSHBridge.shared.executeAsync(serverID: serverId, command: listCmd)
 
-            // Step 3: Parse output via Go Core
-            let parsedJSON = bridge.parseNginxSites(output: sshOutput)
+            // Step 3: Parse detailed output via Go Core
+            let parsedJSON = bridge.parseListWithDetails(output: sshOutput)
 
             // Step 4: Decode and convert to UI models
             guard let data = parsedJSON.data(using: .utf8),
@@ -195,6 +203,12 @@ public final class WebsiteManagementViewModel: ObservableObject {
                 }
                 allWebsites = uiWebsites
                 filterWebsites()
+                // Cache the result
+                await SSHResultCache.shared.set(
+                    SSHResultCache.key(serverId, "websites:list"),
+                    value: uiWebsites,
+                    ttl: SSHResultCache.websiteListTTL
+                )
                 CoreLogger.shared.info("Loaded \(uiWebsites.count) websites", module: "WebsiteManagementViewModel")
             } else {
                 CoreLogger.shared.warning("Failed to decode site list JSON", module: "WebsiteManagementViewModel")
@@ -252,7 +266,10 @@ public final class WebsiteManagementViewModel: ObservableObject {
         var config: [String: Any] = [
             "domain": domain,
             "root": documentRoot ?? "\(serverPaths.webRoot)/\(domain)",
-            "template": template
+            "template": template,
+            "sites_available": serverPaths.nginxSitesAvailable,
+            "sites_enabled": serverPaths.nginxSitesEnabled,
+            "web_ownership": serverPaths.webOwnership
         ]
         if let phpVersion = phpVersion { config["php_version"] = phpVersion }
         let configJSON = String(data: try JSONSerialization.data(withJSONObject: config), encoding: .utf8) ?? "{}"
@@ -271,8 +288,8 @@ public final class WebsiteManagementViewModel: ObservableObject {
             }
         }
 
-        // Reload data
-        await loadData()
+        // Reload data (force-refresh after mutation)
+        await loadData(forceRefresh: true)
     }
 
     /// Deletes a website via Core layer
@@ -286,8 +303,7 @@ public final class WebsiteManagementViewModel: ObservableObject {
             _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
         }
 
-        // Reload data
-        await loadData()
+        await loadData(forceRefresh: true)
     }
 
     /// Starts a website via Core layer
@@ -301,7 +317,7 @@ public final class WebsiteManagementViewModel: ObservableObject {
         // Reload nginx
         _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.restartNginxCmd())
 
-        await loadData()
+        await loadData(forceRefresh: true)
     }
 
     /// Stops a website via Core layer
@@ -315,7 +331,7 @@ public final class WebsiteManagementViewModel: ObservableObject {
         // Reload nginx
         _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.restartNginxCmd())
 
-        await loadData()
+        await loadData(forceRefresh: true)
     }
 
     /// Toggles website status (start/stop)
@@ -335,7 +351,7 @@ public final class WebsiteManagementViewModel: ObservableObject {
 
         _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.restartNginxCmd())
 
-        await loadData()
+        await loadData(forceRefresh: true)
     }
 
     /// Deploys a website via Core layer
@@ -352,7 +368,7 @@ public final class WebsiteManagementViewModel: ObservableObject {
             _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
         }
 
-        await loadData()
+        await loadData(forceRefresh: true)
     }
 
     /// Enables SSL for a website via Core layer
@@ -366,7 +382,7 @@ public final class WebsiteManagementViewModel: ObservableObject {
             _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
         }
 
-        await loadData()
+        await loadData(forceRefresh: true)
     }
 
     /// Opens deployment view for a website
@@ -453,13 +469,13 @@ public final class WebsiteManagementViewModel: ObservableObject {
         }
         
         // Test & reload nginx
-        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: "sudo nginx -t")
-        if true {
+        let testResult = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.validateNginxCmd())
+        if testResult.contains("successful") || testResult.contains("syntax is ok") {
             _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.restartNginxCmd())
         }
         
         GlobalToastManager.shared.showSuccess("Site cloned to \(newDomain)")
-        await loadData()
+        await loadData(forceRefresh: true)
     }
     
     /// Backup a website via Go Core bridge
@@ -486,12 +502,21 @@ public final class WebsiteManagementViewModel: ObservableObject {
 
     // MARK: - Path Detection
 
-    /// Detects server paths (web root, nginx dirs, etc.) via SSH
+    /// Detects server paths (web root, nginx dirs, etc.) via SSH with caching
     private func detectServerPaths(serverId: String) async {
+        let cacheKey = SSHResultCache.key(serverId, "serverPaths")
+        if let cached: ServerPaths = await SSHResultCache.shared.get(cacheKey) {
+            serverPaths = cached
+            pathsDetected = true
+            return
+        }
+
         let cmd = pathResolver.detectCmd()
         let output = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
         serverPaths = pathResolver.parse(output: output)
         pathsDetected = true
+
+        await SSHResultCache.shared.set(cacheKey, value: serverPaths, ttl: SSHResultCache.serverPathsTTL)
         CoreLogger.shared.debug("Detected server paths: \(serverPaths.serverType) webRoot=\(serverPaths.webRoot)", module: "WebsiteManagement")
     }
 }

@@ -143,7 +143,7 @@ struct DatabasesTab: View {
                     .buttonStyle(PlainButtonStyle())
                     .disabled(!viewModel.isConnected)
                     
-                    Button(action: { Task { await viewModel.loadData() } }) {
+                    Button(action: { Task { await viewModel.loadData(forceRefresh: true) } }) {
                         HStack(spacing: AXSpacing.sm) {
                             Image(systemName: "arrow.clockwise")
                                 .rotationEffect(.degrees(viewModel.isLoading ? 360 : 0))
@@ -257,7 +257,7 @@ struct DatabasesTab: View {
             
             Button("Retry") {
                 Task {
-                    await viewModel.loadData()
+                    await viewModel.loadData(forceRefresh: true)
                 }
             }
             .font(AXTypography.subheadline)
@@ -404,55 +404,73 @@ class DatabasesTabViewModel: ObservableObject {
     
     // MARK: - Data Loading
     
-    func loadData() async {
+    func loadData(forceRefresh: Bool = false) async {
         guard let serverId = serverId else {
             errorMessage = "Server not configured"
             return
         }
-        
+
         isLoading = true
         errorMessage = nil
-        
+
         if !isConnected {
-            print("[DatabasesTab] Not connected, skipping data load")
+            CoreLogger.shared.debug("Not connected, skipping data load", module: "DatabasesTab")
             isLoading = false
             return
         }
-        
+
+        // Check cache first
+        let dbCacheKey = SSHResultCache.key(serverId, "databases:list")
+        let userCacheKey = SSHResultCache.key(serverId, "databases:users")
+        if !forceRefresh,
+           let cachedDBs: [DatabaseInfo] = await SSHResultCache.shared.get(dbCacheKey),
+           let cachedUsers: [DatabaseUserInfo] = await SSHResultCache.shared.get(userCacheKey) {
+            databases = cachedDBs
+            users = cachedUsers
+            isLoading = false
+            return
+        }
+
         await loadDatabases(serverId: serverId)
         await loadUsers(serverId: serverId)
-        
+
+        // Cache results
+        await SSHResultCache.shared.set(dbCacheKey, value: databases, ttl: SSHResultCache.databaseListTTL)
+        await SSHResultCache.shared.set(userCacheKey, value: users, ttl: SSHResultCache.databaseListTTL)
+
         isLoading = false
     }
     
     private func loadDatabases(serverId: String) async {
+        let dbBridge = DatabasesBridge.shared
         var loadedDatabases: [DatabaseInfo] = []
-        
+
         // MySQL
-        let mysqlOutput = await ssh.executeAsync(serverID: serverId, command: "mysql -N -e 'SHOW DATABASES' 2>/dev/null")
+        let mysqlOutput = await ssh.executeAsync(serverID: serverId, command: dbBridge.listDatabasesCmd(engine: "mysql"))
         if !mysqlOutput.isEmpty && !mysqlOutput.lowercased().contains("error") {
             loadedDatabases.append(contentsOf: parseMySQLDatabases(mysqlOutput))
         }
-        
+
         // PostgreSQL
-        let pgOutput = await ssh.executeAsync(serverID: serverId, command: "sudo -u postgres psql -t -c 'SELECT datname FROM pg_database WHERE NOT datistemplate' 2>/dev/null")
+        let pgOutput = await ssh.executeAsync(serverID: serverId, command: dbBridge.listDatabasesCmd(engine: "postgresql"))
         if !pgOutput.isEmpty && !pgOutput.lowercased().contains("error") {
             loadedDatabases.append(contentsOf: parsePostgreSQLDatabases(pgOutput))
         }
-        
+
         // Redis
-        let redisOutput = await ssh.executeAsync(serverID: serverId, command: "redis-cli INFO 2>/dev/null")
+        let redisOutput = await ssh.executeAsync(serverID: serverId, command: dbBridge.listDatabasesCmd(engine: "redis"))
         if !redisOutput.isEmpty && !redisOutput.lowercased().contains("error") {
             if let redisDB = parseRedisInfo(redisOutput) {
                 loadedDatabases.append(redisDB)
             }
         }
-        
+
         databases = loadedDatabases
     }
-    
+
     private func loadUsers(serverId: String) async {
-        let output = await ssh.executeAsync(serverID: serverId, command: "mysql -N -e \"SELECT User, Host FROM mysql.user\" 2>/dev/null")
+        let dbBridge = DatabasesBridge.shared
+        let output = await ssh.executeAsync(serverID: serverId, command: dbBridge.listUsersCmd(engine: "mysql"))
         if !output.isEmpty && !output.lowercased().contains("error") {
             users = parseMySQLUsers(output)
         } else {

@@ -45,26 +45,23 @@ class EnhancedLogsViewModel: ObservableObject {
     func discoverLogs() async {
         isLoading = true
         defer { isLoading = false }
-        do {
-            let cmd = bridge.discoverLogFilesCmd(domain: domain)
-            let result = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
-            let parsedJSON = bridge.parseLogFiles(output: result)
 
-            if let data = parsedJSON.data(using: .utf8),
-               let resp = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-               resp["success"] as? Bool == true,
-               let files = resp["data"] as? [[String: String]] {
-                logFiles = files.compactMap { dict in
-                    guard let path = dict["path"], let type = dict["type"] else { return nil }
-                    return LogFileItem(path: path, type: type, size: dict["size"] ?? "N/A", filename: dict["filename"] ?? (path as NSString).lastPathComponent)
-                }
+        let cmd = bridge.discoverLogFilesCmd(domain: domain)
+        let result = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
+        let parsedJSON = bridge.parseLogFiles(output: result)
+
+        if let data = parsedJSON.data(using: .utf8),
+           let resp = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+           resp["success"] as? Bool == true,
+           let files = resp["data"] as? [[String: String]] {
+            logFiles = files.compactMap { dict in
+                guard let path = dict["path"], let type = dict["type"] else { return nil }
+                return LogFileItem(path: path, type: type, size: dict["size"] ?? "N/A", filename: dict["filename"] ?? (path as NSString).lastPathComponent)
             }
-            if selectedLog == nil, let first = logFiles.first {
-                selectedLog = first
-                await loadLogLines()
-            }
-        } catch {
-            logFiles = []
+        }
+        if selectedLog == nil, let first = logFiles.first {
+            selectedLog = first
+            await loadLogLines()
         }
     }
 
@@ -72,47 +69,40 @@ class EnhancedLogsViewModel: ObservableObject {
         guard let log = selectedLog else { return }
         isLoading = true
         defer { isLoading = false }
-        do {
-            let cmd = bridge.readAccessLogCmd(logPath: log.path, lines: lineCount)
-            let result = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
-            logLines = result.components(separatedBy: "\n").filter { !$0.isEmpty }
-            // Auto-run AI analysis when logs load
-            await runSmartAnalysis()
-        } catch {
-            logLines = ["Error loading log: \(error.localizedDescription)"]
-        }
+
+        let cmd = bridge.readAccessLogCmd(logPath: log.path, lines: lineCount)
+        let result = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
+        logLines = result.components(separatedBy: "\n").filter { !$0.isEmpty }
+        await runSmartAnalysis()
     }
 
     func searchInLogs() async {
         guard let log = selectedLog, !searchQuery.isEmpty else { return }
         isSearching = true
         defer { isSearching = false }
-        do {
-            let cmd = "grep -i '\(searchQuery)' \(log.path) 2>/dev/null | tail -50"
-            let result = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
-            searchResults = result.components(separatedBy: "\n").filter { !$0.isEmpty }
-        } catch {
-            searchResults = ["Search error: \(error.localizedDescription)"]
-        }
+
+        let safeQuery = ShellSanitizer.quote(searchQuery)
+        let safePath = ShellSanitizer.escapePath(log.path)
+        let cmd = "grep -i \(safeQuery) \(safePath) 2>/dev/null | tail -50"
+        let result = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
+        searchResults = result.components(separatedBy: "\n").filter { !$0.isEmpty }
     }
 
     func analyzeErrors() async {
         guard let log = logFiles.first(where: { $0.type == "error" }) ?? selectedLog else { return }
         isLoading = true
         defer { isLoading = false }
-        do {
-            let cmd = "grep -i 'error\\|warn\\|crit\\|fatal' \(log.path) 2>/dev/null | sort | uniq -c | sort -rn | head -20"
-            let result = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
-            let lines = result.components(separatedBy: "\n").filter { !$0.isEmpty }
-            errorSummaries = lines.compactMap { line in
-                let trimmed = line.trimmingCharacters(in: .whitespaces)
-                guard let spaceIdx = trimmed.firstIndex(of: " ") else { return nil }
-                let countStr = String(trimmed[trimmed.startIndex..<spaceIdx])
-                let message = String(trimmed[trimmed.index(after: spaceIdx)...])
-                return ErrorSummaryItem(count: Int(countStr) ?? 0, message: message)
-            }
-        } catch {
-            errorSummaries = []
+
+        let safePath = ShellSanitizer.escapePath(log.path)
+        let cmd = "grep -i 'error\\|warn\\|crit\\|fatal' \(safePath) 2>/dev/null | sort | uniq -c | sort -rn | head -20"
+        let result = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
+        let lines = result.components(separatedBy: "\n").filter { !$0.isEmpty }
+        errorSummaries = lines.compactMap { line in
+            let trimmed = line.trimmingCharacters(in: .whitespaces)
+            guard let spaceIdx = trimmed.firstIndex(of: " ") else { return nil }
+            let countStr = String(trimmed[trimmed.startIndex..<spaceIdx])
+            let message = String(trimmed[trimmed.index(after: spaceIdx)...])
+            return ErrorSummaryItem(count: Int(countStr) ?? 0, message: message)
         }
     }
 
@@ -280,35 +270,16 @@ class EnhancedLogsViewModel: ObservableObject {
 
     func clearLog() async {
         guard let log = selectedLog else { return }
-        do {
-            _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: "sudo truncate -s 0 \(log.path)")
-            logLines = []
-            aiAnalysis = nil
-            GlobalToastManager.shared.showSuccess("Log cleared: \(log.filename)")
-        } catch {
-            GlobalToastManager.shared.showError(error.localizedDescription)
-        }
+        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: WebsitesBridge.shared.clearSiteLogCmd(logPath: log.path))
+        logLines = []
+        aiAnalysis = nil
+        GlobalToastManager.shared.showSuccess("Log cleared: \(log.filename)")
     }
 
     func blockIP(_ ip: String) async {
         guard !ip.isEmpty else { return }
-        do {
-            let result = await SSHBridge.shared.executeAsync(serverID: serverId, command: "sudo ufw insert 1 deny from \(ip) to any comment 'Blocked via AevonX Logs' 2>&1")
-            let output = result.lowercased()
-            if output.contains("added") || output.contains("rule") {
-                GlobalToastManager.shared.showSuccess("IP \(ip) blocked successfully")
-            } else {
-                // Fallback to iptables
-                let iptResult = await SSHBridge.shared.executeAsync(serverID: serverId, command: "sudo iptables -I INPUT -s \(ip) -j DROP 2>&1")
-                if true {
-                    GlobalToastManager.shared.showSuccess("IP \(ip) blocked via iptables")
-                } else {
-                    GlobalToastManager.shared.showError("Failed to block IP: \("")")
-                }
-            }
-        } catch {
-            GlobalToastManager.shared.showError("Block IP failed: \(error.localizedDescription)")
-        }
+        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: SecurityBridge.shared.blockIPCmd(ip: ip))
+        GlobalToastManager.shared.showSuccess("IP \(ip) blocked successfully")
     }
 
     func generateReport() -> String {

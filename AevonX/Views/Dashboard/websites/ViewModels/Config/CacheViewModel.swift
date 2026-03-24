@@ -27,7 +27,7 @@ class CacheViewModel: ObservableObject {
 
     func loadCacheStatus() async {
         // Check if FastCGI cache exists
-        let fcgiResult = await SSHBridge.shared.executeAsync(serverID: serverId, command: "[ -d /var/cache/nginx/fastcgi ] && echo enabled || echo disabled")
+        let fcgiResult = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.fastCGICacheStatusCmd())
         let fcgiEnabled = fcgiResult.trimmingCharacters(in: .whitespacesAndNewlines) == "enabled"
         
         cacheStatuses = [

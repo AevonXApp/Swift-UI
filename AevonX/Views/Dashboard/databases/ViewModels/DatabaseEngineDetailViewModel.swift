@@ -341,9 +341,10 @@ public final class DatabaseEngineDetailViewModel: ObservableObject {
     /// Check boot status
     func checkBootStatus(serverId: String) async {
         guard let serviceName = databaseType.serviceNames.first else { return }
+        let safeName = ShellSanitizer.sanitizeServiceName(serviceName)
         let result = await SSHBridge.shared.executeAsync(
             serverID: serverId,
-            command: "systemctl is-enabled \(serviceName) 2>/dev/null || echo disabled"
+            command: "systemctl is-enabled \(ShellSanitizer.quote(safeName)) 2>/dev/null || echo disabled"
         )
         let trimmed = result.trimmingCharacters(in: .whitespacesAndNewlines)
         isBootEnabled = (trimmed == "enabled")

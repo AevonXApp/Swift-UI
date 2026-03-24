@@ -162,32 +162,13 @@ struct RemoteServerCard: View {
                 .buttonStyle(.plain)
                 .fixedSize()
                 
-                // Menu button — small
-                Menu {
-                    Button(action: onEdit) {
-                        Label("Edit Server", systemImage: "pencil")
-                    }
-                    Button(action: {}) {
-                        Label("Duplicate", systemImage: "doc.on.doc")
-                    }
-                    Divider()
-                    Button(role: .destructive, action: onDelete) {
-                        Label("Delete Server", systemImage: "trash")
-                    }
-                } label: {
-                    Image(systemName: "ellipsis")
-                        .font(.system(size: 12, weight: .bold))
-                        .foregroundColor(.axTextMuted)
-                        .frame(width: 28, height: 28)
-                        .background(
-                            Circle()
-                                .fill(isHovered ? Color.axSurface : Color.clear)
-                                .overlay(
-                                    Circle().stroke(Color.axBorder.opacity(isHovered ? 0.5 : 0), lineWidth: 1)
-                                )
-                        )
-                }
-                .buttonStyle(.plain)
+                // Action menu — AX design system
+                AXActionMenu.serverActions(
+                    onEdit: onEdit,
+                    onDuplicate: {},
+                    onCopyIP: { NSPasteboard.general.clearContents(); NSPasteboard.general.setString(server.host, forType: .string) },
+                    onDelete: onDelete
+                )
             }
         }
         .padding(.horizontal, AXSpacing.lg)
@@ -215,8 +196,8 @@ struct RemoteServerCard: View {
             Button(action: onEdit) {
                 Label("Edit Server", systemImage: "pencil")
             }
-            Button(action: {}) {
-                Label("Duplicate", systemImage: "doc.on.doc")
+            Button(action: { NSPasteboard.general.clearContents(); NSPasteboard.general.setString(server.host, forType: .string) }) {
+                Label("Copy IP Address", systemImage: "doc.on.clipboard")
             }
             Divider()
             Button(role: .destructive, action: onDelete) {

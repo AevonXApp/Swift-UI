@@ -222,26 +222,29 @@ public final class WebsiteDetailViewModel: ObservableObject {
 
         let configPath = website.configPath ?? "\(serverPaths.nginxSitesAvailable)/\(website.domain)"
         
-        // Update PHP version in config via sed
+        // Update PHP version in config via bridge
         if let oldPHP = website.phpVersion, oldPHP != phpVersion {
-            let phpCmd = "sudo sed -i 's/php\(oldPHP)-fpm/php\(phpVersion)-fpm/g' \(configPath)"
+            let phpCmd = bridge.switchPHPVersionCmd(configPath: configPath, oldVersion: oldPHP, newVersion: phpVersion)
             _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: phpCmd)
         }
-        
+
         // Update document root in config if changed
         if let oldRoot = website.documentRoot, oldRoot != documentRoot {
-            let rootCmd = "sudo sed -i 's|root \(oldRoot)|root \(documentRoot)|g' \(configPath)"
+            let rootCmd = bridge.updateDocRootCmd(configPath: configPath, oldRoot: oldRoot, newRoot: documentRoot)
             _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: rootCmd)
         }
-        
-        // Test and reload nginx
-        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: "sudo nginx -t")
-        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.restartNginxCmd())
 
-        // Update local state
-        website.documentRoot = documentRoot
-        website.phpVersion = phpVersion
-        toastManager.showSuccess("Configuration Updated")
+        // Test nginx config before reload
+        let testResult = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.validateNginxCmd())
+        if testResult.contains("successful") || testResult.contains("syntax is ok") {
+            _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.restartNginxCmd())
+            // Update local state
+            website.documentRoot = documentRoot
+            website.phpVersion = phpVersion
+            toastManager.showSuccess("Configuration Updated")
+        } else {
+            errorMessage = "Nginx configuration validation failed: \(testResult)"
+        }
 
         isSavingConfig = false
     }
@@ -292,8 +295,8 @@ public final class WebsiteDetailViewModel: ObservableObject {
         guard let serverId = serverId else { return }
         isLoadingStats = true
         
-        // Get active connections via SSH
-        let connResult = await SSHBridge.shared.executeAsync(serverID: serverId, command: "ss -tn state established | grep ':80\\|:443' | wc -l")
+        // Get active connections via bridge
+        let connResult = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.activeConnectionsCmd())
         let count = Int(connResult.trimmingCharacters(in: .whitespacesAndNewlines)) ?? 0
         self.activeConnections = count
         self.website.activeConnections = count
@@ -307,7 +310,7 @@ public final class WebsiteDetailViewModel: ObservableObject {
         isUpdatingPort = true
         
         let configPath = website.configPath ?? "\(serverPaths.nginxSitesAvailable)/\(website.domain)"
-        let cmd = "sudo sed -i 's/listen [0-9]*/listen \(customPort)/g' \(configPath)"
+        let cmd = bridge.updatePortCmd(configPath: configPath, port: customPort)
         _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
         _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.restartNginxCmd())
         website.port = customPort
@@ -340,13 +343,8 @@ public final class WebsiteDetailViewModel: ObservableObject {
         guard let serverId = serverId else { return }
         isLoadingPHPVersions = true
         
-        // Multi-path probe: BT Panel, standard Debian/Ubuntu, RHEL/CentOS
-        let cmd = """
-        (ls /www/server/php/ 2>/dev/null | grep -E '^[0-9]' | sed 's/^/php/' | sort -V) || \
-        (ls /etc/php/ 2>/dev/null | sort -V) || \
-        (rpm -qa 2>/dev/null | grep -oP 'php\\d+' | sort -uV) || \
-        echo ''
-        """
+        // Detect installed PHP versions via bridge
+        let cmd = bridge.installedPHPVersionsCmd()
         let result = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
         let versions = result.components(separatedBy: "\n").filter { !$0.isEmpty }
         installedPHPVersions = versions
@@ -378,7 +376,7 @@ public final class WebsiteDetailViewModel: ObservableObject {
 
         CoreLogger.shared.debug("Fetching directories for path: \(path)", module: "WebsiteDetail")
 
-        let result = await SSHBridge.shared.executeAsync(serverID: serverId, command: "ls -1 -d \(path)/*/ 2>/dev/null | xargs -I{} basename {}")
+        let result = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.listDirectoriesCmd(path: path))
         let items = result.components(separatedBy: "\n").filter { !$0.isEmpty }
         browsingItems = items
         CoreLogger.shared.debug("Found \(items.count) directories", module: "WebsiteDetail")
@@ -458,21 +456,23 @@ public final class WebsiteDetailViewModel: ObservableObject {
         
         let configPath = website.configPath ?? "\(serverPaths.nginxSitesAvailable)/\(website.domain)"
         
-        // Update PHP-FPM socket in nginx config
+        // Update PHP-FPM socket in nginx config via bridge
         if let oldVersion = website.phpVersion {
-            let cmd = "sudo sed -i 's/php\(oldVersion)-fpm/php\(newVersion)-fpm/g' \(configPath)"
+            let cmd = bridge.switchPHPVersionCmd(configPath: configPath, oldVersion: oldVersion, newVersion: newVersion)
             _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
         }
-        
-        // Test and reload nginx
-        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: "sudo nginx -t")
-        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.restartNginxCmd())
-        
-        // Update local state
-        self.phpVersion = newVersion
-        self.website.phpVersion = newVersion
-        toastManager.showSuccess("PHP version switched to \(newVersion)")
-        
+
+        // Test nginx config before reload
+        let testResult = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.validateNginxCmd())
+        if testResult.contains("successful") || testResult.contains("syntax is ok") {
+            _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.restartNginxCmd())
+            self.phpVersion = newVersion
+            self.website.phpVersion = newVersion
+            toastManager.showSuccess("PHP version switched to \(newVersion)")
+        } else {
+            errorMessage = "Nginx validation failed after PHP switch: \(testResult)"
+        }
+
         isSavingConfig = false
     }
 }

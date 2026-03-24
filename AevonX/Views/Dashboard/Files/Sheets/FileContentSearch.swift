@@ -200,15 +200,14 @@ struct FileContentSearchSheet: View {
         
         Task {
             do {
-                let safePath = ShellSanitizer.escapePath(viewModel.currentPath)
-                let safeQuery = ShellSanitizer.escapeForDoubleQuotes(trimmed)
-                
-                var flags = "-rn"
-                if !caseSensitive { flags += "i" }
-                if !searchRegex { flags += "F" }
-                
-                let cmd = "grep \(flags) --max-count=\(maxResults) -- \"\(safeQuery)\" \(safePath) 2>/dev/null | head -\(maxResults)"
-                
+                let cmd = FilesBridge.shared.searchContentCmd(
+                    query: trimmed,
+                    path: viewModel.currentPath,
+                    caseSensitive: caseSensitive,
+                    useRegex: searchRegex,
+                    maxResults: maxResults
+                )
+
                 let json = await SSHBridge.shared.executeAsyncJSON(serverID: viewModel.serverId, command: cmd)
                 let result = SSHResult.parse(json)
                 

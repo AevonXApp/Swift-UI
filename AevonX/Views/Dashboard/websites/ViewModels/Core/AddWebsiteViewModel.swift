@@ -18,12 +18,8 @@ public final class AddWebsiteViewModel: ObservableObject {
 
     // MARK: - Published Properties
 
-    @Published public var domain = "" {
-        didSet { onDomainChanged() }
-    }
-    @Published public var runtime: RuntimeType = .php {
-        didSet { onRuntimeChanged() }
-    }
+    @Published public var domain = ""
+    @Published public var runtime: RuntimeType = .php
     @Published public var selectedVersion = ""
     @Published public var enableSSL = true
     @Published public var documentRoot = ""
@@ -53,6 +49,7 @@ public final class AddWebsiteViewModel: ObservableObject {
 
     private let serverId: String?
     private let bridge = WebsitesBridge.shared
+    private var serverPaths: ServerPaths = .defaults
 
     // MARK: - Initialization
 
@@ -63,6 +60,8 @@ public final class AddWebsiteViewModel: ObservableObject {
     // MARK: - Server Capabilities
 
     /// Fetches installed runtimes and versions from the server.
+    /// Runs runtime detection and path resolution in parallel, then shows form immediately.
+    /// Version loading happens after form is visible (deferred).
     public func loadServerCapabilities() async {
         guard let serverId = serverId else {
             isLoadingCapabilities = false
@@ -71,18 +70,23 @@ public final class AddWebsiteViewModel: ObservableObject {
 
         isLoadingCapabilities = true
 
-        // Detect installed runtimes via SSH
+        // Run runtime detection and path resolution in parallel
+        async let runtimeResult = SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.detectRuntimesCmd())
+        async let pathResult: String = {
+            let cmd = PathResolverBridge.shared.detectCmd()
+            return await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
+        }()
+
+        let (runtimeOutput, pathOutput) = await (runtimeResult, pathResult)
+
+        // Parse runtimes
         var runtimes: [RuntimeType] = [.static]
-        
-        let phpCheck = await SSHBridge.shared.executeAsync(serverID: serverId, command: "which php 2>/dev/null && echo YES || echo NO")
-        if phpCheck.contains("YES") { runtimes.append(.php) }
-        
-        let nodeCheck = await SSHBridge.shared.executeAsync(serverID: serverId, command: "which node 2>/dev/null && echo YES || echo NO")
-        if nodeCheck.contains("YES") { runtimes.append(.nodejs) }
-        
-        let pyCheck = await SSHBridge.shared.executeAsync(serverID: serverId, command: "which python3 2>/dev/null && echo YES || echo NO")
-        if pyCheck.contains("YES") { runtimes.append(.python) }
-        
+        for line in runtimeOutput.components(separatedBy: .newlines) {
+            let t = line.trimmingCharacters(in: .whitespacesAndNewlines)
+            if t == "php:YES" { runtimes.append(.php) }
+            else if t == "node:YES" { runtimes.append(.nodejs) }
+            else if t == "python:YES" { runtimes.append(.python) }
+        }
         availableRuntimes = runtimes
 
         // Set default runtime
@@ -92,16 +96,16 @@ public final class AddWebsiteViewModel: ObservableObject {
             runtime = first
         }
 
-        // Detect web root using PathResolver
-        let pathCmd = PathResolverBridge.shared.detectCmd()
-        let pathOutput = await SSHBridge.shared.executeAsync(serverID: serverId, command: pathCmd)
+        // Parse paths
         let detectedPaths = PathResolverBridge.shared.parse(output: pathOutput)
+        serverPaths = detectedPaths
         detectedWebRoot = detectedPaths.webRoot
 
-        // Load versions for the selected runtime
-        await loadVersionsForRuntime(runtime)
-
+        // Show form immediately — version loading happens in background
         isLoadingCapabilities = false
+
+        // Load versions (deferred, doesn't block form display)
+        await loadVersionsForRuntime(runtime)
     }
 
     /// Loads version list for the given runtime type.
@@ -121,12 +125,12 @@ public final class AddWebsiteViewModel: ObservableObject {
             }
             selectedVersion = phpVersions.first ?? ""
         case .nodejs:
-            let result = await SSHBridge.shared.executeAsync(serverID: serverId, command: "node --version 2>/dev/null | tr -d 'v'")
+            let result = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.getNodeVersionCmd())
             let ver = result.trimmingCharacters(in: .whitespacesAndNewlines)
             nodeVersions = ver.isEmpty ? [] : [ver]
             selectedVersion = nodeVersions.first ?? ""
         case .python:
-            let result = await SSHBridge.shared.executeAsync(serverID: serverId, command: "python3 --version 2>/dev/null | awk '{print $2}'")
+            let result = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.getPythonVersionCmd())
             let ver = result.trimmingCharacters(in: .whitespacesAndNewlines)
             pythonVersions = ver.isEmpty ? [] : [ver]
             selectedVersion = pythonVersions.first ?? ""
@@ -155,27 +159,26 @@ public final class AddWebsiteViewModel: ObservableObject {
 
     // MARK: - Domain & Path Handling
 
-    private func onDomainChanged() {
-        // Sanitize domain: only allow valid characters
+    /// Called from View's .onChange(of: domain). Sanitizes and auto-fills doc root.
+    public func onDomainInput() {
         let sanitized = domain.filter { char in
             char.isASCII && (char.isLetter || char.isNumber || char == "." || char == "-")
         }.lowercased()
 
         if sanitized != domain {
             domain = sanitized
-            return // will re-trigger didSet
+            return // onChange will fire again with clean value
         }
 
-        // Clear validation error when user starts typing
         validationErrors.removeValue(forKey: "domain")
 
-        // Auto-fill document root if user hasn't manually edited it
-        if !userEditedDocumentRoot && !domain.isEmpty {
-            documentRoot = "\(detectedWebRoot)/\(domain)"
+        if !userEditedDocumentRoot {
+            documentRoot = domain.isEmpty ? "" : "\(detectedWebRoot)/\(domain)"
         }
     }
 
-    private func onRuntimeChanged() {
+    /// Called from View's .onChange(of: runtime)
+    public func onRuntimeInput() {
         Task {
             await loadVersionsForRuntime(runtime)
         }
@@ -188,7 +191,7 @@ public final class AddWebsiteViewModel: ObservableObject {
         isLoadingDirectories = true
         browserCurrentPath = path
 
-        let result = await SSHBridge.shared.executeAsync(serverID: serverId, command: "ls -1 -d \(path)/*/ 2>/dev/null | xargs -I{} basename {}")
+        let result = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.listDirectoriesCmd(path: path))
         browserDirectories = result.components(separatedBy: "\n").filter { !$0.isEmpty }
 
         isLoadingDirectories = false
@@ -202,7 +205,7 @@ public final class AddWebsiteViewModel: ObservableObject {
 
         let fullPath = "\(browserCurrentPath)/\(sanitizedName)"
 
-        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: "sudo mkdir -p \(fullPath)")
+        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.createDirectoryCmd(path: fullPath))
         newFolderName = ""
         await loadDirectories(at: browserCurrentPath)
     }
@@ -270,7 +273,10 @@ public final class AddWebsiteViewModel: ObservableObject {
             var config: [String: Any] = [
                 "domain": domain,
                 "root": documentRoot.isEmpty ? "\(detectedWebRoot)/\(domain)" : documentRoot,
-                "template": runtime == .php ? "php" : (runtime == .nodejs ? "nodejs" : "static")
+                "template": runtime == .php ? "php" : (runtime == .nodejs ? "nodejs" : "static"),
+                "sites_available": serverPaths.nginxSitesAvailable,
+                "sites_enabled": serverPaths.nginxSitesEnabled,
+                "web_ownership": serverPaths.webOwnership
             ]
             if let phpVersion = phpVersion { config["php_version"] = phpVersion }
             let configJSON = String(data: try JSONSerialization.data(withJSONObject: config), encoding: .utf8) ?? "{}"

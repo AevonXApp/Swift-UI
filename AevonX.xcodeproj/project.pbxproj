@@ -78,7 +78,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = F865D4152F2C555400A29BB5 /* Build configuration list for PBXNativeTarget "AevonX" */;
 			buildPhases = (
-				F86F50C02F5F0D3500DA237A /* ShellScript */,
+				F86F50C02F5F0D3500DA237A /* Run Script */,
 				F865D4062F2C555300A29BB5 /* Sources */,
 				F865D4072F2C555300A29BB5 /* Frameworks */,
 				F865D4082F2C555300A29BB5 /* Resources */,
@@ -147,7 +147,7 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
-		F86F50C02F5F0D3500DA237A /* ShellScript */ = {
+		F86F50C02F5F0D3500DA237A /* Run Script */ = {
 			isa = PBXShellScriptBuildPhase;
 			alwaysOutOfDate = 1;
 			buildActionMask = 12;
@@ -157,6 +157,7 @@
 			);
 			inputPaths = (
 			);
+			name = "Run Script";
 			outputFileListPaths = (
 			);
 			outputPaths = (

@@ -111,10 +111,12 @@ struct ServerDashboardView: View {
             viewModel.selectedPluginTab = nil
         }
         .onAppear {
-            // Auto-connect when dashboard appears if not already connected
+            // Auto-connect ONCE when dashboard first appears.
+            // NavigationSplitView can re-fire onAppear when alerts dismiss or views re-render,
+            // so we guard with hasAttemptedConnect to prevent infinite retry loops on timeout.
             AevonXCoreBridge.CoreLogger.shared.debug("onAppear - isConnected: \(viewModel.isConnected), isConnecting: \(viewModel.isConnecting)", module: "ServerDashboardView")
             Task {
-                if !viewModel.isConnected && !viewModel.isConnecting {
+                if !viewModel.isConnected && !viewModel.isConnecting && !viewModel.hasAttemptedConnect {
                     AevonXCoreBridge.CoreLogger.shared.debug("Auto-connecting...", module: "ServerDashboardView")
                     await viewModel.connect()
                 }

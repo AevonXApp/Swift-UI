@@ -137,26 +137,36 @@ public final class DatabaseManagementViewModel: ObservableObject {
     // MARK: - Data Loading
 
     /// Loads all database data from the server via Core layer
-    public func loadData() async {
+    public func loadData(forceRefresh: Bool = false) async {
         guard let serverId = serverId else { return }
         guard !isLoading else { return } // prevent concurrent loads
         guard connectionViewModel?.isConnected == true else { return }
+
+        // Check cache first
+        let cacheKey = SSHResultCache.key(serverId, "databases:all")
+        if !forceRefresh,
+           let cached: [DatabaseInfo] = await SSHResultCache.shared.get(cacheKey),
+           !cached.isEmpty {
+            allDatabases = cached
+            filterDatabases()
+            return
+        }
 
         isLoading = true
         isConnected = true
         errorMessage = nil
 
         // Step 1: Load installation states (which database engines are installed)
-        // Uses DatabaseEngineService from Core layer
         await loadInstallationStates(serverId: serverId)
 
         // Step 2: Load all databases from all installed engines
-        // Uses DatabaseManagementService from Core layer
         await loadAllDatabases(serverId: serverId)
 
         // Step 3: Load database users
-        // Uses DatabaseUserService from Core layer
         await loadDatabaseUsers(serverId: serverId)
+
+        // Cache the results
+        await SSHResultCache.shared.set(cacheKey, value: allDatabases, ttl: SSHResultCache.databaseListTTL)
 
         isLoading = false
     }
@@ -203,7 +213,7 @@ public final class DatabaseManagementViewModel: ObservableObject {
         }
 
         installationStates = uiStates
-        print("[DatabaseManagementVM] Detected engines: \(uiStates.filter { $0.isInstalled }.map { "\($0.type.displayName) v\($0.installedVersion ?? "?")" })")
+        CoreLogger.shared.info("Detected engines: \(uiStates.filter { $0.isInstalled }.map { "\($0.type.displayName) v\($0.installedVersion ?? "?")" })", module: "DatabaseManagement")
     }
 
     /// Loads all databases from the server via Core layer
@@ -212,13 +222,13 @@ public final class DatabaseManagementViewModel: ObservableObject {
 
         // Get databases for each installed engine type
         for state in installationStates where state.isInstalled {
-            print("[DatabaseManagementVM] Listing databases for \(state.type.displayName) (rawValue=\(state.type.rawValue))")
+            CoreLogger.shared.debug("Listing databases for \(state.type.displayName)", module: "DatabaseManagement")
             do {
                 let coreDatabases = try await DatabaseManagementService.shared.listDatabases(
                     type: state.type.rawValue,
                     serverId: serverId
                 )
-                print("[DatabaseManagementVM] \(state.type.displayName): found \(coreDatabases.count) databases: \(coreDatabases.map { $0.name })")
+                CoreLogger.shared.debug("\(state.type.displayName): found \(coreDatabases.count) databases", module: "DatabaseManagement")
 
                 // Convert Core models to UI models
                 let uiDatabases = coreDatabases.map { coreDB in
@@ -238,11 +248,11 @@ public final class DatabaseManagementViewModel: ObservableObject {
                 allDBs.append(contentsOf: uiDatabases)
 
             } catch {
-                print("[DatabaseManagementVM] ERROR listing \(state.type.displayName): \(error.localizedDescription)")
+                CoreLogger.shared.error("Failed to list \(state.type.displayName): \(error.localizedDescription)", module: "DatabaseManagement")
             }
         }
 
-        print("[DatabaseManagementVM] Total databases loaded: \(allDBs.count)")
+        CoreLogger.shared.info("Total databases loaded: \(allDBs.count)", module: "DatabaseManagement")
         allDatabases = allDBs
         filterDatabases()
     }
@@ -268,7 +278,7 @@ public final class DatabaseManagementViewModel: ObservableObject {
 
             databaseUsers = uiUsers
         } catch {
-            print("[DatabaseManagementVM] Could not load database users: \(error.localizedDescription)")
+            CoreLogger.shared.warning("Could not load database users: \(error.localizedDescription)", module: "DatabaseManagement")
         }
     }
 

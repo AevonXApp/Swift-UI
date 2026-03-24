@@ -260,6 +260,25 @@ extension AXActionMenu {
         return AXActionMenu(sections: sections, triggerIcon: "ellipsis", triggerSize: 32)
     }
     
+    /// Server card action menu
+    static func serverActions(
+        onEdit: @escaping () -> Void,
+        onDuplicate: @escaping () -> Void,
+        onCopyIP: @escaping () -> Void,
+        onDelete: @escaping () -> Void
+    ) -> AXActionMenu {
+        AXActionMenu(sections: [
+            AXMenuSection("Management", items: [
+                AXMenuItem("Edit Server", icon: "pencil", color: .axAccentBlue, action: onEdit),
+                AXMenuItem("Duplicate", icon: "doc.on.doc", color: .axAccentPurple, action: onDuplicate),
+                AXMenuItem("Copy IP Address", icon: "doc.on.clipboard", color: .axSuccess, action: onCopyIP),
+            ]),
+            AXMenuSection(items: [
+                AXMenuItem("Delete Server", icon: "trash", isDestructive: true, action: onDelete),
+            ]),
+        ], triggerIcon: "ellipsis", triggerSize: 28)
+    }
+
     /// Database table action menu
     static func databaseTableActions(
         onRename: @escaping () -> Void,

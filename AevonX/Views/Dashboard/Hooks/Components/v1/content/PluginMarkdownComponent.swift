@@ -177,7 +177,7 @@ struct PluginMarkdownComponent: View {
 
         if let source = plugin.contentSource, !source.isEmpty {
             _ = HookPluginCommand(type: .coreCmd, action: "cat", payload: ["path": AnyCodable(source)], timeout: 10)
-            let raw = await SSHBridge.shared.executeAsync(serverID: serverId, command: "cat '\(source)' 2>/dev/null")
+            let raw = await SSHBridge.shared.executeAsync(serverID: serverId, command: FilesBridge.shared.readFileCmd(path: source))
             let result = SSHResult.parse(raw)
             if result.isSuccess {
                 markdownContent = result.stdout

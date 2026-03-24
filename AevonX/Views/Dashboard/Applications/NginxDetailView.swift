@@ -68,11 +68,11 @@ struct NginxDetailView: View {
     /// Load only status (fast — single SSH command)
     private func loadStatus() async {
         let start = CFAbsoluteTimeGetCurrent()
-        print("[PERF-SWIFT] NginxDetailView: loadStatus START")
+        CoreLogger.shared.debug("[Perf] NginxDetailView: loadStatus START")
 
         let json = await bridge.getStatus(serverID: serverId, appID: "nginx")
         let ms = Int((CFAbsoluteTimeGetCurrent() - start) * 1000)
-        print("[PERF-SWIFT] NginxDetailView: loadStatus took \(ms)ms")
+        CoreLogger.shared.debug("[Perf] NginxDetailView: loadStatus took \(ms)ms")
 
         if let data = json.data(using: .utf8),
            let response = try? JSONDecoder().decode(BridgeDataResponse<BridgeAppStatus>.self, from: data),
@@ -82,7 +82,7 @@ struct NginxDetailView: View {
                 statusLoaded = true
             }
         } else {
-            print("[PERF-SWIFT] NginxDetailView: loadStatus FAILED — response: \(json.prefix(200))")
+            CoreLogger.shared.debug("[Perf] NginxDetailView: loadStatus FAILED — response: \(json.prefix(200))")
             statusLoaded = true
         }
     }
@@ -110,11 +110,11 @@ struct NginxDetailView: View {
     private func loadConfigs() async {
         isLoadingSection = true
         let start = CFAbsoluteTimeGetCurrent()
-        print("[PERF-SWIFT] NginxDetailView: loadConfigs START")
+        CoreLogger.shared.debug("[Perf] NginxDetailView: loadConfigs START")
 
         let json = await bridge.getConfigs(serverID: serverId, appID: "nginx")
         let ms = Int((CFAbsoluteTimeGetCurrent() - start) * 1000)
-        print("[PERF-SWIFT] NginxDetailView: loadConfigs took \(ms)ms")
+        CoreLogger.shared.debug("[Perf] NginxDetailView: loadConfigs took \(ms)ms")
 
         if let data = json.data(using: .utf8),
            let response = try? JSONDecoder().decode(BridgeDataResponse<[BridgeAppConfig]>.self, from: data),
@@ -128,14 +128,14 @@ struct NginxDetailView: View {
     private func loadVersions() async {
         isLoadingSection = true
         let start = CFAbsoluteTimeGetCurrent()
-        print("[PERF-SWIFT] NginxDetailView: loadVersions START")
+        CoreLogger.shared.debug("[Perf] NginxDetailView: loadVersions START")
 
         async let installedJSON = bridge.getVersions(serverID: serverId, appID: "nginx")
         async let availableJSON = bridge.getAvailableVersions(appID: "nginx")
 
         let (installed, available) = await (installedJSON, availableJSON)
         let ms = Int((CFAbsoluteTimeGetCurrent() - start) * 1000)
-        print("[PERF-SWIFT] NginxDetailView: loadVersions took \(ms)ms")
+        CoreLogger.shared.debug("[Perf] NginxDetailView: loadVersions took \(ms)ms")
 
         if let d = installed.data(using: .utf8),
            let r = try? JSONDecoder().decode(BridgeDataResponse<[BridgeAppVersion]>.self, from: d),
@@ -152,11 +152,11 @@ struct NginxDetailView: View {
     private func loadWorkers() async {
         isLoadingSection = true
         let start = CFAbsoluteTimeGetCurrent()
-        print("[PERF-SWIFT] NginxDetailView: loadWorkers START")
+        CoreLogger.shared.debug("[Perf] NginxDetailView: loadWorkers START")
 
         let json = await bridge.getWorkers(serverID: serverId, appID: "nginx")
         let ms = Int((CFAbsoluteTimeGetCurrent() - start) * 1000)
-        print("[PERF-SWIFT] NginxDetailView: loadWorkers took \(ms)ms")
+        CoreLogger.shared.debug("[Perf] NginxDetailView: loadWorkers took \(ms)ms")
 
         if let d = json.data(using: .utf8),
            let r = try? JSONDecoder().decode(BridgeDataResponse<[BridgeWorkerInfo]>.self, from: d),
@@ -169,11 +169,11 @@ struct NginxDetailView: View {
     private func loadModules() async {
         isLoadingSection = true
         let start = CFAbsoluteTimeGetCurrent()
-        print("[PERF-SWIFT] NginxDetailView: loadModules START")
+        CoreLogger.shared.debug("[Perf] NginxDetailView: loadModules START")
 
         let json = await bridge.getModules(serverID: serverId, appID: "nginx")
         let ms = Int((CFAbsoluteTimeGetCurrent() - start) * 1000)
-        print("[PERF-SWIFT] NginxDetailView: loadModules took \(ms)ms")
+        CoreLogger.shared.debug("[Perf] NginxDetailView: loadModules took \(ms)ms")
 
         if let d = json.data(using: .utf8),
            let r = try? JSONDecoder().decode(BridgeDataResponse<[BridgeModuleInfo]>.self, from: d),

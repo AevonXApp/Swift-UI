@@ -63,7 +63,7 @@ struct ModernWebsitesTab: View {
             AddWebsiteView(
                 serverId: viewModel.serverId,
                 onCreated: {
-                    Task { await viewModel.loadData() }
+                    Task { await viewModel.loadData(forceRefresh: true) }
                 }
             )
         }

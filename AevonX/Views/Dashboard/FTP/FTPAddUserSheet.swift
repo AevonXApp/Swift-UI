@@ -435,7 +435,7 @@ struct FTPAddUserSheet: View {
         defer { isLoadingDirs = false }
         let json = await SSHBridge.shared.executeAsyncJSON(
             serverID: vm.serverId,
-            command: "find '\(currentBrowsePath)' -maxdepth 1 -mindepth 1 -type d -not -name '.*' 2>/dev/null | sort | head -50"
+            command: FilesBridge.shared.browseSubdirsCmd(path: currentBrowsePath)
         )
         let result = SSHResult.parse(json)
         let paths = result.stdout.components(separatedBy: "\n")

@@ -13,6 +13,7 @@ import SwiftUI
 struct AddWebsiteView: View {
     @Environment(\.dismiss) private var dismiss
     @StateObject private var viewModel: AddWebsiteViewModel
+    @FocusState private var isDocRootFocused: Bool
 
     let onCreated: () -> Void
 
@@ -118,6 +119,8 @@ struct AddWebsiteView: View {
             TextField("example.com", text: $viewModel.domain)
                 .font(AXTypography.body)
                 .foregroundColor(.axTextPrimary)
+                .disableAutocorrection(true)
+                .textContentType(.URL)
                 .padding(AXSpacing.md)
                 .background(Color.axSurface)
                 .overlay(
@@ -128,6 +131,9 @@ struct AddWebsiteView: View {
                         )
                 )
                 .cornerRadius(AXCornerRadius.md)
+                .onChange(of: viewModel.domain) { _, _ in
+                    viewModel.onDomainInput()
+                }
 
             if let error = viewModel.validationErrors["domain"] {
                 Text(error)
@@ -149,6 +155,9 @@ struct AddWebsiteView: View {
                 }
             }
             .pickerStyle(SegmentedPickerStyle())
+            .onChange(of: viewModel.runtime) { _, _ in
+                viewModel.onRuntimeInput()
+            }
         }
     }
 
@@ -187,6 +196,8 @@ struct AddWebsiteView: View {
                 TextField("\(viewModel.detectedWebRoot)/example.com", text: $viewModel.documentRoot)
                     .font(AXTypography.body)
                     .foregroundColor(.axTextPrimary)
+                    .disableAutocorrection(true)
+                    .focused($isDocRootFocused)
                     .padding(AXSpacing.md)
                     .background(Color.axSurface)
                     .overlay(
@@ -198,7 +209,9 @@ struct AddWebsiteView: View {
                     )
                     .cornerRadius(AXCornerRadius.md)
                     .onChange(of: viewModel.documentRoot) { _, _ in
-                        viewModel.userEditedDocumentRoot = true
+                        if isDocRootFocused {
+                            viewModel.userEditedDocumentRoot = true
+                        }
                     }
 
                 Button(action: {

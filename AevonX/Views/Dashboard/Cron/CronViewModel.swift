@@ -121,10 +121,10 @@ class CronViewModel: ObservableObject {
                     }
                     scriptPath = scriptPath.trimmingCharacters(in: .whitespaces)
 
-                    // Read actual script content via SSH
+                    // Read actual script content via bridge
                     let catOutput = await SSHBridge.shared.executeAsync(
                         serverID: serverId,
-                        command: "cat \(scriptPath) 2>/dev/null || echo ''"
+                        command: bridge.readScriptCmd(scriptPath: scriptPath)
                     )
                     let content = catOutput.trimmingCharacters(in: .whitespacesAndNewlines)
                     if !content.isEmpty {

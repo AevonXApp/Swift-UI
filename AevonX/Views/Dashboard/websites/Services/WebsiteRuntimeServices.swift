@@ -381,7 +381,7 @@ public actor SiteQuickActionsService {
     }
 
     public func reloadNginx(serverId: String) async throws {
-        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: "sudo systemctl reload nginx")
+        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: WebsitesBridge.shared.reloadNginxCmd())
     }
 
     public func fixOwnership(docRoot: String, serverId: String) async throws {
@@ -397,13 +397,12 @@ public actor SiteQuickActionsService {
     }
 
     public func getDiskUsage(docRoot: String, serverId: String) async throws -> String {
-        let _ = WebsitesBridge.shared.findLargeFilesCmd(docRoot: docRoot)
-        let output = await SSHBridge.shared.executeAsync(serverID: serverId, command: "du -sh \(docRoot) 2>/dev/null | awk '{print $1}'")
+        let output = await SSHBridge.shared.executeAsync(serverID: serverId, command: WebsitesBridge.shared.getDiskUsageCmd(docRoot: docRoot))
         return output.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     public func testNginxConfig(serverId: String) async throws -> (passed: Bool, output: String) {
-        let output = await SSHBridge.shared.executeAsync(serverID: serverId, command: "sudo nginx -t 2>&1")
+        let output = await SSHBridge.shared.executeAsync(serverID: serverId, command: WebsitesBridge.shared.validateNginxCmd())
         let passed = output.contains("syntax is ok") || output.contains("test is successful")
         return (passed: passed, output: output)
     }
@@ -478,93 +477,44 @@ public actor DatabaseManagementService {
     public static let shared = DatabaseManagementService()
     public init() {}
 
-    /// Multi-source MySQL/MariaDB auth prefix — probes 7 credential sources.
-    private let mysqlAuthPrefix: String = {
-        let steps = [
-            #"MYSQL_AUTH=""; MYSQL_SUDO=""; MYSQL_SSL="";"#,
-            #"[ -z "$MYSQL_AUTH" ] && [ -f /www/server/panel/data/default.pl ] && MYSQL_AUTH="-uroot -p$(cat /www/server/panel/data/default.pl 2>/dev/null)";"#,
-            #"[ -z "$MYSQL_AUTH" ] && [ -f /www/server/panel/data/default.db ] && command -v sqlite3 >/dev/null 2>&1 && { BTPW=$(sqlite3 /www/server/panel/data/default.db "SELECT mysql_root FROM config LIMIT 1" 2>/dev/null); [ -n "$BTPW" ] && MYSQL_AUTH="-uroot -p${BTPW}"; };"#,
-            #"[ -z "$MYSQL_AUTH" ] && [ -f /www/server/panel/tools.py ] && { BTPW=$(python3 /www/server/panel/tools.py root_mysql 2>/dev/null); [ -n "$BTPW" ] && MYSQL_AUTH="-uroot -p${BTPW}"; };"#,
-            #"[ -z "$MYSQL_AUTH" ] && [ -f /etc/mysql/debian.cnf ] && MYSQL_AUTH="--defaults-extra-file=/etc/mysql/debian.cnf";"#,
-            #"if [ -z "$MYSQL_AUTH" ]; then for sock in /var/run/mysqld/mysqld.sock /tmp/mysql.sock /var/lib/mysql/mysql.sock /run/mysqld/mysqld.sock; do [ -S "$sock" ] && MYSQL_AUTH="-uroot --socket=$sock" && break; done; fi;"#,
-            #"[ -z "$MYSQL_AUTH" ] && MYSQL_SUDO="sudo" && MYSQL_AUTH="-uroot";"#,
-            #"command -v mariadb >/dev/null 2>&1 && MYSQL_SSL="--skip-ssl";"#,
-        ]
-        return steps.joined(separator: " ")
-    }()
-
-    private func mysqlBinary(for type: String) -> String {
-        return type.lowercased() == "mariadb" ? "mariadb" : "mysql"
-    }
-
-    private func mysqlCommand(for type: String, args: String) -> String {
-        let bin = mysqlBinary(for: type)
-        return "\(mysqlAuthPrefix) $MYSQL_SUDO \(bin) $MYSQL_AUTH $MYSQL_SSL \(args)"
-    }
+    private let bridge = DatabasesBridge.shared
+    private let ssh = SSHBridge.shared
 
     public func listDatabases(type: String, serverId: String) async throws -> [CoreDatabaseInfo] {
-        let typeLower = type.lowercased()
-        let systemMySQL = ["information_schema", "performance_schema", "mysql", "sys"]
+        let engine = type.lowercased()
+        let cmd = bridge.listDatabasesCmd(engine: engine)
+        guard !cmd.isEmpty else { return [] }
 
-        if typeLower == "mysql" || typeLower == "mariadb" {
-            let cmd = mysqlCommand(for: typeLower, args: "-NBe \"SELECT s.schema_name, COALESCE(ROUND(SUM(t.data_length + t.index_length)/1024/1024, 2), 0), COUNT(t.table_name) FROM information_schema.schemata s LEFT JOIN information_schema.tables t ON s.schema_name = t.table_schema GROUP BY s.schema_name\" 2>&1")
-            let output = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
-            return output.components(separatedBy: "\n").filter { !$0.isEmpty }.compactMap { line in
-                let lower = line.lowercased()
-                if lower.contains("error") || lower.contains("warning") || lower.contains("access denied") || lower.contains("using a password") { return nil }
-                let parts = line.split(separator: "\t")
-                guard parts.count >= 3 else { return nil }
-                let name = String(parts[0])
-                guard !systemMySQL.contains(name) else { return nil }
-                return CoreDatabaseInfo(name: name, size: Double(parts[1]) ?? 0, tables: Int(parts[2]) ?? 0)
-            }
-        } else if typeLower == "postgresql" {
-            let cmd = "sudo -u postgres psql -tAc \"SELECT datname, pg_database_size(datname)/1024/1024 FROM pg_database WHERE datistemplate = false AND datname != 'postgres'\" 2>/dev/null"
-            let output = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
-            return output.components(separatedBy: "\n").filter { !$0.isEmpty }.compactMap { line in
-                let parts = line.split(separator: "|")
-                guard parts.count >= 2 else { return nil }
-                let name = String(parts[0]).trimmingCharacters(in: .whitespaces)
-                return CoreDatabaseInfo(name: name, size: Double(parts[1]) ?? 0, tables: 0)
-            }
-        } else {
-            return []
+        let output = await ssh.executeAsync(serverID: serverId, command: cmd)
+        return output.components(separatedBy: "\n").filter { !$0.isEmpty }.compactMap { line in
+            let lower = line.lowercased()
+            if lower.contains("error") || lower.contains("warning") || lower.contains("access denied") { return nil }
+            let parts = line.split(separator: "\t")
+            guard let first = parts.first else { return nil }
+            let name = String(first).trimmingCharacters(in: .whitespaces)
+            let size = parts.count >= 2 ? (Double(parts[1]) ?? 0) : 0
+            let tables = parts.count >= 3 ? (Int(parts[2]) ?? 0) : 0
+            return CoreDatabaseInfo(name: name, size: size, tables: tables)
         }
     }
 
     public func createDatabase(name: String, type: String, characterSet: String? = nil, collation: String? = nil, serverId: String) async throws {
-        let typeLower = type.lowercased()
-        var cmd: String
-        if typeLower == "mysql" || typeLower == "mariadb" {
-            var sqlStmt = "CREATE DATABASE \(name)"
-            if let cs = characterSet { sqlStmt += " CHARACTER SET \(cs)" }
-            if let co = collation { sqlStmt += " COLLATE \(co)" }
-            cmd = mysqlCommand(for: typeLower, args: "-e \"\(sqlStmt)\" 2>&1")
-        } else if typeLower == "postgresql" {
-            cmd = "sudo -u postgres createdb"
-            if let cs = characterSet { cmd += " -E \(cs)" }
-            if let co = collation { cmd += " --lc-collate=\(co)" }
-            cmd += " \(name) 2>&1"
-        } else {
+        let cmd = bridge.createDatabaseCmd(engine: type.lowercased(), name: name, charset: characterSet ?? "", collation: collation ?? "")
+        guard !cmd.isEmpty else {
             throw NSError(domain: "DatabaseManagementService", code: -1, userInfo: [NSLocalizedDescriptionKey: "Unsupported database type: \(type)"])
         }
-        let output = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
+        let output = await ssh.executeAsync(serverID: serverId, command: cmd)
         if output.lowercased().contains("error") {
             throw NSError(domain: "DatabaseManagementService", code: -1, userInfo: [NSLocalizedDescriptionKey: output])
         }
     }
 
     public func deleteDatabase(name: String, type: String, serverId: String) async throws {
-        let typeLower = type.lowercased()
-        var cmd: String
-        if typeLower == "mysql" || typeLower == "mariadb" {
-            cmd = mysqlCommand(for: typeLower, args: "-e \"DROP DATABASE IF EXISTS \(name)\" 2>&1")
-        } else if typeLower == "postgresql" {
-            cmd = "sudo -u postgres dropdb --if-exists \(name) 2>&1"
-        } else {
+        let cmd = bridge.dropDatabaseCmd(engine: type.lowercased(), name: name)
+        guard !cmd.isEmpty else {
             throw NSError(domain: "DatabaseManagementService", code: -1, userInfo: [NSLocalizedDescriptionKey: "Unsupported database type: \(type)"])
         }
-        let output = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
+        let output = await ssh.executeAsync(serverID: serverId, command: cmd)
         if output.lowercased().contains("error") {
             throw NSError(domain: "DatabaseManagementService", code: -1, userInfo: [NSLocalizedDescriptionKey: output])
         }

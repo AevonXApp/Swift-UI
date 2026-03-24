@@ -192,16 +192,13 @@ serverPaths = PathResolverBridge.shared.parse(output: output)
 ```
 
 ### C String Memory Management
-Every `strdup()` MUST be paired with `free()`:
+Use `withCArgs` helper (defined in `BridgeHelpers.swift`) — it auto-frees all `strdup` allocations:
 ```swift
 // ❌ LEAK — strdup never freed:
 extract(SomeCmd(strdup(arg1), strdup(arg2)))
 
-// ✅ CORRECT — defer free after strdup:
-let c1 = strdup(arg1)
-let c2 = strdup(arg2)
-defer { free(c1); free(c2) }
-let result = extract(SomeCmd(c1, c2))
+// ✅ CORRECT — withCArgs auto-frees all allocations:
+withCArgs { c in extract(SomeCmd(c.str(arg1), c.str(arg2))) }
 ```
 
 ### Handling Go nil Slices

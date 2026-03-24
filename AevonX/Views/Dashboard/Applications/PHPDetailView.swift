@@ -67,17 +67,17 @@ struct PHPDetailView: View {
 
     private func loadStatus() async {
         let json = await bridge.getStatus(serverID: serverId, appID: "php-fpm")
-        print("[PHP-DEBUG] loadStatus raw JSON: \(json.prefix(500))")
+        CoreLogger.shared.debug("[PHP] loadStatus raw JSON: \(json.prefix(500))")
         if let data = json.data(using: .utf8),
            let response = try? JSONDecoder().decode(BridgeDataResponse<BridgeAppStatus>.self, from: data),
            response.success {
-            print("[PHP-DEBUG] loadStatus parsed: isRunning=\(response.data?.isRunning ?? false), state=\(response.data?.state ?? "nil"), pid=\(response.data?.pid ?? -1)")
+            CoreLogger.shared.debug("[PHP] loadStatus parsed: isRunning=\(response.data?.isRunning ?? false), state=\(response.data?.state ?? "nil"), pid=\(response.data?.pid ?? -1)")
             withAnimation(.easeOut(duration: 0.15)) {
                 status = response.data
                 statusLoaded = true
             }
         } else {
-            print("[PHP-DEBUG] loadStatus FAILED to parse or success=false")
+            CoreLogger.shared.debug("[PHP] loadStatus FAILED to parse or success=false")
             statusLoaded = true
         }
     }
@@ -118,26 +118,26 @@ struct PHPDetailView: View {
 
         // Installed versions via SSH
         let installedJSON = await bridge.getVersions(serverID: serverId, appID: "php-fpm")
-        print("[PHP-DEBUG] getVersions raw: \(installedJSON.prefix(500))")
+        CoreLogger.shared.debug("[PHP] getVersions raw: \(installedJSON.prefix(500))")
         if let d = installedJSON.data(using: .utf8),
            let r = try? JSONDecoder().decode(BridgeDataResponse<[BridgeAppVersion]>.self, from: d),
            r.success {
             versions = r.data ?? []
-            print("[PHP-DEBUG] installed versions count: \(versions.count), versions: \(versions.map { $0.version })")
+            CoreLogger.shared.debug("[PHP] installed versions count: \(versions.count), versions: \(versions.map { $0.version })")
         } else {
-            print("[PHP-DEBUG] getVersions FAILED to parse")
+            CoreLogger.shared.debug("[PHP] getVersions FAILED to parse")
         }
 
         // Available versions via SSH-based detection (NOT static catalog)
         let availableJSON = await bridge.detectAvailableVersions(serverID: serverId, appID: "php-fpm")
-        print("[PHP-DEBUG] detectAvailableVersions raw: \(availableJSON.prefix(500))")
+        CoreLogger.shared.debug("[PHP] detectAvailableVersions raw: \(availableJSON.prefix(500))")
         if let d = availableJSON.data(using: .utf8),
            let r = try? JSONDecoder().decode(BridgeDataResponse<[BridgeAppVersion]>.self, from: d),
            r.success {
             availableVersions = r.data ?? []
-            print("[PHP-DEBUG] available versions count: \(availableVersions.count)")
+            CoreLogger.shared.debug("[PHP] available versions count: \(availableVersions.count)")
         } else {
-            print("[PHP-DEBUG] detectAvailableVersions FAILED to parse")
+            CoreLogger.shared.debug("[PHP] detectAvailableVersions FAILED to parse")
         }
 
         versionsLoaded = true

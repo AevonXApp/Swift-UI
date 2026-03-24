@@ -35,64 +35,57 @@ class SiteCloningViewModel: ObservableObject {
         guard !targetDomain.isEmpty else { return }
         isCloning = true; cloningProgress = "Cloning files..."
         defer { isCloning = false; cloningProgress = "" }
-        do {
-            await detectPathsIfNeeded()
-            let cmds = bridge.cloneSiteCmds(
-                source: domain,
-                target: targetDomain,
-                docRoot: docRoot,
-                sitesAvailable: serverPaths.nginxSitesAvailable,
-                sitesEnabled: serverPaths.nginxSitesEnabled
-            )
-            for cmd in cmds {
-                _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
-            }
-            _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.restartNginxCmd())
+        await detectPathsIfNeeded()
+        let cmds = bridge.cloneSiteCmds(
+            source: domain,
+            target: targetDomain,
+            docRoot: docRoot,
+            sitesAvailable: serverPaths.nginxSitesAvailable,
+            sitesEnabled: serverPaths.nginxSitesEnabled
+        )
+        for cmd in cmds {
+            _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
+        }
+        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.restartNginxCmd())
 
-            let sizeResult = await SSHBridge.shared.executeAsync(serverID: serverId, command: "du -sh \(serverPaths.webRoot)/\(targetDomain) 2>/dev/null | awk '{print $1}'")
-            let size = sizeResult.trimmingCharacters(in: .whitespacesAndNewlines)
-            lastCloneResult = CloneResultItem(domain: targetDomain, docRoot: "\(serverPaths.webRoot)/\(targetDomain)", size: size.isEmpty ? "N/A" : size)
-            GlobalToastManager.shared.showSuccess("Site cloned to \(targetDomain)")
-        } catch { GlobalToastManager.shared.showError(error.localizedDescription) }
+        let sizeResult = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.getDiskUsageCmd(docRoot: "\(serverPaths.webRoot)/\(targetDomain)"))
+        let size = sizeResult.trimmingCharacters(in: .whitespacesAndNewlines)
+        lastCloneResult = CloneResultItem(domain: targetDomain, docRoot: "\(serverPaths.webRoot)/\(targetDomain)", size: size.isEmpty ? "N/A" : size)
+        GlobalToastManager.shared.showSuccess("Site cloned to \(targetDomain)")
     }
 
     func createStaging() async {
         isCloning = true; cloningProgress = "Creating staging..."
         defer { isCloning = false; cloningProgress = "" }
-        do {
-            await detectPathsIfNeeded()
-            let stagingDomain = "staging.\(domain)"
-            let cmds = bridge.cloneSiteCmds(
-                source: domain,
-                target: stagingDomain,
-                docRoot: docRoot,
-                sitesAvailable: serverPaths.nginxSitesAvailable,
-                sitesEnabled: serverPaths.nginxSitesEnabled
-            )
-            for cmd in cmds {
-                _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
-            }
-            _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.restartNginxCmd())
+        await detectPathsIfNeeded()
+        let stagingDomain = "staging.\(domain)"
+        let cmds = bridge.cloneSiteCmds(
+            source: domain,
+            target: stagingDomain,
+            docRoot: docRoot,
+            sitesAvailable: serverPaths.nginxSitesAvailable,
+            sitesEnabled: serverPaths.nginxSitesEnabled
+        )
+        for cmd in cmds {
+            _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
+        }
+        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.restartNginxCmd())
 
-            lastCloneResult = CloneResultItem(domain: stagingDomain, docRoot: "\(serverPaths.webRoot)/\(stagingDomain)", size: "N/A")
-            GlobalToastManager.shared.showSuccess("Staging created: \(stagingDomain)")
-        } catch { GlobalToastManager.shared.showError(error.localizedDescription) }
+        lastCloneResult = CloneResultItem(domain: stagingDomain, docRoot: "\(serverPaths.webRoot)/\(stagingDomain)", size: "N/A")
+        GlobalToastManager.shared.showSuccess("Staging created: \(stagingDomain)")
     }
 
     func exportForMigration() async {
         isCloning = true; cloningProgress = "Exporting for migration..."
         defer { isCloning = false; cloningProgress = "" }
-        do {
-            await detectPathsIfNeeded()
-            let ts = ISO8601DateFormatter().string(from: Date()).replacingOccurrences(of: ":", with: "-")
-            let exportFile = "\(serverPaths.backupDir)/\(domain)_migration_\(ts).tar.gz"
-            // Include config file in export — probe both with and without .conf
-            let cfgBase = "\(serverPaths.nginxSitesAvailable)/\(domain)"
-            let cfgProbe = "CFG=\(cfgBase); [ ! -f \"$CFG\" ] && CFG=\(cfgBase).conf; [ ! -f \"$CFG\" ] && CFG=''"
-            _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: "\(cfgProbe); sudo tar -czf \(exportFile) -C \(docRoot) . $CFG 2>/dev/null")
-            exportPath = exportFile
-            GlobalToastManager.shared.showSuccess("Migration export ready")
-        } catch { GlobalToastManager.shared.showError(error.localizedDescription) }
+        await detectPathsIfNeeded()
+        let ts = ISO8601DateFormatter().string(from: Date()).replacingOccurrences(of: ":", with: "-")
+        let cmds = bridge.exportMigrationCmds(domain: domain, docRoot: docRoot, sitesAvailable: serverPaths.nginxSitesAvailable, timestamp: ts)
+        for cmd in cmds {
+            _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
+        }
+        exportPath = "\(serverPaths.backupDir)/\(domain)_migration_\(ts).tar.gz"
+        GlobalToastManager.shared.showSuccess("Migration export ready")
     }
 
     private func detectPathsIfNeeded() async {

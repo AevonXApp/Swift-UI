@@ -84,7 +84,7 @@ public final class SSLManagementViewModel: ObservableObject {
         // Detect Force SSL state via config check
         await detectPathsIfNeeded()
         let configPath = "\(serverPaths.nginxSitesAvailable)/\(website.domain)"
-        let forceResult = await SSHBridge.shared.executeAsync(serverID: serverId, command: "grep -c 'return 301 https' \(configPath) 2>/dev/null")
+        let forceResult = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.checkForceSSLCmd(configPath: configPath))
         isForceSSLEnabled = (Int(forceResult.trimmingCharacters(in: .whitespacesAndNewlines)) ?? 0) > 0
 
         // Fetch certificate details
@@ -173,10 +173,8 @@ public final class SSLManagementViewModel: ObservableObject {
 
         isLoadingContent = true
 
-        let certPath = "/etc/letsencrypt/live/\(website.domain)/fullchain.pem"
-        let keyPath = "/etc/letsencrypt/live/\(website.domain)/privkey.pem"
-        let certResult = await SSHBridge.shared.executeAsync(serverID: serverId, command: "sudo cat \(certPath) 2>/dev/null")
-        let keyResult = await SSHBridge.shared.executeAsync(serverID: serverId, command: "sudo cat \(keyPath) 2>/dev/null")
+        let certResult = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.readCertificateCmd(domain: website.domain))
+        let keyResult = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.readPrivateKeyCmd(domain: website.domain))
         certificateContent = SSLCertificateContent(
             certificate: certResult,
             privateKey: keyResult,

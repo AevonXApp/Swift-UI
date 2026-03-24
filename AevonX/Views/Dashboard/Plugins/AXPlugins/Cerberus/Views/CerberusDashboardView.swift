@@ -3,7 +3,7 @@
 //  AevonX
 //
 //  Dashboard tab — AXCerberus WAF command center.
-//  Threat hero card · live metrics · 24h timeline · attack origins · DDoS shield.
+//  Threat hero · live metrics · 24h timeline · attack origins · DDoS shield · module activity.
 //
 
 import SwiftUI
@@ -23,9 +23,9 @@ struct CerberusDashboardView: View {
                     threatHeroCard
                     primaryStatsGrid
                     middleRow
-                    secondaryRow
-                    ddosCard
-                    quickStatsCard
+                    liveIndicatorsRow
+                    ddosShieldCard
+                    moduleActivityGrid
                 }
             }
             .padding(AXSpacing.xl)
@@ -43,7 +43,7 @@ struct CerberusDashboardView: View {
             }
             HStack(alignment: .top, spacing: AXSpacing.md) {
                 AXCard { AXSkeletonBlock(lines: 8) }
-                AXCard { AXSkeletonBlock(lines: 6) }.frame(width: 260)
+                AXCard { AXSkeletonBlock(lines: 6) }.frame(width: 280)
             }
             HStack(spacing: AXSpacing.md) {
                 ForEach(0..<4, id: \.self) { _ in AXSkeletonStatCard() }
@@ -97,14 +97,7 @@ struct CerberusDashboardView: View {
     private var threatStatusLeft: some View {
         VStack(alignment: .leading, spacing: AXSpacing.md) {
             HStack(spacing: AXSpacing.md) {
-                ZStack {
-                    Circle()
-                        .fill(threatColor.opacity(0.15))
-                        .frame(width: 48, height: 48)
-                    Image(systemName: threatIcon)
-                        .font(AXTypography.title3)
-                        .foregroundStyle(threatColor)
-                }
+                threatIconBadge
                 VStack(alignment: .leading, spacing: AXSpacing.xxxs) {
                     Text(threatLabel)
                         .font(AXTypography.title2)
@@ -115,11 +108,37 @@ struct CerberusDashboardView: View {
                         .foregroundStyle(Color.axTextTertiary)
                 }
             }
-            AXStatusBadge(
-                status: (viewModel.serviceStatus?.isActive ?? false) ? .online : .offline,
-                showLabel: true,
-                enablePulseAnimation: viewModel.serviceStatus?.isActive ?? false
-            )
+            HStack(spacing: AXSpacing.sm) {
+                AXStatusBadge(
+                    status: (viewModel.serviceStatus?.isActive ?? false) ? .online : .offline,
+                    showLabel: true,
+                    enablePulseAnimation: viewModel.serviceStatus?.isActive ?? false
+                )
+                if viewModel.ddosStatus?.underAttack == true {
+                    AXBadge(text: "UNDER ATTACK", color: .axError, style: .soft)
+                }
+            }
+        }
+    }
+
+    private var threatIconBadge: some View {
+        ZStack {
+            Circle()
+                .fill(
+                    RadialGradient(
+                        colors: [threatColor.opacity(0.25), threatColor.opacity(0.05)],
+                        center: .center,
+                        startRadius: 0,
+                        endRadius: 28
+                    )
+                )
+                .frame(width: 52, height: 52)
+            Circle()
+                .stroke(threatColor.opacity(0.3), lineWidth: 1)
+                .frame(width: 52, height: 52)
+            Image(systemName: threatIcon)
+                .font(AXTypography.title3)
+                .foregroundStyle(threatColor)
         }
     }
 
@@ -127,15 +146,15 @@ struct CerberusDashboardView: View {
         VStack(spacing: AXSpacing.sm) {
             AXCircularProgress(
                 value: (viewModel.overview?.protectionRate ?? 0) / 100,
-                size: 72,
-                lineWidth: 6,
+                size: 80,
+                lineWidth: 7,
                 color: threatColor,
                 showValue: false
             )
             .overlay(
                 VStack(spacing: 0) {
                     Text(String(format: "%.1f%%", viewModel.overview?.protectionRate ?? 0))
-                        .font(AXTypography.monoSm)
+                        .font(AXTypography.monoMd)
                         .fontWeight(.bold)
                         .foregroundStyle(Color.axTextPrimary)
                     Text("blocked")
@@ -151,18 +170,18 @@ struct CerberusDashboardView: View {
 
     private var heroMetricsRight: some View {
         VStack(alignment: .trailing, spacing: AXSpacing.lg) {
-            heroMetric(label: "Total Requests", value: viewModel.formatNumber(viewModel.overview?.totalRequests ?? 0))
-            heroMetric(label: "Requests / sec", value: String(format: "%.1f", viewModel.overview?.qps ?? 0))
-            heroMetric(label: "Uptime", value: viewModel.formatUptime(viewModel.overview?.uptimeSeconds ?? 0))
+            heroMetric(label: "Total Requests", value: viewModel.formatNumber(viewModel.overview?.totalRequests ?? 0), color: .axAccentBlue)
+            heroMetric(label: "Requests / sec", value: String(format: "%.1f", viewModel.overview?.qps ?? 0), color: .axAccentGreen)
+            heroMetric(label: "Uptime", value: viewModel.formatUptime(viewModel.overview?.uptimeSeconds ?? 0), color: .axAccentPurple)
         }
     }
 
-    private func heroMetric(label: String, value: String) -> some View {
+    private func heroMetric(label: String, value: String, color: Color) -> some View {
         VStack(alignment: .trailing, spacing: AXSpacing.xxxs) {
             Text(value)
                 .font(AXTypography.title3)
                 .fontWeight(.semibold)
-                .foregroundStyle(Color.axTextPrimary)
+                .foregroundStyle(color)
             Text(label)
                 .font(AXTypography.caption)
                 .foregroundStyle(Color.axTextTertiary)
@@ -173,22 +192,26 @@ struct CerberusDashboardView: View {
 
     private var primaryStatsGrid: some View {
         HStack(spacing: AXSpacing.md) {
-            statCard(title: "Total Requests",
-                     value: viewModel.formatNumber(viewModel.overview?.totalRequests ?? 0),
-                     icon: "arrow.up.arrow.down", color: .axAccentBlue)
-            statCard(title: "Blocked",
-                     value: viewModel.formatNumber(viewModel.overview?.blockedRequests ?? 0),
-                     icon: "hand.raised.fill", color: .axError)
-            statCard(title: "Allowed",
-                     value: viewModel.formatNumber(viewModel.overview?.allowedRequests ?? 0),
-                     icon: "checkmark.shield.fill", color: .axAccentGreen)
-            statCard(title: "QPS",
-                     value: String(format: "%.1f", viewModel.overview?.qps ?? 0),
-                     icon: "gauge.with.dots.needle.33percent", color: .axAccentPurple)
+            primaryStatCard(title: "Total Requests",
+                            value: viewModel.formatNumber(viewModel.overview?.totalRequests ?? 0),
+                            icon: "arrow.up.arrow.down", color: .axAccentBlue,
+                            subtitle: "all traffic")
+            primaryStatCard(title: "Blocked",
+                            value: viewModel.formatNumber(viewModel.overview?.blockedRequests ?? 0),
+                            icon: "hand.raised.fill", color: .axError,
+                            subtitle: String(format: "%.1f%%", viewModel.overview?.protectionRate ?? 0))
+            primaryStatCard(title: "Allowed",
+                            value: viewModel.formatNumber(viewModel.overview?.allowedRequests ?? 0),
+                            icon: "checkmark.shield.fill", color: .axAccentGreen,
+                            subtitle: "passed through")
+            primaryStatCard(title: "QPS",
+                            value: String(format: "%.1f", viewModel.overview?.qps ?? 0),
+                            icon: "gauge.with.dots.needle.33percent", color: .axAccentPurple,
+                            subtitle: "queries/sec")
         }
     }
 
-    private func statCard(title: String, value: String, icon: String, color: Color) -> some View {
+    private func primaryStatCard(title: String, value: String, icon: String, color: Color, subtitle: String) -> some View {
         AXCard(accentColor: color) {
             VStack(alignment: .leading, spacing: AXSpacing.sm) {
                 HStack {
@@ -206,9 +229,15 @@ struct CerberusDashboardView: View {
                     .font(AXTypography.title2)
                     .fontWeight(.bold)
                     .foregroundStyle(Color.axTextPrimary)
-                Text(title)
-                    .font(AXTypography.caption)
-                    .foregroundStyle(Color.axTextSecondary)
+                HStack(spacing: AXSpacing.xs) {
+                    Text(title)
+                        .font(AXTypography.caption)
+                        .foregroundStyle(Color.axTextSecondary)
+                    Spacer()
+                    Text(subtitle)
+                        .font(AXTypography.monoXs)
+                        .foregroundStyle(color.opacity(0.7))
+                }
             }
         }
     }
@@ -218,19 +247,33 @@ struct CerberusDashboardView: View {
     private var middleRow: some View {
         HStack(alignment: .top, spacing: AXSpacing.md) {
             timelineCard
-            topCountriesCard.frame(width: 260)
+            topCountriesCard.frame(width: 280)
         }
     }
 
     private var timelineCard: some View {
         AXCard {
             VStack(alignment: .leading, spacing: AXSpacing.md) {
-                AXSectionHeader(title: "24-Hour Traffic", subtitle: "Request volume by hour")
-                timelineChartArea
-                HStack(spacing: AXSpacing.lg) {
-                    chartLegend(color: .axAccentGreen, label: "Allowed")
-                    chartLegend(color: .axError, label: "Blocked")
+                HStack {
+                    Image(systemName: "chart.bar.fill")
+                        .foregroundStyle(Color.axAccentBlue)
+                    Text("24-Hour Traffic")
+                        .font(AXTypography.headline)
+                        .foregroundStyle(Color.axTextPrimary)
+                    Spacer()
+                    timelineTotalBadge
                 }
+                timelineChartArea
+                timelineLegend
+            }
+        }
+    }
+
+    private var timelineTotalBadge: some View {
+        Group {
+            if !viewModel.timeline.isEmpty {
+                let total = viewModel.timeline.reduce(0) { $0 + $1.total }
+                AXBadge(text: viewModel.formatNumber(total) + " reqs", color: .axAccentBlue, style: .soft)
             }
         }
     }
@@ -268,7 +311,20 @@ struct CerberusDashboardView: View {
                 AxisValueLabel().foregroundStyle(Color.axTextTertiary)
             }
         }
-        .frame(height: 180)
+        .frame(height: 200)
+    }
+
+    private var timelineLegend: some View {
+        HStack(spacing: AXSpacing.lg) {
+            chartLegend(color: .axAccentGreen, label: "Allowed")
+            chartLegend(color: .axError, label: "Blocked")
+            Spacer()
+            if let peak = viewModel.timeline.max(by: { $0.total < $1.total }) {
+                Text("Peak: \(peak.hour):00")
+                    .font(AXTypography.monoXs)
+                    .foregroundStyle(Color.axTextMuted)
+            }
+        }
     }
 
     private func chartLegend(color: Color, label: String) -> some View {
@@ -292,7 +348,7 @@ struct CerberusDashboardView: View {
                 .foregroundStyle(Color.axTextMuted)
         }
         .frame(maxWidth: .infinity)
-        .frame(height: 180)
+        .frame(height: 200)
     }
 
     // MARK: - Top Countries Panel
@@ -300,7 +356,17 @@ struct CerberusDashboardView: View {
     private var topCountriesCard: some View {
         AXCard(accentColor: .axError) {
             VStack(alignment: .leading, spacing: AXSpacing.md) {
-                AXSectionHeader(title: "Attack Origins", subtitle: "Top countries today")
+                HStack {
+                    Image(systemName: "globe.americas.fill")
+                        .foregroundStyle(Color.axError)
+                    Text("Attack Origins")
+                        .font(AXTypography.headline)
+                        .foregroundStyle(Color.axTextPrimary)
+                    Spacer()
+                    if !viewModel.countries.isEmpty {
+                        AXBadge(text: "\(viewModel.countries.count)", color: .axError, style: .soft)
+                    }
+                }
                 if viewModel.countries.isEmpty {
                     Spacer()
                     AXEmptyState(icon: "globe", title: "No Data", description: "No attack origins recorded yet.")
@@ -315,7 +381,7 @@ struct CerberusDashboardView: View {
     private var countriesListMini: some View {
         let maxCount = viewModel.countries.first?.count ?? 1
         return VStack(spacing: AXSpacing.sm) {
-            ForEach(Array(viewModel.countries.prefix(6).enumerated()), id: \.element.id) { idx, country in
+            ForEach(Array(viewModel.countries.prefix(7).enumerated()), id: \.element.id) { idx, country in
                 dashboardCountryRow(country, maxCount: maxCount, rank: idx + 1)
             }
         }
@@ -325,7 +391,7 @@ struct CerberusDashboardView: View {
         HStack(spacing: AXSpacing.xs) {
             Text("\(rank)")
                 .font(AXTypography.monoXs)
-                .foregroundStyle(Color.axTextMuted)
+                .foregroundStyle(rank <= 3 ? Color.axError : Color.axTextMuted)
                 .frame(width: 14, alignment: .trailing)
             Text(flagEmoji(for: country.countryCode))
                 .font(AXTypography.caption)
@@ -345,7 +411,13 @@ struct CerberusDashboardView: View {
                         RoundedRectangle(cornerRadius: AXCornerRadius.xs)
                             .fill(Color.axError.opacity(0.1))
                         RoundedRectangle(cornerRadius: AXCornerRadius.xs)
-                            .fill(Color.axError.opacity(0.65))
+                            .fill(
+                                LinearGradient(
+                                    colors: [Color.axError.opacity(0.8), Color.axError.opacity(0.4)],
+                                    startPoint: .leading,
+                                    endPoint: .trailing
+                                )
+                            )
                             .frame(width: geo.size.width * (Double(country.count) / Double(max(maxCount, 1))))
                     }
                     .frame(height: 3)
@@ -355,56 +427,124 @@ struct CerberusDashboardView: View {
         }
     }
 
-    // MARK: - Secondary Row
+    // MARK: - Live Indicators Row
 
-    private var secondaryRow: some View {
+    private var liveIndicatorsRow: some View {
         HStack(spacing: AXSpacing.md) {
-            AXCard { AXMiniStat(label: "Bytes In", value: viewModel.formatBytes(viewModel.overview?.bytesIn ?? 0), icon: "arrow.down.circle.fill", color: .axAccentBlue) }
-            AXCard { AXMiniStat(label: "Bytes Out", value: viewModel.formatBytes(viewModel.overview?.bytesOut ?? 0), icon: "arrow.up.circle.fill", color: .axAccentGreen) }
-            AXCard { AXMiniStat(label: "Bot Requests", value: viewModel.formatNumber(viewModel.overview?.botRequests ?? 0), icon: "cpu.fill", color: .axWarning) }
-            AXCard { AXMiniStat(label: "Uptime", value: viewModel.formatUptime(viewModel.overview?.uptimeSeconds ?? 0), icon: "clock.fill", color: .axAccentPurple) }
+            liveIndicatorCard(label: "Bytes In", value: viewModel.formatBytes(viewModel.overview?.bytesIn ?? 0),
+                              icon: "arrow.down.circle.fill", color: .axAccentBlue, direction: "inbound")
+            liveIndicatorCard(label: "Bytes Out", value: viewModel.formatBytes(viewModel.overview?.bytesOut ?? 0),
+                              icon: "arrow.up.circle.fill", color: .axAccentGreen, direction: "outbound")
+            liveIndicatorCard(label: "Bot Requests", value: viewModel.formatNumber(viewModel.overview?.botRequests ?? 0),
+                              icon: "cpu.fill", color: .axWarning, direction: botPercentLabel)
+            liveIndicatorCard(label: "Uptime", value: viewModel.formatUptime(viewModel.overview?.uptimeSeconds ?? 0),
+                              icon: "clock.fill", color: .axAccentPurple, direction: "continuous")
         }
+    }
+
+    private func liveIndicatorCard(label: String, value: String, icon: String, color: Color, direction: String) -> some View {
+        AXCard(accentColor: color) {
+            HStack(spacing: AXSpacing.md) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: AXCornerRadius.sm)
+                        .fill(color.opacity(0.12))
+                        .frame(width: 36, height: 36)
+                    Image(systemName: icon)
+                        .font(AXTypography.caption)
+                        .foregroundStyle(color)
+                }
+                VStack(alignment: .leading, spacing: AXSpacing.xxxs) {
+                    Text(value)
+                        .font(AXTypography.title3)
+                        .fontWeight(.bold)
+                        .foregroundStyle(Color.axTextPrimary)
+                    HStack(spacing: AXSpacing.xs) {
+                        Text(label)
+                            .font(AXTypography.caption)
+                            .foregroundStyle(Color.axTextSecondary)
+                        Text(direction)
+                            .font(AXTypography.monoXs)
+                            .foregroundStyle(color.opacity(0.6))
+                    }
+                }
+                Spacer()
+            }
+        }
+    }
+
+    private var botPercentLabel: String {
+        let total = (viewModel.overview?.botRequests ?? 0) + (viewModel.overview?.humanRequests ?? 0)
+        guard total > 0 else { return "0%" }
+        return String(format: "%.0f%%", Double(viewModel.overview?.botRequests ?? 0) / Double(total) * 100)
     }
 
     // MARK: - DDoS Shield Card
 
-    private var ddosCard: some View {
+    private var ddosShieldCard: some View {
         AXGlassCard(accentColor: ddosColor) {
             HStack(spacing: AXSpacing.xl) {
-                ZStack {
-                    Circle()
-                        .fill(ddosColor.opacity(0.12))
-                        .frame(width: 52, height: 52)
-                    Image(systemName: "bolt.shield.fill")
-                        .font(AXTypography.title3)
-                        .foregroundStyle(ddosColor)
-                }
-                VStack(alignment: .leading, spacing: AXSpacing.sm) {
-                    HStack(spacing: AXSpacing.sm) {
-                        Text("DDoS Shield")
-                            .font(AXTypography.headline)
-                            .fontWeight(.semibold)
-                            .foregroundStyle(Color.axTextPrimary)
-                        AXBadge(text: "Level \(viewModel.ddosStatus?.level ?? 0): \(viewModel.ddosStatus?.levelName ?? "None")", color: ddosColor, style: .soft)
-                        if viewModel.ddosStatus?.underAttack == true {
-                            AXBadge(text: "UNDER ATTACK", color: .axError, style: .soft)
-                        }
-                    }
-                    HStack(spacing: AXSpacing.xxl) {
-                        ddosMetric(label: "Current QPS", value: String(format: "%.1f", viewModel.ddosStatus?.currentQps ?? 0))
-                        ddosMetric(label: "Baseline QPS", value: String(format: "%.1f", viewModel.ddosStatus?.baselineQps ?? 0))
-                    }
-                }
+                ddosShieldIcon
+                ddosShieldInfo
                 Spacer()
-                AXCircularProgress(value: min(Double(viewModel.ddosStatus?.level ?? 0) / 3.0, 1.0), size: 52, lineWidth: 5, color: ddosColor, showValue: false)
-                    .overlay(
-                        Text("\(viewModel.ddosStatus?.level ?? 0)")
-                            .font(AXTypography.title3)
-                            .fontWeight(.bold)
-                            .foregroundStyle(ddosColor)
-                    )
+                ddosShieldMetrics
             }
         }
+    }
+
+    private var ddosShieldIcon: some View {
+        ZStack {
+            Circle()
+                .fill(
+                    RadialGradient(
+                        colors: [ddosColor.opacity(0.2), ddosColor.opacity(0.03)],
+                        center: .center,
+                        startRadius: 0,
+                        endRadius: 30
+                    )
+                )
+                .frame(width: 56, height: 56)
+            Circle()
+                .stroke(ddosColor.opacity(0.3), lineWidth: 1)
+                .frame(width: 56, height: 56)
+            Image(systemName: "bolt.shield.fill")
+                .font(AXTypography.title3)
+                .foregroundStyle(ddosColor)
+        }
+    }
+
+    private var ddosShieldInfo: some View {
+        VStack(alignment: .leading, spacing: AXSpacing.sm) {
+            HStack(spacing: AXSpacing.sm) {
+                Text("DDoS Shield")
+                    .font(AXTypography.headline)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(Color.axTextPrimary)
+                AXBadge(text: "Level \(viewModel.ddosStatus?.level ?? 0): \(viewModel.ddosStatus?.levelName ?? "None")", color: ddosColor, style: .soft)
+                if viewModel.ddosStatus?.underAttack == true {
+                    AXBadge(text: "UNDER ATTACK", color: .axError, style: .soft)
+                }
+            }
+            HStack(spacing: AXSpacing.xxl) {
+                ddosMetric(label: "Current QPS", value: String(format: "%.1f", viewModel.ddosStatus?.currentQps ?? 0))
+                ddosMetric(label: "Baseline QPS", value: String(format: "%.1f", viewModel.ddosStatus?.baselineQps ?? 0))
+                ddosMetric(label: "Spike Ratio", value: ddosSpikeRatio)
+            }
+        }
+    }
+
+    private var ddosShieldMetrics: some View {
+        AXCircularProgress(value: min(Double(viewModel.ddosStatus?.level ?? 0) / 3.0, 1.0), size: 56, lineWidth: 5, color: ddosColor, showValue: false)
+            .overlay(
+                VStack(spacing: 0) {
+                    Text("\(viewModel.ddosStatus?.level ?? 0)")
+                        .font(AXTypography.title3)
+                        .fontWeight(.bold)
+                        .foregroundStyle(ddosColor)
+                    Text("LVL")
+                        .font(AXTypography.caption2)
+                        .foregroundStyle(Color.axTextMuted)
+                }
+            )
     }
 
     private func ddosMetric(label: String, value: String) -> some View {
@@ -419,12 +559,29 @@ struct CerberusDashboardView: View {
         }
     }
 
-    // MARK: - Quick Stats Card
+    private var ddosSpikeRatio: String {
+        let current = viewModel.ddosStatus?.currentQps ?? 0
+        let baseline = viewModel.ddosStatus?.baselineQps ?? 1
+        guard baseline > 0 else { return "1.0x" }
+        return String(format: "%.1fx", current / baseline)
+    }
 
-    private var quickStatsCard: some View {
+    // MARK: - Module Activity Grid
+
+    private var moduleActivityGrid: some View {
         AXCard {
             VStack(alignment: .leading, spacing: AXSpacing.md) {
-                AXSectionHeader(title: "Module Activity", subtitle: "Events detected today")
+                HStack {
+                    Image(systemName: "square.grid.3x3.fill")
+                        .foregroundStyle(Color.axAccentBlue)
+                    Text("Module Activity")
+                        .font(AXTypography.headline)
+                        .foregroundStyle(Color.axTextPrimary)
+                    Spacer()
+                    Text("today")
+                        .font(AXTypography.monoXs)
+                        .foregroundStyle(Color.axTextMuted)
+                }
                 HStack(spacing: 0) {
                     moduleActivityCell(icon: "ant.fill", label: "Honeypot Hits",
                                        value: "\(viewModel.overview?.honeypotHitsToday ?? 0)", color: .axWarning)
@@ -434,6 +591,9 @@ struct CerberusDashboardView: View {
                     Divider().frame(height: 52)
                     moduleActivityCell(icon: "doc.text.magnifyingglass", label: "DLP Events",
                                        value: "\(viewModel.overview?.dlpEventsToday ?? 0)", color: .axAccentPurple)
+                    Divider().frame(height: 52)
+                    moduleActivityCell(icon: "bell.badge.fill", label: "Alerts",
+                                       value: "\(viewModel.recentAlerts.count)", color: .axAccentBlue)
                 }
             }
         }

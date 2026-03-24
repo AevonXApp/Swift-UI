@@ -46,18 +46,19 @@ class PerformanceTuningViewModel: ObservableObject {
             }
         }
 
-        // Worker info
-        let cpuResult = await SSHBridge.shared.executeAsync(serverID: serverId, command: "nproc")
-        let workerResult = await SSHBridge.shared.executeAsync(serverID: serverId, command: "grep -E 'worker_processes|worker_connections' \(serverPaths.nginxMainConf) 2>/dev/null")
-        let cpuCores = Int(cpuResult.trimmingCharacters(in: .whitespacesAndNewlines)) ?? 1
+        // Worker info via bridge (returns cpu:N, worker_processes, worker_connections)
+        let workerOutput = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.readWorkerInfoCmd(nginxMainConf: serverPaths.nginxMainConf))
+        let workerLines = workerOutput.components(separatedBy: "\n").map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+        var cpuCores = 1
         var procs = "auto"
         var conns = 1024
-        for line in workerResult.components(separatedBy: "\n") {
-            if line.contains("worker_processes") {
-                procs = line.components(separatedBy: .whitespaces).last?.replacingOccurrences(of: ";", with: "") ?? "auto"
-            }
-            if line.contains("worker_connections") {
-                conns = Int(line.components(separatedBy: .whitespaces).last?.replacingOccurrences(of: ";", with: "") ?? "1024") ?? 1024
+        for line in workerLines {
+            if line.hasPrefix("cpu:") {
+                cpuCores = Int(line.replacingOccurrences(of: "cpu:", with: "")) ?? 1
+            } else if !line.isEmpty && procs == "auto" && workerLines.firstIndex(of: line) == 1 {
+                procs = line
+            } else if !line.isEmpty && workerLines.firstIndex(of: line) == 2 {
+                conns = Int(line) ?? 1024
             }
         }
         workerInfo = WorkerInfoItem(cpuCores: cpuCores, workerProcesses: procs, workerConnections: conns)

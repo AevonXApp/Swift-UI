@@ -14,19 +14,21 @@ import AevonXCoreBridge
 enum CerberusTab: String, CaseIterable {
     case dashboard = "Dashboard"
     case attacks = "Attacks"
-    case websites = "Websites"
-    case ipManagement = "IP Management"
+    case traffic = "Traffic"
+    case ipManagement = "IP Guard"
     case modules = "Modules"
     case honeypot = "Honeypot"
+    case alerts = "Alerts"
 
     var icon: String {
         switch self {
         case .dashboard: return "shield.checkered"
         case .attacks: return "exclamationmark.triangle"
-        case .websites: return "globe"
-        case .ipManagement: return "network"
-        case .modules: return "square.grid.2x2"
+        case .traffic: return "chart.bar.xaxis"
+        case .ipManagement: return "network.badge.shield.half.filled"
+        case .modules: return "square.grid.3x3.fill"
         case .honeypot: return "ant"
+        case .alerts: return "bell.badge"
         }
     }
 }
@@ -78,6 +80,13 @@ class CerberusViewModel: ObservableObject {
     // MARK: - Domain Stats
 
     @Published var domainStats: [String: DomainStats] = [:]
+
+    // MARK: - Extended Stats
+
+    @Published var responseTimes: WAFResponseTimes?
+    @Published var statusCodes: [WAFStatusCode] = []
+    @Published var botDetails: WAFBotDetails?
+    @Published var recentAlerts: [WAFAlertEvent] = []
 
     // MARK: - Module Config State
 
@@ -309,6 +318,37 @@ class CerberusViewModel: ObservableObject {
         } catch {
             errorMessage = error.localizedDescription
         }
+    }
+
+    // MARK: - Load Extended Stats
+
+    func loadTrafficAnalytics() async {
+        isLoading = true
+        do {
+            async let ds = cerberus.getDomainStats(on: serverId)
+            async let rt = cerberus.getResponseTimes(on: serverId)
+            async let sc = cerberus.getStatusCodes(on: serverId)
+            async let bd = cerberus.getBotDetails(on: serverId)
+
+            let (domains, times, codes, bots) = try await (ds, rt, sc, bd)
+            domainStats = domains
+            responseTimes = times
+            statusCodes = codes
+            botDetails = bots
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+        isLoading = false
+    }
+
+    func loadAlerts() async {
+        isLoading = true
+        do {
+            recentAlerts = try await cerberus.getRecentAlerts(on: serverId)
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+        isLoading = false
     }
 
     // MARK: - Formatting Helpers

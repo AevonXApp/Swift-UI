@@ -58,7 +58,7 @@ struct ModernDatabasesTab: View {
                 serverId: viewModel.serverId,
                 installationStates: viewModel.installationStates,
                 onCreated: {
-                    Task { await viewModel.loadData() }
+                    Task { await viewModel.loadData(forceRefresh: true) }
                 }
             )
         }
@@ -214,7 +214,7 @@ struct ModernDatabasesTab: View {
             
             Button("Retry") {
                 Task {
-                    await viewModel.loadData()
+                    await viewModel.loadData(forceRefresh: true)
                 }
             }
             .font(AXTypography.subheadline)

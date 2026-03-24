@@ -61,7 +61,10 @@ public actor DatabaseBackupService {
 
     /// Download backup content from server
     public func downloadBackup(backupPath: String, type: DatabaseType, serverId: String) async throws -> Data {
-        let cmd = "cat '\(backupPath)'"
+        guard ShellSanitizer.isValidPath(backupPath) else {
+            throw DatabaseServiceError.operationFailed("Invalid backup path")
+        }
+        let cmd = "cat \(ShellSanitizer.escapePath(backupPath))"
         let result = await ssh.executeAsync(serverID: serverId, command: cmd)
         guard let data = result.data(using: .utf8), !data.isEmpty else {
             throw DatabaseServiceError.operationFailed("Failed to download backup")
@@ -71,13 +74,17 @@ public actor DatabaseBackupService {
 
     /// Import SQL content into a database
     public func importSQL(database: String, sqlContent: String, type: DatabaseType, serverId: String) async throws {
-        let escapedSQL = sqlContent.replacingOccurrences(of: "'", with: "'\\''")
+        let safeDB = ShellSanitizer.sanitizeIdentifier(database)
+        guard !safeDB.isEmpty else {
+            throw DatabaseServiceError.operationFailed("Invalid database name")
+        }
+        let safeSQL = ShellSanitizer.quote(sqlContent)
         let cmd: String
         switch type {
         case .mysql, .mariadb:
-            cmd = "echo '\(escapedSQL)' | mysql \(database)"
+            cmd = "echo \(safeSQL) | mysql \(ShellSanitizer.quote(safeDB))"
         case .postgresql, .cockroachdb:
-            cmd = "echo '\(escapedSQL)' | psql \(database)"
+            cmd = "echo \(safeSQL) | psql \(ShellSanitizer.quote(safeDB))"
         default:
             throw DatabaseServiceError.operationFailed("SQL import not supported for \(type.rawValue)")
         }

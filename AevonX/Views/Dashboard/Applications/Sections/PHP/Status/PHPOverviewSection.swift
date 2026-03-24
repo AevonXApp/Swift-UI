@@ -203,7 +203,7 @@ struct PHPOverviewSection: View {
 
         // Re-fetch actual status from server
         let json = await bridge.getStatus(serverID: serverId, appID: "php-fpm")
-        print("[PHP-DEBUG] performAction re-fetch raw JSON: \(json.prefix(500))")
+        CoreLogger.shared.debug("[PHP] performAction re-fetch: \(json.prefix(200))", module: "PHPOverview")
         if let data = json.data(using: .utf8),
            let response = try? JSONDecoder().decode(BridgeDataResponse<BridgeAppStatus>.self, from: data),
            response.success, let newStatus = response.data {

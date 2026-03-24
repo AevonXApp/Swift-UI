@@ -323,11 +323,19 @@ class ServerListViewModel: ObservableObject {
     func deleteServer(id: String) async {
         isLoading = true
         defer { isLoading = false }
-        
+
+        // Clear stored TOFU host key before deleting.
+        // After server reinstall the host key changes, so stale keys must not persist.
+        if let vm = decryptedServers.first(where: { $0.id == id }) {
+            let hostPort = "\(vm.host):\(vm.port)"
+            UserDefaults.standard.removeObject(forKey: "hostkey:\(hostPort)")
+            SSHBridge.shared.removeHostKey(hostPort: hostPort)
+        }
+
         let token = await AevonXCoreBridge.AuthService.shared.getToken() ?? ""
         let baseURL = AevonXCoreBridge.ConfigurationManager.shared.currentConfiguration.fullBaseURL
         let resultJSON = await APIBridge.shared.deleteServerAsync(baseURL: baseURL, token: token, serverID: id)
-        
+
         if let data = resultJSON.data(using: .utf8),
            let result = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
            result["success"] as? Bool != true {
@@ -335,7 +343,7 @@ class ServerListViewModel: ObservableObject {
             showError = true
             return
         }
-        
+
         await refresh()
     }
     

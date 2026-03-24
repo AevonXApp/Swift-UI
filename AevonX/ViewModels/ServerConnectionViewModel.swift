@@ -222,6 +222,10 @@ public class ServerConnectionViewModel: ObservableObject {
     
     /// Whether to show connection error alert
     @Published var showConnectionError: Bool = false
+
+    /// Guards against onAppear re-triggering auto-connect after a failed attempt.
+    /// NavigationSplitView can re-fire onAppear when alerts dismiss or views re-render.
+    @Published private(set) var hasAttemptedConnect: Bool = false
     
     /// Lightweight inventory counts (from quick SSH queries, used before full data loads)
     @Published private(set) var applicationCount: Int = 0
@@ -344,6 +348,7 @@ public class ServerConnectionViewModel: ObservableObject {
         // Child VMs handle their own cleanup in their own deinit
         healthMonitorTask?.cancel()
         tierEscalationTask?.cancel()
+        NotificationCenter.default.removeObserver(self)
     }
     
     // MARK: - Connection Management
@@ -359,7 +364,8 @@ public class ServerConnectionViewModel: ObservableObject {
             AevonXCoreBridge.CoreLogger.shared.warning("Connection already in progress or established", module: "ServerConnection")
             return
         }
-        
+
+        hasAttemptedConnect = true
         isConnecting = true
         connectionError = nil
         connectionStage = .requestingCAT
@@ -393,9 +399,14 @@ public class ServerConnectionViewModel: ObservableObject {
                 from: serverPayload
             )
             
-            // Step 5: Establish SSH connection via Go Core
+            // Step 5: Pre-load stored host key fingerprint (TOFU)
             connectionStage = .establishingSSH
             connectionProgress = 0.7
+            let hostPort = "\(server.host):\(server.port)"
+            if let storedFP = UserDefaults.standard.string(forKey: "hostkey:\(hostPort)") {
+                SSHBridge.shared.trustHostKey(hostPort: hostPort, fingerprint: storedFP)
+            }
+
             let connectResult = await SSHBridge.shared.connectAsync(
                 serverID: serverId,
                 host: server.host,
@@ -405,15 +416,50 @@ public class ServerConnectionViewModel: ObservableObject {
                 privateKey: serverData.authentication.privateKey ?? "",
                 passphrase: serverData.authentication.keyPassphrase ?? ""
             )
-            
-            // Check connection result
-            guard let resultData = connectResult.data(using: .utf8),
+
+            // Check connection result — with auto-recovery for host key changes
+            var finalResult = connectResult
+            if let rd = connectResult.data(using: .utf8),
+               let rj = try? JSONSerialization.jsonObject(with: rd) as? [String: Any],
+               rj["success"] as? Bool != true {
+                let errorMsg = parseGoError(connectResult)
+
+                // Auto-recover from host key mismatch (server reinstall, key rotation)
+                if errorMsg.hasPrefix("HOST_KEY_MISMATCH:") {
+                    AevonXCoreBridge.CoreLogger.shared.warning(
+                        "Host key changed for \(hostPort) — clearing stale key and retrying",
+                        module: "ServerConnection"
+                    )
+
+                    // Clear stale key from both stores
+                    UserDefaults.standard.removeObject(forKey: "hostkey:\(hostPort)")
+                    SSHBridge.shared.removeHostKey(hostPort: hostPort)
+
+                    // Retry connection once (TOFU will accept the new key)
+                    finalResult = await SSHBridge.shared.connectAsync(
+                        serverID: serverId,
+                        host: server.host,
+                        port: Int32(server.port),
+                        username: serverData.connectionDetails.username,
+                        password: serverData.authentication.password ?? "",
+                        privateKey: serverData.authentication.privateKey ?? "",
+                        passphrase: serverData.authentication.keyPassphrase ?? ""
+                    )
+                }
+            }
+
+            guard let resultData = finalResult.data(using: .utf8),
                   let resultJSON = try? JSONSerialization.jsonObject(with: resultData) as? [String: Any],
                   resultJSON["success"] as? Bool == true else {
-                let errorMsg = parseGoError(connectResult)
+                let errorMsg = parseGoError(finalResult)
                 throw ConnectionError.sshConnectionFailed(errorMsg)
             }
-            
+
+            // Save host key fingerprint for future TOFU verification
+            if let fp = (resultJSON["data"] as? [String: Any])?["fingerprint"] as? String, !fp.isEmpty {
+                UserDefaults.standard.set(fp, forKey: "hostkey:\(hostPort)")
+            }
+
             // Connection successful
             isConnected = true
             isConnecting = false
