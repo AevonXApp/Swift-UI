@@ -110,13 +110,15 @@ public final class AddWebsiteViewModel: ObservableObject {
 
         switch runtime {
         case .php:
-            // Multi-path probe: BT Panel, standard Debian/Ubuntu, RHEL
-            let result = await SSHBridge.shared.executeAsync(serverID: serverId, command:
-                "(ls /www/server/php/ 2>/dev/null | grep -E '^[0-9]' | sort -V) || " +
-                "(ls /etc/php/ 2>/dev/null | sort -V) || " +
-                "(rpm -qa 2>/dev/null | grep -oP 'php\\\\d+' | sort -uV) || echo ''"
-            )
-            phpVersions = result.components(separatedBy: "\n").filter { !$0.isEmpty }
+            // Use core-go ApplicationBridge for reliable PHP version detection
+            let json = await ApplicationBridge.shared.getVersions(serverID: serverId, appID: "php-fpm")
+            if let data = json.data(using: .utf8),
+               let parsed = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+               let versions = parsed["data"] as? [[String: Any]] {
+                phpVersions = versions.compactMap { $0["version"] as? String }
+            } else {
+                phpVersions = []
+            }
             selectedVersion = phpVersions.first ?? ""
         case .nodejs:
             let result = await SSHBridge.shared.executeAsync(serverID: serverId, command: "node --version 2>/dev/null | tr -d 'v'")
@@ -264,9 +266,11 @@ public final class AddWebsiteViewModel: ObservableObject {
             let phpVersion: String? = runtime == .php ? selectedVersion : nil
             
             // Build config JSON for Go Core bridge
+            // Keys must match Go SiteConfig json tags: "root" (not "document_root"), "template", "php_version"
             var config: [String: Any] = [
                 "domain": domain,
-                "document_root": documentRoot.isEmpty ? "\(detectedWebRoot)/\(domain)" : documentRoot
+                "root": documentRoot.isEmpty ? "\(detectedWebRoot)/\(domain)" : documentRoot,
+                "template": runtime == .php ? "php" : (runtime == .nodejs ? "nodejs" : "static")
             ]
             if let phpVersion = phpVersion { config["php_version"] = phpVersion }
             let configJSON = String(data: try JSONSerialization.data(withJSONObject: config), encoding: .utf8) ?? "{}"

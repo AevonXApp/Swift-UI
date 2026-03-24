@@ -28,7 +28,8 @@ class PluginsViewModel: ObservableObject {
     @Published var installationProgress: [String: Double] = [:] // pluginId: progress
     @Published var installationStatus: [String: String] = [:]   // pluginId: status message
     @Published var installSources: [String: InstallSource] = [:] // slug: source
-    
+    @Published var pluginStatuses: [String: PluginStatusInfo] = [:] // slug: security status
+
     private let apiService = PluginAPIService.shared   // only for downloadPluginFile
     private let pluginManager = PluginManager.shared
     private let apiBridge = APIBridge.shared
@@ -119,6 +120,55 @@ class PluginsViewModel: ObservableObject {
         installationProgress[plugin.id] = 0.1
 
         do {
+            // ── Step 0: Check axsecurity readiness ──
+            installationStatus[plugin.id] = "Checking server security..."
+            log.info("[PluginInstall] Step 0: Checking axsecurity readiness on server \(serverId)...", module: "PluginsVM")
+            let authToken = await AevonXCoreBridge.AuthService.shared.getToken() ?? ""
+            let agentStatus = await pluginManager.checkAxSecurityStatus(
+                serverID: serverId, baseURL: baseURL, token: authToken
+            )
+            let readiness = ServerReadiness(from: agentStatus)
+
+            switch readiness {
+            case .needsDeployment:
+                log.info("[PluginInstall] Server needs axsecurity deployment — starting...", module: "PluginsVM")
+                installationStatus[plugin.id] = "Deploying security agent..."
+                let fpJSON = await pluginManager.collectServerFingerprint(serverID: serverId)
+                try await pluginManager.deployAxSecurity(
+                    serverID: serverId, baseURL: baseURL, token: authToken, fingerprint: fpJSON,
+                    onProgress: { [weak self] status, progress in
+                        Task { @MainActor in
+                            self?.installationStatus[plugin.id] = status
+                            self?.installationProgress[plugin.id] = progress * 0.1
+                        }
+                    }
+                )
+                log.info("[PluginInstall] ✓ axsecurity deployed", module: "PluginsVM")
+            case .agentDown:
+                log.info("[PluginInstall] Agent down — attempting redeployment...", module: "PluginsVM")
+                installationStatus[plugin.id] = "Redeploying security agent..."
+                let fpJSON2 = await pluginManager.collectServerFingerprint(serverID: serverId)
+                try await pluginManager.deployAxSecurity(
+                    serverID: serverId, baseURL: baseURL, token: authToken, fingerprint: fpJSON2,
+                    onProgress: { [weak self] status, progress in
+                        Task { @MainActor in
+                            self?.installationStatus[plugin.id] = status
+                            self?.installationProgress[plugin.id] = progress * 0.1
+                        }
+                    }
+                )
+                log.info("[PluginInstall] ✓ axsecurity redeployed", module: "PluginsVM")
+            case .needsUpdate:
+                log.info("[PluginInstall] axsecurity needs update — proceeding anyway", module: "PluginsVM")
+            case .heartbeatStale:
+                log.info("[PluginInstall] Heartbeat stale — proceeding anyway", module: "PluginsVM")
+            case .ready:
+                log.info("[PluginInstall] ✓ axsecurity ready", module: "PluginsVM")
+            case .unknown:
+                log.info("[PluginInstall] ⚠ Could not determine agent status — proceeding", module: "PluginsVM")
+            }
+            installationProgress[plugin.id] = 0.15
+
             // ── Step 1: Verify license (ALWAYS) ──
             installationStatus[plugin.id] = "Verifying license..."
             log.info("[PluginInstall] Step 1: Verifying license for \(plugin.slug)...", module: "PluginsVM")
@@ -320,6 +370,51 @@ class PluginsViewModel: ObservableObject {
     
     // MARK: - Go Bridge Helpers
     
+    // MARK: - Plugin Security Status
+
+    func refreshPluginStatuses(serverID: String) async {
+        let installedSlugs = installedPlugins.compactMap { $0.slug }
+        guard !installedSlugs.isEmpty else {
+            pluginStatuses = [:]
+            return
+        }
+
+        let token = await AevonXCoreBridge.AuthService.shared.getToken() ?? ""
+        let statuses = await pluginManager.getPluginStatuses(
+            serverID: serverID,
+            slugs: installedSlugs,
+            baseURL: baseURL,
+            token: token
+        )
+        pluginStatuses = statuses
+    }
+
+    func statusColor(for slug: String) -> Color {
+        guard let info = pluginStatuses[slug] else { return .secondary }
+        switch info.status {
+        case .active:                          return .green
+        case .heartbeatStale, .updateAvailable: return .yellow
+        case .agentDown:                       return .orange
+        case .expired, .suspended, .tamperDetected: return .red
+        case .notInstalled, .unknown:          return .secondary
+        }
+    }
+
+    func statusLabel(for slug: String) -> String {
+        guard let info = pluginStatuses[slug] else { return "" }
+        switch info.status {
+        case .active:           return "Active"
+        case .expired:          return "Expired"
+        case .suspended:        return "Suspended"
+        case .tamperDetected:   return "Tamper Detected"
+        case .heartbeatStale:   return "Stale Heartbeat"
+        case .updateAvailable:  return "Update Available"
+        case .agentDown:        return "Agent Down"
+        case .notInstalled:     return "Not Installed"
+        case .unknown:          return "Unknown"
+        }
+    }
+
     private func parseGoResult(_ json: String) -> [String: Any]? {
         guard let rawData = json.data(using: .utf8),
               let result = try? JSONSerialization.jsonObject(with: rawData) as? [String: Any],

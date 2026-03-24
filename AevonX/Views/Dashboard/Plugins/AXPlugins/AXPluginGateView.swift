@@ -378,39 +378,38 @@ class AXPluginGateViewModel: ObservableObject {
                 throw PluginInstallError(userMessage: licenseResult.userMessage ?? "Plugin license verification failed.")
             }
 
-            // ── Step 2: Install ──
-            if !isDevMode {
-                // PROD: Protected pipeline
-                installStatus = "Preparing secure install..."
-                log.info("[PluginGate] Step 2: PROD protected pipeline", module: "PluginGate")
-                try await pluginManager.installProtectedPlugin(slug: plugin.slug, on: serverId)
-            } else {
-                // DEV: Download on Mac + SSH upload
-                installStatus = "Requesting download..."
-                let token = await AevonXCoreBridge.AuthService.shared.getToken() ?? ""
-                let targetVersion = plugin.activeVersion
+            // ── Step 2: Install via secure path (blind relay or legacy) ──
+            installStatus = "Preparing secure install..."
+            let token = await AevonXCoreBridge.AuthService.shared.getToken() ?? ""
+            let targetVersion = plugin.activeVersion
 
-                let downloadJSON = await apiBridge.getPluginDownloadInfoAsync(
-                    baseURL: baseURL, token: token,
-                    pluginID: plugin.id,
-                    versionID: targetVersion?.id ?? "",
-                    serverID: serverId,
-                    serverIP: ""
-                )
+            // Get download info for legacy fallback path
+            let downloadJSON = await apiBridge.getPluginDownloadInfoAsync(
+                baseURL: baseURL, token: token,
+                pluginID: plugin.id,
+                versionID: targetVersion?.id ?? "",
+                serverID: serverId,
+                serverIP: ""
+            )
+            let dlData = parseGoResult(downloadJSON)
+            let downloadUrl = dlData?["download_url"] as? String ?? ""
 
-                guard let dlData = parseGoResult(downloadJSON),
-                      let downloadUrl = dlData["download_url"] as? String else {
-                    let err = extractGoError(downloadJSON)
-                    log.error("[PluginGate] ✖ Download token failed: \(err)", module: "PluginGate")
-                    throw PluginInstallError(userMessage: "Failed to prepare download. Please try again.")
+            log.info("[PluginGate] Step 2: Secure install (blind relay if license token available)", module: "PluginGate")
+            try await pluginManager.installSecure(
+                plugin: plugin,
+                version: targetVersion,
+                downloadURL: downloadUrl,
+                serverId: serverId,
+                serverIP: "",
+                baseURL: baseURL,
+                token: token,
+                licenseToken: licenseResult.licenseToken,
+                tokenSignature: licenseResult.tokenSignature,
+                nonce: licenseResult.nonce
+            ) { status, progress in
+                Task { @MainActor in
+                    self.installStatus = status
                 }
-
-                installStatus = "Downloading plugin..."
-                log.info("[PluginGate] Step 2: DEV downloading + uploading", module: "PluginGate")
-                try await pluginManager.installPluginViaLocalDownload(
-                    plugin: plugin, version: targetVersion,
-                    downloadURL: downloadUrl, on: serverId
-                )
             }
 
             // Step 3: Reload hooks

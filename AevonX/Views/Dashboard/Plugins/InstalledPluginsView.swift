@@ -39,6 +39,8 @@ struct InstalledPluginsView: View {
                     ForEach(viewModel.installedPlugins) { plugin in
                         InstalledPluginRow(
                             plugin: plugin,
+                            statusLabel: viewModel.statusLabel(for: plugin.slug),
+                            statusColor: viewModel.statusColor(for: plugin.slug),
                             onConfigure: {
                                 selectedPlugin = plugin
                                 showConfig = true
@@ -66,7 +68,10 @@ struct InstalledPluginsView: View {
         }
         .onAppear {
             if let sid = serverId {
-                Task { await viewModel.loadInstalledPlugins(on: sid) }
+                Task {
+                    await viewModel.loadInstalledPlugins(on: sid)
+                    await viewModel.refreshPluginStatuses(serverID: sid)
+                }
             }
         }
     }
@@ -74,30 +79,38 @@ struct InstalledPluginsView: View {
 
 struct InstalledPluginRow: View {
     let plugin: Plugin
+    var statusLabel: String = ""
+    var statusColor: Color = .secondary
     let onConfigure: () -> Void
     let onUninstall: () -> Void
-    
+
     var body: some View {
         HStack(spacing: AXSpacing.md) {
             ZStack {
                 RoundedRectangle(cornerRadius: AXCornerRadius.sm)
                     .fill(Color.axBackgroundTertiary)
                     .frame(width: 44, height: 44)
-                
+
                 Image(systemName: "puzzlepiece.fill")
                     .foregroundColor(.axAccentBlue)
             }
-            
+
             VStack(alignment: .leading, spacing: AXSpacing.xxs) {
-                Text(plugin.name)
-                    .font(AXTypography.body)
-                    .fontWeight(.semibold)
-                
+                HStack(spacing: AXSpacing.sm) {
+                    Text(plugin.name)
+                        .font(AXTypography.body)
+                        .fontWeight(.semibold)
+
+                    if !statusLabel.isEmpty {
+                        PluginStatusBadge(label: statusLabel, color: statusColor)
+                    }
+                }
+
                 Text(plugin.activeVersion?.versionNumber ?? "v1.0.0")
                     .font(AXTypography.caption)
                     .foregroundColor(.axTextMuted)
             }
-            
+
             Spacer()
             
             UninstallButton(onUninstall: onUninstall)
@@ -118,6 +131,26 @@ struct InstalledPluginRow: View {
         }
         .padding(.vertical, AXSpacing.sm)
         .padding(.horizontal, AXSpacing.md)
+    }
+}
+
+private struct PluginStatusBadge: View {
+    let label: String
+    let color: Color
+
+    var body: some View {
+        HStack(spacing: AXSpacing.xxs) {
+            Circle()
+                .fill(color)
+                .frame(width: 6, height: 6)
+            Text(label)
+                .font(.system(size: 10, weight: .medium))
+                .foregroundColor(color)
+        }
+        .padding(.horizontal, AXSpacing.xs)
+        .padding(.vertical, AXSpacing.xxxs)
+        .background(color.opacity(0.1))
+        .cornerRadius(AXCornerRadius.sm)
     }
 }
 

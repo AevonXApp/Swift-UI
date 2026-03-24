@@ -150,19 +150,38 @@ public struct AXStatusBadge: View {
 
 // MARK: - Circular Progress
 
-public struct AXCircularProgress: View {
+public struct AXCircularProgress<Content: View>: View {
     let value: Double // 0.0 - 1.0
     var size: CGFloat = 32
     var lineWidth: CGFloat = 3
     var color: Color = .axAccentBlue
     var showValue: Bool = true
-    
+    let content: Content?
+
+    public init(value: Double, size: CGFloat = 32, lineWidth: CGFloat = 3, color: Color = .axAccentBlue, showValue: Bool = true) where Content == Never {
+        self.value = value
+        self.size = size
+        self.lineWidth = lineWidth
+        self.color = color
+        self.showValue = showValue
+        self.content = nil
+    }
+
+    public init(progress: Double, color: Color = .axAccentBlue, size: CGFloat = 32, lineWidth: CGFloat = 3, @ViewBuilder content: () -> Content) {
+        self.value = progress
+        self.size = size
+        self.lineWidth = lineWidth
+        self.color = color
+        self.showValue = false
+        self.content = content()
+    }
+
     public var body: some View {
         ZStack {
             // Background circle
             Circle()
                 .stroke(Color.axBorder, lineWidth: lineWidth)
-            
+
             // Progress arc
             Circle()
                 .trim(from: 0, to: CGFloat(min(value, 1.0)))
@@ -176,9 +195,11 @@ public struct AXCircularProgress: View {
                 )
                 .rotationEffect(.degrees(-90))
                 .animation(.spring(response: 0.5), value: value)
-            
-            // Value text
-            if showValue {
+
+            // Value text or custom content
+            if let content {
+                content
+            } else if showValue {
                 Text("\(Int(value * 100))")
                     .font(.system(size: size * 0.3, weight: .semibold, design: .rounded))
                     .foregroundColor(.axTextPrimary)
