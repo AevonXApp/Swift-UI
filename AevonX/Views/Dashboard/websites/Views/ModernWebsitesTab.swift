@@ -237,6 +237,14 @@ struct WebsiteToolbar: View {
             AXSearchBar(text: $viewModel.searchText, placeholder: "Search websites...")
                 .frame(width: 280)
 
+            if viewModel.hasMixedEngines {
+                HStack(spacing: AXSpacing.xxs) {
+                    engineFilterChip("All", value: "all")
+                    engineFilterChip("Nginx", value: "nginx")
+                    engineFilterChip("Apache", value: "apache")
+                }
+            }
+
             Spacer()
 
             // Add website button
@@ -258,6 +266,25 @@ struct WebsiteToolbar: View {
         }
         .padding(.horizontal, AXSpacing.xl)
         .padding(.bottom, AXSpacing.lg)
+    }
+
+    private func engineFilterChip(_ label: String, value: String) -> some View {
+        let isActive = viewModel.engineFilter == value
+        return Button(action: { viewModel.engineFilter = value }) {
+            Text(label)
+                .font(AXTypography.caption)
+                .fontWeight(.semibold)
+                .foregroundColor(isActive ? .white : .axTextSecondary)
+                .padding(.horizontal, AXSpacing.md)
+                .padding(.vertical, AXSpacing.xs)
+                .background(isActive ? Color.axAccentBlue : Color.axSurface)
+                .cornerRadius(AXCornerRadius.lg)
+                .overlay(
+                    RoundedRectangle(cornerRadius: AXCornerRadius.lg)
+                        .stroke(isActive ? Color.clear : Color.axBorder.opacity(0.4), lineWidth: 1)
+                )
+        }
+        .buttonStyle(PlainButtonStyle())
     }
 }
 

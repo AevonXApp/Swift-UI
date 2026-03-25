@@ -35,11 +35,13 @@ class EnhancedLogsViewModel: ObservableObject {
 
     let serverId: String
     let domain: String
+    let engine: String
     private let bridge = WebsitesBridge.shared
 
-    init(serverId: String, domain: String) {
+    init(serverId: String, domain: String, engine: String = "nginx") {
         self.serverId = serverId
         self.domain = domain
+        self.engine = engine
     }
 
     func discoverLogs() async {

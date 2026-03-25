@@ -49,6 +49,13 @@ public final class WebsiteManagementViewModel: ObservableObject {
         }
     }
 
+    /// Engine filter: "all", "nginx", or "apache"
+    @Published public var engineFilter = "all" {
+        didSet {
+            filterWebsites()
+        }
+    }
+
     /// Selected website for detail view
     @Published public var selectedWebsite: WebsiteInfo?
 
@@ -154,8 +161,9 @@ public final class WebsiteManagementViewModel: ObservableObject {
     /// Loads all websites from the server via Go Core bridge
     private func loadAllWebsites(serverId: String) async {
         do {
-            // Step 1: Get detailed list command from Go Core (returns doc_root, SSL, PHP version)
-            let listCmd = bridge.listWithDetailsCmd()
+            // Step 1: Get detailed list command — engine-aware (searches both nginx & apache if "both")
+            let engineType = serverPaths.webServerType.isEmpty ? "nginx" : serverPaths.webServerType
+            let listCmd = bridge.listAllSitesCmd(engine: engineType)
             guard !listCmd.isEmpty else {
                 errorMessage = "Failed to get website list command"
                 return
@@ -180,14 +188,21 @@ public final class WebsiteManagementViewModel: ObservableObject {
                 return
             }
             let sitesJSON = try JSONSerialization.data(withJSONObject: sitesData)
-            // Keys must match Go WebsiteInfo json tags: doc_root, has_ssl, server_type, php_version
             struct BridgeSite: Codable {
                 let domain: String
                 let enabled: Bool
-                let server_type: String?
-                let doc_root: String?
-                let php_version: String?
-                let has_ssl: Bool?
+                let serverType: String?
+                let docRoot: String?
+                let phpVersion: String?
+                let hasSSL: Bool?
+
+                enum CodingKeys: String, CodingKey {
+                    case domain, enabled
+                    case serverType = "server_type"
+                    case docRoot = "doc_root"
+                    case phpVersion = "php_version"
+                    case hasSSL = "has_ssl"
+                }
             }
             if let sites = try? JSONDecoder().decode([BridgeSite].self, from: sitesJSON) {
                 let uiWebsites = sites.map { site in
@@ -195,9 +210,10 @@ public final class WebsiteManagementViewModel: ObservableObject {
                         name: site.domain,
                         domain: site.domain,
                         status: site.enabled ? .online : .offline,
-                        sslEnabled: site.has_ssl ?? false,
-                        phpVersion: site.php_version,
-                        documentRoot: site.doc_root ?? "\(serverPaths.webRoot)/\(site.domain)",
+                        sslEnabled: site.hasSSL ?? false,
+                        phpVersion: site.phpVersion,
+                        documentRoot: site.docRoot ?? "\(serverPaths.webRoot)/\(site.domain)",
+                        webServerEngine: site.serverType,
                         isReachable: site.enabled
                     )
                 }
@@ -209,7 +225,7 @@ public final class WebsiteManagementViewModel: ObservableObject {
                     value: uiWebsites,
                     ttl: SSHResultCache.websiteListTTL
                 )
-                CoreLogger.shared.info("Loaded \(uiWebsites.count) websites", module: "WebsiteManagementViewModel")
+                CoreLogger.shared.info("Loaded \(uiWebsites.count) websites (\(engineType))", module: "WebsiteManagementViewModel")
             } else {
                 CoreLogger.shared.warning("Failed to decode site list JSON", module: "WebsiteManagementViewModel")
                 allWebsites = []
@@ -229,6 +245,11 @@ public final class WebsiteManagementViewModel: ObservableObject {
     private func filterWebsites() {
         var filtered = allWebsites
 
+        // Filter by engine
+        if engineFilter != "all" {
+            filtered = filtered.filter { ($0.webServerEngine ?? "nginx") == engineFilter }
+        }
+
         // Filter by search text
         if !searchText.isEmpty {
             filtered = filtered.filter {
@@ -240,12 +261,19 @@ public final class WebsiteManagementViewModel: ObservableObject {
         filteredWebsites = filtered
     }
 
+    /// Whether this server has both nginx and apache sites
+    public var hasMixedEngines: Bool {
+        let engines = Set(allWebsites.compactMap { $0.webServerEngine })
+        return engines.count > 1
+    }
+
     // MARK: - Website Operations (Via Core Layer)
 
-    /// Creates a new website via Core layer
+    /// Creates a new website via Core layer (engine-aware)
     public func createWebsite(
         name: String,
         domain: String,
+        engine: String = "nginx",
         phpVersion: String? = nil,
         runtime: RuntimeType = .php,
         enableSSL: Bool = false,
@@ -256,26 +284,27 @@ public final class WebsiteManagementViewModel: ObservableObject {
         }
 
         // Build config JSON for Go Core bridge
-        // Keys must match Go SiteConfig json tags: "root" (not "document_root"), "template", "php_version"
         let template: String
         switch runtime {
         case .php: template = "php"
         case .nodejs: template = "nodejs"
         default: template = "static"
         }
+        let sitesAvailable = engine == "apache" ? serverPaths.apacheSitesAvailable : serverPaths.nginxSitesAvailable
+        let sitesEnabled = engine == "apache" ? serverPaths.apacheSitesEnabled : serverPaths.nginxSitesEnabled
         var config: [String: Any] = [
             "domain": domain,
             "root": documentRoot ?? "\(serverPaths.webRoot)/\(domain)",
             "template": template,
-            "sites_available": serverPaths.nginxSitesAvailable,
-            "sites_enabled": serverPaths.nginxSitesEnabled,
+            "sites_available": sitesAvailable,
+            "sites_enabled": sitesEnabled,
             "web_ownership": serverPaths.webOwnership
         ]
         if let phpVersion = phpVersion { config["php_version"] = phpVersion }
         let configJSON = String(data: try JSONSerialization.data(withJSONObject: config), encoding: .utf8) ?? "{}"
 
-        // Get create commands from Go Core
-        let cmds = bridge.createSiteCmd(serverID: serverId, configJSON: configJSON)
+        // Get create commands from Go Core (engine-aware)
+        let cmds = bridge.createSiteCmd(engine: engine, serverID: serverId, configJSON: configJSON)
         for cmd in cmds {
             let result = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
             if result.localizedCaseInsensitiveContains("error") || result.localizedCaseInsensitiveContains("failed") || result.localizedCaseInsensitiveContains("permission denied") {
@@ -284,18 +313,14 @@ public final class WebsiteManagementViewModel: ObservableObject {
             }
         }
 
-        // Enable SSL if requested
+        // Enable SSL in background — don't block creation
         if enableSSL {
-            let sslCmds = bridge.issueSSLCmd(domain: domain)
-            for cmd in sslCmds {
-                let result = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
-                let lower = result.lowercased()
-                if lower.contains("certbot_install_failed") || lower.contains("not found") ||
-                   lower.contains("command not found") || lower.contains("error") ||
-                   lower.contains("failed") || lower.contains("unauthorized") {
-                    CoreLogger.shared.warning("SSL issuance may have failed: \(result)", module: "WebsiteManagement")
-                    break
-                }
+            let sslDomain = domain
+            let sslServerId = serverId
+            let sslBridge = bridge
+            let sslEngine = engine
+            Task { @MainActor in
+                await AddWebsiteViewModel.issueSSLInBackground(domain: sslDomain, serverId: sslServerId, bridge: sslBridge, engine: sslEngine)
             }
         }
 

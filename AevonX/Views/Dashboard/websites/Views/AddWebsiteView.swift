@@ -37,8 +37,13 @@ struct AddWebsiteView: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: AXSpacing.lg) {
                         domainField
+
+                        if viewModel.detectedWebServerType == "both" {
+                            enginePicker
+                        }
+
                         runtimePicker
-                        
+
                         if viewModel.runtimeHasVersions {
                             versionPicker
                         }
@@ -140,6 +145,20 @@ struct AddWebsiteView: View {
                     .font(AXTypography.caption)
                     .foregroundColor(.axError)
             }
+        }
+    }
+
+    private var enginePicker: some View {
+        VStack(alignment: .leading, spacing: AXSpacing.sm) {
+            Text("Web Server")
+                .font(AXTypography.caption)
+                .foregroundColor(.axTextSecondary)
+
+            Picker("", selection: $viewModel.selectedEngine) {
+                Text("Nginx").tag("nginx")
+                Text("Apache").tag("apache")
+            }
+            .pickerStyle(SegmentedPickerStyle())
         }
     }
 

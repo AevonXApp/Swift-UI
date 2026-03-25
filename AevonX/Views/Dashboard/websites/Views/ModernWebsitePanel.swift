@@ -227,7 +227,8 @@ struct ModernWebsitePanel: View {
             serverId: viewModel.serverId ?? "",
             domain: viewModel.website.domain,
             docRoot: viewModel.website.documentRoot ?? "/var/www/\(viewModel.website.domain)",
-            runtime: viewModel.website.runtime
+            runtime: viewModel.website.runtime,
+            engine: viewModel.website.webServerEngine ?? "nginx"
         )
         DispatchQueue.main.async { self.sectionFactory = factory }
         return factory
@@ -537,7 +538,8 @@ struct ModernWebsitePanel: View {
             SiteConfigSection(
                 viewModel: SiteConfigViewModel(
                     serverId: viewModel.serverId ?? "",
-                    domain: viewModel.website.domain
+                    domain: viewModel.website.domain,
+                    engine: viewModel.website.webServerEngine ?? "nginx"
                 )
             )
         case .gitSource:
@@ -551,21 +553,24 @@ struct ModernWebsitePanel: View {
                 viewModel: SiteSecurityViewModel(
                     serverId: viewModel.serverId ?? "",
                     domain: viewModel.website.domain,
-                    docRoot: viewModel.website.documentRoot ?? "/var/www/\(viewModel.website.domain)"
+                    docRoot: viewModel.website.documentRoot ?? "/var/www/\(viewModel.website.domain)",
+                    engine: viewModel.website.webServerEngine ?? "nginx"
                 )
             )
         case .httpHeaders:
             HeadersSection(
                 viewModel: HeadersViewModel(
                     serverId: viewModel.serverId ?? "",
-                    domain: viewModel.website.domain
+                    domain: viewModel.website.domain,
+                    engine: viewModel.website.webServerEngine ?? "nginx"
                 )
             )
         case .cacheManager:
             CacheSection(
                 viewModel: CacheViewModel(
                     serverId: viewModel.serverId ?? "",
-                    domain: viewModel.website.domain
+                    domain: viewModel.website.domain,
+                    engine: viewModel.website.webServerEngine ?? "nginx"
                 )
             )
         case .performance:

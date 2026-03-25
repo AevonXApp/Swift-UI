@@ -73,7 +73,7 @@ class BackupViewModel: ObservableObject {
 
     func restoreBackup(_ backup: SiteBackupInfo) async {
         backupProgress = "Restoring from \(backup.filename)..."
-        let cmd = bridge.restoreBackupCmd(filename: backup.filename, docRoot: docRoot)
+        let cmd = bridge.restoreBackupCmd(domain: domain, backupFile: backup.filename, docRoot: docRoot)
         _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
         GlobalToastManager.shared.showSuccess("Restored from \(backup.filename)")
         await loadBackups()
@@ -81,7 +81,7 @@ class BackupViewModel: ObservableObject {
     }
 
     func deleteBackup(_ backup: SiteBackupInfo) async {
-        let cmd = bridge.deleteBackupCmd(filename: backup.filename)
+        let cmd = bridge.deleteBackupCmd(filename: backup.filename, domain: domain)
         _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
         await loadBackups()
     }

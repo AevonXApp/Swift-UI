@@ -24,6 +24,7 @@ public final class AddWebsiteViewModel: ObservableObject {
     @Published public var enableSSL = true
     @Published public var documentRoot = ""
     @Published public var userEditedDocumentRoot = false
+    @Published public var selectedEngine = "nginx"
 
     // Server capabilities
     @Published public var isLoadingCapabilities = true
@@ -32,6 +33,7 @@ public final class AddWebsiteViewModel: ObservableObject {
     @Published public var nodeVersions: [String] = []
     @Published public var pythonVersions: [String] = []
     @Published public var detectedWebRoot = ServerPaths.defaults.webRoot
+    @Published public var detectedWebServerType = "nginx"
 
     // Directory browser
     @Published public var isShowingDirectoryBrowser = false
@@ -100,6 +102,10 @@ public final class AddWebsiteViewModel: ObservableObject {
         let detectedPaths = PathResolverBridge.shared.parse(output: pathOutput)
         serverPaths = detectedPaths
         detectedWebRoot = detectedPaths.webRoot
+        detectedWebServerType = detectedPaths.webServerType
+        if detectedPaths.webServerType != "both" {
+            selectedEngine = detectedPaths.webServerType
+        }
 
         // Show form immediately — version loading happens in background
         isLoadingCapabilities = false
@@ -270,19 +276,21 @@ public final class AddWebsiteViewModel: ObservableObject {
             
             // Build config JSON for Go Core bridge
             // Keys must match Go SiteConfig json tags: "root" (not "document_root"), "template", "php_version"
+            let sitesAvailable = selectedEngine == "apache" ? serverPaths.apacheSitesAvailable : serverPaths.nginxSitesAvailable
+            let sitesEnabled = selectedEngine == "apache" ? serverPaths.apacheSitesEnabled : serverPaths.nginxSitesEnabled
             var config: [String: Any] = [
                 "domain": domain,
                 "root": documentRoot.isEmpty ? "\(detectedWebRoot)/\(domain)" : documentRoot,
                 "template": runtime == .php ? "php" : (runtime == .nodejs ? "nodejs" : "static"),
-                "sites_available": serverPaths.nginxSitesAvailable,
-                "sites_enabled": serverPaths.nginxSitesEnabled,
+                "sites_available": sitesAvailable,
+                "sites_enabled": sitesEnabled,
                 "web_ownership": serverPaths.webOwnership
             ]
             if let phpVersion = phpVersion { config["php_version"] = phpVersion }
             let configJSON = String(data: try JSONSerialization.data(withJSONObject: config), encoding: .utf8) ?? "{}"
 
             // Get create commands from Go Core
-            let cmds = bridge.createSiteCmd(serverID: serverId, configJSON: configJSON)
+            let cmds = bridge.createSiteCmd(engine: selectedEngine, serverID: serverId, configJSON: configJSON)
             for cmd in cmds {
                 let result = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
                 if result.localizedCaseInsensitiveContains("error") || result.localizedCaseInsensitiveContains("failed") || result.localizedCaseInsensitiveContains("permission denied") {
@@ -296,8 +304,9 @@ public final class AddWebsiteViewModel: ObservableObject {
                 let sslDomain = domain
                 let sslServerId = serverId
                 let sslBridge = bridge
+                let sslEngine = selectedEngine
                 Task { @MainActor in
-                    await Self.issueSSLInBackground(domain: sslDomain, serverId: sslServerId, bridge: sslBridge)
+                    await Self.issueSSLInBackground(domain: sslDomain, serverId: sslServerId, bridge: sslBridge, engine: sslEngine)
                 }
             }
 
@@ -318,10 +327,10 @@ public final class AddWebsiteViewModel: ObservableObject {
     // MARK: - Background SSL
 
     /// Issues SSL in background with progress toasts. Shared by AddWebsite and ManagementVM.
-    static func issueSSLInBackground(domain: String, serverId: String, bridge: WebsitesBridge) async {
+    static func issueSSLInBackground(domain: String, serverId: String, bridge: WebsitesBridge, engine: String = "nginx") async {
         let toastID = GlobalToastManager.shared.showProgress("SSL: Setting up for \(domain)...")
 
-        let sslCmds = bridge.issueSSLCmd(domain: domain)
+        let sslCmds = bridge.issueSSLCmd(engine: engine, domain: domain)
         for cmd in sslCmds {
             let result = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
 

@@ -17,19 +17,21 @@ class HeadersViewModel: ObservableObject {
 
     let serverId: String
     let domain: String
+    let engine: String
     private let bridge = WebsitesBridge.shared
     private var serverPaths: ServerPaths = .defaults
     private var pathsDetected = false
 
-    init(serverId: String, domain: String) {
+    init(serverId: String, domain: String, engine: String = "nginx") {
         self.serverId = serverId
         self.domain = domain
+        self.engine = engine
     }
 
     func loadHeaders() async {
         await detectPathsIfNeeded()
         let configPath = resolveConfigPath()
-        let cmd = bridge.loadHeadersCmd(configPath: configPath)
+        let cmd = bridge.loadHeadersCmdRouted(engine: engine, configPath: configPath)
         let result = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
         let parsedJSON = bridge.parseHeaders(output: result)
         
@@ -77,9 +79,9 @@ class HeadersViewModel: ObservableObject {
 
     func applyRecommendedHeaders() async {
         let configPath = resolveConfigPath()
-        let cmd = bridge.applyRecommendedHeadersCmd(configPath: configPath)
+        let cmd = bridge.applyRecommendedHeadersCmdRouted(engine: engine, configPath: configPath)
         _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
-        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.restartNginxCmd())
+        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.reloadEngineCmd(engine: engine, serverID: serverId))
         GlobalToastManager.shared.showSuccess("Security headers applied & server reloaded")
         await loadHeaders()
         await runSecurityAudit()
@@ -87,8 +89,10 @@ class HeadersViewModel: ObservableObject {
 
     /// Resolves the config path for the domain, checking both standard and BT Panel formats
     private func resolveConfigPath() -> String {
-        let sa = serverPaths.nginxSitesAvailable
-        // BT Panel uses .conf extension, standard Nginx often doesn't
+        let sa = engine == "apache" ? serverPaths.apacheSitesAvailable : serverPaths.nginxSitesAvailable
+        if engine == "apache" {
+            return "\(sa)/\(domain).conf"
+        }
         if serverPaths.serverType == "bt_panel" || sa.contains("/www/server") {
             return "\(sa)/\(domain).conf"
         }

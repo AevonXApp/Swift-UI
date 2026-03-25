@@ -18,11 +18,15 @@ class CacheViewModel: ObservableObject {
 
     let serverId: String
     let domain: String
+    let engine: String
     private let bridge = WebsitesBridge.shared
+    private var serverPaths: ServerPaths = .defaults
+    private var pathsDetected = false
 
-    init(serverId: String, domain: String) {
+    init(serverId: String, domain: String, engine: String = "nginx") {
         self.serverId = serverId
         self.domain = domain
+        self.engine = engine
     }
 
     func loadCacheStatus() async {
@@ -60,7 +64,16 @@ class CacheViewModel: ObservableObject {
     func purgeAllCache() async {
         isPurging = true
         defer { isPurging = false }
-        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.purgeAllCachesCmd())
+        await detectPathsIfNeeded()
+        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.purgeAllCachesCmdRouted(engine: engine, cacheDir: serverPaths.cacheDir))
         GlobalToastManager.shared.showSuccess("All caches purged")
+    }
+
+    private func detectPathsIfNeeded() async {
+        guard !pathsDetected else { return }
+        let cmd = PathResolverBridge.shared.detectCmd()
+        let output = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
+        serverPaths = PathResolverBridge.shared.parse(output: output)
+        pathsDetected = true
     }
 }

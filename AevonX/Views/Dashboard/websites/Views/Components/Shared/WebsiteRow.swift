@@ -94,7 +94,15 @@ struct WebsiteCard: View {
                     text: website.formattedDiskUsage,
                     color: .axTextSecondary
                 )
-                
+
+                if let engine = website.webServerEngine {
+                    ChipBadge(
+                        icon: engine == "apache" ? "flame.fill" : "bolt.fill",
+                        text: engine.capitalized,
+                        color: engine == "apache" ? .orange : .blue
+                    )
+                }
+
                 Spacer()
             }
             .padding(.horizontal, AXSpacing.md)

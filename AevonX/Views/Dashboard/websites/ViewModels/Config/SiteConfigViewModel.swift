@@ -24,14 +24,16 @@ class SiteConfigViewModel: ObservableObject {
 
     let serverId: String
     let domain: String
+    let engine: String
     private var originalContent = ""
     private let bridge = WebsitesBridge.shared
     private var serverPaths: ServerPaths = .defaults
     private var pathsDetected = false
 
-    init(serverId: String, domain: String) {
+    init(serverId: String, domain: String, engine: String = "nginx") {
         self.serverId = serverId
         self.domain = domain
+        self.engine = engine
     }
 
     func loadConfig() async {
@@ -40,7 +42,7 @@ class SiteConfigViewModel: ObservableObject {
         await detectPathsIfNeeded()
         let path = resolveConfigPath()
         configPath = path
-        let cmd = bridge.loadNginxConfigCmd(configPath: path)
+        let cmd = bridge.readConfigCmdRouted(engine: engine, configPath: path)
         let result = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
         configContent = result
         originalContent = result
@@ -50,9 +52,9 @@ class SiteConfigViewModel: ObservableObject {
     func validateConfig() async {
         isValidating = true
         defer { isValidating = false }
-        let result = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.validateNginxCmd())
+        let result = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.validateConfigCmdRouted(engine: engine))
         validationResult = result
-        validationPassed = result.contains("successful") || result.contains("syntax is ok")
+        validationPassed = result.contains("successful") || result.contains("syntax is ok") || result.contains("Syntax OK")
     }
 
     func saveConfig() async {
@@ -63,19 +65,19 @@ class SiteConfigViewModel: ObservableObject {
         let ts = ISO8601DateFormatter().string(from: Date()).replacingOccurrences(of: ":", with: "-")
         let backupDir = "/var/backups/aevonx"
         // Backup + write via bridge
-        let saveCmds = bridge.saveConfigCmds(configPath: path, content: configContent, domain: domain, timestamp: ts, backupDir: backupDir)
+        let saveCmds = bridge.saveConfigCmdsRouted(engine: engine, configPath: path, content: configContent, domain: domain, timestamp: ts, backupDir: backupDir)
         for cmd in saveCmds {
             _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
         }
         // Validate
-        let test = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.validateNginxCmd())
+        let test = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.validateConfigCmdRouted(engine: engine))
         validationResult = test
-        validationPassed = test.contains("successful") || test.contains("syntax is ok")
+        validationPassed = test.contains("successful") || test.contains("syntax is ok") || test.contains("Syntax OK")
         if validationPassed {
-            _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.restartNginxCmd())
+            _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.reloadEngineCmd(engine: engine, serverID: serverId))
             originalContent = configContent
             hasUnsavedChanges = false
-            GlobalToastManager.shared.showSuccess("Config saved & Nginx reloaded")
+            GlobalToastManager.shared.showSuccess("Config saved & \(engine.capitalized) reloaded")
             await loadBackups()
         } else {
             // Rollback via bridge
@@ -122,7 +124,10 @@ class SiteConfigViewModel: ObservableObject {
     }
 
     private func resolveConfigPath() -> String {
-        let sa = serverPaths.nginxSitesAvailable
+        let sa = engine == "apache" ? serverPaths.apacheSitesAvailable : serverPaths.nginxSitesAvailable
+        if engine == "apache" {
+            return "\(sa)/\(domain).conf"
+        }
         if serverPaths.serverType == "bt_panel" || sa.contains("/www/server") || sa.contains("/conf.d") || sa.contains("/vhost") {
             return "\(sa)/\(domain).conf"
         }

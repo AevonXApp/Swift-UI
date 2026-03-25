@@ -41,6 +41,7 @@ public struct WebsiteInfo: Identifiable, Codable, Hashable {
     public var port: Int?
     public var documentRoot: String?
     public var configPath: String?
+    public var webServerEngine: String? // "nginx" or "apache"
 
     // Health & Performance
     public var isReachable: Bool
@@ -82,6 +83,7 @@ public struct WebsiteInfo: Identifiable, Codable, Hashable {
         port: Int? = nil,
         documentRoot: String? = nil,
         configPath: String? = nil,
+        webServerEngine: String? = nil,
         isReachable: Bool = false,
         responseTime: Double? = nil,
         uptime: Double? = nil,
@@ -116,6 +118,7 @@ public struct WebsiteInfo: Identifiable, Codable, Hashable {
         self.port = port ?? 80
         self.documentRoot = documentRoot
         self.configPath = configPath
+        self.webServerEngine = webServerEngine
         self.isReachable = isReachable
         self.responseTime = responseTime
         self.uptime = uptime

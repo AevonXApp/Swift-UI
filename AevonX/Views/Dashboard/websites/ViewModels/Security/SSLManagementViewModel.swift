@@ -63,6 +63,9 @@ public final class SSLManagementViewModel: ObservableObject {
     /// The website domain for display
     public var domain: String { website.domain }
 
+    /// The web server engine for this website ("nginx" or "apache")
+    private var engine: String { website.webServerEngine ?? "nginx" }
+
     // MARK: - Initialization
 
     public init(website: WebsiteInfo, serverId: String?) {
@@ -216,7 +219,7 @@ public final class SSLManagementViewModel: ObservableObject {
         isIssuingCertificate = true
         error = nil
 
-        let cmds = bridge.issueSSLCmd(domain: website.domain)
+        let cmds = bridge.issueSSLCmd(engine: engine, domain: website.domain)
         for cmd in cmds {
             _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
         }
@@ -250,16 +253,19 @@ public final class SSLManagementViewModel: ObservableObject {
 
         isUploadingCertificate = true
 
+        let configPath = website.configPath ?? ""
         let cmds = bridge.uploadCustomCertCmds(
+            engine: engine,
             domain: website.domain,
             cert: customCertificate,
             key: customPrivateKey,
-            chain: customChain.isEmpty ? nil : customChain
+            chain: customChain.isEmpty ? nil : customChain,
+            configPath: configPath
         )
         for cmd in cmds {
             _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
         }
-        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.restartNginxCmd())
+        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.reloadEngineCmd(engine: engine, serverID: serverId))
 
         showCustomCertSheet = false
         toastManager.showSuccess("Custom certificate uploaded successfully")
@@ -280,16 +286,18 @@ public final class SSLManagementViewModel: ObservableObject {
 
         isEnablingForceSSL = true
 
+        let configPath = website.configPath ?? ""
+        let docRoot = website.documentRoot ?? ""
         if !isForceSSLEnabled {
-            let cmd = bridge.enableForceSSLCmd(domain: website.domain)
+            let cmd = bridge.enableForceSSLCmd(engine: engine, configPath: configPath, docRoot: docRoot)
             _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
-            _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.restartNginxCmd())
+            _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.reloadEngineCmd(engine: engine, serverID: serverId))
             isForceSSLEnabled = true
             toastManager.showSuccess("Force HTTPS enabled — all HTTP traffic will redirect to HTTPS")
         } else {
-            let cmd = bridge.disableForceSSLCmd(domain: website.domain)
+            let cmd = bridge.disableForceSSLCmd(engine: engine, configPath: configPath, docRoot: docRoot)
             _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
-            _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.restartNginxCmd())
+            _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.reloadEngineCmd(engine: engine, serverID: serverId))
             isForceSSLEnabled = false
             toastManager.showSuccess("Force HTTPS disabled")
         }
@@ -304,13 +312,15 @@ public final class SSLManagementViewModel: ObservableObject {
 
         isConfiguringHSTS = true
 
+        let configPath = website.configPath ?? ""
         let cmd = bridge.configureHSTSCmd(
-            domain: website.domain,
+            engine: engine,
+            configPath: configPath,
             maxAge: hstsConfig.maxAge,
             includeSubdomains: hstsConfig.includeSubDomains
         )
         _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
-        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.restartNginxCmd())
+        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.reloadEngineCmd(engine: engine, serverID: serverId))
 
         showHSTSSheet = false
         toastManager.showSuccess("HSTS configured successfully")
@@ -325,7 +335,7 @@ public final class SSLManagementViewModel: ObservableObject {
 
         isRenewing = true
 
-        let cmd = bridge.renewSSLCmd(domain: website.domain)
+        let cmd = bridge.renewSSLCmd(engine: engine, domain: website.domain)
         _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
         toastManager.showSuccess("Certificate renewal started")
 

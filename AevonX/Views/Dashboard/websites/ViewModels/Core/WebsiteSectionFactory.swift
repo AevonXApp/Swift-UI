@@ -17,12 +17,14 @@ class WebsiteSectionFactory: ObservableObject {
     let domain: String
     let docRoot: String
     let runtime: RuntimeType
+    let engine: String
 
-    init(serverId: String, domain: String, docRoot: String, runtime: RuntimeType) {
+    init(serverId: String, domain: String, docRoot: String, runtime: RuntimeType, engine: String = "nginx") {
         self.serverId = serverId
         self.domain = domain
         self.docRoot = docRoot
         self.runtime = runtime
+        self.engine = engine
     }
 
     // MARK: - Lazy ViewModels
@@ -31,7 +33,7 @@ class WebsiteSectionFactory: ObservableObject {
     private var _siteConfigVM: SiteConfigViewModel?
     var siteConfigVM: SiteConfigViewModel {
         if _siteConfigVM == nil {
-            _siteConfigVM = SiteConfigViewModel(serverId: serverId, domain: domain)
+            _siteConfigVM = SiteConfigViewModel(serverId: serverId, domain: domain, engine: engine)
         }
         return _siteConfigVM!
     }
@@ -39,7 +41,7 @@ class WebsiteSectionFactory: ObservableObject {
     private var _cacheVM: CacheViewModel?
     var cacheVM: CacheViewModel {
         if _cacheVM == nil {
-            _cacheVM = CacheViewModel(serverId: serverId, domain: domain)
+            _cacheVM = CacheViewModel(serverId: serverId, domain: domain, engine: engine)
         }
         return _cacheVM!
     }
@@ -63,7 +65,7 @@ class WebsiteSectionFactory: ObservableObject {
     private var _securityVM: SiteSecurityViewModel?
     var securityVM: SiteSecurityViewModel {
         if _securityVM == nil {
-            _securityVM = SiteSecurityViewModel(serverId: serverId, domain: domain, docRoot: docRoot)
+            _securityVM = SiteSecurityViewModel(serverId: serverId, domain: domain, docRoot: docRoot, engine: engine)
         }
         return _securityVM!
     }
@@ -71,7 +73,7 @@ class WebsiteSectionFactory: ObservableObject {
     private var _headersVM: HeadersViewModel?
     var headersVM: HeadersViewModel {
         if _headersVM == nil {
-            _headersVM = HeadersViewModel(serverId: serverId, domain: domain)
+            _headersVM = HeadersViewModel(serverId: serverId, domain: domain, engine: engine)
         }
         return _headersVM!
     }
@@ -79,7 +81,7 @@ class WebsiteSectionFactory: ObservableObject {
     private var _logsVM: EnhancedLogsViewModel?
     var logsVM: EnhancedLogsViewModel {
         if _logsVM == nil {
-            _logsVM = EnhancedLogsViewModel(serverId: serverId, domain: domain)
+            _logsVM = EnhancedLogsViewModel(serverId: serverId, domain: domain, engine: engine)
         }
         return _logsVM!
     }
@@ -87,7 +89,7 @@ class WebsiteSectionFactory: ObservableObject {
     private var _quickActionsVM: QuickActionsViewModel?
     var quickActionsVM: QuickActionsViewModel {
         if _quickActionsVM == nil {
-            _quickActionsVM = QuickActionsViewModel(serverId: serverId, domain: domain, docRoot: docRoot, runtime: runtime)
+            _quickActionsVM = QuickActionsViewModel(serverId: serverId, domain: domain, docRoot: docRoot, runtime: runtime, engine: engine)
         }
         return _quickActionsVM!
     }
@@ -103,7 +105,7 @@ class WebsiteSectionFactory: ObservableObject {
     private var _performanceTuningVM: PerformanceTuningViewModel?
     var performanceTuningVM: PerformanceTuningViewModel {
         if _performanceTuningVM == nil {
-            _performanceTuningVM = PerformanceTuningViewModel(serverId: serverId, domain: domain)
+            _performanceTuningVM = PerformanceTuningViewModel(serverId: serverId, domain: domain, engine: engine)
         }
         return _performanceTuningVM!
     }

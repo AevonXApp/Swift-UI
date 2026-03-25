@@ -38,11 +38,11 @@ struct QuickActionsSection: View {
                         actionTile(icon: "arrow.clockwise", title: "Restart Runtime", subtitle: viewModel.runtime.rawValue, color: .orange) {
                             Task { await viewModel.restartRuntime() }
                         }
-                        actionTile(icon: "arrow.clockwise.circle", title: "Restart Nginx", subtitle: "Full restart", color: .red) {
-                            Task { await viewModel.restartNginx() }
+                        actionTile(icon: "arrow.clockwise.circle", title: "Restart \(viewModel.engine.capitalized)", subtitle: "Full restart", color: .red) {
+                            Task { await viewModel.restartWebServer() }
                         }
-                        actionTile(icon: "arrow.triangle.2.circlepath", title: "Reload Nginx", subtitle: "Graceful", color: .axSuccess) {
-                            Task { await viewModel.reloadNginx() }
+                        actionTile(icon: "arrow.triangle.2.circlepath", title: "Reload \(viewModel.engine.capitalized)", subtitle: "Graceful", color: .axSuccess) {
+                            Task { await viewModel.reloadWebServer() }
                         }
                     }
                 }
@@ -70,8 +70,8 @@ struct QuickActionsSection: View {
                 // Diagnostics
                 AXConfigCard(icon: "stethoscope", title: "Diagnostics", subtitle: "Test configuration and check disk usage") {
                     LazyVGrid(columns: columns, spacing: AXSpacing.md) {
-                        actionTile(icon: "checkmark.seal", title: "Test Nginx", subtitle: "nginx -t", color: .cyan) {
-                            Task { await viewModel.testNginx() }
+                        actionTile(icon: "checkmark.seal", title: "Test Config", subtitle: viewModel.engine == "apache" ? "configtest" : "nginx -t", color: .cyan) {
+                            Task { await viewModel.testConfig() }
                         }
                         VStack(spacing: 4) {
                             Image(systemName: "internaldrive")

@@ -20,20 +20,23 @@ class SiteSecurityViewModel: ObservableObject {
     let serverId: String
     let domain: String
     let docRoot: String
+    let engine: String
     private let bridge = WebsitesBridge.shared
     private var serverPaths: ServerPaths = .defaults
     private var pathsDetected = false
 
-    init(serverId: String, domain: String, docRoot: String) {
+    init(serverId: String, domain: String, docRoot: String, engine: String = "nginx") {
         self.serverId = serverId
         self.domain = domain
         self.docRoot = docRoot
+        self.engine = engine
     }
 
     func loadSecurityStatus() async {
         await detectPathsIfNeeded()
         let _ = resolveConfigPath()
-        let cmd = bridge.securityScanCmd(domain: domain, docRoot: docRoot, sitesAvailable: serverPaths.nginxSitesAvailable)
+        let configPath = resolveConfigPath()
+        let cmd = bridge.detectSecurityCmdRouted(engine: engine, configPath: configPath, docRoot: docRoot)
         let result = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
         let parsedJSON = bridge.parseSecurityScan(output: result)
 
@@ -57,9 +60,9 @@ class SiteSecurityViewModel: ObservableObject {
         defer { isScanning = false; scanProgress = "" }
         await detectPathsIfNeeded()
         let configPath = resolveConfigPath()
-        let cmd = bridge.toggleHotlinkCmd(enable: enable, domain: domain, configPath: configPath)
+        let cmd = bridge.toggleHotlinkCmdRouted(engine: engine, enable: enable, domain: domain, configPath: configPath, docRoot: docRoot)
         _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
-        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.restartNginxCmd())
+        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.reloadEngineCmd(engine: engine, serverID: serverId))
         GlobalToastManager.shared.showSuccess(enable ? "Hotlink protection enabled" : "Hotlink protection disabled")
         await loadSecurityStatus()
     }
@@ -68,10 +71,10 @@ class SiteSecurityViewModel: ObservableObject {
         isScanning = true; scanProgress = "Configuring sensitive files block..."
         defer { isScanning = false; scanProgress = "" }
         await detectPathsIfNeeded()
-        let sa = serverPaths.nginxSitesAvailable
-        let cmd = bridge.toggleSensitiveBlockCmd(enable: enable, domain: domain, sitesAvailable: sa)
+        let configPath = resolveConfigPath()
+        let cmd = bridge.toggleSensitiveBlockCmdRouted(engine: engine, enable: enable, configPath: configPath, docRoot: docRoot)
         _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
-        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.restartNginxCmd())
+        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.reloadEngineCmd(engine: engine, serverID: serverId))
         GlobalToastManager.shared.showSuccess("Sensitive files block applied")
         await loadSecurityStatus()
     }
@@ -141,7 +144,10 @@ class SiteSecurityViewModel: ObservableObject {
 
     /// Resolves config path for the domain (BT Panel uses .conf extension)
     private func resolveConfigPath() -> String {
-        let sa = serverPaths.nginxSitesAvailable
+        let sa = engine == "apache" ? serverPaths.apacheSitesAvailable : serverPaths.nginxSitesAvailable
+        if engine == "apache" {
+            return "\(sa)/\(domain).conf"
+        }
         if serverPaths.serverType == "bt_panel" || sa.contains("/www/server") {
             return "\(sa)/\(domain).conf"
         }

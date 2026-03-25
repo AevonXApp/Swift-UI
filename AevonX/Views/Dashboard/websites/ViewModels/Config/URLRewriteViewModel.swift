@@ -31,6 +31,7 @@ public final class URLRewriteViewModel: ObservableObject {
     private let serverId: String?
     private let bridge = WebsitesBridge.shared
     private let toastManager = GlobalToastManager.shared
+    private var engine: String { website.webServerEngine ?? "nginx" }
 
     // MARK: - Initialization
 
@@ -78,7 +79,7 @@ public final class URLRewriteViewModel: ObservableObject {
 
         let cmd = bridge.addRewriteRuleCmd(domain: website.domain, source: rule.sourcePattern, destination: rule.destination, flags: rule.flags.joined(separator: ","))
         _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
-        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.restartNginxCmd())
+        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.reloadEngineCmd(engine: engine, serverID: serverId ?? ""))
         await load()
         toastManager.showSuccess("Rewrite rule added successfully")
 
@@ -95,7 +96,7 @@ public final class URLRewriteViewModel: ObservableObject {
         _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: deleteCmd)
         let addCmd = bridge.addRewriteRuleCmd(domain: website.domain, source: newRule.sourcePattern, destination: newRule.destination, flags: newRule.flags.joined(separator: ","))
         _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: addCmd)
-        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.restartNginxCmd())
+        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.reloadEngineCmd(engine: engine, serverID: serverId ?? ""))
         await load()
         toastManager.showSuccess("Rewrite rule updated successfully")
 
@@ -110,7 +111,7 @@ public final class URLRewriteViewModel: ObservableObject {
         let idx = rules.firstIndex(where: { $0.id == ruleId }) ?? 0
         let cmd = bridge.deleteRewriteRuleCmd(domain: website.domain, ruleIndex: idx)
         _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
-        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.restartNginxCmd())
+        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.reloadEngineCmd(engine: engine, serverID: serverId ?? ""))
         rules.removeAll { $0.id == ruleId }
         toastManager.showSuccess("Rewrite rule deleted successfully")
 

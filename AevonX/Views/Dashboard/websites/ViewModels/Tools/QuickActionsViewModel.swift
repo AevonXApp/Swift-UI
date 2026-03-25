@@ -22,15 +22,17 @@ class QuickActionsViewModel: ObservableObject {
     let domain: String
     let docRoot: String
     let runtime: RuntimeType
+    let engine: String
     private let bridge = WebsitesBridge.shared
     private var serverPaths: ServerPaths = .defaults
     private var pathsDetected = false
 
-    init(serverId: String, domain: String, docRoot: String, runtime: RuntimeType) {
+    init(serverId: String, domain: String, docRoot: String, runtime: RuntimeType, engine: String = "nginx") {
         self.serverId = serverId
         self.domain = domain
         self.docRoot = docRoot
         self.runtime = runtime
+        self.engine = engine
     }
 
     func restartRuntime() async {
@@ -49,18 +51,18 @@ class QuickActionsViewModel: ObservableObject {
         }
     }
 
-    func restartNginx() async {
-        isRunning = true; runningAction = "Restarting Nginx..."
+    func restartWebServer() async {
+        isRunning = true; runningAction = "Restarting \(engine.capitalized)..."
         defer { isRunning = false; runningAction = "" }
-        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.restartNginxCmd())
-        GlobalToastManager.shared.showSuccess("Nginx restarted")
+        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.restartEngineCmdRouted(engine: engine))
+        GlobalToastManager.shared.showSuccess("\(engine.capitalized) restarted")
     }
 
-    func reloadNginx() async {
-        isRunning = true; runningAction = "Reloading Nginx..."
+    func reloadWebServer() async {
+        isRunning = true; runningAction = "Reloading \(engine.capitalized)..."
         defer { isRunning = false; runningAction = "" }
-        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.restartNginxCmd())
-        GlobalToastManager.shared.showSuccess("Nginx reloaded")
+        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.reloadEngineCmd(engine: engine, serverID: serverId))
+        GlobalToastManager.shared.showSuccess("\(engine.capitalized) reloaded")
     }
 
     func toggleMaintenanceMode() async {
@@ -107,12 +109,12 @@ class QuickActionsViewModel: ObservableObject {
         if diskUsage.isEmpty { diskUsage = "N/A" }
     }
 
-    func testNginx() async {
-        isRunning = true; runningAction = "Testing Nginx config..."
+    func testConfig() async {
+        isRunning = true; runningAction = "Testing \(engine.capitalized) config..."
         defer { isRunning = false; runningAction = "" }
-        let result = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.validateNginxCmd())
+        let result = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.validateConfigCmdRouted(engine: engine))
         nginxTestResult = result
-        nginxTestPassed = true
+        nginxTestPassed = result.contains("successful") || result.contains("syntax is ok") || result.contains("Syntax OK")
     }
 
     private func detectPathsIfNeeded() async {
