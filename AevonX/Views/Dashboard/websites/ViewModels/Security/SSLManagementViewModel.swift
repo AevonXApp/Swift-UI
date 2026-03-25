@@ -99,7 +99,16 @@ public final class SSLManagementViewModel: ObservableObject {
            let resp = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
            resp["success"] as? Bool == true,
            let certData = resp["data"] as? [String: Any] {
-            
+
+            // Check if the cert is a mismatch (served by another domain's catch-all)
+            let isMismatch = certData["mismatch"] as? Bool ?? false
+            if isMismatch {
+                // Certificate on port 443 belongs to a different domain
+                certificateDetails = nil
+                isLoading = false
+                return
+            }
+
             // Parse date strings from Go (e.g. "Mar 10 12:00:00 2026 GMT")
             let dateFormatter = DateFormatter()
             dateFormatter.locale = Locale(identifier: "en_US_POSIX")
@@ -107,18 +116,18 @@ public final class SSLManagementViewModel: ObservableObject {
             let altFormatter = DateFormatter()
             altFormatter.locale = Locale(identifier: "en_US_POSIX")
             altFormatter.dateFormat = "MMM d HH:mm:ss yyyy z"
-            
+
             let validFromStr = certData["valid_from"] as? String ?? ""
             let validToStr = certData["valid_to"] as? String ?? ""
-            
+
             let validFrom = dateFormatter.date(from: validFromStr) ?? altFormatter.date(from: validFromStr) ?? Date()
             let validUntil = dateFormatter.date(from: validToStr) ?? altFormatter.date(from: validToStr) ?? Date()
-            
+
             // Compute expiry info
             let daysUntilExpiry = Calendar.current.dateComponents([.day], from: Date(), to: validUntil).day ?? 0
             let isExpired = validUntil < Date()
             let isExpiringSoon = daysUntilExpiry <= 30 && !isExpired
-            
+
             // Compute status
             let status: SSLCertificateStatus
             if isExpired {
@@ -128,18 +137,32 @@ public final class SSLManagementViewModel: ObservableObject {
             } else {
                 status = .valid
             }
-            
+
             // Parse brand from issuer (e.g. "C = US, O = Let's Encrypt, CN = E7")
             let issuerStr = certData["issuer"] as? String ?? "Unknown"
             let brand = parseBrandFromIssuer(issuerStr)
-            
+
+            // Parse actual SAN domains from certificate (deduplicated)
+            let sansStr = certData["sans"] as? String ?? ""
+            let domains: [String] = {
+                if sansStr.isEmpty { return [website.domain] }
+                let parsed = sansStr.components(separatedBy: ",").map { $0.trimmingCharacters(in: .whitespaces) }
+                return Array(Set(parsed)).sorted()
+            }()
+
+            // Parse key size and signature algorithm
+            let keySize = Int(certData["key_size"] as? String ?? "") ?? 2048
+            let signatureAlg = certData["signature_alg"] as? String ?? "SHA256withRSA"
+
             let details = SSLCertificateDetails(
                 issuer: issuerStr,
                 validFrom: validFrom,
                 validUntil: validUntil,
+                signatureAlgorithm: signatureAlg,
+                keySize: keySize,
                 brand: brand,
                 status: status,
-                domains: [website.domain],
+                domains: domains,
                 daysUntilExpiry: daysUntilExpiry,
                 isExpiringSoon: isExpiringSoon,
                 isExpired: isExpired
@@ -219,13 +242,21 @@ public final class SSLManagementViewModel: ObservableObject {
         isIssuingCertificate = true
         error = nil
 
+        var lastOutput = ""
         let cmds = bridge.issueSSLCmd(engine: engine, domain: website.domain)
         for cmd in cmds {
-            _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
+            lastOutput = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
         }
 
         showLetsEncryptSheet = false
-        toastManager.showSuccess("Let's Encrypt certificate issued successfully")
+
+        // Check for certbot success/failure markers
+        if lastOutput.contains("AEVON_SSL_FAILED") || lastOutput.contains("Certificate not yet due for renewal") || lastOutput.contains("error") && lastOutput.contains("certbot") {
+            error = "SSL issuance failed"
+            toastManager.showError("SSL certificate issuance failed — check server logs")
+        } else {
+            toastManager.showSuccess("Let's Encrypt certificate issued successfully")
+        }
 
         await load()
 
@@ -336,8 +367,16 @@ public final class SSLManagementViewModel: ObservableObject {
         isRenewing = true
 
         let cmd = bridge.renewSSLCmd(engine: engine, domain: website.domain)
-        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
-        toastManager.showSuccess("Certificate renewal started")
+        let output = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
+
+        // Check renewal result
+        if output.contains("AEVON_SSL_FAILED") || output.contains("Cert not yet due for renewal") {
+            toastManager.showError("Certificate renewal failed — cert may not be due yet")
+        } else if output.contains("AEVON_SSL_SUCCESS") || output.contains("Congratulations") || output.contains("new certificate") {
+            toastManager.showSuccess("Certificate renewed successfully")
+        } else {
+            toastManager.showSuccess("Certificate renewal completed")
+        }
 
         await load()
 

@@ -204,7 +204,7 @@ public final class WebsiteDetailViewModel: ObservableObject {
         let repo = website.gitRepository ?? ""
         let branch = website.gitBranch ?? "main"
         let docRoot = website.documentRoot ?? "\(serverPaths.webRoot)/\(website.domain)"
-        let cmds = bridge.gitDeployCmds(repo: repo, branch: branch, docRoot: docRoot)
+        let cmds = bridge.gitDeployCmds(repo: repo, branch: branch, docRoot: docRoot, webOwnership: serverPaths.webOwnership)
         for cmd in cmds {
             let result = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
             deploymentLogs += result
@@ -238,9 +238,9 @@ public final class WebsiteDetailViewModel: ObservableObject {
         }
 
         // Test nginx config before reload
-        let testResult = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.validateNginxCmd())
+        let testResult = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.validateConfigCmdRouted(engine: website.webServerEngine ?? "nginx"))
         if testResult.contains("successful") || testResult.contains("syntax is ok") {
-            _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.restartNginxCmd())
+            _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.restartEngineCmdRouted(engine: website.webServerEngine ?? "nginx"))
             // Update local state
             website.documentRoot = documentRoot
             website.phpVersion = phpVersion
@@ -262,12 +262,12 @@ public final class WebsiteDetailViewModel: ObservableObject {
         if shouldEnable {
             let cmd = bridge.enableSiteCmd(serverID: serverId, domain: website.domain)
             _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
-            _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.restartNginxCmd())
+            _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.restartEngineCmdRouted(engine: website.webServerEngine ?? "nginx"))
             website.status = .online
         } else {
             let cmd = bridge.disableSiteCmd(serverID: serverId, domain: website.domain)
             _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
-            _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.restartNginxCmd())
+            _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.restartEngineCmdRouted(engine: website.webServerEngine ?? "nginx"))
             website.status = .offline
         }
     }
@@ -316,9 +316,9 @@ public final class WebsiteDetailViewModel: ObservableObject {
         let cmd = bridge.updatePortCmd(configPath: configPath, port: customPort)
         _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
 
-        let testResult = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.validateNginxCmd())
+        let testResult = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.validateConfigCmdRouted(engine: website.webServerEngine ?? "nginx"))
         if testResult.contains("successful") || testResult.contains("syntax is ok") {
-            _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.restartNginxCmd())
+            _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.restartEngineCmdRouted(engine: website.webServerEngine ?? "nginx"))
             website.port = customPort
             toastManager.showSuccess("Port updated to \(customPort)")
         } else {
@@ -332,7 +332,8 @@ public final class WebsiteDetailViewModel: ObservableObject {
     public func renewSSL() async {
         guard let serverId = serverId else { return }
         
-        let cmd = bridge.renewSSLCmd(domain: website.domain)
+        let engine = website.webServerEngine ?? "nginx"
+        let cmd = bridge.renewSSLCmd(engine: engine, domain: website.domain)
         _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
         toastManager.showSuccess("SSL Renewal Started")
     }
@@ -340,8 +341,8 @@ public final class WebsiteDetailViewModel: ObservableObject {
     /// Restarts the web server service
     public func restartService() async {
         guard let serverId = serverId else { return }
-        
-        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.restartNginxCmd())
+        let engine = website.webServerEngine ?? "nginx"
+        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.restartEngineCmdRouted(engine: engine))
         toastManager.showSuccess("Service Restarted")
     }
     
@@ -484,9 +485,9 @@ public final class WebsiteDetailViewModel: ObservableObject {
         }
 
         // Test nginx config before reload
-        let testResult = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.validateNginxCmd())
+        let testResult = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.validateConfigCmdRouted(engine: website.webServerEngine ?? "nginx"))
         if testResult.contains("successful") || testResult.contains("syntax is ok") {
-            _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.restartNginxCmd())
+            _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.restartEngineCmdRouted(engine: website.webServerEngine ?? "nginx"))
             self.phpVersion = newVersion
             self.website.phpVersion = newVersion
             toastManager.showSuccess("PHP version switched to \(newVersion)")

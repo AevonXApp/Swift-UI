@@ -30,14 +30,16 @@ class AdvancedDomainViewModel: ObservableObject {
     let serverId: String
     let domain: String
     let docRoot: String
+    let engine: String
     private let bridge = WebsitesBridge.shared
     private var serverPaths: ServerPaths = .defaults
     private var pathsDetected = false
 
-    init(serverId: String, domain: String, docRoot: String) {
+    init(serverId: String, domain: String, docRoot: String, engine: String = "nginx") {
         self.serverId = serverId
         self.domain = domain
         self.docRoot = docRoot
+        self.engine = engine
     }
 
     func loadAliases() async {
@@ -57,7 +59,7 @@ class AdvancedDomainViewModel: ObservableObject {
         guard !newAlias.isEmpty else { return }
         let cmd = bridge.addAliasCmd(alias: newAlias, domain: domain)
         _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
-        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.restartNginxCmd())
+        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.restartEngineCmdRouted(engine: engine))
         aliases.append(newAlias); newAlias = ""
         GlobalToastManager.shared.showSuccess("Alias added")
     }
@@ -65,7 +67,7 @@ class AdvancedDomainViewModel: ObservableObject {
     func removeAlias(_ alias: String) async {
         let cmd = bridge.removeAliasCmd(alias: alias, domain: domain)
         _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
-        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.restartNginxCmd())
+        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.restartEngineCmdRouted(engine: engine))
         aliases.removeAll { $0 == alias }
         GlobalToastManager.shared.showSuccess("Alias removed")
     }
@@ -89,7 +91,7 @@ class AdvancedDomainViewModel: ObservableObject {
         for cmd in cmds {
             _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
         }
-        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.restartNginxCmd())
+        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.restartEngineCmdRouted(engine: engine))
         subdomains.append(SubdomainItem(name: newSubdomain, fullDomain: "\(newSubdomain).\(domain)", isActive: true))
         newSubdomain = ""
         GlobalToastManager.shared.showSuccess("Subdomain created")
@@ -115,7 +117,7 @@ class AdvancedDomainViewModel: ObservableObject {
         isLoading = true; defer { isLoading = false }
         let cmd = bridge.setWWWRedirectCmd(domain: domain, toWWW: toWWW)
         _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
-        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.restartNginxCmd())
+        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.restartEngineCmdRouted(engine: engine))
         GlobalToastManager.shared.showSuccess(toWWW ? "Redirecting to www" : "Redirecting to non-www")
     }
 

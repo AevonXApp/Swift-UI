@@ -7,6 +7,7 @@
 //
 
 import Foundation
+import SwiftUI
 
 // MARK: - URL Rewrite Rule (local definition)
 
@@ -444,16 +445,16 @@ public enum RewriteRuleTemplate: String, CaseIterable {
     }
 
     /// Color for template category
-    public var color: String {
+    public var color: Color {
         switch category {
         case "Frameworks":
-            return "purple"
+            return .purple
         case "Common":
-            return "blue"
+            return .blue
         case "Custom":
-            return "gray"
+            return .gray
         default:
-            return "gray"
+            return .gray
         }
     }
 }

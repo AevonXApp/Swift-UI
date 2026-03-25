@@ -136,7 +136,7 @@ struct SSLManagementSection: View {
             HStack {
                 Image(systemName: cert.status.icon)
                     .font(AXTypography.largeTitle)
-                    .foregroundColor(Color(cert.status.color))
+                    .foregroundColor(cert.status.color)
 
                 VStack(alignment: .leading, spacing: 4) {
                     HStack(spacing: AXSpacing.sm) {
@@ -216,7 +216,7 @@ struct SSLManagementSection: View {
         .cornerRadius(AXCornerRadius.lg)
         .overlay(
             RoundedRectangle(cornerRadius: AXCornerRadius.lg)
-                .stroke(Color(cert.status.color), lineWidth: 2)
+                .stroke(cert.status.color, lineWidth: 2)
         )
     }
 
@@ -249,7 +249,7 @@ struct SSLManagementSection: View {
                                 .font(AXTypography.caption)
                                 .foregroundColor(.axTextSecondary)
                         }
-                        ForEach(cert.sanDomains, id: \.self) { domain in
+                        ForEach(Array(Set(cert.sanDomains)).sorted(), id: \.self) { domain in
                             Text(domain)
                                 .font(.system(.caption, design: .monospaced))
                                 .foregroundColor(.axTextPrimary)

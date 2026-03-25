@@ -21,14 +21,16 @@ class SiteCloningViewModel: ObservableObject {
     let serverId: String
     let domain: String
     let docRoot: String
+    let engine: String
     private let bridge = WebsitesBridge.shared
     private var serverPaths: ServerPaths = .defaults
     private var pathsDetected = false
 
-    init(serverId: String, domain: String, docRoot: String) {
+    init(serverId: String, domain: String, docRoot: String, engine: String = "nginx") {
         self.serverId = serverId
         self.domain = domain
         self.docRoot = docRoot
+        self.engine = engine
     }
 
     func cloneSite() async {
@@ -41,12 +43,13 @@ class SiteCloningViewModel: ObservableObject {
             target: targetDomain,
             docRoot: docRoot,
             sitesAvailable: serverPaths.nginxSitesAvailable,
-            sitesEnabled: serverPaths.nginxSitesEnabled
+            sitesEnabled: serverPaths.nginxSitesEnabled,
+            webOwnership: serverPaths.webOwnership
         )
         for cmd in cmds {
             _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
         }
-        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.restartNginxCmd())
+        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.restartEngineCmdRouted(engine: engine))
 
         let sizeResult = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.getDiskUsageCmd(docRoot: "\(serverPaths.webRoot)/\(targetDomain)"))
         let size = sizeResult.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -64,12 +67,13 @@ class SiteCloningViewModel: ObservableObject {
             target: stagingDomain,
             docRoot: docRoot,
             sitesAvailable: serverPaths.nginxSitesAvailable,
-            sitesEnabled: serverPaths.nginxSitesEnabled
+            sitesEnabled: serverPaths.nginxSitesEnabled,
+            webOwnership: serverPaths.webOwnership
         )
         for cmd in cmds {
             _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
         }
-        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.restartNginxCmd())
+        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.restartEngineCmdRouted(engine: engine))
 
         lastCloneResult = CloneResultItem(domain: stagingDomain, docRoot: "\(serverPaths.webRoot)/\(stagingDomain)", size: "N/A")
         GlobalToastManager.shared.showSuccess("Staging created: \(stagingDomain)")

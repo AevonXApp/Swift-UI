@@ -7,6 +7,7 @@
 //
 
 import Foundation
+import SwiftUI
 import AevonXCoreBridge
 
 enum ServerStatus: String, CaseIterable {
@@ -14,13 +15,13 @@ enum ServerStatus: String, CaseIterable {
     case offline = "Offline"
     case maintenance = "Maintenance"
     case error = "Error"
-    
-    var color: String {
+
+    var color: Color {
         switch self {
-        case .online: return "axSuccess"
-        case .offline: return "axTextMuted"
-        case .maintenance: return "axWarning"
-        case .error: return "axError"
+        case .online: return .axSuccess
+        case .offline: return .axTextMuted
+        case .maintenance: return .axWarning
+        case .error: return .axError
         }
     }
     

@@ -7,6 +7,7 @@
 //
 
 import Foundation
+import SwiftUI
 import AevonXCoreBridge
 
 // MARK: - Log Types (local definitions)
@@ -197,13 +198,13 @@ extension WebsiteLogLevel {
         rawValue.capitalized
     }
 
-    public var color: String {
+    public var color: Color {
         switch self {
-        case .debug: return "axTextTertiary"
-        case .info, .notice: return "axAccentBlue"
-        case .warn: return "axWarning"
-        case .error, .crit: return "axError"
-        case .alert, .emerg: return "axError"
+        case .debug: return .axTextTertiary
+        case .info, .notice: return .axAccentBlue
+        case .warn: return .axWarning
+        case .error, .crit: return .axError
+        case .alert, .emerg: return .axError
         }
     }
 
@@ -251,12 +252,12 @@ public enum LogType: String, Codable, CaseIterable, Identifiable {
         }
     }
 
-    public var color: String {
+    public var color: Color {
         switch self {
-        case .access: return "axAccentBlue"
-        case .error: return "axError"
-        case .system: return "axTextSecondary"
-        case .application: return "axAccentGreen"
+        case .access: return .axAccentBlue
+        case .error: return .axError
+        case .system: return .axTextSecondary
+        case .application: return .axAccentGreen
         }
     }
 }
@@ -283,14 +284,14 @@ public enum HTTPStatusCategory: String, Codable {
         }
     }
 
-    public var color: String {
+    public var color: Color {
         switch self {
-        case .informational: return "axAccentBlue"
-        case .success: return "axSuccess"
-        case .redirection: return "axAccentBlue"
-        case .clientError: return "axWarning"
-        case .serverError: return "axError"
-        case .unknown: return "axTextMuted"
+        case .informational: return .axAccentBlue
+        case .success: return .axSuccess
+        case .redirection: return .axAccentBlue
+        case .clientError: return .axWarning
+        case .serverError: return .axError
+        case .unknown: return .axTextMuted
         }
     }
 

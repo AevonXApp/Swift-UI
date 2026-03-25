@@ -91,7 +91,7 @@ class QuickActionsViewModel: ObservableObject {
         isRunning = true; runningAction = "Fixing ownership..."
         defer { isRunning = false; runningAction = "" }
         await detectPathsIfNeeded()
-        let cmd = bridge.fixPermissionsCmd(docRoot: docRoot)
+        let cmd = bridge.fixPermissionsCmd(docRoot: docRoot, webOwnership: serverPaths.webOwnership)
         _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
         GlobalToastManager.shared.showSuccess("Ownership fixed to \(serverPaths.webOwnership)")
     }

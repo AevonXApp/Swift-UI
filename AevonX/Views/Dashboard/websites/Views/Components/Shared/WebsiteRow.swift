@@ -35,7 +35,7 @@ struct WebsiteCard: View {
             // Top: Logo + Domain + Status
             HStack(spacing: AXSpacing.sm) {
                 ZStack(alignment: .bottomTrailing) {
-                    SiteLogo(domain: website.domain)
+                    SiteLogo(domain: website.domain, sslEnabled: website.sslEnabled)
                     
                     Circle()
                         .fill(website.status == .online ? Color.axSuccess : Color.axError)
@@ -174,10 +174,12 @@ struct WebsiteCard: View {
 
 struct SiteLogo: View {
     let domain: String
+    var sslEnabled: Bool = false
     var size: CGFloat = 36
-    
+
     var logoURL: URL? {
-        URL(string: "https://\(domain)/logo.png")
+        let scheme = sslEnabled ? "https" : "http"
+        return URL(string: "\(scheme)://\(domain)/logo.png")
     }
     
     var body: some View {

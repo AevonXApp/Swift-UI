@@ -30,7 +30,8 @@ class BackupViewModel: ObservableObject {
     }
 
     func loadBackups() async {
-        let cmd = bridge.listBackupsCmd(domain: domain)
+        await detectPathsIfNeeded()
+        let cmd = bridge.listBackupsCmd(domain: domain, backupDir: serverPaths.backupDir)
         let result = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
         let parsedJSON = bridge.parseBackupList(output: result)
 
@@ -63,7 +64,8 @@ class BackupViewModel: ObservableObject {
         isCreatingBackup = true
         backupProgress = "Creating \(type.rawValue) backup..."
         defer { isCreatingBackup = false; backupProgress = "" }
-        let cmds = bridge.backupSiteCmds(domain: domain, docRoot: docRoot)
+        await detectPathsIfNeeded()
+        let cmds = bridge.backupSiteCmds(domain: domain, docRoot: docRoot, backupDir: serverPaths.backupDir)
         for cmd in cmds {
             _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
         }

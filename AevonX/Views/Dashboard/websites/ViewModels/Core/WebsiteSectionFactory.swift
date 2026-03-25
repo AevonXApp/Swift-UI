@@ -97,7 +97,7 @@ class WebsiteSectionFactory: ObservableObject {
     private var _advancedDomainVM: AdvancedDomainViewModel?
     var advancedDomainVM: AdvancedDomainViewModel {
         if _advancedDomainVM == nil {
-            _advancedDomainVM = AdvancedDomainViewModel(serverId: serverId, domain: domain, docRoot: docRoot)
+            _advancedDomainVM = AdvancedDomainViewModel(serverId: serverId, domain: domain, docRoot: docRoot, engine: engine)
         }
         return _advancedDomainVM!
     }
@@ -113,7 +113,7 @@ class WebsiteSectionFactory: ObservableObject {
     private var _siteCloningVM: SiteCloningViewModel?
     var siteCloningVM: SiteCloningViewModel {
         if _siteCloningVM == nil {
-            _siteCloningVM = SiteCloningViewModel(serverId: serverId, domain: domain, docRoot: docRoot)
+            _siteCloningVM = SiteCloningViewModel(serverId: serverId, domain: domain, docRoot: docRoot, engine: engine)
         }
         return _siteCloningVM!
     }

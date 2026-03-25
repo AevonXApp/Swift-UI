@@ -7,6 +7,7 @@
 //
 
 import Foundation
+import SwiftUI
 import AevonXCoreBridge
 
 // MARK: - Traffic Analytics Types (local definitions)
@@ -175,11 +176,11 @@ public enum EndpointHealth: String, Codable {
     case warning = "Warning"
     case critical = "Critical"
 
-    public var color: String {
+    public var color: Color {
         switch self {
-        case .healthy: return "axSuccess"
-        case .warning: return "axWarning"
-        case .critical: return "axError"
+        case .healthy: return .axSuccess
+        case .warning: return .axWarning
+        case .critical: return .axError
         }
     }
 

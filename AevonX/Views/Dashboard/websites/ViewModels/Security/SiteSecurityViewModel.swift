@@ -108,9 +108,9 @@ class SiteSecurityViewModel: ObservableObject {
         isScanning = true; scanProgress = "Fixing permissions..."
         defer { isScanning = false; scanProgress = "" }
         await detectPathsIfNeeded()
-        let cmd = bridge.fixPermissionsCmd(docRoot: docRoot)
-        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
         let ownership = serverPaths.webOwnership
+        let cmd = bridge.fixPermissionsCmd(docRoot: docRoot, webOwnership: ownership)
+        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
         GlobalToastManager.shared.showSuccess("Permissions fixed: dirs=755, files=644, owner=\(ownership)")
         await runPermissionAudit()
     }

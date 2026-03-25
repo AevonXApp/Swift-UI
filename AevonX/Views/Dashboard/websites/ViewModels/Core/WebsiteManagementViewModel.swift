@@ -350,8 +350,8 @@ public final class WebsiteManagementViewModel: ObservableObject {
 
         let cmd = bridge.enableSiteCmd(serverID: serverId, domain: website.domain)
         _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
-        // Reload nginx
-        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.restartNginxCmd())
+        // Reload web server
+        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.restartEngineCmdRouted(engine: website.webServerEngine ?? "nginx"))
 
         await loadData(forceRefresh: true)
     }
@@ -364,8 +364,8 @@ public final class WebsiteManagementViewModel: ObservableObject {
 
         let cmd = bridge.disableSiteCmd(serverID: serverId, domain: website.domain)
         _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
-        // Reload nginx
-        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.restartNginxCmd())
+        // Reload web server
+        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.restartEngineCmdRouted(engine: website.webServerEngine ?? "nginx"))
 
         await loadData(forceRefresh: true)
     }
@@ -385,7 +385,7 @@ public final class WebsiteManagementViewModel: ObservableObject {
             throw WebsiteOperationError.serverNotConfigured
         }
 
-        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.restartNginxCmd())
+        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.restartEngineCmdRouted(engine: website.webServerEngine ?? "nginx"))
 
         await loadData(forceRefresh: true)
     }
@@ -399,7 +399,7 @@ public final class WebsiteManagementViewModel: ObservableObject {
         let repo = website.gitRepository ?? ""
         let branch = website.gitBranch ?? "main"
         let docRoot = website.documentRoot ?? "\(serverPaths.webRoot)/\(website.domain)"
-        let cmds = bridge.gitDeployCmds(repo: repo, branch: branch, docRoot: docRoot)
+        let cmds = bridge.gitDeployCmds(repo: repo, branch: branch, docRoot: docRoot, webOwnership: serverPaths.webOwnership)
         for cmd in cmds {
             _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
         }
@@ -417,7 +417,7 @@ public final class WebsiteManagementViewModel: ObservableObject {
         let domain = website.domain
         let sslBridge = bridge
         Task { @MainActor in
-            await AddWebsiteViewModel.issueSSLInBackground(domain: domain, serverId: serverId, bridge: sslBridge)
+            await AddWebsiteViewModel.issueSSLInBackground(domain: domain, serverId: serverId, bridge: sslBridge, engine: website.webServerEngine ?? "nginx")
             await self.loadData(forceRefresh: true)
         }
     }
@@ -499,16 +499,18 @@ public final class WebsiteManagementViewModel: ObservableObject {
             target: newDomain,
             docRoot: docRoot,
             sitesAvailable: serverPaths.nginxSitesAvailable,
-            sitesEnabled: serverPaths.nginxSitesEnabled
+            sitesEnabled: serverPaths.nginxSitesEnabled,
+            webOwnership: serverPaths.webOwnership
         )
         for cmd in cmds {
             _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
         }
         
-        // Test & reload nginx
-        let testResult = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.validateNginxCmd())
-        if testResult.contains("successful") || testResult.contains("syntax is ok") {
-            _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.restartNginxCmd())
+        // Test & reload web server
+        let eng = website.webServerEngine ?? "nginx"
+        let testResult = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.validateConfigCmdRouted(engine: eng))
+        if testResult.contains("successful") || testResult.contains("syntax is ok") || testResult.contains("Syntax OK") {
+            _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.restartEngineCmdRouted(engine: eng))
         }
         
         GlobalToastManager.shared.showSuccess("Site cloned to \(newDomain)")
@@ -528,7 +530,7 @@ public final class WebsiteManagementViewModel: ObservableObject {
         defer { isBackingUp = false }
         
         let docRoot = website.documentRoot ?? "\(serverPaths.webRoot)/\(website.domain)"
-        let cmds = bridge.backupSiteCmds(domain: website.domain, docRoot: docRoot)
+        let cmds = bridge.backupSiteCmds(domain: website.domain, docRoot: docRoot, backupDir: serverPaths.backupDir)
         for cmd in cmds {
             _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
         }

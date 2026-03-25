@@ -7,6 +7,7 @@
 //
 
 import Foundation
+import SwiftUI
 
 // MARK: - Core Certificate Type
 
@@ -158,15 +159,15 @@ public enum SSLCertificateStatus: String, Codable {
     case invalid = "Invalid"
     case unknown = "Unknown"
 
-    public var color: String {
+    public var color: Color {
         switch self {
-        case .valid: return "axSuccess"
-        case .expiringSoon: return "axWarning"
-        case .expired: return "axError"
-        case .notYetValid: return "axTextMuted"
-        case .revoked: return "axError"
-        case .invalid: return "axError"
-        case .unknown: return "axTextMuted"
+        case .valid: return .axSuccess
+        case .expiringSoon: return .axWarning
+        case .expired: return .axError
+        case .notYetValid: return .axTextMuted
+        case .revoked: return .axError
+        case .invalid: return .axError
+        case .unknown: return .axTextMuted
         }
     }
 
