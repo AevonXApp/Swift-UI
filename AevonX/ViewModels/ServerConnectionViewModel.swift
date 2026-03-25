@@ -44,6 +44,13 @@ enum ConnectionUIStage: String, CaseIterable {
 // MARK: - Dashboard Tab
 
 /// Tabs available in the server dashboard
+enum DashboardTabCategory: String {
+    case core = "Core"
+    case infrastructure = "Infrastructure"
+    case protection = "Protection"
+    case system = "System"
+}
+
 enum DashboardTab: String, CaseIterable, Identifiable {
     case overview = "Overview"
     case websites = "Websites"
@@ -63,19 +70,53 @@ enum DashboardTab: String, CaseIterable, Identifiable {
 
     var icon: String {
         switch self {
-        case .overview: return "chart.line.uptrend.xyaxis"
-        case .websites: return "globe"
-        case .databases: return "cylinder.split.1x2"
-        case .applications: return "square.stack.3d.up"
-        case .docker: return "shippingbox"
+        case .overview: return "square.grid.2x2"
+        case .websites: return "globe.americas.fill"
+        case .databases: return "cylinder.fill"
+        case .applications: return "square.stack.3d.up.fill"
+        case .docker: return "shippingbox.fill"
         case .terminal: return "terminal"
-        case .files: return "folder"
-        case .security: return "shield.lefthalf.filled"
+        case .files: return "folder.fill"
+        case .security: return "lock.shield.fill"
         case .waf: return "shield.checkered"
-        case .cron: return "clock.badge.checkmark"
+        case .cron: return "clock.arrow.circlepath"
         case .ftp: return "externaldrive.connected.to.line.below"
         case .plugins: return "puzzlepiece.fill"
-        case .settings: return "gearshape"
+        case .settings: return "gearshape.fill"
+        }
+    }
+
+    var category: DashboardTabCategory {
+        switch self {
+        case .overview, .websites, .databases, .files: return .core
+        case .applications, .docker, .terminal: return .infrastructure
+        case .security, .waf: return .protection
+        case .cron, .ftp, .plugins, .settings: return .system
+        }
+    }
+
+    var accentColor: Color {
+        switch self {
+        case .overview: return .axAccentBlue
+        case .websites: return .cyan
+        case .databases: return .orange
+        case .applications: return .purple
+        case .docker: return Color(red: 0.13, green: 0.59, blue: 0.95)
+        case .terminal: return .green
+        case .files: return .yellow
+        case .security: return .red
+        case .waf: return Color(red: 1.0, green: 0.34, blue: 0.13)
+        case .cron: return .teal
+        case .ftp: return .indigo
+        case .plugins: return .pink
+        case .settings: return .gray
+        }
+    }
+
+    static var categorized: [(DashboardTabCategory, [DashboardTab])] {
+        let order: [DashboardTabCategory] = [.core, .infrastructure, .protection, .system]
+        return order.map { cat in
+            (cat, allCases.filter { $0.category == cat })
         }
     }
 }

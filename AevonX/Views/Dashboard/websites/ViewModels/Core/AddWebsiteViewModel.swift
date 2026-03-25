@@ -34,6 +34,7 @@ public final class AddWebsiteViewModel: ObservableObject {
     @Published public var pythonVersions: [String] = []
     @Published public var detectedWebRoot = ServerPaths.defaults.webRoot
     @Published public var detectedWebServerType = "nginx"
+    @Published public var installedEngines: Set<String> = ["nginx"]
 
     // Directory browser
     @Published public var isShowingDirectoryBrowser = false
@@ -103,8 +104,9 @@ public final class AddWebsiteViewModel: ObservableObject {
         serverPaths = detectedPaths
         detectedWebRoot = detectedPaths.webRoot
         detectedWebServerType = detectedPaths.webServerType
-        if detectedPaths.webServerType != "both" {
-            selectedEngine = detectedPaths.webServerType
+        installedEngines = detectedPaths.installedEngines
+        if installedEngines.count == 1, let only = installedEngines.first {
+            selectedEngine = only
         }
 
         // Show form immediately — version loading happens in background

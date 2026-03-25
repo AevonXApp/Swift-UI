@@ -78,8 +78,8 @@ private struct CerberusContentView: View {
         HStack(spacing: AXSpacing.lg) {
             if let ov = viewModel.overview {
                 headerMiniStat(value: viewModel.formatNumber(ov.totalRequests), label: "Requests", color: .axAccentBlue)
-                headerMiniStat(value: String(format: "%.1f%%", ov.protectionRate), label: "Block Rate", color: .axError)
-                headerMiniStat(value: String(format: "%.1f", ov.qps), label: "QPS", color: .axAccentGreen)
+                headerMiniStat(value: String(format: "%.1f%%", Double(ov.protectionRate)), label: "Block Rate", color: .axError)
+                headerMiniStat(value: String(format: "%.1f", Double(ov.qps)), label: "QPS", color: .axAccentGreen)
             }
             serviceStatusBadge
         }

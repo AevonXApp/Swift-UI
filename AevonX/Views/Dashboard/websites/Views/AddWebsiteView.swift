@@ -38,7 +38,7 @@ struct AddWebsiteView: View {
                     VStack(alignment: .leading, spacing: AXSpacing.lg) {
                         domainField
 
-                        if viewModel.detectedWebServerType == "both" {
+                        if viewModel.installedEngines.count > 1 {
                             enginePicker
                         }
 
@@ -155,10 +155,19 @@ struct AddWebsiteView: View {
                 .foregroundColor(.axTextSecondary)
 
             Picker("", selection: $viewModel.selectedEngine) {
-                Text("Nginx").tag("nginx")
-                Text("Apache").tag("apache")
+                ForEach(Array(viewModel.installedEngines).sorted(), id: \.self) { engine in
+                    Text(engineDisplayName(engine)).tag(engine)
+                }
             }
             .pickerStyle(SegmentedPickerStyle())
+        }
+    }
+
+    private func engineDisplayName(_ engine: String) -> String {
+        switch engine {
+        case "apache": return "Apache"
+        case "openlitespeed": return "OLS"
+        default: return "Nginx"
         }
     }
 

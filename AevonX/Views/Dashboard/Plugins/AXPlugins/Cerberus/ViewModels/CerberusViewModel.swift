@@ -87,6 +87,8 @@ class CerberusViewModel: ObservableObject {
     @Published var statusCodes: [WAFStatusCode] = []
     @Published var botDetails: WAFBotDetails?
     @Published var recentAlerts: [WAFAlertEvent] = []
+    @Published var accessLog: [WAFAccessLogEntry] = []
+    @Published var blockLog: [WAFBlockLogEntry] = []
 
     // MARK: - Module Config State
 
@@ -349,6 +351,22 @@ class CerberusViewModel: ObservableObject {
             errorMessage = error.localizedDescription
         }
         isLoading = false
+    }
+
+    func loadAccessLog() async {
+        do {
+            accessLog = try await cerberus.getAccessLog(on: serverId)
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    func loadBlockLog() async {
+        do {
+            blockLog = try await cerberus.getBlockLog(on: serverId)
+        } catch {
+            errorMessage = error.localizedDescription
+        }
     }
 
     // MARK: - Formatting Helpers

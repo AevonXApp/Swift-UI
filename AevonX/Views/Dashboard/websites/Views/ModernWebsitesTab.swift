@@ -237,11 +237,18 @@ struct WebsiteToolbar: View {
             AXSearchBar(text: $viewModel.searchText, placeholder: "Search websites...")
                 .frame(width: 280)
 
-            if viewModel.hasMixedEngines {
+            if viewModel.showEngineFilters {
                 HStack(spacing: AXSpacing.xxs) {
                     engineFilterChip("All", value: "all")
-                    engineFilterChip("Nginx", value: "nginx")
-                    engineFilterChip("Apache", value: "apache")
+                    if viewModel.installedEngines.contains("nginx") {
+                        engineFilterChip("Nginx", value: "nginx")
+                    }
+                    if viewModel.installedEngines.contains("apache") {
+                        engineFilterChip("Apache", value: "apache")
+                    }
+                    if viewModel.installedEngines.contains("openlitespeed") {
+                        engineFilterChip("OpenLiteSpeed", value: "openlitespeed")
+                    }
                 }
             }
 

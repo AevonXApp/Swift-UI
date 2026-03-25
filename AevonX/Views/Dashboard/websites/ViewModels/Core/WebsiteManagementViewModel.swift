@@ -49,11 +49,19 @@ public final class WebsiteManagementViewModel: ObservableObject {
         }
     }
 
-    /// Engine filter: "all", "nginx", or "apache"
+    /// Engine filter: "all", "nginx", "apache", or "openlitespeed"
     @Published public var engineFilter = "all" {
         didSet {
             filterWebsites()
         }
+    }
+
+    /// Engines that are installed on this server (from Quick Install scan or PathResolver).
+    @Published public var installedEngines: Set<String> = []
+
+    /// Whether to show engine filter chips (only if 2+ engines installed).
+    public var showEngineFilters: Bool {
+        installedEngines.count > 1
     }
 
     /// Selected website for detail view
@@ -546,6 +554,7 @@ public final class WebsiteManagementViewModel: ObservableObject {
         let cacheKey = SSHResultCache.key(serverId, "serverPaths")
         if let cached: ServerPaths = await SSHResultCache.shared.get(cacheKey) {
             serverPaths = cached
+            installedEngines = cached.installedEngines
             pathsDetected = true
             return
         }
@@ -553,6 +562,7 @@ public final class WebsiteManagementViewModel: ObservableObject {
         let cmd = pathResolver.detectCmd()
         let output = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
         serverPaths = pathResolver.parse(output: output)
+        installedEngines = serverPaths.installedEngines
         pathsDetected = true
 
         await SSHResultCache.shared.set(cacheKey, value: serverPaths, ttl: SSHResultCache.serverPathsTTL)

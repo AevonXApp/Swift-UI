@@ -97,9 +97,9 @@ struct WebsiteCard: View {
 
                 if let engine = website.webServerEngine {
                     ChipBadge(
-                        icon: engine == "apache" ? "flame.fill" : "bolt.fill",
-                        text: engine.capitalized,
-                        color: engine == "apache" ? .orange : .blue
+                        icon: engineIcon(engine),
+                        text: engineDisplayName(engine),
+                        color: engineColor(engine)
                     )
                 }
 
@@ -166,6 +166,30 @@ struct WebsiteCard: View {
             withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
                 isHovered = hovering
             }
+        }
+    }
+
+    private func engineIcon(_ engine: String) -> String {
+        switch engine {
+        case "apache": return "flame.fill"
+        case "openlitespeed": return "bolt.horizontal.fill"
+        default: return "bolt.fill"
+        }
+    }
+
+    private func engineDisplayName(_ engine: String) -> String {
+        switch engine {
+        case "apache": return "Apache"
+        case "openlitespeed": return "OpenLiteSpeed"
+        default: return "Nginx"
+        }
+    }
+
+    private func engineColor(_ engine: String) -> Color {
+        switch engine {
+        case "apache": return .orange
+        case "openlitespeed": return Color(red: 1.0, green: 0.416, blue: 0.0) // #FF6A00
+        default: return .blue
         }
     }
 }

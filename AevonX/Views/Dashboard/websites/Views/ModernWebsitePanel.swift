@@ -52,6 +52,7 @@ enum ModernSidebarItem: String, CaseIterable, Identifiable {
     case urlRewrites = "URL Rewrites"
     case backupRestore = "Backups"
     case cloneMigrate = "Clone & Migrate"
+    case engineMigration = "Engine Migration"
     case databaseLink = "Database Link"
     case envVariables = "Environment"
     case processManager = "Process Manager"
@@ -64,7 +65,7 @@ enum ModernSidebarItem: String, CaseIterable, Identifiable {
         case .overview, .domainManager, .siteDirectory, .serverConfig, .runtimeConfig: return .core
         case .sslTls, .siteSecurity, .httpHeaders: return .security
         case .cacheManager, .performance, .monitoring: return .performance
-        case .quickActions, .gitSource, .urlRewrites, .backupRestore, .cloneMigrate, .databaseLink, .envVariables, .processManager, .logs: return .tools
+        case .quickActions, .gitSource, .urlRewrites, .backupRestore, .cloneMigrate, .engineMigration, .databaseLink, .envVariables, .processManager, .logs: return .tools
         }
     }
 
@@ -86,6 +87,7 @@ enum ModernSidebarItem: String, CaseIterable, Identifiable {
         case .urlRewrites: return "arrow.uturn.right"
         case .backupRestore: return "archivebox.fill"
         case .cloneMigrate: return "doc.on.doc.fill"
+        case .engineMigration: return "arrow.triangle.2.circlepath"
         case .databaseLink: return "cylinder.fill"
         case .envVariables: return "key.fill"
         case .processManager: return "gearshape.2.fill"
@@ -111,6 +113,7 @@ enum ModernSidebarItem: String, CaseIterable, Identifiable {
         case .urlRewrites: return .orange
         case .backupRestore: return .indigo
         case .cloneMigrate: return .cyan
+        case .engineMigration: return Color(red: 1.0, green: 0.416, blue: 0.0)
         case .databaseLink: return .teal
         case .envVariables: return .yellow
         case .processManager: return .red
@@ -146,7 +149,7 @@ enum ModernSidebarItem: String, CaseIterable, Identifiable {
         case .overview: return "Quick status & health score"
         case .domainManager: return "Domains, aliases, subdomains & DNS"
         case .siteDirectory: return "Browse and manage files"
-        case .serverConfig: return "Nginx/Apache site config editor"
+        case .serverConfig: return "Nginx/Apache/OLS site config editor"
         case .runtimeConfig:
             switch runtime {
             case .php: return "PHP version & extensions"
@@ -165,6 +168,7 @@ enum ModernSidebarItem: String, CaseIterable, Identifiable {
         case .quickActions: return "Quick one-click server actions"
         case .backupRestore: return "Manual & scheduled backups"
         case .cloneMigrate: return "Clone, staging & migration"
+        case .engineMigration: return "Migrate between web server engines"
         case .databaseLink: return "Link DB & connection strings"
         case .envVariables: return "Environment variables (.env)"
         case .processManager: return "PM2/Supervisor process control"
@@ -177,7 +181,7 @@ enum ModernSidebarItem: String, CaseIterable, Identifiable {
         var core: [Self] = [.overview, .domainManager, .siteDirectory, .serverConfig]
         let security: [Self] = [.sslTls, .siteSecurity, .httpHeaders]
         let perf: [Self] = [.cacheManager, .performance, .monitoring]
-        var tools: [Self] = [.quickActions, .gitSource, .urlRewrites, .backupRestore, .cloneMigrate, .databaseLink]
+        var tools: [Self] = [.quickActions, .gitSource, .urlRewrites, .backupRestore, .cloneMigrate, .engineMigration, .databaseLink]
 
         switch runtime {
         case .php:
@@ -600,6 +604,13 @@ struct ModernWebsitePanel: View {
         case .cloneMigrate:
             SiteCloningSection(
                 viewModel: getFactory().siteCloningVM
+            )
+        case .engineMigration:
+            EngineMigrationSection(
+                website: viewModel.website,
+                installedEngines: viewModel.serverPaths.installedEngines,
+                serverId: viewModel.serverId ?? "",
+                serverPaths: viewModel.serverPaths
             )
         case .runtimeConfig:
             runtimeConfigView

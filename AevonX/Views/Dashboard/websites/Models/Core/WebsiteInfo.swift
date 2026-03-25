@@ -41,7 +41,7 @@ public struct WebsiteInfo: Identifiable, Codable, Hashable {
     public var port: Int?
     public var documentRoot: String?
     public var configPath: String?
-    public var webServerEngine: String? // "nginx" or "apache"
+    public var webServerEngine: String? // "nginx", "apache", or "openlitespeed"
 
     // Health & Performance
     public var isReachable: Bool
