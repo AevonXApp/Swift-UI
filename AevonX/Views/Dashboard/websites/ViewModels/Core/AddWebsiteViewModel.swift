@@ -284,14 +284,20 @@ public final class AddWebsiteViewModel: ObservableObject {
             // Get create commands from Go Core
             let cmds = bridge.createSiteCmd(serverID: serverId, configJSON: configJSON)
             for cmd in cmds {
-                _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
+                let result = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
+                if result.localizedCaseInsensitiveContains("error") || result.localizedCaseInsensitiveContains("failed") || result.localizedCaseInsensitiveContains("permission denied") {
+                    CoreLogger.shared.error("Website creation command failed: \(result)", module: "AddWebsiteViewModel")
+                    throw AddWebsiteError.creationFailed(result)
+                }
             }
 
-            // Enable SSL if requested
+            // Enable SSL in background — don't block website creation
             if enableSSL {
-                let sslCmds = bridge.issueSSLCmd(domain: domain)
-                for cmd in sslCmds {
-                    _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
+                let sslDomain = domain
+                let sslServerId = serverId
+                let sslBridge = bridge
+                Task { @MainActor in
+                    await Self.issueSSLInBackground(domain: sslDomain, serverId: sslServerId, bridge: sslBridge)
                 }
             }
 
@@ -307,6 +313,54 @@ public final class AddWebsiteViewModel: ObservableObject {
         }
 
         isCreating = false
+    }
+
+    // MARK: - Background SSL
+
+    /// Issues SSL in background with progress toasts. Shared by AddWebsite and ManagementVM.
+    static func issueSSLInBackground(domain: String, serverId: String, bridge: WebsitesBridge) async {
+        let toastID = GlobalToastManager.shared.showProgress("SSL: Setting up for \(domain)...")
+
+        let sslCmds = bridge.issueSSLCmd(domain: domain)
+        for cmd in sslCmds {
+            let result = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
+
+            // Parse AEVON_SSL_* markers for progress
+            if result.contains("AEVON_SSL_INSTALLING") {
+                GlobalToastManager.shared.updateProgress(id: toastID, message: "SSL: Installing certbot...")
+            }
+            if result.contains("AEVON_SSL_INSTALLED") {
+                GlobalToastManager.shared.updateProgress(id: toastID, message: "SSL: Certbot ready, issuing certificate...")
+            }
+            if result.contains("AEVON_SSL_ISSUING") {
+                GlobalToastManager.shared.updateProgress(id: toastID, message: "SSL: Issuing certificate for \(domain)...")
+            }
+
+            if result.contains("AEVON_SSL_SUCCESS") {
+                GlobalToastManager.shared.dismiss(id: toastID)
+                GlobalToastManager.shared.showSuccess("SSL enabled for \(domain)")
+                CoreLogger.shared.info("SSL enabled for '\(domain)' (background)", module: "SSL")
+                return
+            }
+
+            if result.contains("AEVON_SSL_INSTALL_FAILED") {
+                GlobalToastManager.shared.dismiss(id: toastID)
+                GlobalToastManager.shared.showError("SSL: certbot could not be installed on server")
+                CoreLogger.shared.warning("certbot installation failed for '\(domain)'", module: "SSL")
+                return
+            }
+
+            if result.contains("AEVON_SSL_FAILED") {
+                GlobalToastManager.shared.dismiss(id: toastID)
+                GlobalToastManager.shared.showError("SSL certificate failed for \(domain)")
+                CoreLogger.shared.warning("SSL issuance failed for '\(domain)'", module: "SSL")
+                return
+            }
+        }
+
+        // Fallback — no markers found (unexpected)
+        GlobalToastManager.shared.dismiss(id: toastID)
+        GlobalToastManager.shared.showInfo("SSL setup completed for \(domain)")
     }
 }
 

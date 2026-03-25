@@ -122,20 +122,23 @@ public final class WebsiteDetailViewModel: ObservableObject {
         }
 
         // Load config from Go Core bridge
-        let configCmd = bridge.loadNginxConfigCmd(configPath: website.configPath ?? "\(serverPaths.nginxSitesAvailable)/\(website.domain)")
+        let configCmd = bridge.loadNginxConfigCmd(configPath: resolveConfigPath())
         let configResult = await SSHBridge.shared.executeAsync(serverID: serverId, command: configCmd)
         let configContent = configResult
 
-        // Extract PHP version and document root from config
-        if let phpMatch = configContent.range(of: "php([0-9.]+)-fpm", options: .regularExpression) {
-            self.phpVersion = String(configContent[phpMatch]).replacingOccurrences(of: "php", with: "").replacingOccurrences(of: "-fpm", with: "")
+        // Extract PHP version and document root from uncommented config lines
+        let activeLines = configContent.components(separatedBy: .newlines)
+            .filter { !$0.trimmingCharacters(in: .whitespaces).hasPrefix("#") }
+            .joined(separator: "\n")
+        if let phpMatch = activeLines.range(of: "php([0-9.]+)-fpm", options: .regularExpression) {
+            self.phpVersion = String(activeLines[phpMatch]).replacingOccurrences(of: "php", with: "").replacingOccurrences(of: "-fpm", with: "")
             self.website.phpVersion = self.phpVersion
         }
         if let rootRegex = try? NSRegularExpression(pattern: "root\\s+(/[^;]+)", options: []),
-           let rootMatch = rootRegex.firstMatch(in: configContent, options: [], range: NSRange(configContent.startIndex..., in: configContent)),
+           let rootMatch = rootRegex.firstMatch(in: activeLines, options: [], range: NSRange(activeLines.startIndex..., in: activeLines)),
            rootMatch.numberOfRanges > 1,
-           let pathRange = Range(rootMatch.range(at: 1), in: configContent) {
-            let root = String(configContent[pathRange]).trimmingCharacters(in: .whitespaces)
+           let pathRange = Range(rootMatch.range(at: 1), in: activeLines) {
+            let root = String(activeLines[pathRange]).trimmingCharacters(in: .whitespaces)
             self.documentRoot = root
             self.website.documentRoot = root
         }
@@ -220,7 +223,7 @@ public final class WebsiteDetailViewModel: ObservableObject {
 
         CoreLogger.shared.debug("Saving config - PHP: \(phpVersion), Root: \(documentRoot)", module: "WebsiteDetail")
 
-        let configPath = website.configPath ?? "\(serverPaths.nginxSitesAvailable)/\(website.domain)"
+        let configPath = resolveConfigPath()
         
         // Update PHP version in config via bridge
         if let oldPHP = website.phpVersion, oldPHP != phpVersion {
@@ -309,13 +312,19 @@ public final class WebsiteDetailViewModel: ObservableObject {
         guard let serverId = serverId else { return }
         isUpdatingPort = true
         
-        let configPath = website.configPath ?? "\(serverPaths.nginxSitesAvailable)/\(website.domain)"
+        let configPath = resolveConfigPath()
         let cmd = bridge.updatePortCmd(configPath: configPath, port: customPort)
         _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
-        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.restartNginxCmd())
-        website.port = customPort
-        toastManager.showSuccess("Port updated to \(customPort)")
-        
+
+        let testResult = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.validateNginxCmd())
+        if testResult.contains("successful") || testResult.contains("syntax is ok") {
+            _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.restartNginxCmd())
+            website.port = customPort
+            toastManager.showSuccess("Port updated to \(customPort)")
+        } else {
+            errorMessage = "Nginx validation failed after port change: \(testResult)"
+        }
+
         isUpdatingPort = false
     }
     
@@ -423,8 +432,20 @@ public final class WebsiteDetailViewModel: ObservableObject {
         isBrowsingPath = false
     }
     
+    // MARK: - Config Path Resolution
+
+    /// Resolves the nginx config file path, handling BT Panel .conf extension.
+    private func resolveConfigPath() -> String {
+        if let explicit = website.configPath, !explicit.isEmpty { return explicit }
+        let sa = serverPaths.nginxSitesAvailable
+        if serverPaths.serverType == "bt_panel" || sa.contains("/www/server") || sa.contains("/conf.d") || sa.contains("/vhost") {
+            return "\(sa)/\(website.domain).conf"
+        }
+        return "\(sa)/\(website.domain)"
+    }
+
     // MARK: - Helper Mappings
-    
+
     private func mapToCoreRuntime(_ type: RuntimeType) -> CoreRuntimeType {
         switch type {
         case .php: return .php
@@ -454,7 +475,7 @@ public final class WebsiteDetailViewModel: ObservableObject {
         guard let serverId = serverId else { return }
         isSavingConfig = true
         
-        let configPath = website.configPath ?? "\(serverPaths.nginxSitesAvailable)/\(website.domain)"
+        let configPath = resolveConfigPath()
         
         // Update PHP-FPM socket in nginx config via bridge
         if let oldVersion = website.phpVersion {

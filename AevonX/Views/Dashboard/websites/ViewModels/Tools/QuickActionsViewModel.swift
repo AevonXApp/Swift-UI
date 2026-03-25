@@ -69,15 +69,17 @@ class QuickActionsViewModel: ObservableObject {
         await detectPathsIfNeeded()
         let sa = serverPaths.nginxSitesAvailable
         if maintenanceMode {
-            let cmd = bridge.disableMaintenanceCmd(domain: domain, docRoot: docRoot, sitesAvailable: sa)
-            _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
-            _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.restartNginxCmd())
+            let cmds = bridge.disableMaintenanceCmd(domain: domain, docRoot: docRoot, sitesAvailable: sa)
+            for cmd in cmds {
+                _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
+            }
             maintenanceMode = false
             GlobalToastManager.shared.showSuccess("Maintenance mode disabled")
         } else {
-            let cmd = bridge.enableMaintenanceCmd(domain: domain, docRoot: docRoot, sitesAvailable: sa)
-            _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
-            _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.restartNginxCmd())
+            let cmds = bridge.enableMaintenanceCmd(domain: domain, docRoot: docRoot, sitesAvailable: sa)
+            for cmd in cmds {
+                _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
+            }
             maintenanceMode = true
             GlobalToastManager.shared.showSuccess("Maintenance mode enabled")
         }

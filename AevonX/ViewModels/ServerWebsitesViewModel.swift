@@ -51,17 +51,17 @@ public class ServerWebsitesViewModel: ObservableObject {
         error = nil
         
         do {
-            // Step 1: Get the list command from Go Core
-            let listCmd = bridge.nginxListCmd(serverID: serverId)
+            // Step 1: Get the detailed list command from Go Core (returns doc_root, SSL, PHP)
+            let listCmd = bridge.listWithDetailsCmd()
             guard !listCmd.isEmpty else {
                 throw NSError(domain: "Websites", code: 1, userInfo: [NSLocalizedDescriptionKey: "Failed to get list command"])
             }
-            
-            // Step 2: Execute via SSH (executeAsync now returns plain stdout)
+
+            // Step 2: Execute via SSH
             let stdout = await SSHBridge.shared.executeAsync(serverID: serverId, command: listCmd)
-            
-            // Step 3: Parse output via Go Core
-            let parsedJSON = bridge.parseNginxSites(output: stdout)
+
+            // Step 3: Parse detailed output via Go Core
+            let parsedJSON = bridge.parseListWithDetails(output: stdout)
             
             // Step 4: Decode into CoreWebsiteInfo array
             if let data = parsedJSON.data(using: .utf8),

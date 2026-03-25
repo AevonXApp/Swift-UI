@@ -277,14 +277,25 @@ public final class WebsiteManagementViewModel: ObservableObject {
         // Get create commands from Go Core
         let cmds = bridge.createSiteCmd(serverID: serverId, configJSON: configJSON)
         for cmd in cmds {
-            _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
+            let result = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
+            if result.localizedCaseInsensitiveContains("error") || result.localizedCaseInsensitiveContains("failed") || result.localizedCaseInsensitiveContains("permission denied") {
+                CoreLogger.shared.error("Website creation command failed: \(result)", module: "WebsiteManagement")
+                throw WebsiteOperationError.operationFailed(result)
+            }
         }
 
         // Enable SSL if requested
         if enableSSL {
             let sslCmds = bridge.issueSSLCmd(domain: domain)
             for cmd in sslCmds {
-                _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
+                let result = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
+                let lower = result.lowercased()
+                if lower.contains("certbot_install_failed") || lower.contains("not found") ||
+                   lower.contains("command not found") || lower.contains("error") ||
+                   lower.contains("failed") || lower.contains("unauthorized") {
+                    CoreLogger.shared.warning("SSL issuance may have failed: \(result)", module: "WebsiteManagement")
+                    break
+                }
             }
         }
 
@@ -371,18 +382,19 @@ public final class WebsiteManagementViewModel: ObservableObject {
         await loadData(forceRefresh: true)
     }
 
-    /// Enables SSL for a website via Core layer
+    /// Enables SSL for a website in background via Core layer.
+    /// Auto-installs certbot if not present. Runs async with toast progress.
     public func enableSSL(_ website: WebsiteInfo, provider: SSLProvider = .letsEncrypt) async throws {
         guard let serverId = serverId else {
             throw WebsiteOperationError.serverNotConfigured
         }
 
-        let sslCmds = bridge.issueSSLCmd(domain: website.domain)
-        for cmd in sslCmds {
-            _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
+        let domain = website.domain
+        let sslBridge = bridge
+        Task { @MainActor in
+            await AddWebsiteViewModel.issueSSLInBackground(domain: domain, serverId: serverId, bridge: sslBridge)
+            await self.loadData(forceRefresh: true)
         }
-
-        await loadData(forceRefresh: true)
     }
 
     /// Opens deployment view for a website
