@@ -159,7 +159,13 @@ private struct UninstallButton: View {
     @State private var showConfirmation = false
     
     var body: some View {
-        Button(action: { showConfirmation = true }) {
+        Button(action: {
+            if AppSettingsManager.shared.shouldConfirm(for: SettingsKey.confirmUninstallPlugin) {
+                showConfirmation = true
+            } else {
+                onUninstall()
+            }
+        }) {
             Image(systemName: "trash")
                 .font(.system(size: 14))
                 .foregroundColor(.axError)
@@ -169,13 +175,21 @@ private struct UninstallButton: View {
         }
         .buttonStyle(PlainButtonStyle())
         .help("Uninstall Plugin")
-        .alert(isPresented: $showConfirmation) {
-            Alert(
-                title: Text("Uninstall Plugin"),
-                message: Text("Are you sure you want to uninstall this plugin? This action cannot be undone."),
-                primaryButton: .destructive(Text("Uninstall"), action: onUninstall),
-                secondaryButton: .cancel()
-            )
+        .overlay {
+            if showConfirmation {
+                AXDeleteConfirmation(
+                    title: "Uninstall Plugin",
+                    itemName: "this plugin",
+                    icon: "puzzlepiece",
+                    warning: "This action cannot be undone.",
+                    confirmLabel: "Uninstall",
+                    onConfirm: {
+                        showConfirmation = false
+                        onUninstall()
+                    },
+                    onCancel: { showConfirmation = false }
+                )
+            }
         }
     }
 }

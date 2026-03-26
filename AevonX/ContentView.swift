@@ -10,12 +10,22 @@ import AevonXCoreBridge
 
 struct ContentView: View {
     @EnvironmentObject var authViewModel: AuthViewModel
+    @EnvironmentObject var settings: AppSettingsManager
+    @EnvironmentObject var updateService: AppUpdateService
     @State private var selectedNavigation: NavigationItem = .remoteFleet
     @StateObject private var serverListViewModel = ServerListViewModel()
     @State private var selectedServer: Server? = nil
     @State private var showServerDashboard = false
     @State private var showAddServer = false
-    
+
+    /// Update sheet binding
+    private var showUpdateSheet: Binding<Bool> {
+        Binding(
+            get: { updateService.state == .updateAvailable && !updateService.isForceUpdate },
+            set: { if !$0 { updateService.state = .idle } }
+        )
+    }
+
     /// Encryption key gate state
     @State private var hasEncryptionKey = false
     @State private var isCheckingKey = true
@@ -39,10 +49,20 @@ struct ContentView: View {
                         Task { await authViewModel.logout() }
                     }
                 )
+            } else if settings.appLockEnabled && settings.isLocked {
+                // App is locked — show lock screen
+                LockScreenView()
+                    .environmentObject(settings)
+            } else if updateService.isForceUpdate && updateService.state != .idle {
+                // Force update — blocking, cannot dismiss
+                ForceUpdateView(updateService: updateService)
             } else {
                 // Normal app content
                 mainContentView
             }
+        }
+        .sheet(isPresented: showUpdateSheet) {
+            UpdateSheet(updateService: updateService)
         }
         .task {
             // Inject API fetcher + SSH BEFORE anything else (eliminates race condition)
@@ -54,7 +74,10 @@ struct ContentView: View {
             // Initialize Go Core engine
             CoreBridge.shared.initialize()
             print("🟢 Go Core v\(CoreBridge.shared.version()) initialized")
-            
+
+            // Sync network settings to Go bridge on launch
+            AppSettingsManager.shared.syncNetworkSettingsToCore()
+
             await checkEncryptionKey()
         }
     }
@@ -128,7 +151,7 @@ struct ContentView: View {
         .overlay(alignment: .topTrailing) {
             GlobalToastOverlay()
         }
-        .preferredColorScheme(.dark)
+        .preferredColorScheme(ThemeEngine.shared.colorScheme)
         .onChange(of: serverListViewModel.needsLogin) { _, needsLogin in
             if needsLogin {
                 selectedNavigation = .userProfile
@@ -160,7 +183,7 @@ struct EncryptionGateView: View {
         )
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.axBackground)
-        .preferredColorScheme(.dark)
+        .preferredColorScheme(ThemeEngine.shared.colorScheme)
     }
 }
 

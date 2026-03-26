@@ -518,7 +518,7 @@ struct EditServerView: View {
             .background(Color.axBackground)
         }
         .background(Color.axBackground)
-        .preferredColorScheme(.dark)
+        .preferredColorScheme(ThemeEngine.shared.colorScheme)
         .onAppear {
             loadInitialData()
         }

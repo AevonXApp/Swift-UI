@@ -15,6 +15,14 @@ struct ModernDatabaseCard: View {
     var onDelete: (() -> Void)?
     @State private var isHovered = false
 
+    private var maskedDatabaseName: String {
+        let s = AppSettingsManager.shared
+        if s.maskServerInfo && s.maskInDashboard && s.maskDatabaseNames {
+            return PrivacyMask.databaseName(database.name)
+        }
+        return database.name
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             VStack(alignment: .leading, spacing: AXSpacing.md) {
@@ -38,7 +46,7 @@ struct ModernDatabaseCard: View {
                     }
 
                     VStack(alignment: .leading, spacing: AXSpacing.xxxs) {
-                        Text(database.name)
+                        Text(maskedDatabaseName)
                             .font(AXTypography.body)
                             .fontWeight(.semibold)
                             .foregroundColor(.axTextPrimary)

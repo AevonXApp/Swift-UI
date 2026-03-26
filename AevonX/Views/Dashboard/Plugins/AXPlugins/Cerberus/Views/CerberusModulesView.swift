@@ -14,7 +14,7 @@ struct CerberusModulesView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: AXSpacing.lg) {
-                modulesHeaderCard
+                modulesHero
                 moduleToggleGrid
                 Divider().padding(.vertical, AXSpacing.xs)
                 rateLimitPanel
@@ -28,39 +28,72 @@ struct CerberusModulesView: View {
         }
         .task { await viewModel.loadModuleConfig() }
     }
+}
 
-    // MARK: - Header
+// MARK: - Hero
 
-    private var modulesHeaderCard: some View {
-        AXGlassCard {
-            HStack(spacing: AXSpacing.lg) {
-                VStack(alignment: .leading, spacing: AXSpacing.xs) {
-                    HStack(spacing: AXSpacing.sm) {
-                        Image(systemName: "square.grid.3x3.fill")
-                            .font(AXTypography.headline)
-                            .foregroundStyle(Color.axAccentBlue)
-                        Text("Security Control Center")
-                            .font(AXTypography.headline)
-                            .foregroundStyle(Color.axTextPrimary)
-                    }
-                    Text("Toggle modules live · edit config in real time · changes reload instantly")
-                        .font(AXTypography.caption)
-                        .foregroundStyle(Color.axTextTertiary)
-                }
+private extension CerberusModulesView {
+
+    var modulesHero: some View {
+        AXGlassCard(accentColor: .axAccentBlue) {
+            HStack(spacing: AXSpacing.xl) {
+                modulesHeroIcon
+                modulesHeroText
                 Spacer()
-                if viewModel.configOperationInProgress {
-                    ProgressView()
-                        .scaleEffect(0.8)
-                }
-                AXBadge(text: "\(moduleCards.filter(\.enabled).count)/\(moduleCards.count) active",
-                        color: .axAccentGreen, style: .soft)
+                modulesHeroStatus
             }
         }
     }
 
-    // MARK: - Module Toggle Grid
+    var modulesHeroIcon: some View {
+        ZStack {
+            Circle()
+                .fill(
+                    RadialGradient(
+                        colors: [Color.axAccentBlue.opacity(0.2), Color.axAccentBlue.opacity(0.04)],
+                        center: .center, startRadius: 0, endRadius: 26
+                    )
+                )
+                .frame(width: 48, height: 48)
+            Circle()
+                .stroke(Color.axAccentBlue.opacity(0.25), lineWidth: 1)
+                .frame(width: 48, height: 48)
+            Image(systemName: "square.grid.3x3.fill")
+                .font(AXTypography.title3)
+                .foregroundStyle(Color.axAccentBlue)
+        }
+    }
 
-    private var moduleToggleGrid: some View {
+    var modulesHeroText: some View {
+        VStack(alignment: .leading, spacing: AXSpacing.xxxs) {
+            Text("Security Control Center")
+                .font(AXTypography.title2)
+                .fontWeight(.bold)
+                .foregroundStyle(Color.axTextPrimary)
+            Text("Toggle modules live · edit config in real time · changes reload instantly")
+                .font(AXTypography.caption)
+                .foregroundStyle(Color.axTextTertiary)
+        }
+    }
+
+    var modulesHeroStatus: some View {
+        HStack(spacing: AXSpacing.md) {
+            if viewModel.configOperationInProgress {
+                ProgressView().scaleEffect(0.8)
+            }
+            AXBadge(
+                text: "\(moduleCards.filter(\.enabled).count)/\(moduleCards.count) active",
+                color: .axAccentGreen, style: .soft
+            )
+        }
+    }
+}
+
+// MARK: - Module Toggle Grid
+
+private extension CerberusModulesView {
+
+    var moduleToggleGrid: some View {
         LazyVGrid(columns: [
             GridItem(.flexible()),
             GridItem(.flexible()),
@@ -72,26 +105,18 @@ struct CerberusModulesView: View {
         }
     }
 
-    private func moduleToggleCard(_ module: ModuleCard) -> some View {
+    func moduleToggleCard(_ module: ModuleCardData) -> some View {
         AXCard(accentColor: module.enabled ? module.color : .axTextMuted) {
             VStack(alignment: .leading, spacing: AXSpacing.sm) {
-                moduleToggleHeader(module)
-                Text(module.description)
-                    .font(AXTypography.caption)
-                    .foregroundStyle(module.enabled ? Color.axTextTertiary : Color.axTextMuted)
-                    .lineLimit(2)
-                    .fixedSize(horizontal: false, vertical: true)
-                HStack {
-                    AXBadge(text: module.layer, color: module.enabled ? module.color : .axTextMuted, style: .soft)
-                    Spacer()
-                    moduleStatusDot(enabled: module.enabled)
-                }
+                moduleCardHeader(module)
+                moduleCardDescription(module)
+                moduleCardFooter(module)
             }
         }
         .opacity(module.enabled ? 1.0 : 0.7)
     }
 
-    private func moduleToggleHeader(_ module: ModuleCard) -> some View {
+    func moduleCardHeader(_ module: ModuleCardData) -> some View {
         HStack(spacing: AXSpacing.sm) {
             ZStack {
                 RoundedRectangle(cornerRadius: AXCornerRadius.sm)
@@ -104,6 +129,7 @@ struct CerberusModulesView: View {
             VStack(alignment: .leading, spacing: AXSpacing.xxxs) {
                 Text(module.name)
                     .font(AXTypography.subheadline)
+                    .fontWeight(.medium)
                     .foregroundStyle(Color.axTextPrimary)
                 Text(module.category)
                     .font(AXTypography.caption)
@@ -124,18 +150,30 @@ struct CerberusModulesView: View {
         }
     }
 
-    private func moduleStatusDot(enabled: Bool) -> some View {
-        HStack(spacing: AXSpacing.xxxs) {
-            Circle()
-                .fill(enabled ? Color.axAccentGreen : Color.axTextMuted)
-                .frame(width: 6, height: 6)
-            Text(enabled ? "Active" : "Disabled")
-                .font(AXTypography.caption)
-                .foregroundStyle(enabled ? Color.axAccentGreen : Color.axTextMuted)
+    func moduleCardDescription(_ module: ModuleCardData) -> some View {
+        Text(module.description)
+            .font(AXTypography.caption)
+            .foregroundStyle(module.enabled ? Color.axTextTertiary : Color.axTextMuted)
+            .lineLimit(2)
+            .fixedSize(horizontal: false, vertical: true)
+    }
+
+    func moduleCardFooter(_ module: ModuleCardData) -> some View {
+        HStack {
+            AXBadge(text: module.layer, color: module.enabled ? module.color : .axTextMuted, style: .soft)
+            Spacer()
+            HStack(spacing: AXSpacing.xxxs) {
+                Circle()
+                    .fill(module.enabled ? Color.axAccentGreen : Color.axTextMuted)
+                    .frame(width: 6, height: 6)
+                Text(module.enabled ? "Active" : "Disabled")
+                    .font(AXTypography.caption)
+                    .foregroundStyle(module.enabled ? Color.axAccentGreen : Color.axTextMuted)
+            }
         }
     }
 
-    private func updateModuleState(key: String, enabled: Bool) {
+    func updateModuleState(key: String, enabled: Bool) {
         switch key {
         case "waf_enabled":                   viewModel.wafEnabled = enabled
         case "rate_limit_enabled":            viewModel.rateLimitEnabled = enabled
@@ -149,94 +187,105 @@ struct CerberusModulesView: View {
         default: break
         }
     }
+}
 
-    // MARK: - Rate Limit Panel
+// MARK: - Config Panels
 
-    private var rateLimitPanel: some View {
-        configSection(
-            icon: "gauge.with.dots.needle.33percent",
-            title: "Rate Limiter",
-            color: .axWarning,
-            enabled: viewModel.rateLimitEnabled
-        ) {
+private extension CerberusModulesView {
+
+    var rateLimitPanel: some View {
+        configSection(icon: "gauge.with.dots.needle.33percent", title: "Rate Limiter",
+                      color: .axWarning, enabled: viewModel.rateLimitEnabled) {
             configSlider(label: "Global Limit", value: $viewModel.globalRateLimit,
                          range: 10...2000, unit: "req/min", color: .axWarning)
             configSlider(label: "Login Limit", value: $viewModel.loginRateLimit,
                          range: 1...100, unit: "req/min", color: .axError)
             configSlider(label: "API Limit", value: $viewModel.apiRateLimit,
                          range: 10...1000, unit: "req/min", color: .axAccentBlue)
-            configToggleRow(label: "Throttle Mode", subtitle: "Delay instead of hard block",
-                            value: $viewModel.throttleMode, color: .axWarning)
-            saveButton(label: "Save Rate Limits") { await viewModel.saveRateLimitConfig() }
+            configToggle(label: "Throttle Mode", sub: "Delay instead of hard block",
+                         value: $viewModel.throttleMode, color: .axWarning)
+            saveBtn(label: "Save Rate Limits") { await viewModel.saveRateLimitConfig() }
         }
     }
 
-    // MARK: - DDoS Panel
-
-    private var ddosPanel: some View {
-        configSection(
-            icon: "bolt.shield",
-            title: "DDoS Shield",
-            color: .axError,
-            enabled: viewModel.ddosEnabled
-        ) {
+    var ddosPanel: some View {
+        configSection(icon: "bolt.shield", title: "DDoS Shield",
+                      color: .axError, enabled: viewModel.ddosEnabled) {
             configSlider(label: "Spike Multiplier", value: $viewModel.ddosSpikeMultiplier,
                          range: 1.5...20, unit: "×", color: .axError)
             configSlider(label: "Max Conns / IP", value: $viewModel.ddosMaxConnsPerIP,
                          range: 5...500, unit: "conns", color: .axWarning)
-            configToggleRow(label: "Auto Mitigate", subtitle: "Escalate level automatically",
-                            value: $viewModel.ddosAutoMitigate, color: .axError)
-            saveButton(label: "Save DDoS Config") { await viewModel.saveDDoSConfig() }
+            configToggle(label: "Auto Mitigate", sub: "Escalate level automatically",
+                         value: $viewModel.ddosAutoMitigate, color: .axError)
+            saveBtn(label: "Save DDoS Config") { await viewModel.saveDDoSConfig() }
         }
     }
 
-    // MARK: - Credential Panel
-
-    private var credentialPanel: some View {
-        configSection(
-            icon: "key.fill",
-            title: "Credential Guard",
-            color: .axError,
-            enabled: viewModel.credentialEnabled
-        ) {
+    var credentialPanel: some View {
+        configSection(icon: "key.fill", title: "Credential Guard",
+                      color: .axError, enabled: viewModel.credentialEnabled) {
             configSlider(label: "Max Attempts / IP", value: $viewModel.credMaxPerIP,
                          range: 3...200, unit: "per hour", color: .axError)
             configSlider(label: "Max Attempts / User", value: $viewModel.credMaxPerUser,
                          range: 3...100, unit: "per hour", color: .axWarning)
-            saveButton(label: "Save Credential Config") { await viewModel.saveCredentialConfig() }
+            saveBtn(label: "Save Credential Config") { await viewModel.saveCredentialConfig() }
         }
     }
 
-    // MARK: - DLP Panel
-
-    private var dlpPanel: some View {
-        configSection(
-            icon: "doc.text.magnifyingglass",
-            title: "DLP Scanner",
-            color: .axAccentPurple,
-            enabled: viewModel.dlpEnabled
-        ) {
+    var dlpPanel: some View {
+        configSection(icon: "doc.text.magnifyingglass", title: "DLP Scanner",
+                      color: .axAccentPurple, enabled: viewModel.dlpEnabled) {
             dlpModePicker
-            configToggleRow(label: "Credit Cards", subtitle: "Luhn-validated detection",
-                            value: $viewModel.dlpCreditCards, color: .axAccentPurple)
-            configToggleRow(label: "API Keys & Tokens", subtitle: "Bearer tokens, secret keys",
-                            value: $viewModel.dlpAPIKeys, color: .axAccentPurple)
-            configToggleRow(label: "Stack Traces", subtitle: "Exception and DB error leaks",
-                            value: $viewModel.dlpStackTraces, color: .axAccentPurple)
-            saveButton(label: "Save DLP Config") { await viewModel.saveDLPConfig() }
+            configToggle(label: "Credit Cards", sub: "Luhn-validated detection",
+                         value: $viewModel.dlpCreditCards, color: .axAccentPurple)
+            configToggle(label: "API Keys & Tokens", sub: "Bearer tokens, secret keys",
+                         value: $viewModel.dlpAPIKeys, color: .axAccentPurple)
+            configToggle(label: "Stack Traces", sub: "Exception and DB error leaks",
+                         value: $viewModel.dlpStackTraces, color: .axAccentPurple)
+            saveBtn(label: "Save DLP Config") { await viewModel.saveDLPConfig() }
         }
     }
 
-    private var dlpModePicker: some View {
+    var honeypotPanel: some View {
+        configSection(icon: "ant", title: "Honeypot",
+                      color: .axWarning, enabled: viewModel.honeypotEnabled) {
+            VStack(alignment: .leading, spacing: AXSpacing.xs) {
+                Text("Trap Paths").font(AXTypography.caption).foregroundStyle(Color.axTextTertiary)
+                AXTextField(placeholder: "/wp-admin,/.env,/phpmyadmin", text: $viewModel.honeypotPaths,
+                            icon: "ant", accentColor: .axWarning)
+            }
+            configToggle(label: "Auto-Block Visitors", sub: "Block IPs that hit trap paths",
+                         value: $viewModel.honeypotAutoBlock, color: .axWarning)
+            saveBtn(label: "Save Honeypot Config") { await viewModel.saveHoneypotConfig() }
+        }
+    }
+
+    var alertsPanel: some View {
+        configSection(icon: "bell.badge", title: "Alert Dispatcher",
+                      color: .axAccentGreen, enabled: viewModel.alertsEnabled) {
+            VStack(alignment: .leading, spacing: AXSpacing.xs) {
+                Text("Webhook URL").font(AXTypography.caption).foregroundStyle(Color.axTextTertiary)
+                AXTextField(placeholder: "https://hooks.example.com/...", text: $viewModel.alertWebhookURL,
+                            icon: "link", accentColor: .axAccentGreen)
+            }
+            configSlider(label: "Max Alerts / Hour", value: $viewModel.alertMaxPerHour,
+                         range: 1...100, unit: "alerts", color: .axAccentGreen)
+            alertSeverityPicker
+            saveBtn(label: "Save Alert Config") { await viewModel.saveAlertsConfig() }
+        }
+    }
+}
+
+// MARK: - DLP Mode Picker
+
+private extension CerberusModulesView {
+
+    var dlpModePicker: some View {
         VStack(alignment: .leading, spacing: AXSpacing.xs) {
-            Text("Action Mode")
-                .font(AXTypography.caption)
-                .foregroundStyle(Color.axTextTertiary)
+            Text("Action Mode").font(AXTypography.caption).foregroundStyle(Color.axTextTertiary)
             HStack(spacing: AXSpacing.sm) {
                 ForEach(["log", "mask", "block"], id: \.self) { mode in
-                    Button {
-                        viewModel.dlpMode = mode
-                    } label: {
+                    Button { viewModel.dlpMode = mode } label: {
                         Text(mode.capitalized)
                             .font(AXTypography.monoSm)
                             .foregroundStyle(viewModel.dlpMode == mode ? Color.axTextPrimary : Color.axTextMuted)
@@ -244,20 +293,18 @@ struct CerberusModulesView: View {
                             .padding(.vertical, AXSpacing.xs)
                             .background(
                                 RoundedRectangle(cornerRadius: AXCornerRadius.sm)
-                                    .fill(viewModel.dlpMode == mode
-                                          ? Color.axAccentPurple.opacity(0.2)
-                                          : Color.axSurface.opacity(0.5))
+                                    .fill(viewModel.dlpMode == mode ? Color.axAccentPurple.opacity(0.2) : Color.axSurface.opacity(0.5))
                             )
                     }
                     .buttonStyle(.plain)
                 }
                 Spacer()
-                modeInfoBadge
+                dlpModeInfo
             }
         }
     }
 
-    private var modeInfoBadge: some View {
+    var dlpModeInfo: some View {
         let (text, color): (String, Color) = {
             switch viewModel.dlpMode {
             case "block": return ("Blocks response", .axError)
@@ -267,111 +314,47 @@ struct CerberusModulesView: View {
         }()
         return AXBadge(text: text, color: color, style: .soft)
     }
+}
 
-    // MARK: - Honeypot Panel
+// MARK: - Alert Severity Picker
 
-    private var honeypotPanel: some View {
-        configSection(
-            icon: "ant",
-            title: "Honeypot",
-            color: .axWarning,
-            enabled: viewModel.honeypotEnabled
-        ) {
-            VStack(alignment: .leading, spacing: AXSpacing.xs) {
-                Text("Trap Paths")
-                    .font(AXTypography.caption)
-                    .foregroundStyle(Color.axTextTertiary)
-                AXTextField(
-                    placeholder: "/wp-admin,/.env,/phpmyadmin",
-                    text: $viewModel.honeypotPaths,
-                    icon: "ant",
-                    accentColor: .axWarning
-                )
-            }
-            configToggleRow(label: "Auto-Block Visitors", subtitle: "Block IPs that hit trap paths",
-                            value: $viewModel.honeypotAutoBlock, color: .axWarning)
-            saveButton(label: "Save Honeypot Config") { await viewModel.saveHoneypotConfig() }
-        }
-    }
+private extension CerberusModulesView {
 
-    // MARK: - Alerts Panel
-
-    private var alertsPanel: some View {
-        configSection(
-            icon: "bell.badge",
-            title: "Alert Dispatcher",
-            color: .axAccentGreen,
-            enabled: viewModel.alertsEnabled
-        ) {
-            VStack(alignment: .leading, spacing: AXSpacing.xs) {
-                Text("Webhook URL")
-                    .font(AXTypography.caption)
-                    .foregroundStyle(Color.axTextTertiary)
-                AXTextField(
-                    placeholder: "https://hooks.example.com/...",
-                    text: $viewModel.alertWebhookURL,
-                    icon: "link",
-                    accentColor: .axAccentGreen
-                )
-            }
-            configSlider(label: "Max Alerts / Hour", value: $viewModel.alertMaxPerHour,
-                         range: 1...100, unit: "alerts", color: .axAccentGreen)
-            VStack(alignment: .leading, spacing: AXSpacing.xs) {
-                Text("Minimum Severity")
-                    .font(AXTypography.caption)
-                    .foregroundStyle(Color.axTextTertiary)
-                HStack(spacing: AXSpacing.sm) {
-                    ForEach(["low", "medium", "high", "critical"], id: \.self) { sev in
-                        Button {
-                            viewModel.alertSeverity = sev
-                        } label: {
-                            Text(sev.capitalized)
-                                .font(AXTypography.monoXs)
-                                .foregroundStyle(viewModel.alertSeverity == sev
-                                                 ? Color.axTextPrimary : Color.axTextMuted)
-                                .padding(.horizontal, AXSpacing.xs)
-                                .padding(.vertical, AXSpacing.xs)
-                                .background(
-                                    RoundedRectangle(cornerRadius: AXCornerRadius.sm)
-                                        .fill(viewModel.alertSeverity == sev
-                                              ? Color.axAccentGreen.opacity(0.2)
-                                              : Color.axSurface.opacity(0.5))
-                                )
-                        }
-                        .buttonStyle(.plain)
+    var alertSeverityPicker: some View {
+        VStack(alignment: .leading, spacing: AXSpacing.xs) {
+            Text("Minimum Severity").font(AXTypography.caption).foregroundStyle(Color.axTextTertiary)
+            HStack(spacing: AXSpacing.sm) {
+                ForEach(["low", "medium", "high", "critical"], id: \.self) { sev in
+                    Button { viewModel.alertSeverity = sev } label: {
+                        Text(sev.capitalized)
+                            .font(AXTypography.monoXs)
+                            .foregroundStyle(viewModel.alertSeverity == sev ? Color.axTextPrimary : Color.axTextMuted)
+                            .padding(.horizontal, AXSpacing.xs)
+                            .padding(.vertical, AXSpacing.xs)
+                            .background(
+                                RoundedRectangle(cornerRadius: AXCornerRadius.sm)
+                                    .fill(viewModel.alertSeverity == sev ? Color.axAccentGreen.opacity(0.2) : Color.axSurface.opacity(0.5))
+                            )
                     }
-                    Spacer()
+                    .buttonStyle(.plain)
                 }
+                Spacer()
             }
-            saveButton(label: "Save Alert Config") { await viewModel.saveAlertsConfig() }
         }
     }
+}
 
-    // MARK: - Reusable Config Components
+// MARK: - Reusable Config Components
 
-    private func configSection<Content: View>(
+private extension CerberusModulesView {
+
+    func configSection<Content: View>(
         icon: String, title: String, color: Color, enabled: Bool,
         @ViewBuilder content: () -> Content
     ) -> some View {
         AXCard(accentColor: enabled ? color : .axTextMuted) {
             VStack(alignment: .leading, spacing: AXSpacing.md) {
-                HStack(spacing: AXSpacing.sm) {
-                    ZStack {
-                        RoundedRectangle(cornerRadius: AXCornerRadius.sm)
-                            .fill((enabled ? color : Color.axTextMuted).opacity(0.15))
-                            .frame(width: 28, height: 28)
-                        Image(systemName: icon)
-                            .font(AXTypography.caption)
-                            .foregroundStyle(enabled ? color : Color.axTextMuted)
-                    }
-                    Text(title)
-                        .font(AXTypography.headline)
-                        .foregroundStyle(Color.axTextPrimary)
-                    Spacer()
-                    if !enabled {
-                        AXBadge(text: "Disabled", color: .axTextMuted, style: .soft)
-                    }
-                }
+                configSectionHeader(icon: icon, title: title, color: color, enabled: enabled)
                 if enabled {
                     content()
                 } else {
@@ -385,103 +368,112 @@ struct CerberusModulesView: View {
         .opacity(enabled ? 1.0 : 0.65)
     }
 
-    private func configSlider(
+    func configSectionHeader(icon: String, title: String, color: Color, enabled: Bool) -> some View {
+        HStack(spacing: AXSpacing.sm) {
+            ZStack {
+                RoundedRectangle(cornerRadius: AXCornerRadius.sm)
+                    .fill((enabled ? color : Color.axTextMuted).opacity(0.15))
+                    .frame(width: 28, height: 28)
+                Image(systemName: icon)
+                    .font(AXTypography.caption)
+                    .foregroundStyle(enabled ? color : Color.axTextMuted)
+            }
+            Text(title)
+                .font(AXTypography.headline)
+                .foregroundStyle(Color.axTextPrimary)
+            Spacer()
+            if !enabled {
+                AXBadge(text: "Disabled", color: .axTextMuted, style: .soft)
+            }
+        }
+    }
+
+    func configSlider(
         label: String, value: Binding<Double>,
         range: ClosedRange<Double>, unit: String, color: Color
     ) -> some View {
         VStack(alignment: .leading, spacing: AXSpacing.xxxs) {
             HStack {
-                Text(label)
-                    .font(AXTypography.caption)
-                    .foregroundStyle(Color.axTextTertiary)
+                Text(label).font(AXTypography.caption).foregroundStyle(Color.axTextTertiary)
                 Spacer()
                 Text("\(Int(value.wrappedValue)) \(unit)")
                     .font(AXTypography.monoSm)
                     .foregroundStyle(color)
             }
-            Slider(value: value, in: range)
-                .tint(color)
+            Slider(value: value, in: range).tint(color)
         }
     }
 
-    private func configToggleRow(
-        label: String, subtitle: String,
-        value: Binding<Bool>, color: Color
+    func configToggle(
+        label: String, sub: String, value: Binding<Bool>, color: Color
     ) -> some View {
         HStack {
             VStack(alignment: .leading, spacing: AXSpacing.xxxs) {
-                Text(label)
-                    .font(AXTypography.caption)
-                    .foregroundStyle(Color.axTextPrimary)
-                Text(subtitle)
-                    .font(AXTypography.caption)
-                    .foregroundStyle(Color.axTextMuted)
+                Text(label).font(AXTypography.caption).foregroundStyle(Color.axTextPrimary)
+                Text(sub).font(AXTypography.caption).foregroundStyle(Color.axTextMuted)
             }
             Spacer()
-            Toggle("", isOn: value)
-                .toggleStyle(.switch)
-                .tint(color)
-                .labelsHidden()
+            Toggle("", isOn: value).toggleStyle(.switch).tint(color).labelsHidden()
         }
     }
 
-    private func saveButton(label: String, action: @escaping () async -> Void) -> some View {
+    func saveBtn(label: String, action: @escaping () async -> Void) -> some View {
         HStack {
             Spacer()
             AXPrimaryButton(
-                title: label,
-                icon: "checkmark.circle.fill",
+                title: label, icon: "checkmark.circle.fill",
                 action: { Task { await action() } },
                 isLoading: viewModel.configOperationInProgress
             )
         }
     }
+}
 
-    // MARK: - Module Card Data
+// MARK: - Module Card Data
 
-    private var moduleCards: [ModuleCard] {[
-        ModuleCard(key: "waf_enabled", name: "WAF Engine", icon: "shield.checkered",
-                   color: .axAccentBlue, category: "Core", layer: "L7",
-                   description: "Coraza ModSecurity — SQLi, XSS, path traversal",
-                   enabled: viewModel.wafEnabled),
-        ModuleCard(key: "rate_limit_enabled", name: "Rate Limiter", icon: "gauge.with.dots.needle.33percent",
-                   color: .axWarning, category: "Traffic", layer: "L7",
-                   description: "Per-IP sliding-window rate limiting (3 tiers)",
-                   enabled: viewModel.rateLimitEnabled),
-        ModuleCard(key: "ddos_enabled", name: "DDoS Shield", icon: "bolt.shield",
-                   color: .axError, category: "Defense", layer: "L7",
-                   description: "EWMA baseline spike detection + auto-mitigation",
-                   enabled: viewModel.ddosEnabled),
-        ModuleCard(key: "bot_detection_enabled", name: "Bot Detector", icon: "cpu",
-                   color: .axInfo, category: "Detection", layer: "L7",
-                   description: "User-Agent classification (human/bot/malicious)",
-                   enabled: viewModel.botDetectionEnabled),
-        ModuleCard(key: "honeypot_enabled", name: "Honeypot", icon: "ant",
-                   color: .axWarning, category: "Detection", layer: "L7",
-                   description: "Trap endpoints to detect and log attackers",
-                   enabled: viewModel.honeypotEnabled),
-        ModuleCard(key: "credential_protection_enabled", name: "Credential Guard", icon: "key.fill",
-                   color: .axError, category: "Auth", layer: "L7",
-                   description: "Brute force and credential stuffing detection",
-                   enabled: viewModel.credentialEnabled),
-        ModuleCard(key: "dlp_enabled", name: "DLP Scanner", icon: "doc.text.magnifyingglass",
-                   color: .axAccentPurple, category: "Data", layer: "L7",
-                   description: "Scans responses for credit cards, API keys, traces",
-                   enabled: viewModel.dlpEnabled),
-        ModuleCard(key: "ssrf_enabled", name: "SSRF Detector", icon: "arrow.triangle.branch",
-                   color: .axWarning, category: "Detection", layer: "L7",
-                   description: "Prevents Server-Side Request Forgery attacks",
-                   enabled: viewModel.ssrfEnabled),
-        ModuleCard(key: "alerts_enabled", name: "Alert Dispatcher", icon: "bell.badge",
-                   color: .axAccentGreen, category: "Alerting", layer: "SVC",
-                   description: "Routes security events to webhooks",
-                   enabled: viewModel.alertsEnabled),
+private extension CerberusModulesView {
+
+    var moduleCards: [ModuleCardData] {[
+        ModuleCardData(key: "waf_enabled", name: "WAF Engine", icon: "shield.checkered",
+                       color: .axAccentBlue, category: "Core", layer: "L7",
+                       description: "Coraza ModSecurity — SQLi, XSS, path traversal",
+                       enabled: viewModel.wafEnabled),
+        ModuleCardData(key: "rate_limit_enabled", name: "Rate Limiter", icon: "gauge.with.dots.needle.33percent",
+                       color: .axWarning, category: "Traffic", layer: "L7",
+                       description: "Per-IP sliding-window rate limiting (3 tiers)",
+                       enabled: viewModel.rateLimitEnabled),
+        ModuleCardData(key: "ddos_enabled", name: "DDoS Shield", icon: "bolt.shield",
+                       color: .axError, category: "Defense", layer: "L7",
+                       description: "EWMA baseline spike detection + auto-mitigation",
+                       enabled: viewModel.ddosEnabled),
+        ModuleCardData(key: "bot_detection_enabled", name: "Bot Detector", icon: "cpu",
+                       color: .axInfo, category: "Detection", layer: "L7",
+                       description: "User-Agent classification (human/bot/malicious)",
+                       enabled: viewModel.botDetectionEnabled),
+        ModuleCardData(key: "honeypot_enabled", name: "Honeypot", icon: "ant",
+                       color: .axWarning, category: "Detection", layer: "L7",
+                       description: "Trap endpoints to detect and log attackers",
+                       enabled: viewModel.honeypotEnabled),
+        ModuleCardData(key: "credential_protection_enabled", name: "Credential Guard", icon: "key.fill",
+                       color: .axError, category: "Auth", layer: "L7",
+                       description: "Brute force and credential stuffing detection",
+                       enabled: viewModel.credentialEnabled),
+        ModuleCardData(key: "dlp_enabled", name: "DLP Scanner", icon: "doc.text.magnifyingglass",
+                       color: .axAccentPurple, category: "Data", layer: "L7",
+                       description: "Scans responses for credit cards, API keys, traces",
+                       enabled: viewModel.dlpEnabled),
+        ModuleCardData(key: "ssrf_enabled", name: "SSRF Detector", icon: "arrow.triangle.branch",
+                       color: .axWarning, category: "Detection", layer: "L7",
+                       description: "Prevents Server-Side Request Forgery attacks",
+                       enabled: viewModel.ssrfEnabled),
+        ModuleCardData(key: "alerts_enabled", name: "Alert Dispatcher", icon: "bell.badge",
+                       color: .axAccentGreen, category: "Alerting", layer: "SVC",
+                       description: "Routes security events to webhooks",
+                       enabled: viewModel.alertsEnabled),
     ]}
 }
 
-// MARK: - Module Card Model
-
-private struct ModuleCard {
+private struct ModuleCardData {
     let key: String
     let name: String
     let icon: String

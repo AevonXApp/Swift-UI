@@ -16,6 +16,7 @@ struct ServerDashboardView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.scenePhase) private var scenePhase
     
+    @EnvironmentObject var settings: AppSettingsManager
     @State private var columnVisibility = NavigationSplitViewVisibility.all
     
     init(server: Server, serverId: String, serverListViewModel: ServerListViewModel? = nil) {
@@ -116,10 +117,14 @@ struct ServerDashboardView: View {
             // so we guard with hasAttemptedConnect to prevent infinite retry loops on timeout.
             AevonXCoreBridge.CoreLogger.shared.debug("onAppear - isConnected: \(viewModel.isConnected), isConnecting: \(viewModel.isConnecting)", module: "ServerDashboardView")
             Task {
-                if !viewModel.isConnected && !viewModel.isConnecting && !viewModel.hasAttemptedConnect {
+                if settings.autoConnectOnOpen && !viewModel.isConnected && !viewModel.isConnecting && !viewModel.hasAttemptedConnect {
                     AevonXCoreBridge.CoreLogger.shared.debug("Auto-connecting...", module: "ServerDashboardView")
                     await viewModel.connect()
                 }
+            }
+            // Apply default tab from settings
+            if let tab = DashboardTab.allCases.first(where: { $0.rawValue.lowercased() == settings.defaultDashboardTab.lowercased() }) {
+                viewModel.selectedTab = tab
             }
         }
         .onDisappear {

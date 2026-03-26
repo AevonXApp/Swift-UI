@@ -5,6 +5,7 @@ import AevonXCoreBridge
 struct DockerSystemPrune: View {
     let serverId: String
     @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject var settings: AppSettingsManager
     
     @State private var pruneAll = false
     @State private var pruneVolumes = false
@@ -130,7 +131,13 @@ struct DockerSystemPrune: View {
             
             HStack {
                 Spacer()
-                Button(action: { showConfirm = true }) {
+                Button(action: {
+                    if settings.shouldConfirm(for: SettingsKey.confirmDockerPrune) {
+                        showConfirm = true
+                    } else {
+                        executePrune()
+                    }
+                }) {
                     HStack(spacing: 4) {
                         if isPruning { ProgressView().controlSize(.small) }
                         Image(systemName: "trash.fill").font(.system(size: 10))
@@ -150,11 +157,21 @@ struct DockerSystemPrune: View {
         }
         .frame(width: 500, height: 480)
         .background(Color.axBackground)
-        .alert("Confirm System Prune", isPresented: $showConfirm) {
-            Button("Cancel", role: .cancel) {}
-            Button("Prune", role: .destructive) { executePrune() }
-        } message: {
-            Text("This will permanently remove unused Docker resources. This action cannot be undone.")
+        .overlay {
+            if showConfirm {
+                AXDeleteConfirmation(
+                    title: "Confirm System Prune",
+                    itemName: "Docker Resources",
+                    icon: "trash.circle.fill",
+                    warning: "This will permanently remove unused Docker resources. This action cannot be undone.",
+                    confirmLabel: "Prune",
+                    onConfirm: {
+                        showConfirm = false
+                        executePrune()
+                    },
+                    onCancel: { showConfirm = false }
+                )
+            }
         }
     }
     

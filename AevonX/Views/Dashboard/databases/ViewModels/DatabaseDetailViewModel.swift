@@ -136,7 +136,7 @@ public final class DatabaseDetailViewModel: ObservableObject {
 
     @Published public var browseResult: QueryResult?
     @Published public var currentPage: Int = 0
-    @Published public var pageSize: Int = 50
+    @Published public var pageSize: Int = AppSettingsManager.shared.dbMaxRowsDisplay
     @Published public var sortColumn: String?
     @Published public var sortAscending: Bool = true
 
@@ -328,14 +328,26 @@ public final class DatabaseDetailViewModel: ObservableObject {
         isExecutingQuery = true
         queryError = nil
         let startTime = Date()
+        let timeout = AppSettingsManager.shared.dbQueryTimeout
 
         do {
-            queryResult = try await DatabaseRowService.shared.executeQuery(
-                database: database.name,
-                query: query,
-                type: database.type,
-                serverId: serverId
-            )
+            queryResult = try await withThrowingTaskGroup(of: QueryResult.self) { group in
+                group.addTask {
+                    try await DatabaseRowService.shared.executeQuery(
+                        database: self.database.name,
+                        query: query,
+                        type: self.database.type,
+                        serverId: serverId
+                    )
+                }
+                group.addTask {
+                    try await Task.sleep(nanoseconds: UInt64(timeout) * 1_000_000_000)
+                    throw DatabaseServiceError.invalidResponse("Query timed out after \(timeout)s")
+                }
+                let result = try await group.next()!
+                group.cancelAll()
+                return result
+            }
 
             queryHistory.insert(QueryHistoryEntry(
                 query: query,
@@ -429,11 +441,19 @@ public final class DatabaseDetailViewModel: ObservableObject {
     // MARK: - Table Actions
 
     public func confirmDropTable(_ tableName: String) {
-        activeAlert = .confirmDropTable(tableName)
+        if AppSettingsManager.shared.shouldConfirm(for: SettingsKey.confirmDropDBTable) {
+            activeAlert = .confirmDropTable(tableName)
+        } else {
+            Task { await dropTable(tableName) }
+        }
     }
 
     public func confirmTruncateTable(_ tableName: String) {
-        activeAlert = .confirmTruncateTable(tableName)
+        if AppSettingsManager.shared.shouldConfirm(for: SettingsKey.confirmTruncateTable) {
+            activeAlert = .confirmTruncateTable(tableName)
+        } else {
+            Task { await truncateTable(tableName) }
+        }
     }
 
     public func dropTable(_ tableName: String) async {

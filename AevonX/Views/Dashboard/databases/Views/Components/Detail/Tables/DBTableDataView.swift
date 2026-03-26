@@ -171,7 +171,11 @@ struct DBTableDataView: View {
                 // Delete selected
                 if !viewModel.selectedRows.isEmpty {
                     Button {
-                        viewModel.activeAlert = .confirmDeleteSelectedRows
+                        if AppSettingsManager.shared.shouldConfirm(for: SettingsKey.confirmDeleteDBRow) {
+                            viewModel.activeAlert = .confirmDeleteSelectedRows
+                        } else {
+                            Task { await viewModel.deleteSelectedRows() }
+                        }
                     } label: {
                         HStack(spacing: AXSpacing.xxs) {
                             Image(systemName: "trash")
@@ -322,11 +326,11 @@ struct DBTableDataView: View {
                     onTruncate: {
                         let tbl = viewModel.selectedTable?.name ?? ""
                         viewModel.queryText = "TRUNCATE TABLE `\(tbl)`"
-                        viewModel.activeAlert = .confirmTruncateTable(tbl)
+                        viewModel.confirmTruncateTable(tbl)
                     },
                     onDrop: {
                         if let table = viewModel.selectedTable {
-                            viewModel.activeAlert = .confirmDropTable(table.name)
+                            viewModel.confirmDropTable(table.name)
                         }
                     }
                 )

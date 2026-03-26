@@ -181,6 +181,7 @@ struct AliasRow: View {
 
 struct ConnectionRow: View {
     let connection: DetailedConnection
+    @EnvironmentObject var settings: AppSettingsManager
 
     var body: some View {
         HStack {
@@ -188,7 +189,7 @@ struct ConnectionRow: View {
                 .font(AXTypography.subheadline)
                 .foregroundColor(.axAccentBlue)
 
-            Text(connection.ip)
+            Text(settings.maskServerInfo && settings.maskInDashboard && settings.maskIPAddresses ? PrivacyMask.ip(connection.ip) : connection.ip)
                 .font(.system(.body, design: .monospaced))
                 .foregroundColor(.axTextPrimary)
 

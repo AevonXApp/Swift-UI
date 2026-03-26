@@ -6,6 +6,7 @@ struct DockerImagesTab: View {
     let server: Server
     let serverId: String
     @ObservedObject var connectionViewModel: ServerConnectionViewModel
+    @EnvironmentObject var settings: AppSettingsManager
     
     @State private var images: [DockerImage] = []
     @State private var isLoading: Bool = false
@@ -17,6 +18,9 @@ struct DockerImagesTab: View {
     @State private var selectedImageForLayers: DockerImage?
     @State private var selectedImageForTagPush: DockerImage?
     
+    // Confirmation handling
+    @State private var imageToRemove: String?
+
     // Conflict handling
     @State private var showConflictAlert: Bool = false
     @State private var conflictingImageId: String?
@@ -112,7 +116,11 @@ struct DockerImagesTab: View {
                                 image: image,
                                 isActionInProgress: actionInProgress == image.id,
                                 onRemove: {
-                                    handleRemoveImage(id: image.id)
+                                    if settings.shouldConfirm(for: SettingsKey.confirmDeleteDockerImage) {
+                                        imageToRemove = image.id
+                                    } else {
+                                        handleRemoveImage(id: image.id)
+                                    }
                                 },
                                 onLayers: {
                                     selectedImageForLayers = image
@@ -143,18 +151,38 @@ struct DockerImagesTab: View {
         .sheet(item: $selectedImageForTagPush) { image in
             DockerImageTagPush(image: image, serverId: serverId)
         }
-        .alert("Image Conflict", isPresented: $showConflictAlert, actions: {
-            Button("Force Remove", role: .destructive) {
-                if let id = conflictingImageId {
-                    handleRemoveImage(id: id, force: true)
-                }
+        .overlay {
+            if let id = imageToRemove {
+                AXDeleteConfirmation(
+                    title: "Remove Image",
+                    itemName: id,
+                    icon: "photo",
+                    warning: "This will permanently remove the Docker image.",
+                    confirmLabel: "Remove",
+                    onConfirm: {
+                        imageToRemove = nil
+                        handleRemoveImage(id: id)
+                    },
+                    onCancel: { imageToRemove = nil }
+                )
             }
-            Button("Cancel", role: .cancel) {
-                conflictingImageId = nil
+            if showConflictAlert, let id = conflictingImageId {
+                AXDeleteConfirmation(
+                    title: "Image Conflict",
+                    itemName: id,
+                    warning: "This image is being used by one or more containers. Force remove it?",
+                    confirmLabel: "Force Remove",
+                    onConfirm: {
+                        showConflictAlert = false
+                        handleRemoveImage(id: id, force: true)
+                    },
+                    onCancel: {
+                        showConflictAlert = false
+                        conflictingImageId = nil
+                    }
+                )
             }
-        }, message: {
-            Text("This image is being used by one or more containers (perhaps stopped). Would you like to force remove it?")
-        })
+        }
     }
     
     // MARK: - Actions

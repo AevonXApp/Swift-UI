@@ -50,8 +50,9 @@ struct RemoteFleetView: View {
     
     @State private var searchText = ""
     @State private var selectedFilter: ServerStatusFilter? = nil
-    @State private var viewMode: ServerViewMode = .grid
-    @State private var sortOption: ServerSortOption = .nameAsc
+    @AppStorage(SettingsKey.defaultViewMode) private var viewMode: ServerViewMode = .grid
+    @AppStorage(SettingsKey.defaultSortOption) private var sortOption: ServerSortOption = .nameAsc
+    @AppStorage("settings.serverList.lastFilter") private var lastFilter: String = ""
     @State private var serverToEdit: ServerViewModel?
     @State private var showEditServer = false
     @State private var showPaywall = false
@@ -111,6 +112,21 @@ struct RemoteFleetView: View {
             // Add a small delay to ensure UI is ready
             try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 second
             await viewModel.initialize()
+
+            // Restore last filter if setting enabled
+            if AppSettingsManager.shared.rememberLastFilter, !lastFilter.isEmpty {
+                selectedFilter = ServerStatusFilter(rawValue: lastFilter)
+            }
+
+            // Reset sort to default if rememberLastSort is disabled
+            if !AppSettingsManager.shared.rememberLastSort {
+                sortOption = .nameAsc
+            }
+        }
+        .onChange(of: selectedFilter) { _, newValue in
+            if AppSettingsManager.shared.rememberLastFilter {
+                lastFilter = newValue?.rawValue ?? ""
+            }
         }
         .alert("Error", isPresented: $viewModel.showError) {
             Button("OK", role: .cancel) {}
@@ -153,8 +169,8 @@ struct RemoteFleetView: View {
                     showServerDashboard: $showServerDashboard,
                     viewModel: viewModel,
                     onConnect: navigateToServer,
-                    onEdit: { server in serverToEdit = server; showEditServer = true },
-                    onDelete: { server in Task { await viewModel.deleteServer(id: server.id) } }
+                    onEdit: { server in authenticatedEdit(server) },
+                    onDelete: { server in authenticatedDelete(server) }
                 )
             } else {
                 RemoteFleetListView(
@@ -163,8 +179,8 @@ struct RemoteFleetView: View {
                     showServerDashboard: $showServerDashboard,
                     viewModel: viewModel,
                     onConnect: navigateToServer,
-                    onEdit: { server in serverToEdit = server; showEditServer = true },
-                    onDelete: { server in Task { await viewModel.deleteServer(id: server.id) } }
+                    onEdit: { server in authenticatedEdit(server) },
+                    onDelete: { server in authenticatedDelete(server) }
                 )
             }
         }
@@ -193,6 +209,31 @@ struct RemoteFleetView: View {
             case .dateAdded: return s1.createdAt > s2.createdAt
             case .status: return s1.isAccessible != s2.isAccessible ? s1.isAccessible : s1.name < s2.name
             }
+        }
+    }
+
+    // MARK: - Auth-Gated Actions
+
+    private func authenticatedEdit(_ server: ServerViewModel) {
+        Task {
+            if AppSettingsManager.shared.requireAuthOnEdit {
+                do {
+                    try await BiometricAuthManager.shared.authenticateIfNeeded(reason: "Authenticate to edit server")
+                } catch { return }
+            }
+            serverToEdit = server
+            showEditServer = true
+        }
+    }
+
+    private func authenticatedDelete(_ server: ServerViewModel) {
+        Task {
+            if AppSettingsManager.shared.requireAuthOnDelete {
+                do {
+                    try await BiometricAuthManager.shared.authenticateIfNeeded(reason: "Authenticate to delete server")
+                } catch { return }
+            }
+            await viewModel.deleteServer(id: server.id)
         }
     }
 

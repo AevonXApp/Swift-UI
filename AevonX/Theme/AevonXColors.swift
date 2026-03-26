@@ -7,46 +7,46 @@
 
 import SwiftUI
 
-// MARK: - Color Palette
+// MARK: - Color Palette (Dynamic - reads from ThemeEngine)
 extension Color {
     // Background Colors
-    public static let axBackground = Color(hex: "#121212")
-    public static let axBackgroundSecondary = Color(hex: "#1A1A1A")
-    public static let axBackgroundTertiary = Color(hex: "#242424")
-    public static let axBackgroundElevated = Color(hex: "#2D2D2D")
-    
+    public static var axBackground: Color { ThemeEngine.shared.background }
+    public static var axBackgroundSecondary: Color { ThemeEngine.shared.backgroundSecondary }
+    public static var axBackgroundTertiary: Color { ThemeEngine.shared.backgroundTertiary }
+    public static var axBackgroundElevated: Color { ThemeEngine.shared.backgroundElevated }
+
     // Surface Colors (for cards, panels)
-    public static let axSurface = Color(hex: "#1E1E1E")
-    public static let axSurfaceHover = Color(hex: "#2A2A2A")
-    public static let axSurfaceActive = Color(hex: "#333333")
-    
-    // Accent Colors - Electric Blue & Emerald Green
-    public static let axPrimary = axAccentBlue
-    public static let axAccentBlue = Color(hex: "#00D4FF")
-    public static let axAccentBlueDimmed = Color(hex: "#00D4FF").opacity(0.6)
-    public static let axAccentGreen = Color(hex: "#10B981")
-    public static let axAccentGreenDimmed = Color(hex: "#10B981").opacity(0.6)
-    public static let axAccentPurple = Color(hex: "#A855F7")
-    
+    public static var axSurface: Color { ThemeEngine.shared.surface }
+    public static var axSurfaceHover: Color { ThemeEngine.shared.surfaceHover }
+    public static var axSurfaceActive: Color { ThemeEngine.shared.surfaceActive }
+
+    // Accent Colors
+    public static var axPrimary: Color { axAccentBlue }
+    public static var axAccentBlue: Color { ThemeEngine.shared.accentPrimary }
+    public static var axAccentBlueDimmed: Color { ThemeEngine.shared.accentPrimary.opacity(0.6) }
+    public static var axAccentGreen: Color { ThemeEngine.shared.accentSecondary }
+    public static var axAccentGreenDimmed: Color { ThemeEngine.shared.accentSecondary.opacity(0.6) }
+    public static var axAccentPurple: Color { ThemeEngine.shared.accentPurple }
+
     // Status Colors
-    public static let axSuccess = Color(hex: "#22C55E")
-    public static let axWarning = Color(hex: "#F59E0B")
-    public static let axError = Color(hex: "#EF4444")
-    public static let axInfo = Color(hex: "#3B82F6")
-    
+    public static var axSuccess: Color { ThemeEngine.shared.success }
+    public static var axWarning: Color { ThemeEngine.shared.warning }
+    public static var axError: Color { ThemeEngine.shared.error }
+    public static var axInfo: Color { ThemeEngine.shared.info }
+
     // Text Colors
-    public static let axTextPrimary = Color(hex: "#FAFAFA")
-    public static let axTextSecondary = Color(hex: "#A1A1AA")
-    public static let axTextTertiary = Color(hex: "#71717A")
-    public static let axTextMuted = Color(hex: "#52525B")
-    
+    public static var axTextPrimary: Color { ThemeEngine.shared.textPrimary }
+    public static var axTextSecondary: Color { ThemeEngine.shared.textSecondary }
+    public static var axTextTertiary: Color { ThemeEngine.shared.textTertiary }
+    public static var axTextMuted: Color { ThemeEngine.shared.textMuted }
+
     // Border & Divider
-    public static let axBorder = Color(hex: "#27272A")
-    public static let axDivider = Color(hex: "#3F3F46")
-    
+    public static var axBorder: Color { ThemeEngine.shared.border }
+    public static var axDivider: Color { ThemeEngine.shared.divider }
+
     // Glassmorphism
-    public static let axGlassBackground = Color(hex: "#1A1A1A").opacity(0.75)
-    public static let axGlassBorder = Color.white.opacity(0.08)
+    public static var axGlassBackground: Color { ThemeEngine.shared.glassBackground }
+    public static var axGlassBorder: Color { ThemeEngine.shared.glassBorder }
     
     // Utility
     init(hex: String) {

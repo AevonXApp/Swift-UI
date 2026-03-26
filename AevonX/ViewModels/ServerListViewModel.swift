@@ -139,14 +139,18 @@ class ServerListViewModel: ObservableObject {
     // MARK: - Real-Time Status Polling
     
     private func startStatusPolling() {
+        let settings = AppSettingsManager.shared
+        guard settings.autoRefreshStatus else { return }
+
         statusPollingTask = Task { [weak self] in
             while !Task.isCancelled {
                 do {
-                    try await Task.sleep(nanoseconds: UInt64(60 * 1_000_000_000))
-                    
+                    let interval = AppSettingsManager.shared.statusCheckInterval
+                    try await Task.sleep(nanoseconds: UInt64(interval) * 1_000_000_000)
+
                     guard let self = self else { break }
                     guard self.isInForeground, !self.servers.isEmpty else { continue }
-                    
+
                     await self.refreshServerStatuses()
                 } catch {
                     break

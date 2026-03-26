@@ -23,6 +23,8 @@ struct DockerContainersTab: View {
     @State private var selectedContainerForAILog: DockerContainer?
     @State private var selectedContainerForStats: DockerContainer?
     @State private var selectedContainerIds: Set<String> = []
+    @State private var containerToRemove: String?
+    @EnvironmentObject var settings: AppSettingsManager
     @State private var showRenameAlert = false
     @State private var renameContainerId: String = ""
     @State private var newContainerName: String = ""
@@ -222,7 +224,7 @@ struct DockerContainersTab: View {
                                             }
                                         }
                                     }
-                                    
+
                                     // Inline stats for running containers
                                     if container.isRunning {
                                         DockerContainerStats(container: container, serverId: serverId)
@@ -344,6 +346,31 @@ struct DockerContainersTab: View {
         .sheet(item: $selectedContainerForBackup) { container in
             DockerBackupSheet(container: container, serverId: serverId)
         }
+        .overlay {
+            if let id = containerToRemove {
+                AXDeleteConfirmation(
+                    title: "Remove Container",
+                    itemName: containers.first(where: { $0.id == id })?.names ?? id,
+                    icon: "shippingbox",
+                    warning: "This will permanently remove the container.",
+                    confirmLabel: "Remove",
+                    onConfirm: {
+                        containerToRemove = nil
+                        actionInProgress = id
+                        Task {
+                            do {
+                                try await DockerService.shared.removeContainer(id: id, force: false, serverId: serverId)
+                                refreshData()
+                            } catch {
+                                errorMessage = "Failed to remove container: \(error.localizedDescription)"
+                            }
+                            actionInProgress = nil
+                        }
+                    },
+                    onCancel: { containerToRemove = nil }
+                )
+            }
+        }
     }
     
     // MARK: - Actions
@@ -371,6 +398,12 @@ struct DockerContainersTab: View {
     }
     
     private func handleContainerAction(id: String, action: String) {
+        // Intercept remove with confirmation
+        if action == "remove" && settings.shouldConfirm(for: SettingsKey.confirmDeleteDockerContainer) {
+            containerToRemove = id
+            return
+        }
+
         // Sheet-based actions (no progress indicator)
         if let container = containers.first(where: { $0.id == id }) {
             switch action {

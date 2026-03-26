@@ -198,6 +198,20 @@ final class FileManagerViewModel: ObservableObject {
     
     init(serverId: String) {
         self.serverId = serverId
+        // Sync with app settings
+        let appSettings = AppSettingsManager.shared
+        self.showHiddenFiles = appSettings.showHiddenFiles
+        self.sortOrder = Self.mapSortOrder(appSettings.fileSortOrder)
         restoreSession()
+    }
+
+    /// Maps settings string ("name", "date", "size", "type") to FileSortOrder
+    private static func mapSortOrder(_ value: String) -> FileSortOrder {
+        switch value {
+        case "date": return .dateDescending
+        case "size": return .sizeDescending
+        case "type": return .typeAscending
+        default: return .nameAscending
+        }
     }
 }

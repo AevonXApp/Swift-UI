@@ -37,8 +37,9 @@ struct FTPTab: View {
     @ObservedObject var connectionViewModel: ServerConnectionViewModel
     @StateObject private var vm: FTPViewModel
     
+    @EnvironmentObject var settings: AppSettingsManager
     @State private var selectedSubTab = 0
-    @State private var showDeleteAlert = false
+    @State private var showDeleteConfirmation = false
     @State private var userToDelete: FTPUser?
     @State private var userFilter: FTPUserFilter = .all
     
@@ -83,11 +84,23 @@ struct FTPTab: View {
         .sheet(isPresented: $vm.showSettingsSheet) {
             FTPSettingsSheet(vm: vm)
         }
-        .alert("Delete FTP User?", isPresented: $showDeleteAlert, presenting: userToDelete) { user in
-            Button("Cancel", role: .cancel) { userToDelete = nil }
-            Button("Delete", role: .destructive) { Task { await vm.deleteUser(user) } }
-        } message: { user in
-            Text("Delete \"\(user.username)\"? This will remove the FTP account from the server.")
+        .overlay {
+            if showDeleteConfirmation, let user = userToDelete {
+                AXDeleteConfirmation(
+                    title: "Delete FTP User?",
+                    itemName: user.username,
+                    warning: "This will remove the FTP account from the server.",
+                    onConfirm: {
+                        showDeleteConfirmation = false
+                        Task { await vm.deleteUser(user) }
+                        userToDelete = nil
+                    },
+                    onCancel: {
+                        showDeleteConfirmation = false
+                        userToDelete = nil
+                    }
+                )
+            }
         }
         .overlay(alignment: .bottom) { toastOverlay }
         .task {
@@ -215,7 +228,7 @@ struct FTPTab: View {
                 Text("FTP address:")
                     .font(.system(size: 12))
                     .foregroundColor(.axTextSecondary)
-                Text(vm.serverInfo.ftpAddress)
+                Text(settings.maskServerInfo && settings.maskInDashboard && settings.maskIPAddresses ? PrivacyMask.ip(vm.serverInfo.ftpAddress) : vm.serverInfo.ftpAddress)
                     .font(.system(size: 12, weight: .semibold, design: .monospaced))
                     .foregroundColor(.axTextPrimary)
                 
@@ -358,7 +371,13 @@ struct FTPTab: View {
                         user: user,
                         onEdit: { vm.editingUser = user; vm.showAddSheet = true },
                         onToggle: { Task { await vm.toggleUser(user) } },
-                        onDelete: { userToDelete = user; showDeleteAlert = true },
+                        onDelete: {
+                            if settings.shouldConfirm(for: SettingsKey.confirmDeleteFTPUser) {
+                                userToDelete = user; showDeleteConfirmation = true
+                            } else {
+                                Task { await vm.deleteUser(user) }
+                            }
+                        },
                         onCopyPassword: {
                             #if os(macOS)
                             NSPasteboard.general.clearContents()

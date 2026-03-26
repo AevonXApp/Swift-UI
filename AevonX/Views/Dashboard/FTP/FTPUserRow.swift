@@ -15,6 +15,7 @@ struct FTPUserRow: View {
     let onDelete: () -> Void
     let onCopyPassword: () -> Void
     
+    @EnvironmentObject var settings: AppSettingsManager
     @State private var isHovered = false
     @State private var showPassword = false
     @State private var showCopied = false
@@ -34,7 +35,7 @@ struct FTPUserRow: View {
                 
                 VStack(alignment: .leading, spacing: 2) {
                     HStack(spacing: 4) {
-                        Text(user.username)
+                        Text(settings.maskServerInfo && settings.maskInDashboard && settings.maskUsernames ? PrivacyMask.username(user.username) : user.username)
                             .font(.system(size: 12, weight: .semibold))
                             .foregroundColor(user.status == .active ? .axTextPrimary : .axTextMuted)
                             .lineLimit(1)

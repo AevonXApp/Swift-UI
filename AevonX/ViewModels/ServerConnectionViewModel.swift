@@ -171,8 +171,8 @@ public class ServerConnectionViewModel: ObservableObject {
     /// Current reconnection attempt number
     @Published private(set) var reconnectionAttempt: Int = 0
     
-    /// Maximum reconnection attempts
-    @Published private(set) var reconnectionMaxAttempts: Int = InternalConfiguration.reconnectionMaxAttempts
+    /// Maximum reconnection attempts (synced from settings)
+    @Published private(set) var reconnectionMaxAttempts: Int = AppSettingsManager.shared.maxReconnectAttempts
     
     /// Human-readable reason for disconnection
     @Published private(set) var reconnectionReason: String?
@@ -406,12 +406,22 @@ public class ServerConnectionViewModel: ObservableObject {
             return
         }
 
+        // Auth gate: require authentication before connecting if enabled
+        if AppSettingsManager.shared.requireAuthOnConnect {
+            do {
+                try await BiometricAuthManager.shared.authenticateIfNeeded(reason: "Authenticate to connect to server")
+            } catch {
+                connectionError = "Authentication required to connect"
+                return
+            }
+        }
+
         hasAttemptedConnect = true
         isConnecting = true
         connectionError = nil
         connectionStage = .requestingCAT
         connectionProgress = 0.1
-        
+
         do {
             // Step 1: Request signed CAT from backend (backend is blind issuer)
             let signedCATToken = try await requestCATFromBackend()
@@ -917,6 +927,12 @@ public class ServerConnectionViewModel: ObservableObject {
         Task<Void, Never> {
             await ConnectionHealthMonitor.shared.setReconnectionHandler { [weak self] serverId in
                 guard let self = self else { return false }
+
+                // Respect enableReconnection setting
+                guard await AppSettingsManager.shared.enableReconnection else {
+                    AevonXCoreBridge.CoreLogger.shared.info("Auto-reconnection disabled by settings", module: "ServerConnection")
+                    return false
+                }
                 
                 do {
                     // Reset error state on MainActor

@@ -2,7 +2,7 @@
 //  CerberusHoneypotView.swift
 //  AevonX
 //
-//  Honeypot tab — trap hit log viewer using AXLogTable.
+//  Honeypot tab — trap hit analytics + detailed log viewer.
 //
 
 import SwiftUI
@@ -12,6 +12,129 @@ struct CerberusHoneypotView: View {
     @ObservedObject var viewModel: CerberusViewModel
 
     var body: some View {
+        VStack(spacing: 0) {
+            honeypotHeader
+            Divider().background(Color.axDivider)
+            logTableSection
+        }
+        .task { await viewModel.loadHoneypot() }
+    }
+}
+
+// MARK: - Header
+
+private extension CerberusHoneypotView {
+
+    var honeypotHeader: some View {
+        HStack(spacing: AXSpacing.xl) {
+            honeypotHeroIcon
+            honeypotHeroText
+            Spacer()
+            honeypotStatsGroup
+            refreshButton
+        }
+        .padding(.horizontal, AXSpacing.xl)
+        .padding(.vertical, AXSpacing.lg)
+        .background(
+            Color.axSurface.overlay(
+                LinearGradient(
+                    colors: [Color.axWarning.opacity(0.03), Color.clear],
+                    startPoint: .leading, endPoint: .trailing
+                )
+            )
+        )
+    }
+
+    var honeypotHeroIcon: some View {
+        ZStack {
+            Circle()
+                .fill(
+                    RadialGradient(
+                        colors: [Color.axWarning.opacity(0.2), Color.axWarning.opacity(0.04)],
+                        center: .center, startRadius: 0, endRadius: 24
+                    )
+                )
+                .frame(width: 44, height: 44)
+            Circle()
+                .stroke(Color.axWarning.opacity(0.25), lineWidth: 1)
+                .frame(width: 44, height: 44)
+            Image(systemName: "ant.fill")
+                .font(AXTypography.headline)
+                .foregroundStyle(Color.axWarning)
+        }
+    }
+
+    var honeypotHeroText: some View {
+        VStack(alignment: .leading, spacing: AXSpacing.xxxs) {
+            Text("Honeypot Traps")
+                .font(AXTypography.headline)
+                .fontWeight(.bold)
+                .foregroundStyle(Color.axTextPrimary)
+            Text("Decoy endpoints detecting automated scanners")
+                .font(AXTypography.caption)
+                .foregroundStyle(Color.axTextTertiary)
+        }
+    }
+
+    var honeypotStatsGroup: some View {
+        HStack(spacing: AXSpacing.xl) {
+            honeypotMiniStat(
+                value: "\(viewModel.honeypotHits.count)",
+                label: "Total Hits",
+                color: .axWarning
+            )
+            Divider().frame(height: 28)
+            honeypotMiniStat(
+                value: "\(uniqueIPs)",
+                label: "Unique IPs",
+                color: .axError
+            )
+            Divider().frame(height: 28)
+            honeypotMiniStat(
+                value: "\(uniquePaths)",
+                label: "Trap Paths",
+                color: .axAccentPurple
+            )
+        }
+    }
+
+    func honeypotMiniStat(value: String, label: String, color: Color) -> some View {
+        VStack(spacing: AXSpacing.xxxs) {
+            Text(value)
+                .font(AXTypography.title3)
+                .fontWeight(.bold)
+                .foregroundStyle(color)
+            Text(label)
+                .font(AXTypography.caption)
+                .foregroundStyle(Color.axTextMuted)
+        }
+    }
+
+    var refreshButton: some View {
+        Button {
+            Task { await viewModel.loadHoneypot() }
+        } label: {
+            HStack(spacing: AXSpacing.xs) {
+                Image(systemName: "arrow.clockwise")
+                Text("Refresh")
+            }
+            .font(AXTypography.caption)
+            .fontWeight(.medium)
+            .foregroundStyle(Color.axAccentBlue)
+            .padding(.horizontal, AXSpacing.md)
+            .padding(.vertical, AXSpacing.sm)
+            .background(Color.axAccentBlue.opacity(0.1))
+            .clipShape(RoundedRectangle(cornerRadius: AXCornerRadius.md))
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+// MARK: - Log Table
+
+private extension CerberusHoneypotView {
+
+    var logTableSection: some View {
         AXLogTable(
             title: "Honeypot Hits",
             icon: "ant",
@@ -36,24 +159,19 @@ struct CerberusHoneypotView: View {
                 await viewModel.loadHoneypot()
             }
         )
-        .task { await viewModel.loadHoneypot() }
     }
 
-    // MARK: - Columns
-
-    private var logColumns: [AXLogColumn] {
+    var logColumns: [AXLogColumn] {
         [
             AXLogColumn(id: "ip", title: "IP Address", width: 140),
-            AXLogColumn(id: "path", title: "Path", width: 180),
+            AXLogColumn(id: "path", title: "Trap Path", width: 180),
             AXLogColumn(id: "method", title: "Method", width: 60),
             AXLogColumn(id: "ua", title: "User Agent", width: nil),
-            AXLogColumn(id: "time", title: "Time", width: 160),
+            AXLogColumn(id: "time", title: "Timestamp", width: 160),
         ]
     }
 
-    // MARK: - Build Rows
-
-    private func buildRows() -> [AXLogRow] {
+    func buildRows() -> [AXLogRow] {
         viewModel.honeypotHits.enumerated().map { idx, hit in
             AXLogRow(
                 id: idx,
@@ -71,7 +189,7 @@ struct CerberusHoneypotView: View {
         }
     }
 
-    private func buildDetails(_ hit: HoneypotHit) -> [AXLogRowDetail] {
+    func buildDetails(_ hit: HoneypotHit) -> [AXLogRowDetail] {
         var details: [AXLogRowDetail] = [
             AXLogRowDetail(label: "IP", value: hit.ip),
             AXLogRowDetail(label: "Path", value: hit.path),
@@ -87,10 +205,21 @@ struct CerberusHoneypotView: View {
         }
         return details
     }
+}
 
-    // MARK: - Helpers
+// MARK: - Helpers
 
-    private func formatTime(_ iso: String) -> String {
+private extension CerberusHoneypotView {
+
+    var uniqueIPs: Int {
+        Set(viewModel.honeypotHits.map(\.ip)).count
+    }
+
+    var uniquePaths: Int {
+        Set(viewModel.honeypotHits.map(\.path)).count
+    }
+
+    func formatTime(_ iso: String) -> String {
         let formatter = ISO8601DateFormatter()
         formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
         guard let date = formatter.date(from: iso) ?? ISO8601DateFormatter().date(from: iso) else {

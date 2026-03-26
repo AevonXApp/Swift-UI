@@ -10,6 +10,7 @@ import AevonXCoreBridge
 
 struct DBEMAccessSection: View {
     @ObservedObject var viewModel: DatabaseEngineDetailViewModel
+    @EnvironmentObject var settings: AppSettingsManager
 
     var body: some View {
         ScrollView {
@@ -72,12 +73,12 @@ struct DBEMAccessSection: View {
                                         .foregroundColor(.axAccentBlue)
 
                                     VStack(alignment: .leading, spacing: AXSpacing.xxs) {
-                                        Text(user.username)
+                                        Text(settings.maskServerInfo && settings.maskInDashboard && settings.maskUsernames ? PrivacyMask.username(user.username) : user.username)
                                             .font(AXTypography.subheadline)
                                             .fontWeight(.semibold)
                                             .foregroundColor(.axTextPrimary)
 
-                                        Text("@\(user.host)")
+                                        Text("@\(settings.maskServerInfo && settings.maskInDashboard && settings.maskIPAddresses ? PrivacyMask.hostname(user.host) : user.host)")
                                             .font(AXTypography.caption)
                                             .foregroundColor(.axTextMuted)
                                     }

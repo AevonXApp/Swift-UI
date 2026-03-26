@@ -451,12 +451,12 @@ struct SettingsInfoRow: View {
     }
 }
 
-struct SettingsToggleRow: View {
+struct ServerSettingsToggleRow: View {
     let icon: String
     let title: String
     @Binding var isOn: Bool
     let tint: Color
-    
+
     var body: some View {
         HStack {
             Image(systemName: icon)

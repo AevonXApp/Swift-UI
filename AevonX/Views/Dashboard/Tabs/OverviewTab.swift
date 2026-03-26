@@ -13,6 +13,7 @@ struct OverviewTab: View {
     let server: Server
     let serverId: String
     @ObservedObject var viewModel: ServerConnectionViewModel
+    @EnvironmentObject var settings: AppSettingsManager
     @Environment(\.scenePhase) private var scenePhase
 
     init(server: Server, serverId: String, viewModel: ServerConnectionViewModel) {
@@ -29,7 +30,7 @@ struct OverviewTab: View {
                 ConnectionStatusBar(viewModel: viewModel)
                 
                 // MARK: - Fresh Server Banner (auto-shown after scan)
-                if viewModel.isConnected, let qi = viewModel.quickInstallVM, !qi.isVisible == false,
+                if settings.showFreshServerBanner, viewModel.isConnected, let qi = viewModel.quickInstallVM, !qi.isVisible == false,
                    qi.serverScan?.isEmpty == true, !qi.isInstalling {
                     FreshServerBanner {
                         viewModel.quickInstallVM?.isVisible = true
@@ -38,7 +39,7 @@ struct OverviewTab: View {
                 }
                 
                 // MARK: - Quick Vitals Grid
-                AXCard {
+                if settings.showQuickVitals { AXCard {
                     VStack(alignment: .leading, spacing: AXSpacing.lg) {
                         HStack {
                             Image(systemName: "bolt.heart.fill")
@@ -125,13 +126,13 @@ struct OverviewTab: View {
                             )
                         }
                     }
-                }
-                
+                } }
+
                 // MARK: - Inventory Summary & System Info Row
                 HStack(spacing: AXSpacing.lg) {
                     
                     // Inventory Summary
-                    AXCard {
+                    if settings.showInventory { AXCard {
                         VStack(alignment: .leading, spacing: AXSpacing.lg) {
                             HStack {
                                 Image(systemName: "cube.box")
@@ -193,8 +194,8 @@ struct OverviewTab: View {
                             }
                         }
                     }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    
+                    .frame(maxWidth: .infinity, alignment: .leading) }
+
                     // System Info
                     AXCard {
                         VStack(alignment: .leading, spacing: AXSpacing.lg) {
@@ -215,8 +216,8 @@ struct OverviewTab: View {
                             
                             VStack(spacing: AXSpacing.md) {
                                 SystemInfoRow(label: "Operating System", value: server.os ?? "Unknown")
-                                SystemInfoRow(label: "IP Address", value: server.host)
-                                SystemInfoRow(label: "Hostname", value: server.host)
+                                SystemInfoRow(label: "IP Address", value: isMaskingDashboard ? PrivacyMask.ip(server.host) : server.host)
+                                SystemInfoRow(label: "Hostname", value: isMaskingDashboard ? PrivacyMask.hostname(server.host) : server.host)
                                 SystemInfoRow(label: "Uptime", value: viewModel.uptime)
                                 SystemInfoRow(label: "Load Average", value: viewModel.loadAverage)
                                 SystemInfoRow(label: "Connection", value: viewModel.connectionStage.rawValue)
@@ -227,7 +228,7 @@ struct OverviewTab: View {
                 }
                 
                 // MARK: - Quick Actions
-                AXCard {
+                if settings.showQuickActions { AXCard {
                     VStack(alignment: .leading, spacing: AXSpacing.lg) {
                         HStack {
                             Image(systemName: "bolt.circle")
@@ -308,7 +309,7 @@ struct OverviewTab: View {
                             Spacer()
                         }
                     }
-                }
+                } }
             }
             .padding(AXSpacing.xl)
         }
@@ -338,13 +339,18 @@ struct OverviewTab: View {
             return .axError
         }
     }
+
+    private var isMaskingDashboard: Bool {
+        settings.maskServerInfo && settings.maskInDashboard && settings.maskIPAddresses
+    }
 }
 
 // MARK: - Connection Status Bar
 
 struct ConnectionStatusBar: View {
     @ObservedObject var viewModel: ServerConnectionViewModel
-    
+    @State private var showDisconnectConfirm = false
+
     var body: some View {
         HStack(spacing: AXSpacing.md) {
             // Connection Status Indicator
@@ -408,14 +414,24 @@ struct ConnectionStatusBar: View {
                 .foregroundColor(.axAccentBlue)
             } else if viewModel.isConnected {
                 Spacer()
-                
+
                 Button("Disconnect") {
-                    Task {
-                        await viewModel.disconnect()
+                    if AppSettingsManager.shared.shouldConfirm(for: SettingsKey.confirmDisconnectServer) {
+                        showDisconnectConfirm = true
+                    } else {
+                        Task { await viewModel.disconnect() }
                     }
                 }
                 .font(AXTypography.caption)
                 .foregroundColor(.axTextSecondary)
+                .alert("Disconnect Server", isPresented: $showDisconnectConfirm) {
+                    Button("Disconnect", role: .destructive) {
+                        Task { await viewModel.disconnect() }
+                    }
+                    Button("Cancel", role: .cancel) {}
+                } message: {
+                    Text("Are you sure you want to disconnect from this server?")
+                }
             } else {
                 Spacer()
                 

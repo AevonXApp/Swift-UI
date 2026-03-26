@@ -705,7 +705,8 @@ struct UsersTableView: View {
 
 struct DatabaseUserRow: View {
     let user: DatabaseUserInfo
-    
+    @EnvironmentObject var settings: AppSettingsManager
+
     var body: some View {
         HStack(spacing: AXSpacing.md) {
             HStack(spacing: AXSpacing.sm) {
@@ -713,14 +714,14 @@ struct DatabaseUserRow: View {
                     .font(.system(size: 20))
                     .foregroundColor(.axAccentBlue) // Keeping blue for users as they might be multi-engine in the future
                 
-                Text(user.username)
+                Text(settings.maskServerInfo && settings.maskInDashboard && settings.maskUsernames ? PrivacyMask.username(user.username) : user.username)
                     .font(AXTypography.body)
                     .fontWeight(.medium)
                     .foregroundColor(.axTextPrimary)
             }
             .frame(width: 150, alignment: .leading)
-            
-            Text(user.host)
+
+            Text(settings.maskServerInfo && settings.maskInDashboard && settings.maskIPAddresses ? PrivacyMask.hostname(user.host) : user.host)
                 .font(AXTypography.caption)
                 .foregroundColor(.axTextSecondary)
                 .frame(width: 120, alignment: .leading)

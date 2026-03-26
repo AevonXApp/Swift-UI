@@ -28,6 +28,7 @@ private struct IndexedAttacker: Identifiable {
 
 struct AISecuritySection: View {
     let serverId: String
+    @EnvironmentObject var settings: AppSettingsManager
 
     @State private var isAnalyzing = false
     @State private var selectedFeature = 0
@@ -180,7 +181,7 @@ struct AISecuritySection: View {
                                 Circle()
                                     .fill(attackerColor(item.attacker.count))
                                     .frame(width: 6, height: 6)
-                                Text(item.attacker.ip)
+                                Text(settings.maskServerInfo && settings.maskInDashboard && settings.maskIPAddresses ? PrivacyMask.ip(item.attacker.ip) : item.attacker.ip)
                                     .font(.system(size: 12, weight: .medium, design: .monospaced))
                                     .foregroundColor(.axTextPrimary)
                             }

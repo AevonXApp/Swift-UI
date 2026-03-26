@@ -39,8 +39,20 @@ extension FileManagerViewModel {
     }
     
     func confirmDelete(_ files: [RemoteFileItem]) {
-        filesToDelete = files
-        showDeleteConfirmation = true
+        let hasFiles = files.contains { !$0.isDirectory }
+        let hasFolders = files.contains { $0.isDirectory }
+        let fileKey = hasFiles ? SettingsKey.confirmDeleteFile2 : SettingsKey.confirmDeleteFolder
+        let shouldConfirm = hasFolders
+            ? AppSettingsManager.shared.shouldConfirm(for: SettingsKey.confirmDeleteFolder)
+            : AppSettingsManager.shared.shouldConfirm(for: fileKey)
+
+        if shouldConfirm {
+            filesToDelete = files
+            showDeleteConfirmation = true
+        } else {
+            filesToDelete = files
+            deleteConfirmed()
+        }
     }
     
     func deleteConfirmed() {

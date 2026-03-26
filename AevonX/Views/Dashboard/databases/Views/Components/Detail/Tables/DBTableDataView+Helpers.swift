@@ -91,7 +91,11 @@ extension DBTableDataView {
                 ]),
                 AXMenuSection(items: [
                     AXMenuItem("Delete Row", icon: "trash", isDestructive: true) {
-                        viewModel.activeAlert = .confirmDeleteRow(index)
+                        if AppSettingsManager.shared.shouldConfirm(for: SettingsKey.confirmDeleteDBRow) {
+                            viewModel.activeAlert = .confirmDeleteRow(index)
+                        } else {
+                            Task { await viewModel.deleteRow(at: index) }
+                        }
                     },
                 ]),
             ], triggerIcon: "ellipsis", triggerSize: 22)

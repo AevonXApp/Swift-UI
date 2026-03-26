@@ -11,6 +11,7 @@ struct DashboardSidebar: View {
     @ObservedObject var viewModel: ServerConnectionViewModel
     let onBack: () -> Void
 
+    @EnvironmentObject var settings: AppSettingsManager
     @ObservedObject private var hookRegistry = AevonXCoreBridge.HookRegistry.shared
     @State private var selectedPluginTabId: String? = nil
     @State private var isHoveringBack = false
@@ -107,7 +108,7 @@ struct DashboardSidebar: View {
                         .fill(statusColor)
                         .frame(width: 5, height: 5)
 
-                    Text(server.host)
+                    Text(settings.maskServerInfo && settings.maskInDashboard && settings.maskIPAddresses ? PrivacyMask.ip(server.host) : server.host)
                         .font(.system(size: 10, weight: .medium, design: .monospaced))
                         .foregroundColor(.axTextMuted)
                         .lineLimit(1)

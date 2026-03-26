@@ -144,21 +144,35 @@ struct BackupSection: View {
         }
         .background(Color.axBackground)
         .onAppear { Task { await viewModel.loadBackups() } }
-        .alert("Restore Backup?", isPresented: .init(get: { confirmRestore != nil }, set: { if !$0 { confirmRestore = nil } })) {
-            Button("Restore", role: .destructive) {
-                if let b = confirmRestore { Task { await viewModel.restoreBackup(b) } }
+        .overlay {
+            if let backup = confirmRestore {
+                AXDeleteConfirmation(
+                    title: "Restore Backup?",
+                    itemName: backup.filename,
+                    icon: "arrow.counterclockwise",
+                    warning: "This will overwrite current files. A safety backup will be created first.",
+                    confirmLabel: "Restore",
+                    onConfirm: {
+                        confirmRestore = nil
+                        Task { await viewModel.restoreBackup(backup) }
+                    },
+                    onCancel: { confirmRestore = nil }
+                )
             }
-            Button("Cancel", role: .cancel) {}
-        } message: {
-            Text("This will overwrite current files. A safety backup will be created first.")
         }
-        .alert("Delete Backup?", isPresented: .init(get: { confirmDelete != nil }, set: { if !$0 { confirmDelete = nil } })) {
-            Button("Delete", role: .destructive) {
-                if let b = confirmDelete { Task { await viewModel.deleteBackup(b) } }
+        .overlay {
+            if let backup = confirmDelete {
+                AXDeleteConfirmation(
+                    title: "Delete Backup?",
+                    itemName: backup.filename,
+                    warning: "This backup file will be permanently removed.",
+                    onConfirm: {
+                        confirmDelete = nil
+                        Task { await viewModel.deleteBackup(backup) }
+                    },
+                    onCancel: { confirmDelete = nil }
+                )
             }
-            Button("Cancel", role: .cancel) {}
-        } message: {
-            Text("This backup file will be permanently removed.")
         }
     }
 

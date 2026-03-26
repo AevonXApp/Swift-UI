@@ -6,6 +6,7 @@ struct DockerNetworkInspector: View {
     let network: DockerNetwork
     let serverId: String
     @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject var settings: AppSettingsManager
     
     @State private var connectedContainers: [(name: String, ip: String, mac: String)] = []
     @State private var subnet: String = ""
@@ -107,7 +108,7 @@ struct DockerNetworkInspector: View {
                                         }
                                         .frame(maxWidth: .infinity, alignment: .leading)
                                         
-                                        Text(connectedContainers[i].ip)
+                                        Text(settings.maskServerInfo && settings.maskInDashboard && settings.maskIPAddresses ? PrivacyMask.ip(connectedContainers[i].ip) : connectedContainers[i].ip)
                                             .font(.system(size: 11, design: .monospaced))
                                             .foregroundColor(.axAccentBlue)
                                             .frame(width: 140, alignment: .leading)

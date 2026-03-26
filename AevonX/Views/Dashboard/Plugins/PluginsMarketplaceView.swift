@@ -544,6 +544,22 @@ struct PluginCard: View {
         )
         .shadow(color: accentColor.opacity(isHovered ? 0.25 : 0.05), radius: isHovered ? 12 : 6)
         .animation(.easeOut(duration: 0.2), value: isHovered)
+        .overlay {
+            if showUninstallConfirmation {
+                AXDeleteConfirmation(
+                    title: "Uninstall Plugin",
+                    itemName: plugin.name,
+                    icon: "puzzlepiece",
+                    warning: "This will remove the plugin from your server.",
+                    confirmLabel: "Uninstall",
+                    onConfirm: {
+                        showUninstallConfirmation = false
+                        onUninstall()
+                    },
+                    onCancel: { showUninstallConfirmation = false }
+                )
+            }
+        }
     }
 
     private func installBadge(icon: String, label: String, color: Color) -> some View {
@@ -612,7 +628,13 @@ struct PluginCard: View {
             }
         } else if isInstalled {
             HStack(spacing: AXSpacing.xs) {
-                Button(action: { showUninstallConfirmation = true }) {
+                Button(action: {
+                    if AppSettingsManager.shared.shouldConfirm(for: SettingsKey.confirmUninstallPlugin) {
+                        showUninstallConfirmation = true
+                    } else {
+                        onUninstall()
+                    }
+                }) {
                     Image(systemName: "trash")
                         .font(.system(size: 11))
                         .foregroundColor(.axError)
@@ -622,14 +644,6 @@ struct PluginCard: View {
                 }
                 .buttonStyle(PlainButtonStyle())
                 .help("Uninstall")
-                .alert(isPresented: $showUninstallConfirmation) {
-                    Alert(
-                        title: Text("Uninstall Plugin"),
-                        message: Text("Are you sure you want to uninstall \(plugin.name)?"),
-                        primaryButton: .destructive(Text("Uninstall"), action: onUninstall),
-                        secondaryButton: .cancel()
-                    )
-                }
 
                 Button(action: onSettings) {
                     HStack(spacing: AXSpacing.xxs) {

@@ -10,6 +10,7 @@ import AevonXCoreBridge
 
 struct MonitoringSection: View {
     @ObservedObject var viewModel: MonitoringViewModel
+    @EnvironmentObject var settings: AppSettingsManager
 
     var body: some View {
         ScrollView {
@@ -112,7 +113,7 @@ struct MonitoringSection: View {
                     VStack(spacing: AXSpacing.xs) {
                         ForEach(viewModel.topIPs.prefix(10)) { entry in
                             HStack {
-                                Text(entry.ip)
+                                Text(settings.maskServerInfo && settings.maskInDashboard && settings.maskIPAddresses ? PrivacyMask.ip(entry.ip) : entry.ip)
                                     .font(AXTypography.monoMd)
                                     .foregroundColor(.axTextPrimary)
                                 Spacer()

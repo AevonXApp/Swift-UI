@@ -14,6 +14,7 @@ import AevonXCoreBridge
 struct BruteForceSubTab: View {
     let serverId: String
 
+    @EnvironmentObject var settings: AppSettingsManager
     @State private var isInstalled = false
     @State private var isLoading = true
     @State private var jailInfo = ""
@@ -76,48 +77,62 @@ struct BruteForceSubTab: View {
             .padding(AXSpacing.xxl)
         }
         .task { await loadData() }
-        .alert("Unban IP", isPresented: Binding(
-            get: { ipToUnban != nil },
-            set: { if !$0 { ipToUnban = nil } }
-        )) {
-            Button("Cancel", role: .cancel) { ipToUnban = nil }
-            Button("Unban", role: .destructive) {
-                if let ip = ipToUnban {
-                    Task {
-                        let _ = await securityManager.fail2banUnban(ip: ip, jail: "sshd", serverId: serverId)
-                        await loadData()
-                    }
-                }
+        .overlay {
+            if let ip = ipToUnban {
+                AXDeleteConfirmation(
+                    title: "Unban IP",
+                    itemName: ip,
+                    icon: "lock.open",
+                    warning: "This IP will be able to attempt logins again.",
+                    confirmLabel: "Unban",
+                    onConfirm: {
+                        ipToUnban = nil
+                        Task {
+                            let _ = await securityManager.fail2banUnban(ip: ip, jail: "sshd", serverId: serverId)
+                            await loadData()
+                        }
+                    },
+                    onCancel: { ipToUnban = nil }
+                )
             }
-        } message: {
-            Text("Are you sure you want to unban \(ipToUnban ?? "")? This IP will be able to attempt logins again.")
         }
-        .alert("Unban All IPs", isPresented: $showUnbanAllConfirm) {
-            Button("Cancel", role: .cancel) {}
-            Button("Unban All", role: .destructive) {
-                Task {
-                    let _ = await securityManager.fail2banUnbanAll(jail: "sshd", serverId: serverId)
-                    await loadData()
-                }
+        .overlay {
+            if showUnbanAllConfirm {
+                AXDeleteConfirmation(
+                    title: "Unban All IPs",
+                    itemName: "\(bannedIPs.count) banned IP(s)",
+                    icon: "lock.open",
+                    warning: "All blocked addresses will be able to attempt logins again.",
+                    confirmLabel: "Unban All",
+                    onConfirm: {
+                        showUnbanAllConfirm = false
+                        Task {
+                            let _ = await securityManager.fail2banUnbanAll(jail: "sshd", serverId: serverId)
+                            await loadData()
+                        }
+                    },
+                    onCancel: { showUnbanAllConfirm = false }
+                )
             }
-        } message: {
-            Text("Are you sure you want to unban all \(bannedIPs.count) IP(s)? All blocked addresses will be able to attempt logins again.")
         }
-        .alert("Remove from Whitelist", isPresented: Binding(
-            get: { ipToRemoveFromWhitelist != nil },
-            set: { if !$0 { ipToRemoveFromWhitelist = nil } }
-        )) {
-            Button("Cancel", role: .cancel) { ipToRemoveFromWhitelist = nil }
-            Button("Remove", role: .destructive) {
-                if let ip = ipToRemoveFromWhitelist {
-                    Task {
-                        let _ = await securityManager.fail2banRemoveFromWhitelist(ip: ip, serverId: serverId)
-                        await loadData()
-                    }
-                }
+        .overlay {
+            if let ip = ipToRemoveFromWhitelist {
+                AXDeleteConfirmation(
+                    title: "Remove from Whitelist",
+                    itemName: ip,
+                    icon: "shield.slash",
+                    warning: "This IP may get banned in the future.",
+                    confirmLabel: "Remove",
+                    onConfirm: {
+                        ipToRemoveFromWhitelist = nil
+                        Task {
+                            let _ = await securityManager.fail2banRemoveFromWhitelist(ip: ip, serverId: serverId)
+                            await loadData()
+                        }
+                    },
+                    onCancel: { ipToRemoveFromWhitelist = nil }
+                )
             }
-        } message: {
-            Text("Remove \(ipToRemoveFromWhitelist ?? "") from the whitelist? This IP may get banned in the future.")
         }
     }
 

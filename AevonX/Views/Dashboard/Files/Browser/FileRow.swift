@@ -19,6 +19,14 @@ struct FileRow: View {
     private var isSelected: Bool {
         viewModel.selectedFiles.contains(file.id)
     }
+
+    /// File name respecting showFileExtensions setting
+    private var displayFileName: String {
+        if file.isDirectory || AppSettingsManager.shared.showFileExtensions {
+            return file.name
+        }
+        return (file.name as NSString).deletingPathExtension
+    }
     
     var body: some View {
         HStack(spacing: 0) {
@@ -47,7 +55,7 @@ struct FileRow: View {
                     .frame(width: 18)
                 
                 VStack(alignment: .leading, spacing: 0) {
-                    Text(file.name)
+                    Text(displayFileName)
                         .font(.system(size: 12, weight: file.isDirectory ? .medium : .regular))
                         .foregroundColor(.axTextPrimary)
                         .lineLimit(1)

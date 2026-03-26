@@ -16,6 +16,7 @@ private struct IndexedAttack: Identifiable {
 
 struct GeoIPSection: View {
     let serverId: String
+    @EnvironmentObject var settings: AppSettingsManager
 
     @State private var isLoading = true
     @State private var attackSources: [AttackSource] = []
@@ -59,7 +60,7 @@ struct GeoIPSection: View {
                     emptyTitle: "No failed login attempts detected"
                 ) { item, _ in
                     HStack(spacing: 0) {
-                        Text(item.src.ip)
+                        Text(settings.maskServerInfo && settings.maskInDashboard && settings.maskIPAddresses ? PrivacyMask.ip(item.src.ip) : item.src.ip)
                             .font(.system(size: 12, weight: .medium, design: .monospaced))
                             .foregroundColor(.axTextPrimary)
                             .frame(maxWidth: .infinity, alignment: .leading)

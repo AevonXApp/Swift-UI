@@ -14,6 +14,9 @@ struct RemoteServerRow: View {
     let onEdit: () -> Void
     let onDelete: () -> Void
 
+    @EnvironmentObject var settings: AppSettingsManager
+    @State private var showDeleteConfirmation = false
+
     var body: some View {
         HStack(spacing: AXSpacing.lg) {
             // Server Icon
@@ -35,9 +38,10 @@ struct RemoteServerRow: View {
                     .foregroundColor(.axTextPrimary)
 
                 HStack(spacing: AXSpacing.sm) {
-                    Text("\(server.username)@\(server.host)")
+                    Text("\(maskedUsername)@\(maskedHost)")
                         .font(AXTypography.caption)
                         .foregroundColor(.axTextTertiary)
+                        .help(settings.showRealOnHover && isMasking ? "\(server.username)@\(server.host)" : "")
 
                     // Status
                     HStack(spacing: AXSpacing.xs) {
@@ -63,7 +67,7 @@ struct RemoteServerRow: View {
             Spacer()
 
             // Tags
-            if !server.tags.isEmpty {
+            if settings.showServerTags && !server.tags.isEmpty {
                 HStack(spacing: AXSpacing.xs) {
                     ForEach(server.tags.prefix(2), id: \.self) { tag in
                         Text(tag)
@@ -128,7 +132,13 @@ struct RemoteServerRow: View {
 
                 Divider()
 
-                Button(role: .destructive, action: onDelete) {
+                Button(role: .destructive, action: {
+                    if settings.shouldConfirm(for: SettingsKey.confirmDeleteServer) {
+                        showDeleteConfirmation = true
+                    } else {
+                        onDelete()
+                    }
+                }) {
                     Label("Delete Server", systemImage: "trash")
                 }
             } label: {
@@ -140,8 +150,34 @@ struct RemoteServerRow: View {
         .padding(.horizontal, AXSpacing.xxl)
         .padding(.vertical, AXSpacing.md)
         .contentShape(Rectangle())
+        .overlay {
+            if showDeleteConfirmation {
+                AXDeleteConfirmation(
+                    title: "Delete Server?",
+                    itemName: server.name,
+                    warning: "This will permanently remove the server and all its data.",
+                    onConfirm: {
+                        showDeleteConfirmation = false
+                        onDelete()
+                    },
+                    onCancel: { showDeleteConfirmation = false }
+                )
+            }
+        }
     }
     
+    // MARK: - Privacy Masking
+
+    private var isMasking: Bool { settings.maskServerInfo }
+
+    private var maskedHost: String {
+        isMasking && settings.maskIPAddresses ? PrivacyMask.ip(server.host) : server.host
+    }
+
+    private var maskedUsername: String {
+        isMasking && settings.maskUsernames ? PrivacyMask.username(server.username) : server.username
+    }
+
     private var customColor: Color {
         if let hex = server.customColor {
             return Color(hex: hex)

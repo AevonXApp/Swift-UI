@@ -15,6 +15,7 @@ import AevonXCoreBridge
 
 /// Modern database management tab with AI-assisted installation
 struct ModernDatabasesTab: View {
+    @EnvironmentObject var settings: AppSettingsManager
     @StateObject private var viewModel: DatabaseManagementViewModel
     @State private var showEngineManagement = false
     @State private var engineManagementType: DatabaseType?
@@ -97,22 +98,21 @@ struct ModernDatabasesTab: View {
             }
         }
 
-        .alert(
-            "Delete Database",
-            isPresented: Binding<Bool>(
-                get: { databaseToDelete != nil },
-                set: { if !$0 { databaseToDelete = nil } }
-            ),
-            presenting: databaseToDelete
-        ) { db in
-            Button("Cancel", role: .cancel) { databaseToDelete = nil }
-            Button("Delete", role: .destructive) {
-                Task {
-                    try? await viewModel.deleteDatabase(name: db.name, type: db.type)
-                }
+        .overlay {
+            if let db = databaseToDelete {
+                AXDeleteConfirmation(
+                    title: "Delete Database",
+                    itemName: db.name,
+                    warning: "This action cannot be undone.",
+                    onConfirm: {
+                        let name = db.name
+                        let type = db.type
+                        databaseToDelete = nil
+                        Task { try? await viewModel.deleteDatabase(name: name, type: type) }
+                    },
+                    onCancel: { databaseToDelete = nil }
+                )
             }
-        } message: { db in
-            Text("Are you sure you want to delete '\(db.name)'? This action cannot be undone.")
         }
         .task {
             await viewModel.loadData()
@@ -154,7 +154,11 @@ struct ModernDatabasesTab: View {
                         }
                     },
                     onDelete: { db in
-                        databaseToDelete = db
+                        if settings.shouldConfirm(for: SettingsKey.confirmDropDBDatabase) {
+                            databaseToDelete = db
+                        } else {
+                            Task { try? await viewModel.deleteDatabase(name: db.name, type: db.type) }
+                        }
                     }
                 )
             }
@@ -171,7 +175,11 @@ struct ModernDatabasesTab: View {
                 }
             },
             onDeleteDatabase: { db in
-                databaseToDelete = db
+                if settings.shouldConfirm(for: SettingsKey.confirmDropDBDatabase) {
+                    databaseToDelete = db
+                } else {
+                    Task { try? await viewModel.deleteDatabase(name: db.name, type: db.type) }
+                }
             }
         )
     }

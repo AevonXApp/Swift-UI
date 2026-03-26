@@ -35,6 +35,7 @@ struct SSHLoginLog: Identifiable {
 struct SSHSubTab: View {
     let serverId: String
 
+    @EnvironmentObject var settings: AppSettingsManager
     @State private var sshEnabled = false
     @State private var innerTab: Int = 0
     @State private var passwordLogin = false
@@ -792,7 +793,16 @@ struct SSHSubTab: View {
 
                                 Spacer()
 
-                                Button(action: { keyToRemoveIndex = index }) {
+                                Button(action: {
+                                    if settings.shouldConfirm(for: SettingsKey.confirmDeleteSSHKey) {
+                                        keyToRemoveIndex = index
+                                    } else {
+                                        Task {
+                                            let _ = await securityManager.removeAuthorizedKey(index: index, serverId: serverId)
+                                            await loadAuthorizedKeys()
+                                        }
+                                    }
+                                }) {
                                     HStack(spacing: AXSpacing.xxs) {
                                         Image(systemName: "trash")
                                             .font(.system(size: 10))
@@ -822,21 +832,24 @@ struct SSHSubTab: View {
             }
         }
         .task { await loadAuthorizedKeys() }
-        .alert("Remove Key", isPresented: Binding(
-            get: { keyToRemoveIndex != nil },
-            set: { if !$0 { keyToRemoveIndex = nil } }
-        )) {
-            Button("Cancel", role: .cancel) { keyToRemoveIndex = nil }
-            Button("Remove", role: .destructive) {
-                if let idx = keyToRemoveIndex {
-                    Task {
-                        let _ = await securityManager.removeAuthorizedKey(index: idx, serverId: serverId)
-                        await loadAuthorizedKeys()
-                    }
-                }
+        .overlay {
+            if let idx = keyToRemoveIndex {
+                AXDeleteConfirmation(
+                    title: "Remove Key",
+                    itemName: "Authorized Key #\(idx)",
+                    icon: "key.slash",
+                    warning: "The associated user will lose SSH access.",
+                    confirmLabel: "Remove",
+                    onConfirm: {
+                        keyToRemoveIndex = nil
+                        Task {
+                            let _ = await securityManager.removeAuthorizedKey(index: idx, serverId: serverId)
+                            await loadAuthorizedKeys()
+                        }
+                    },
+                    onCancel: { keyToRemoveIndex = nil }
+                )
             }
-        } message: {
-            Text("Are you sure you want to remove this authorized key? The associated user will lose SSH access.")
         }
     }
 
@@ -875,7 +888,7 @@ struct SSHSubTab: View {
                 }
                 .frame(width: 120, alignment: .leading)
 
-                Text(item.ip)
+                Text(settings.maskServerInfo && settings.maskInDashboard && settings.maskIPAddresses ? PrivacyMask.ip(item.ip) : item.ip)
                     .font(.system(size: 12, design: .monospaced))
                     .foregroundColor(.axTextSecondary)
                     .frame(maxWidth: .infinity, alignment: .leading)

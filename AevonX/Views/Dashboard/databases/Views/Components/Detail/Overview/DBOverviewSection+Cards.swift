@@ -485,7 +485,7 @@ extension DBOverviewSection {
                         AXMenuSection(items: [
                             AXMenuItem("Drop Table", icon: "trash", isDestructive: true) {
                                 viewModel.selectedTable = table
-                                viewModel.activeAlert = .confirmDropTable(table.name)
+                                viewModel.confirmDropTable(table.name)
                             },
                         ]),
                     ], triggerIcon: "ellipsis", triggerSize: 22)

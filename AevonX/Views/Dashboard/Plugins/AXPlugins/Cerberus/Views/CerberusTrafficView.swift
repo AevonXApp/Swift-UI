@@ -12,6 +12,7 @@ import AevonXCoreBridge
 
 struct CerberusTrafficView: View {
     @ObservedObject var viewModel: CerberusViewModel
+    @EnvironmentObject var settings: AppSettingsManager
     @State private var selectedSection: TrafficSection = .analytics
     @State private var accessLogFilter = ""
     @State private var selectedDomainName: String?
@@ -52,18 +53,7 @@ struct CerberusTrafficView: View {
     private var sectionPicker: some View {
         HStack(spacing: AXSpacing.xxs) {
             ForEach(TrafficSection.allCases, id: \.self) { section in
-                Button {
-                    selectedSection = section
-                } label: {
-                    Text(section.rawValue)
-                        .font(AXTypography.subheadline)
-                        .fontWeight(selectedSection == section ? .semibold : .regular)
-                        .foregroundStyle(selectedSection == section ? Color.axAccentBlue : Color.axTextSecondary)
-                        .padding(.horizontal, AXSpacing.lg).padding(.vertical, AXSpacing.sm)
-                        .background(RoundedRectangle(cornerRadius: AXCornerRadius.md)
-                            .fill(selectedSection == section ? Color.axAccentBlue.opacity(0.1) : Color.clear))
-                }
-                .buttonStyle(.plain)
+                sectionTab(section)
             }
             Spacer()
             if selectedSection == .accessLog && !viewModel.accessLog.isEmpty {
@@ -72,6 +62,25 @@ struct CerberusTrafficView: View {
         }
         .padding(.horizontal, AXSpacing.xl).padding(.vertical, AXSpacing.sm)
         .background(Color.axSurface)
+    }
+
+    private func sectionTab(_ section: TrafficSection) -> some View {
+        let isSelected = selectedSection == section
+        return Button {
+            withAnimation(.easeInOut(duration: 0.2)) { selectedSection = section }
+        } label: {
+            VStack(spacing: AXSpacing.xxs) {
+                Text(section.rawValue)
+                    .font(AXTypography.subheadline)
+                    .fontWeight(isSelected ? .semibold : .regular)
+                    .foregroundStyle(isSelected ? Color.axAccentBlue : Color.axTextSecondary)
+                    .padding(.horizontal, AXSpacing.lg).padding(.vertical, AXSpacing.sm)
+                RoundedRectangle(cornerRadius: AXCornerRadius.xs)
+                    .fill(isSelected ? Color.axAccentBlue : Color.clear)
+                    .frame(height: 2)
+            }
+        }
+        .buttonStyle(.plain)
     }
 
     private var skeletonContent: some View {
@@ -115,10 +124,7 @@ struct CerberusTrafficView: View {
         AXCard(accentColor: color) {
             VStack(alignment: .leading, spacing: AXSpacing.sm) {
                 HStack {
-                    ZStack {
-                        RoundedRectangle(cornerRadius: AXCornerRadius.sm).fill(color.opacity(0.15)).frame(width: 28, height: 28)
-                        Image(systemName: icon).font(AXTypography.caption).foregroundStyle(color)
-                    }
+                    summaryIconBox(icon: icon, color: color)
                     Spacer()
                 }
                 Text(value).font(AXTypography.title2).fontWeight(.bold).foregroundStyle(Color.axTextPrimary)
@@ -127,25 +133,63 @@ struct CerberusTrafficView: View {
         }
     }
 
+    private func summaryIconBox(icon: String, color: Color) -> some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: AXCornerRadius.sm)
+                .fill(
+                    LinearGradient(
+                        colors: [color.opacity(0.3), color.opacity(0.1)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .frame(width: 28, height: 28)
+            Image(systemName: icon).font(AXTypography.caption).foregroundStyle(color)
+        }
+    }
+
     // MARK: - Response Times Card
 
     private var responseTimesCard: some View {
         AXCard(accentColor: .axWarning) {
-            VStack(alignment: .leading, spacing: AXSpacing.md) {
-                HStack {
-                    Image(systemName: "clock.arrow.circlepath").foregroundStyle(Color.axWarning)
-                    Text("Response Latency").font(AXTypography.headline).foregroundStyle(Color.axTextPrimary)
-                    Spacer()
-                    if let rt = viewModel.responseTimes {
-                        AXBadge(text: "\(rt.samples) samples", color: .axWarning, style: .soft)
-                    }
-                }
-                if let rt = viewModel.responseTimes, rt.samples > 0 {
+            VStack(alignment: .leading, spacing: 0) {
+                responseTimesGradientHeader
+                responseTimesBody
+            }
+        }
+    }
+
+    private var responseTimesGradientHeader: some View {
+        HStack {
+            Image(systemName: "clock.arrow.circlepath").foregroundStyle(Color.axWarning)
+            Text("Response Latency").font(AXTypography.headline).foregroundStyle(Color.axTextPrimary)
+            Spacer()
+            if let rt = viewModel.responseTimes {
+                AXBadge(text: "\(rt.samples) samples", color: .axWarning, style: .soft)
+            }
+        }
+        .padding(.bottom, AXSpacing.md)
+        .overlay(alignment: .top) {
+            LinearGradient(
+                colors: [Color.axWarning.opacity(0.15), Color.axWarning.opacity(0.0)],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .frame(height: 3)
+            .clipShape(RoundedRectangle(cornerRadius: AXCornerRadius.xs))
+            .offset(y: -AXSpacing.lg)
+        }
+    }
+
+    private var responseTimesBody: some View {
+        Group {
+            if let rt = viewModel.responseTimes, rt.samples > 0 {
+                VStack(alignment: .leading, spacing: AXSpacing.md) {
                     latencyChart(rt)
                     latencyBars(rt)
-                } else {
-                    emptyBox(icon: "clock", text: "No latency data")
                 }
+            } else {
+                emptyBox(icon: "clock", text: "No latency data")
             }
         }
     }
@@ -220,26 +264,32 @@ struct CerberusTrafficView: View {
     }
 
     private func botContent(_ bd: WAFBotDetails) -> some View {
-        HStack(spacing: AXSpacing.xl) {
+        let progressColor: Color = bd.botRate > 50 ? .axError : bd.botRate > 20 ? .axWarning : .axAccentGreen
+        return HStack(spacing: AXSpacing.xl) {
             AXCircularProgress(
                 progress: min(bd.botRate / 100, 1.0),
-                color: bd.botRate > 50 ? .axError : bd.botRate > 20 ? .axWarning : .axAccentGreen,
-                size: 72, lineWidth: 7
+                color: progressColor,
+                size: 80, lineWidth: 7
             ) {
                 Text(String(format: "%.0f%%", bd.botRate))
                     .font(AXTypography.monoSm).foregroundStyle(Color.axTextPrimary)
             }
-            VStack(alignment: .leading, spacing: AXSpacing.sm) {
-                HStack(spacing: AXSpacing.sm) {
-                    Circle().fill(Color.axAccentGreen).frame(width: 6, height: 6)
-                    Text("Human").font(AXTypography.caption).foregroundStyle(Color.axTextSecondary)
-                    Text(viewModel.formatNumber(bd.totalHuman)).font(AXTypography.monoSm).foregroundStyle(Color.axAccentGreen)
-                }
-                HStack(spacing: AXSpacing.sm) {
-                    Circle().fill(Color.axAccentPurple).frame(width: 6, height: 6)
-                    Text("Bot").font(AXTypography.caption).foregroundStyle(Color.axTextSecondary)
-                    Text(viewModel.formatNumber(bd.totalBot)).font(AXTypography.monoSm).foregroundStyle(Color.axAccentPurple)
-                }
+            .shadow(color: bd.botRate > 50 ? progressColor.opacity(0.35) : Color.clear, radius: 12, y: 2)
+            botLegend(bd)
+        }
+    }
+
+    private func botLegend(_ bd: WAFBotDetails) -> some View {
+        VStack(alignment: .leading, spacing: AXSpacing.sm) {
+            HStack(spacing: AXSpacing.sm) {
+                Circle().fill(Color.axAccentGreen).frame(width: 6, height: 6)
+                Text("Human").font(AXTypography.caption).foregroundStyle(Color.axTextSecondary)
+                Text(viewModel.formatNumber(bd.totalHuman)).font(AXTypography.monoSm).foregroundStyle(Color.axAccentGreen)
+            }
+            HStack(spacing: AXSpacing.sm) {
+                Circle().fill(Color.axAccentPurple).frame(width: 6, height: 6)
+                Text("Bot").font(AXTypography.caption).foregroundStyle(Color.axTextSecondary)
+                Text(viewModel.formatNumber(bd.totalBot)).font(AXTypography.monoSm).foregroundStyle(Color.axAccentPurple)
             }
         }
     }
@@ -249,19 +299,23 @@ struct CerberusTrafficView: View {
     private var statusCodesChart: some View {
         AXCard(accentColor: .axAccentBlue) {
             VStack(alignment: .leading, spacing: AXSpacing.md) {
-                HStack {
-                    Image(systemName: "number").foregroundStyle(Color.axAccentBlue)
-                    Text("Status Codes").font(AXTypography.headline).foregroundStyle(Color.axTextPrimary)
-                    Spacer()
-                    if !viewModel.statusCodes.isEmpty {
-                        AXBadge(text: "\(viewModel.statusCodes.count)", color: .axAccentBlue, style: .soft)
-                    }
-                }
+                statusCodesHeader
                 if viewModel.statusCodes.isEmpty {
                     emptyBox(icon: "number", text: "No status code data")
                 } else {
                     statusCodeBarChart
                 }
+            }
+        }
+    }
+
+    private var statusCodesHeader: some View {
+        HStack {
+            Image(systemName: "number").foregroundStyle(Color.axAccentBlue)
+            Text("Status Codes").font(AXTypography.headline).foregroundStyle(Color.axTextPrimary)
+            Spacer()
+            if !viewModel.statusCodes.isEmpty {
+                AXBadge(text: "\(viewModel.statusCodes.count)", color: .axAccentBlue, style: .soft)
             }
         }
     }
@@ -315,24 +369,53 @@ struct CerberusTrafficView: View {
         let accent: Color = blockedRate > 0.3 ? .axError : blockedRate > 0.1 ? .axWarning : .axAccentGreen
         return AXCard(accentColor: accent) {
             HStack(spacing: AXSpacing.lg) {
-                VStack(spacing: AXSpacing.xs) {
-                    AXCircularProgress(progress: protRate, color: accent, size: 48, lineWidth: 5) {
-                        Text(String(format: "%.0f%%", protRate * 100)).font(AXTypography.monoXs).foregroundStyle(accent)
-                    }
-                    Text("#\(rank)").font(AXTypography.monoXs).foregroundStyle(Color.axTextMuted)
-                }
-                .frame(width: 56)
-                VStack(alignment: .leading, spacing: AXSpacing.sm) {
-                    HStack {
-                        Text(domain).font(AXTypography.monoMd).foregroundStyle(Color.axTextPrimary).lineLimit(1)
-                        Spacer()
-                        AXBadge(text: viewModel.formatNumber(stats.totalRequests) + " req", color: .axAccentBlue, style: .soft)
-                        Image(systemName: "chevron.right").font(AXTypography.caption).foregroundStyle(Color.axTextMuted)
-                    }
-                    domainProgressBar(blockedRate: blockedRate)
-                    domainStatChips(stats: stats)
-                }
+                domainRankColumn(rank: rank, protRate: protRate, accent: accent)
+                domainCardBody(domain: domain, stats: stats, blockedRate: blockedRate)
             }
+        }
+        .overlay(alignment: .leading) {
+            HStack(spacing: 0) {
+                RoundedRectangle(cornerRadius: AXCornerRadius.xs)
+                    .fill(accent)
+                    .frame(width: 3)
+                    .padding(.vertical, AXSpacing.xs)
+                Spacer()
+            }
+        }
+    }
+
+    private func domainRankColumn(rank: Int, protRate: Double, accent: Color) -> some View {
+        VStack(spacing: AXSpacing.xs) {
+            AXCircularProgress(progress: protRate, color: accent, size: 48, lineWidth: 5) {
+                Text(String(format: "%.0f%%", protRate * 100)).font(AXTypography.monoXs).foregroundStyle(accent)
+            }
+            rankBadge(rank)
+        }
+        .frame(width: 56)
+    }
+
+    private func rankBadge(_ rank: Int) -> some View {
+        let color: Color = rank == 1 ? .yellow : rank == 2 ? .gray : rank == 3 ? .orange : .axTextMuted
+        let bg: Color = rank <= 3 ? color.opacity(0.15) : Color.clear
+        return Text("#\(rank)")
+            .font(AXTypography.monoXs)
+            .fontWeight(rank <= 3 ? .bold : .regular)
+            .foregroundStyle(color)
+            .padding(.horizontal, AXSpacing.xs)
+            .padding(.vertical, AXSpacing.xxxs)
+            .background(RoundedRectangle(cornerRadius: AXCornerRadius.sm).fill(bg))
+    }
+
+    private func domainCardBody(domain: String, stats: DomainStats, blockedRate: Double) -> some View {
+        VStack(alignment: .leading, spacing: AXSpacing.sm) {
+            HStack {
+                Text(domain).font(AXTypography.monoMd).foregroundStyle(Color.axTextPrimary).lineLimit(1)
+                Spacer()
+                AXBadge(text: viewModel.formatNumber(stats.totalRequests) + " req", color: .axAccentBlue, style: .soft)
+                Image(systemName: "chevron.right").font(AXTypography.caption).foregroundStyle(Color.axTextMuted)
+            }
+            domainProgressBar(blockedRate: blockedRate)
+            domainStatChips(stats: stats)
         }
     }
 
@@ -346,13 +429,17 @@ struct CerberusTrafficView: View {
                         .frame(width: geo.size.width * blockedRate, height: 6)
                 }
             }.frame(height: 6)
-            HStack {
-                Text(String(format: "%.1f%% blocked", blockedRate * 100))
-                    .font(AXTypography.caption).foregroundStyle(blockedRate > 0.1 ? Color.axError : Color.axTextMuted)
-                Spacer()
-                Text(String(format: "%.1f%% allowed", (1 - blockedRate) * 100))
-                    .font(AXTypography.caption).foregroundStyle(Color.axAccentGreen)
-            }
+            domainProgressLabels(blockedRate: blockedRate)
+        }
+    }
+
+    private func domainProgressLabels(blockedRate: Double) -> some View {
+        HStack {
+            Text(String(format: "%.1f%% blocked", blockedRate * 100))
+                .font(AXTypography.caption).foregroundStyle(blockedRate > 0.1 ? Color.axError : Color.axTextMuted)
+            Spacer()
+            Text(String(format: "%.1f%% allowed", (1 - blockedRate) * 100))
+                .font(AXTypography.caption).foregroundStyle(Color.axAccentGreen)
         }
     }
 
@@ -379,66 +466,157 @@ struct CerberusTrafficView: View {
         let stats = viewModel.domainStats[domain]
         let blockedRate = (stats?.totalRequests ?? 0) > 0
             ? Double(stats?.blockedRequests ?? 0) / Double(stats?.totalRequests ?? 1) : 0
-        return VStack(alignment: .leading, spacing: AXSpacing.lg) {
-            HStack {
-                Image(systemName: "globe").foregroundStyle(Color.axAccentBlue)
-                Text(domain).font(AXTypography.monoMd).fontWeight(.semibold).foregroundStyle(Color.axTextPrimary)
-                Spacer()
-                Button { selectedDomainName = nil } label: {
-                    Image(systemName: "xmark.circle.fill").foregroundStyle(Color.axTextTertiary)
-                }.buttonStyle(.plain)
-            }
+        return VStack(spacing: 0) {
+            domainDetailHero(domain)
+            Rectangle().fill(Color.axBorder.opacity(0.15)).frame(height: 1)
             if let stats = stats {
-                domainDetailStats(stats, blockedRate: blockedRate)
+                domainDetailStatsRow(stats, blockedRate: blockedRate)
+                Rectangle().fill(Color.axBorder.opacity(0.15)).frame(height: 1)
                 domainDetailAccessLog(domain)
             }
-            Spacer()
+            Spacer(minLength: 0)
+            Rectangle().fill(Color.axBorder.opacity(0.15)).frame(height: 1)
+            domainDetailFooter
         }
-        .padding(AXSpacing.xl)
-        .frame(width: 600, height: 450)
+        .frame(width: 660, height: 500)
         .background(Color.axBackground)
     }
 
-    private func domainDetailStats(_ stats: DomainStats, blockedRate: Double) -> some View {
+    private func domainDetailHero(_ domain: String) -> some View {
         HStack(spacing: AXSpacing.lg) {
-            detailStatBox("Total", viewModel.formatNumber(stats.totalRequests), .axAccentBlue)
-            detailStatBox("Blocked", viewModel.formatNumber(stats.blockedRequests), .axError)
-            detailStatBox("Block Rate", String(format: "%.1f%%", blockedRate * 100), blockedRate > 0.1 ? .axError : .axAccentGreen)
-            detailStatBox("Bytes In", viewModel.formatBytes(stats.bytesIn), .axAccentBlue)
-            detailStatBox("Bytes Out", viewModel.formatBytes(stats.bytesOut), .axAccentPurple)
+            ZStack {
+                Circle()
+                    .fill(RadialGradient(colors: [Color.axAccentBlue.opacity(0.2), Color.axAccentBlue.opacity(0.04)], center: .center, startRadius: 0, endRadius: 24))
+                    .frame(width: 44, height: 44)
+                Circle()
+                    .stroke(Color.axAccentBlue.opacity(0.2), lineWidth: 1)
+                    .frame(width: 44, height: 44)
+                Image(systemName: "globe")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(Color.axAccentBlue)
+            }
+            VStack(alignment: .leading, spacing: AXSpacing.xxxs) {
+                Text(domain)
+                    .font(AXTypography.monoMd)
+                    .fontWeight(.bold)
+                    .foregroundStyle(Color.axTextPrimary)
+                Text("Domain Traffic Analysis")
+                    .font(AXTypography.caption)
+                    .foregroundStyle(Color.axTextTertiary)
+            }
+            Spacer()
+            Button { selectedDomainName = nil } label: {
+                Image(systemName: "xmark.circle.fill")
+                    .font(.system(size: 18))
+                    .foregroundStyle(Color.axTextTertiary)
+            }
+            .buttonStyle(.plain)
         }
+        .padding(AXSpacing.xl)
+        .background(LinearGradient(colors: [Color.axAccentBlue.opacity(0.04), Color.clear], startPoint: .leading, endPoint: .trailing))
     }
 
-    private func detailStatBox(_ label: String, _ value: String, _ color: Color) -> some View {
+    private func domainDetailStatsRow(_ stats: DomainStats, blockedRate: Double) -> some View {
+        HStack(spacing: AXSpacing.xxs) {
+            domainMiniStat("Total", viewModel.formatNumber(stats.totalRequests), "arrow.up.arrow.down", .axAccentBlue)
+            domainMiniStat("Blocked", viewModel.formatNumber(stats.blockedRequests), "hand.raised.fill", .axError)
+            domainMiniStat("Block Rate", String(format: "%.1f%%", blockedRate * 100), "chart.pie.fill", blockedRate > 0.1 ? .axError : .axAccentGreen)
+            domainMiniStat("Bytes In", viewModel.formatBytes(stats.bytesIn), "arrow.down.circle.fill", .axAccentBlue)
+            domainMiniStat("Bytes Out", viewModel.formatBytes(stats.bytesOut), "arrow.up.circle.fill", .axAccentPurple)
+        }
+        .padding(AXSpacing.md)
+    }
+
+    private func domainMiniStat(_ label: String, _ value: String, _ icon: String, _ color: Color) -> some View {
         VStack(spacing: AXSpacing.xs) {
-            Text(value).font(AXTypography.monoMd).fontWeight(.semibold).foregroundStyle(color)
-            Text(label).font(AXTypography.caption).foregroundStyle(Color.axTextTertiary)
+            Image(systemName: icon)
+                .font(.system(size: 11))
+                .foregroundStyle(color)
+            Text(value)
+                .font(AXTypography.monoSm)
+                .fontWeight(.bold)
+                .foregroundStyle(Color.axTextPrimary)
+            Text(label)
+                .font(AXTypography.caption2)
+                .foregroundStyle(Color.axTextMuted)
         }
         .frame(maxWidth: .infinity)
-        .padding(AXSpacing.md)
-        .background(RoundedRectangle(cornerRadius: AXCornerRadius.md).fill(Color.axSurface))
+        .padding(.vertical, AXSpacing.sm)
+        .background(RoundedRectangle(cornerRadius: AXCornerRadius.sm).fill(color.opacity(0.04)))
     }
 
     private func domainDetailAccessLog(_ domain: String) -> some View {
         let entries = viewModel.accessLog.filter { $0.host == domain }.prefix(20)
         return VStack(alignment: .leading, spacing: AXSpacing.sm) {
-            Text("Recent Requests").font(AXTypography.headline).foregroundStyle(Color.axTextPrimary)
+            HStack {
+                Image(systemName: "list.bullet.rectangle.fill")
+                    .font(.system(size: 12))
+                    .foregroundStyle(Color.axAccentBlue)
+                Text("Recent Requests")
+                    .font(AXTypography.subheadline)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(Color.axTextPrimary)
+                Spacer()
+                Text("\(entries.count) entries")
+                    .font(AXTypography.caption2)
+                    .foregroundStyle(Color.axTextMuted)
+            }
             if entries.isEmpty {
-                Text("No access log entries for this domain").font(AXTypography.caption).foregroundStyle(Color.axTextMuted)
-            } else {
-                ForEach(Array(entries)) { entry in
-                    HStack(spacing: AXSpacing.sm) {
-                        Text(formatTime(entry.timestamp)).font(AXTypography.monoXs).foregroundStyle(Color.axTextMuted).frame(width: 60)
-                        Text(entry.method).font(AXTypography.monoXs).foregroundStyle(methodColor(entry.method)).frame(width: 40)
-                        Text(entry.path).font(AXTypography.monoXs).foregroundStyle(Color.axTextPrimary).lineLimit(1)
-                        Spacer()
-                        Text("\(entry.statusCode)").font(AXTypography.monoXs).foregroundStyle(statusCodeColor(entry.statusCode))
-                        Text(String(format: "%.0fms", entry.latencyMs)).font(AXTypography.monoXs).foregroundStyle(Color.axTextMuted)
+                HStack {
+                    Spacer()
+                    VStack(spacing: AXSpacing.sm) {
+                        Image(systemName: "doc.text").font(AXTypography.title3).foregroundStyle(Color.axTextMuted)
+                        Text("No access log entries").font(AXTypography.caption).foregroundStyle(Color.axTextMuted)
                     }
-                    .padding(.vertical, AXSpacing.xxxs)
+                    .padding(.vertical, AXSpacing.lg)
+                    Spacer()
+                }
+            } else {
+                ScrollView {
+                    VStack(spacing: AXSpacing.xxxs) {
+                        ForEach(Array(entries.enumerated()), id: \.element.id) { idx, entry in
+                            domainLogRow(entry, isEven: idx.isMultiple(of: 2))
+                        }
+                    }
                 }
             }
         }
+        .padding(.horizontal, AXSpacing.lg)
+        .padding(.vertical, AXSpacing.md)
+    }
+
+    private func domainLogRow(_ entry: WAFAccessLogEntry, isEven: Bool) -> some View {
+        HStack(spacing: AXSpacing.sm) {
+            Text(formatTime(entry.timestamp)).font(AXTypography.monoXs).foregroundStyle(Color.axTextMuted).frame(width: 60)
+            Text(entry.method).font(AXTypography.monoXs).fontWeight(.medium).foregroundStyle(methodColor(entry.method)).frame(width: 40)
+            Text(entry.path).font(AXTypography.monoXs).foregroundStyle(Color.axTextPrimary).lineLimit(1)
+            Spacer()
+            Text("\(entry.statusCode)").font(AXTypography.monoXs).foregroundStyle(statusCodeColor(entry.statusCode))
+            Text(String(format: "%.0fms", entry.latencyMs)).font(AXTypography.monoXs).foregroundStyle(Color.axTextMuted)
+        }
+        .padding(.vertical, AXSpacing.xxs)
+        .padding(.horizontal, AXSpacing.sm)
+        .background(RoundedRectangle(cornerRadius: AXCornerRadius.xs).fill(isEven ? Color.axSurfaceHover.opacity(0.2) : Color.clear))
+    }
+
+    private var domainDetailFooter: some View {
+        HStack {
+            Spacer()
+            Button { selectedDomainName = nil } label: {
+                Text("Close")
+                    .font(AXTypography.subheadline)
+                    .fontWeight(.medium)
+                    .foregroundStyle(Color.axTextSecondary)
+                    .padding(.horizontal, AXSpacing.xxxl)
+                    .padding(.vertical, AXSpacing.sm)
+                    .background(Color.axSurface)
+                    .clipShape(RoundedRectangle(cornerRadius: AXCornerRadius.md))
+                    .overlay(RoundedRectangle(cornerRadius: AXCornerRadius.md).strokeBorder(Color.axBorder, lineWidth: 1))
+            }
+            .buttonStyle(.plain)
+            Spacer()
+        }
+        .padding(AXSpacing.md)
     }
 
     // MARK: - Access Log Content
@@ -478,10 +656,7 @@ struct CerberusTrafficView: View {
     private func logSummaryCard(label: String, value: String, icon: String, color: Color) -> some View {
         AXCard(accentColor: color) {
             HStack(spacing: AXSpacing.md) {
-                ZStack {
-                    RoundedRectangle(cornerRadius: AXCornerRadius.sm).fill(color.opacity(0.12)).frame(width: 28, height: 28)
-                    Image(systemName: icon).font(AXTypography.caption).foregroundStyle(color)
-                }
+                summaryIconBox(icon: icon, color: color)
                 VStack(alignment: .leading, spacing: AXSpacing.xxxs) {
                     Text(value).font(AXTypography.title3).fontWeight(.bold).foregroundStyle(Color.axTextPrimary)
                     Text(label).font(AXTypography.caption).foregroundStyle(Color.axTextSecondary)
@@ -521,22 +696,27 @@ struct CerberusTrafficView: View {
     }
 
     private var accessLogRows: some View {
-        ForEach(filteredAccessLog.prefix(100)) { entry in
-            HStack(spacing: AXSpacing.sm) {
-                Text(formatTime(entry.timestamp)).font(AXTypography.monoXs).foregroundStyle(Color.axTextMuted).frame(width: 70)
-                Text(entry.ip).font(AXTypography.monoXs).foregroundStyle(Color.axTextPrimary).frame(width: 115, alignment: .leading).lineLimit(1)
-                Text(flagEmoji(for: entry.countryCode)).frame(width: 25)
-                Text(entry.method).font(AXTypography.monoXs).foregroundStyle(methodColor(entry.method)).frame(width: 50)
-                Text(entry.host).font(AXTypography.monoXs).foregroundStyle(Color.axTextSecondary).frame(width: 120, alignment: .leading).lineLimit(1)
-                Text(entry.path).font(AXTypography.monoXs).foregroundStyle(Color.axTextSecondary).frame(maxWidth: .infinity, alignment: .leading).lineLimit(1)
-                Text("\(entry.statusCode)").font(AXTypography.monoXs).foregroundStyle(statusCodeColor(entry.statusCode)).frame(width: 45)
-                Text(String(format: "%.0fms", entry.latencyMs)).font(AXTypography.monoXs).foregroundStyle(Color.axTextMuted).frame(width: 55)
-                Image(systemName: entry.isBot ? "cpu" : "person.fill")
-                    .font(.system(size: 9)).foregroundStyle(entry.isBot ? Color.axWarning : Color.axAccentGreen).frame(width: 30)
-            }
-            .padding(.horizontal, AXSpacing.sm).padding(.vertical, AXSpacing.xxs)
-            .background(RoundedRectangle(cornerRadius: AXCornerRadius.xs).fill(Color.axSurfaceHover.opacity(0.3)))
+        ForEach(Array(filteredAccessLog.prefix(100).enumerated()), id: \.element.id) { idx, entry in
+            accessLogRow(entry: entry, isEven: idx.isMultiple(of: 2))
         }
+    }
+
+    private func accessLogRow(entry: WAFAccessLogEntry, isEven: Bool) -> some View {
+        HStack(spacing: AXSpacing.sm) {
+            Text(formatTime(entry.timestamp)).font(AXTypography.monoXs).foregroundStyle(Color.axTextMuted).frame(width: 70)
+            Text(settings.maskServerInfo && settings.maskInDashboard && settings.maskIPAddresses ? PrivacyMask.ip(entry.ip) : entry.ip).font(AXTypography.monoXs).foregroundStyle(Color.axTextPrimary).frame(width: 115, alignment: .leading).lineLimit(1)
+            Text(flagEmoji(for: entry.countryCode)).frame(width: 25)
+            Text(entry.method).font(AXTypography.monoXs).foregroundStyle(methodColor(entry.method)).frame(width: 50)
+            Text(settings.maskServerInfo && settings.maskInDashboard ? PrivacyMask.hostname(entry.host) : entry.host).font(AXTypography.monoXs).foregroundStyle(Color.axTextSecondary).frame(width: 120, alignment: .leading).lineLimit(1)
+            Text(entry.path).font(AXTypography.monoXs).foregroundStyle(Color.axTextSecondary).frame(maxWidth: .infinity, alignment: .leading).lineLimit(1)
+            Text("\(entry.statusCode)").font(AXTypography.monoXs).foregroundStyle(statusCodeColor(entry.statusCode)).frame(width: 45)
+            Text(String(format: "%.0fms", entry.latencyMs)).font(AXTypography.monoXs).foregroundStyle(Color.axTextMuted).frame(width: 55)
+            Image(systemName: entry.isBot ? "cpu" : "person.fill")
+                .font(.system(size: 9)).foregroundStyle(entry.isBot ? Color.axWarning : Color.axAccentGreen).frame(width: 30)
+        }
+        .padding(.horizontal, AXSpacing.sm).padding(.vertical, AXSpacing.xxs)
+        .background(RoundedRectangle(cornerRadius: AXCornerRadius.xs)
+            .fill(isEven ? Color.axSurfaceHover.opacity(0.2) : Color.axSurfaceHover.opacity(0.05)))
     }
 
     // MARK: - Helpers
@@ -549,12 +729,12 @@ struct CerberusTrafficView: View {
     private var totalReqs: Int { sortedDomains.reduce(0) { $0 + $1.stats.totalRequests } }
 
     private var latencyLabel: String {
-        guard let rt = viewModel.responseTimes, rt.samples > 0 else { return "—" }
+        guard let rt = viewModel.responseTimes, rt.samples > 0 else { return "---" }
         return String(format: "%.0fms", rt.p95)
     }
 
     private var botRateLabel: String {
-        guard let bd = viewModel.botDetails else { return "—" }
+        guard let bd = viewModel.botDetails else { return "---" }
         return String(format: "%.1f%%", bd.botRate)
     }
 
@@ -612,4 +792,3 @@ struct CerberusTrafficView: View {
         return String(ts.suffix(from: ts.index(ts.startIndex, offsetBy: 11)).prefix(8))
     }
 }
-

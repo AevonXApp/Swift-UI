@@ -16,7 +16,8 @@ import UniformTypeIdentifiers
 struct FilesView: View {
     let serverId: String
     let connectionViewModel: ServerConnectionViewModel
-    
+
+    @EnvironmentObject var settings: AppSettingsManager
     @ObservedObject private var viewModel: FileManagerViewModel
     
     // Custom context menu state
@@ -96,18 +97,28 @@ struct FilesView: View {
         .sheet(isPresented: $viewModel.showBatchPermissions) {
             BatchPermissionsSheet(viewModel: viewModel)
         }
-        .alert("Delete", isPresented: $viewModel.showDeleteConfirmation) {
-            Button("Cancel", role: .cancel) {}
-            Button("Delete", role: .destructive) { viewModel.deleteConfirmed() }
-        } message: {
-            let dangerLevel = viewModel.filesToDelete.reduce(DangerousPathGuard.DangerLevel.safe) { highest, file in
-                let level = DangerousPathGuard.isDangerousToDelete(file.path)
-                return level.isDangerous ? level : highest
-            }
-            if dangerLevel.isDangerous {
-                Text("\(dangerLevel.message)\n\nDelete \(viewModel.filesToDelete.count) item(s)? This cannot be undone.")
-            } else {
-                Text("Delete \(viewModel.filesToDelete.count) item(s)? This cannot be undone.")
+        .overlay {
+            if viewModel.showDeleteConfirmation {
+                AXDeleteConfirmation(
+                    title: "Delete \(viewModel.filesToDelete.count) Item(s)",
+                    itemName: viewModel.filesToDelete.first?.name ?? "selected items",
+                    warning: {
+                        let dangerLevel = viewModel.filesToDelete.reduce(DangerousPathGuard.DangerLevel.safe) { highest, file in
+                            let level = DangerousPathGuard.isDangerousToDelete(file.path)
+                            return level.isDangerous ? level : highest
+                        }
+                        return dangerLevel.isDangerous
+                            ? "\(dangerLevel.message) This cannot be undone."
+                            : "This cannot be undone."
+                    }(),
+                    onConfirm: {
+                        viewModel.showDeleteConfirmation = false
+                        viewModel.deleteConfirmed()
+                    },
+                    onCancel: {
+                        viewModel.showDeleteConfirmation = false
+                    }
+                )
             }
         }
         .alert("Go to Path", isPresented: $viewModel.showGoToPath) {

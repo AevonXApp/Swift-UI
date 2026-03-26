@@ -107,7 +107,7 @@ struct AddServerView: View {
                 }
             }
         }
-        .preferredColorScheme(.dark)
+        .preferredColorScheme(ThemeEngine.shared.colorScheme)
         .onAppear {
             withAnimation { showContent = true }
         }

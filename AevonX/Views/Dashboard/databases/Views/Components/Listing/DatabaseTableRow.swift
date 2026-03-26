@@ -15,6 +15,14 @@ struct DatabaseTableRow: View {
     var onDelete: (() -> Void)?
     @State private var isHovered = false
 
+    private var maskedDatabaseName: String {
+        let s = AppSettingsManager.shared
+        if s.maskServerInfo && s.maskInDashboard && s.maskDatabaseNames {
+            return PrivacyMask.databaseName(database.name)
+        }
+        return database.name
+    }
+
     var body: some View {
         HStack(spacing: AXSpacing.md) {
             // Identifier (Icon + Name)
@@ -29,7 +37,7 @@ struct DatabaseTableRow: View {
                         .foregroundColor(database.type.brandColor)
                 }
                 
-                Text(database.name)
+                Text(maskedDatabaseName)
                     .font(AXTypography.body)
                     .fontWeight(.medium)
                     .foregroundColor(.axTextPrimary)

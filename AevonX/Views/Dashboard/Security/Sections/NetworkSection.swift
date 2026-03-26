@@ -23,6 +23,7 @@ private struct IndexedConnection: Identifiable {
 
 struct NetworkSection: View {
     let serverId: String
+    @EnvironmentObject var settings: AppSettingsManager
 
     @State private var isLoading = true
     @State private var openPorts: [OpenPort] = []
@@ -110,7 +111,7 @@ struct NetworkSection: View {
                     emptyTitle: "No connection data available"
                 ) { item, _ in
                     HStack(spacing: 0) {
-                        Text(item.connection.ip)
+                        Text(settings.maskServerInfo && settings.maskInDashboard && settings.maskIPAddresses ? PrivacyMask.ip(item.connection.ip) : item.connection.ip)
                             .font(.system(size: 12, weight: .medium, design: .monospaced))
                             .foregroundColor(.axTextPrimary)
                             .frame(maxWidth: .infinity, alignment: .leading)

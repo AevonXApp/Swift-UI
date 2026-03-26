@@ -15,8 +15,10 @@ struct RemoteServerCard: View {
     let onConnect: () -> Void
     let onEdit: () -> Void
     let onDelete: () -> Void
-    
+
+    @EnvironmentObject var settings: AppSettingsManager
     @State private var isHovered = false
+    @State private var showDeleteConfirmation = false
     
     var body: some View {
         HStack(spacing: 0) {
@@ -77,20 +79,23 @@ struct RemoteServerCard: View {
                 
                 HStack(spacing: AXSpacing.md) {
                     // IP
-                    Label(server.host, systemImage: "network")
+                    Label(maskedHost, systemImage: "network")
                         .font(.system(size: 11))
                         .foregroundColor(.axTextMuted)
                         .lineLimit(1)
-                    
+                        .help(settings.showRealOnHover && isMasking ? server.host : "")
+
                     // Port + User inline
-                    HStack(spacing: AXSpacing.xs) {
-                        Text(server.username + "@:" + "\(server.port)")
-                            .font(.system(size: 10, weight: .medium, design: .monospaced))
-                            .foregroundColor(.axTextMuted.opacity(0.7))
+                    if settings.showPortInfo {
+                        HStack(spacing: AXSpacing.xs) {
+                            Text(maskedUsername + "@:" + maskedPort)
+                                .font(.system(size: 10, weight: .medium, design: .monospaced))
+                                .foregroundColor(.axTextMuted.opacity(0.7))
+                        }
                     }
-                    
+
                     // OS chip
-                    if let os = server.osType {
+                    if settings.showServerOS, let os = server.osType {
                         HStack(spacing: 3) {
                             Image(systemName: osIcon)
                                 .font(.system(size: 8))
@@ -109,7 +114,7 @@ struct RemoteServerCard: View {
             Spacer()
             
             // ─── Tags (compact) ─────────────────────────────
-            if !server.tags.isEmpty {
+            if settings.showServerTags && !server.tags.isEmpty {
                 HStack(spacing: 4) {
                     ForEach(server.tags.prefix(2), id: \.self) { tag in
                         Text(tag)
@@ -200,8 +205,28 @@ struct RemoteServerCard: View {
                 Label("Copy IP Address", systemImage: "doc.on.clipboard")
             }
             Divider()
-            Button(role: .destructive, action: onDelete) {
+            Button(role: .destructive, action: {
+                if settings.shouldConfirm(for: SettingsKey.confirmDeleteServer) {
+                    showDeleteConfirmation = true
+                } else {
+                    onDelete()
+                }
+            }) {
                 Label("Delete", systemImage: "trash")
+            }
+        }
+        .overlay {
+            if showDeleteConfirmation {
+                AXDeleteConfirmation(
+                    title: "Delete Server?",
+                    itemName: server.name,
+                    warning: "This will permanently remove the server and all its data.",
+                    onConfirm: {
+                        showDeleteConfirmation = false
+                        onDelete()
+                    },
+                    onCancel: { showDeleteConfirmation = false }
+                )
             }
         }
     }
@@ -215,6 +240,22 @@ struct RemoteServerCard: View {
         return .axAccentBlue
     }
     
+    // MARK: - Privacy Masking
+
+    private var isMasking: Bool { settings.maskServerInfo }
+
+    private var maskedHost: String {
+        isMasking && settings.maskIPAddresses ? PrivacyMask.ip(server.host) : server.host
+    }
+
+    private var maskedUsername: String {
+        isMasking && settings.maskUsernames ? PrivacyMask.username(server.username) : server.username
+    }
+
+    private var maskedPort: String {
+        isMasking && settings.maskPortNumbers ? PrivacyMask.port(server.port) : "\(server.port)"
+    }
+
     private var osIcon: String {
         let os = server.osType?.lowercased() ?? ""
         if os.contains("ubuntu") || os.contains("debian") || os.contains("linux") {

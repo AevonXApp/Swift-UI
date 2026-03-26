@@ -13,8 +13,9 @@ struct CronTab: View {
     @ObservedObject var connectionViewModel: ServerConnectionViewModel
     @StateObject private var vm: CronViewModel
     
+    @EnvironmentObject var settings: AppSettingsManager
     @State private var selectedSubTab = 0
-    @State private var showDeleteAlert = false
+    @State private var showDeleteConfirmation = false
     @State private var jobToDelete: CronJob?
     
     init(serverId: String, connectionViewModel: ServerConnectionViewModel) {
@@ -51,11 +52,23 @@ struct CronTab: View {
         .sheet(isPresented: $vm.showExecuteResult) {
             executeResultSheet
         }
-        .alert("Delete Task?", isPresented: $showDeleteAlert, presenting: jobToDelete) { job in
-            Button("Cancel", role: .cancel) { jobToDelete = nil }
-            Button("Delete", role: .destructive) { Task { await vm.deleteJob(job) } }
-        } message: { job in
-            Text("Delete \"\(job.name)\"? This will remove the cron job from the server.")
+        .overlay {
+            if showDeleteConfirmation, let job = jobToDelete {
+                AXDeleteConfirmation(
+                    title: "Delete Task?",
+                    itemName: job.name,
+                    warning: "This will remove the cron job from the server.",
+                    onConfirm: {
+                        showDeleteConfirmation = false
+                        Task { await vm.deleteJob(job) }
+                        jobToDelete = nil
+                    },
+                    onCancel: {
+                        showDeleteConfirmation = false
+                        jobToDelete = nil
+                    }
+                )
+            }
         }
         .overlay(alignment: .bottom) { toastOverlay }
         .task {
@@ -157,7 +170,13 @@ struct CronTab: View {
                         onEdit: { vm.editingJob = job; vm.showAddSheet = true },
                         onLog: { Task { await vm.loadLogs(for: job) } },
                         onToggle: { Task { await vm.toggleJob(job) } },
-                        onDelete: { jobToDelete = job; showDeleteAlert = true }
+                        onDelete: {
+                            if settings.shouldConfirm(for: SettingsKey.confirmDeleteCronJob) {
+                                jobToDelete = job; showDeleteConfirmation = true
+                            } else {
+                                Task { await vm.deleteJob(job) }
+                            }
+                        }
                     )
                 }
             }

@@ -11,15 +11,17 @@ struct RemoteFleetGridView: View {
     @Binding var selectedServer: Server?
     @Binding var showServerDashboard: Bool
     @ObservedObject var viewModel: ServerListViewModel
+    @EnvironmentObject var settings: AppSettingsManager
     let onConnect: (ServerViewModel) -> Void
     let onEdit: (ServerViewModel) -> Void
     let onDelete: (ServerViewModel) -> Void
 
+    private var gridColumns: [GridItem] {
+        Array(repeating: GridItem(.flexible(), spacing: AXSpacing.lg), count: settings.gridColumnCount)
+    }
+
     var body: some View {
-        LazyVGrid(columns: [
-            GridItem(.flexible(), spacing: AXSpacing.lg),
-            GridItem(.flexible(), spacing: AXSpacing.lg)
-        ], spacing: AXSpacing.lg) {
+        LazyVGrid(columns: gridColumns, spacing: AXSpacing.lg) {
             ForEach(servers) { server in
                 RemoteServerCard(
                     server: server,

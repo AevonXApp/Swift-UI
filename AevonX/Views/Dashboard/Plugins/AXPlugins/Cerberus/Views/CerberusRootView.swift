@@ -32,41 +32,74 @@ private struct CerberusContentView: View {
             headerBar
             Divider().background(Color.axDivider)
             HStack(spacing: 0) {
-                sidebarTabs
+                sidebarNav
                 Divider().background(Color.axDivider)
                 contentArea
             }
         }
         .background(Color.axBackground)
     }
+}
 
-    // MARK: - Header
+// MARK: - Header Bar
 
-    private var headerBar: some View {
-        HStack(spacing: AXSpacing.md) {
+private extension CerberusContentView {
+
+    var headerBar: some View {
+        HStack(spacing: AXSpacing.lg) {
             headerBrand
             Spacer()
-            headerStatusGroup
+            headerLiveMetrics
+            headerServiceControl
         }
         .padding(.horizontal, AXSpacing.xl)
-        .padding(.vertical, AXSpacing.md)
-        .background(Color.axSurface)
+        .padding(.vertical, AXSpacing.sm)
+        .background(
+            Color.axSurface
+                .overlay(
+                    LinearGradient(
+                        colors: [Color.axAccentBlue.opacity(0.03), Color.clear],
+                        startPoint: .leading, endPoint: .trailing
+                    )
+                )
+        )
     }
 
-    private var headerBrand: some View {
+    var headerBrand: some View {
         HStack(spacing: AXSpacing.md) {
             ZStack {
                 RoundedRectangle(cornerRadius: AXCornerRadius.md)
-                    .fill(Color.axAccentBlue.opacity(0.12))
+                    .fill(
+                        LinearGradient(
+                            colors: [Color.axAccentBlue.opacity(0.2), Color.axAccentPurple.opacity(0.1)],
+                            startPoint: .topLeading, endPoint: .bottomTrailing
+                        )
+                    )
                     .frame(width: 36, height: 36)
                 Image(systemName: "shield.checkered")
                     .font(AXTypography.headline)
-                    .foregroundStyle(Color.axAccentBlue)
+                    .foregroundStyle(
+                        LinearGradient(
+                            colors: [Color.axAccentBlue, Color.axAccentPurple],
+                            startPoint: .topLeading, endPoint: .bottomTrailing
+                        )
+                    )
             }
             VStack(alignment: .leading, spacing: AXSpacing.xxxs) {
-                Text("AXCerberus WAF")
-                    .font(AXTypography.headline)
-                    .foregroundStyle(Color.axTextPrimary)
+                HStack(spacing: AXSpacing.xs) {
+                    Text("AXCerberus")
+                        .font(AXTypography.headline)
+                        .fontWeight(.bold)
+                        .foregroundStyle(Color.axTextPrimary)
+                    Text("WAF")
+                        .font(AXTypography.caption)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(Color.axAccentBlue)
+                        .padding(.horizontal, AXSpacing.xs)
+                        .padding(.vertical, AXSpacing.xxxs)
+                        .background(Color.axAccentBlue.opacity(0.12))
+                        .clipShape(RoundedRectangle(cornerRadius: AXCornerRadius.xs))
+                }
                 Text("Layer 7 Web Application Firewall")
                     .font(AXTypography.caption)
                     .foregroundStyle(Color.axTextTertiary)
@@ -74,30 +107,32 @@ private struct CerberusContentView: View {
         }
     }
 
-    private var headerStatusGroup: some View {
-        HStack(spacing: AXSpacing.lg) {
+    var headerLiveMetrics: some View {
+        HStack(spacing: AXSpacing.xl) {
             if let ov = viewModel.overview {
-                headerMiniStat(value: viewModel.formatNumber(ov.totalRequests), label: "Requests", color: .axAccentBlue)
-                headerMiniStat(value: String(format: "%.1f%%", Double(ov.protectionRate)), label: "Block Rate", color: .axError)
-                headerMiniStat(value: String(format: "%.1f", Double(ov.qps)), label: "QPS", color: .axAccentGreen)
+                headerMetric(value: viewModel.formatNumber(ov.totalRequests), label: "Requests", color: .axAccentBlue)
+                Divider().frame(height: 24)
+                headerMetric(value: String(format: "%.1f%%", Double(ov.protectionRate)), label: "Block Rate", color: .axError)
+                Divider().frame(height: 24)
+                headerMetric(value: String(format: "%.1f", Double(ov.qps)), label: "QPS", color: .axAccentGreen)
             }
-            serviceStatusBadge
         }
     }
 
-    private func headerMiniStat(value: String, label: String, color: Color) -> some View {
+    func headerMetric(value: String, label: String, color: Color) -> some View {
         VStack(spacing: AXSpacing.xxxs) {
             Text(value)
                 .font(AXTypography.monoSm)
+                .fontWeight(.semibold)
                 .foregroundStyle(color)
             Text(label)
-                .font(AXTypography.caption)
+                .font(AXTypography.caption2)
                 .foregroundStyle(Color.axTextMuted)
         }
     }
 
-    private var serviceStatusBadge: some View {
-        Group {
+    var headerServiceControl: some View {
+        HStack(spacing: AXSpacing.sm) {
             if let status = viewModel.serviceStatus {
                 AXStatusBadge(
                     status: status.isActive ? .online : .offline,
@@ -106,100 +141,201 @@ private struct CerberusContentView: View {
                     enablePulseAnimation: status.isActive
                 )
             }
+            serviceButtons
         }
     }
 
-    // MARK: - Sidebar
-
-    private var sidebarTabs: some View {
-        VStack(spacing: AXSpacing.xxxs) {
-            ForEach(CerberusTab.allCases, id: \.self) { tab in
-                tabButton(tab)
+    var serviceButtons: some View {
+        HStack(spacing: AXSpacing.xxs) {
+            if viewModel.serviceOperationInProgress {
+                ProgressView()
+                    .controlSize(.small)
+                    .frame(width: 16, height: 16)
+            } else {
+                let isActive = viewModel.serviceStatus?.isActive ?? false
+                if isActive {
+                    svcBtn(icon: "stop.fill", color: .axError, tip: "Stop WAF") {
+                        Task { await viewModel.stopService() }
+                    }
+                    svcBtn(icon: "arrow.clockwise", color: .axWarning, tip: "Restart WAF") {
+                        Task { await viewModel.restartService() }
+                    }
+                } else {
+                    svcBtn(icon: "play.fill", color: .axSuccess, tip: "Start WAF") {
+                        Task { await viewModel.startService() }
+                    }
+                }
             }
-            Spacer()
-            sidebarFooter
         }
-        .padding(AXSpacing.sm)
-        .frame(width: 170)
-        .background(Color.axSurface)
     }
 
-    private func tabButton(_ tab: CerberusTab) -> some View {
-        let isSelected = viewModel.selectedTab == tab
-        return Button {
-            viewModel.selectedTab = tab
-        } label: {
-            HStack(spacing: AXSpacing.sm) {
-                ZStack {
-                    RoundedRectangle(cornerRadius: AXCornerRadius.sm)
-                        .fill(isSelected ? Color.axAccentBlue.opacity(0.15) : Color.clear)
-                        .frame(width: 26, height: 26)
-                    Image(systemName: tab.icon)
-                        .font(AXTypography.caption)
-                        .foregroundStyle(isSelected ? Color.axAccentBlue : Color.axTextMuted)
-                }
-                Text(tab.rawValue)
-                    .font(AXTypography.subheadline)
-                Spacer()
-                if tab == .alerts && !viewModel.recentAlerts.isEmpty {
-                    alertCountDot
-                }
-            }
-            .padding(.horizontal, AXSpacing.sm)
-            .padding(.vertical, AXSpacing.xs)
-            .background(
-                RoundedRectangle(cornerRadius: AXCornerRadius.md)
-                    .fill(isSelected ? Color.axAccentBlue.opacity(0.08) : Color.clear)
-            )
-            .foregroundStyle(isSelected ? Color.axAccentBlue : Color.axTextSecondary)
+    func svcBtn(icon: String, color: Color, tip: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: icon)
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundStyle(color)
+                .frame(width: 26, height: 26)
+                .background(color.opacity(0.12))
+                .clipShape(RoundedRectangle(cornerRadius: AXCornerRadius.sm))
         }
         .buttonStyle(.plain)
+        .help(tip)
+    }
+}
+
+// MARK: - Sidebar Navigation
+
+private extension CerberusContentView {
+
+    var sidebarNav: some View {
+        AXSidebarContainer(
+            width: 220,
+            header: { sidebarHeader },
+            items: { sidebarItems },
+            footer: { sidebarFooter }
+        )
     }
 
-    private var alertCountDot: some View {
-        Text("\(viewModel.recentAlerts.count)")
-            .font(AXTypography.monoXs)
-            .foregroundStyle(.white)
-            .padding(.horizontal, AXSpacing.xs)
-            .padding(.vertical, AXSpacing.xxxs)
-            .background(Capsule().fill(Color.axError))
+    var sidebarHeader: some View {
+        HStack(spacing: AXSpacing.sm) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 6)
+                    .fill(
+                        LinearGradient(
+                            colors: [Color.axAccentBlue.opacity(0.15), Color.axAccentPurple.opacity(0.1)],
+                            startPoint: .topLeading, endPoint: .bottomTrailing
+                        )
+                    )
+                    .frame(width: 26, height: 26)
+                Image(systemName: "shield.checkered")
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundStyle(
+                        LinearGradient(
+                            colors: [Color.axAccentBlue, Color.axAccentPurple],
+                            startPoint: .topLeading, endPoint: .bottomTrailing
+                        )
+                    )
+            }
+            Text("CERBERUS")
+                .font(.system(size: 10, weight: .heavy))
+                .foregroundColor(Color.axTextMuted)
+                .tracking(1.5)
+            Spacer()
+            if let status = viewModel.serviceStatus {
+                AXStatusBadge(
+                    status: status.isActive ? .online : .offline,
+                    showLabel: false,
+                    size: 7,
+                    enablePulseAnimation: status.isActive
+                )
+            }
+        }
+        .padding(.horizontal, AXSpacing.md)
+        .padding(.top, AXSpacing.md)
+        .padding(.bottom, AXSpacing.sm)
     }
 
-    private var sidebarFooter: some View {
-        VStack(spacing: AXSpacing.xs) {
-            Divider()
+    @ViewBuilder
+    var sidebarItems: some View {
+        // OVERVIEW
+        AXSidebarCategoryHeader(title: "Overview", icon: "chart.xyaxis.line")
+        sidebarRow(.dashboard)
+        sidebarRow(.traffic)
+        sidebarRow(.attacks)
+
+        // SECURITY
+        AXSidebarCategoryHeader(title: "Security", icon: "lock.shield.fill")
+        sidebarRow(.ipManagement)
+        sidebarRow(.modules)
+        sidebarRow(.honeypot)
+        sidebarRowWithBadge(.alerts)
+
+        // INTELLIGENCE
+        AXSidebarCategoryHeader(title: "Intelligence", icon: "brain.head.profile.fill")
+        sidebarRow(.threatFeed)
+        sidebarRow(.compliance)
+        sidebarRow(.sessions)
+        sidebarRow(.customRules)
+
+        // MANAGEMENT
+        AXSidebarCategoryHeader(title: "Management", icon: "gearshape.2.fill")
+        sidebarRow(.domains)
+    }
+
+    func sidebarRow(_ tab: CerberusTab) -> some View {
+        AXSidebarRow(
+            icon: tab.icon,
+            title: tab.rawValue,
+            color: tab.color,
+            isSelected: viewModel.selectedTab == tab,
+            action: { viewModel.selectedTab = tab }
+        )
+    }
+
+    func sidebarRowWithBadge(_ tab: CerberusTab) -> some View {
+        AXSidebarRow(
+            icon: tab.icon,
+            title: tab.rawValue,
+            color: tab.color,
+            isSelected: viewModel.selectedTab == tab,
+            action: { viewModel.selectedTab = tab }
+        )
+        .overlay(alignment: .trailing) {
+            if !viewModel.recentAlerts.isEmpty {
+                Text("\(viewModel.recentAlerts.count)")
+                    .font(.system(size: 9, weight: .bold, design: .rounded))
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, AXSpacing.xs)
+                    .padding(.vertical, AXSpacing.xxxs)
+                    .background(Capsule().fill(Color.axError))
+                    .padding(.trailing, AXSpacing.sm)
+            }
+        }
+    }
+
+    var sidebarFooter: some View {
+        VStack(spacing: 0) {
+            Rectangle()
+                .fill(Color.axBorder.opacity(0.25))
+                .frame(height: 1)
+                .padding(.horizontal, AXSpacing.sm)
             HStack(spacing: AXSpacing.xs) {
                 Circle()
                     .fill(Color.axAccentGreen)
                     .frame(width: 6, height: 6)
                 Text("12 modules")
-                    .font(AXTypography.caption)
-                    .foregroundStyle(Color.axTextMuted)
+                    .font(.system(size: 9, weight: .medium))
+                    .foregroundColor(Color.axTextMuted.opacity(0.5))
                 Spacer()
+                Text("v5.0")
+                    .font(.system(size: 9, weight: .medium, design: .monospaced))
+                    .foregroundColor(Color.axTextMuted.opacity(0.5))
             }
-            .padding(.horizontal, AXSpacing.sm)
+            .padding(.horizontal, AXSpacing.md)
+            .padding(.vertical, AXSpacing.sm)
         }
     }
+}
 
-    // MARK: - Content
+// MARK: - Content Area
 
-    private var contentArea: some View {
+private extension CerberusContentView {
+
+    var contentArea: some View {
         Group {
             switch viewModel.selectedTab {
-            case .dashboard:
-                CerberusDashboardView(viewModel: viewModel)
-            case .attacks:
-                CerberusAttacksView(viewModel: viewModel)
-            case .traffic:
-                CerberusTrafficView(viewModel: viewModel)
-            case .ipManagement:
-                CerberusIPManagementView(viewModel: viewModel)
-            case .modules:
-                CerberusModulesView(viewModel: viewModel)
-            case .honeypot:
-                CerberusHoneypotView(viewModel: viewModel)
-            case .alerts:
-                CerberusAlertsView(viewModel: viewModel)
+            case .dashboard:    CerberusDashboardView(viewModel: viewModel)
+            case .attacks:      CerberusAttacksView(viewModel: viewModel)
+            case .traffic:      CerberusTrafficView(viewModel: viewModel)
+            case .domains:      CerberusDomainsView(viewModel: viewModel)
+            case .ipManagement: CerberusIPManagementView(viewModel: viewModel)
+            case .modules:      CerberusModulesView(viewModel: viewModel)
+            case .honeypot:     CerberusHoneypotView(viewModel: viewModel)
+            case .alerts:       CerberusAlertsView(viewModel: viewModel)
+            case .threatFeed:   CerberusThreatFeedView(viewModel: viewModel)
+            case .compliance:   CerberusComplianceView(viewModel: viewModel)
+            case .sessions:     CerberusSessionView(viewModel: viewModel)
+            case .customRules:  CerberusCustomRulesView(viewModel: viewModel)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)

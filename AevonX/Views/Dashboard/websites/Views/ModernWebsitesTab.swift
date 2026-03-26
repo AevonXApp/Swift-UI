@@ -13,6 +13,7 @@ import AevonXCoreBridge
 
 /// Modern website management tab with full production architecture
 struct ModernWebsitesTab: View {
+    @EnvironmentObject var settings: AppSettingsManager
     @StateObject private var viewModel: WebsiteManagementViewModel
     @State private var websiteForDetail: WebsiteInfo?
     @State private var initialDetailTab: Int = 0
@@ -78,19 +79,27 @@ struct ModernWebsitesTab: View {
                 )
             }
         }
-        .alert("Delete Website", isPresented: $showDeleteConfirmation, presenting: websiteToDelete) { website in
-            Button("Cancel", role: .cancel) {}
-            Button("Delete", role: .destructive) {
-                Task {
-                    do {
-                        try await viewModel.deleteWebsite(website)
-                    } catch {
-                        viewModel.errorMessage = error.localizedDescription
+        .overlay {
+            if showDeleteConfirmation, let website = websiteToDelete {
+                AXDeleteConfirmation(
+                    title: "Delete Website",
+                    itemName: website.name,
+                    warning: "This action cannot be undone.",
+                    onConfirm: {
+                        showDeleteConfirmation = false
+                        let w = website
+                        websiteToDelete = nil
+                        Task {
+                            do { try await viewModel.deleteWebsite(w) }
+                            catch { viewModel.errorMessage = error.localizedDescription }
+                        }
+                    },
+                    onCancel: {
+                        showDeleteConfirmation = false
+                        websiteToDelete = nil
                     }
-                }
+                )
             }
-        } message: { website in
-            Text("Are you sure you want to delete \(website.name)? This action cannot be undone.")
         }
         .alert("Clone Website", isPresented: $showCloneDialog) {
             TextField("New domain", text: $cloneDomain)
@@ -147,8 +156,15 @@ struct ModernWebsitesTab: View {
                     }
                 },
                 onDelete: { website in
-                    websiteToDelete = website
-                    showDeleteConfirmation = true
+                    if settings.shouldConfirm(for: SettingsKey.confirmDeleteWebsite) {
+                        websiteToDelete = website
+                        showDeleteConfirmation = true
+                    } else {
+                        Task {
+                            do { try await viewModel.deleteWebsite(website) }
+                            catch { viewModel.errorMessage = error.localizedDescription }
+                        }
+                    }
                 },
                 onLogs: { website in
                     initialDetailTab = 3

@@ -14,6 +14,7 @@ struct ServerSettingsTab: View {
     let serverId: String
     @ObservedObject var connectionViewModel: ServerConnectionViewModel
     @StateObject private var vm: ServerSettingsViewModel
+    @EnvironmentObject var settings: AppSettingsManager
 
     init(server: Server, serverId: String, connectionViewModel: ServerConnectionViewModel) {
         self.server = server
@@ -80,7 +81,7 @@ struct ServerSettingsTab: View {
                     Text(server.name)
                         .font(.system(size: 22, weight: .bold))
                         .foregroundColor(.axTextPrimary)
-                    Text(vm.osInfo.isEmpty ? server.host : vm.osInfo)
+                    Text(vm.osInfo.isEmpty ? maskedHost : vm.osInfo)
                         .font(AXTypography.body)
                         .foregroundColor(.axTextSecondary)
                     HStack(spacing: AXSpacing.md) {
@@ -104,13 +105,14 @@ struct ServerSettingsTab: View {
                             .font(.system(size: 10, weight: .medium))
                             .foregroundColor(.axTextTertiary)
                             .textCase(.uppercase)
-                        Text(vm.publicIP)
+                        Text(maskedIP(vm.publicIP))
                             .font(.system(size: 14, weight: .semibold, design: .monospaced))
                             .foregroundColor(.axAccentBlue)
                             .padding(.horizontal, AXSpacing.md)
                             .padding(.vertical, 4)
                             .background(Color.axAccentBlue.opacity(0.1))
                             .cornerRadius(AXCornerRadius.sm)
+                            .help(settings.showRealOnHover && isMasking ? vm.publicIP : "")
                     }
                 }
             }
@@ -178,8 +180,8 @@ struct ServerSettingsTab: View {
                     SettingsLoadingPlaceholder(text: "Loading network...")
                 } else {
                     VStack(spacing: AXSpacing.sm) {
-                        SettingsInfoRow(icon: "globe", title: "Public IP", value: vm.publicIP, valueColor: .axAccentBlue)
-                        SettingsInfoRow(icon: "network", title: "Private IP", value: vm.privateIP)
+                        SettingsInfoRow(icon: "globe", title: "Public IP", value: maskedIP(vm.publicIP), valueColor: .axAccentBlue)
+                        SettingsInfoRow(icon: "network", title: "Private IP", value: maskedIP(vm.privateIP))
                         SettingsInfoRow(icon: "arrow.triangle.branch", title: "Gateway", value: vm.defaultGateway)
                         SettingsInfoRow(icon: "magnifyingglass", title: "DNS Servers", value: vm.dnsServers)
                     }
@@ -231,9 +233,9 @@ struct ServerSettingsTab: View {
                 SettingsGradientHeader(icon: "link", title: "Connection", subtitle: "SSH connection details", gradient: [.axAccentGreen, .teal])
                 Divider().background(Color.axBorder)
                 VStack(spacing: AXSpacing.sm) {
-                    SettingsInfoRow(icon: "globe", title: "Host", value: server.host)
-                    SettingsInfoRow(icon: "number", title: "Port", value: "\(server.port)")
-                    SettingsInfoRow(icon: "person.fill", title: "Username", value: server.username)
+                    SettingsInfoRow(icon: "globe", title: "Host", value: maskedHost)
+                    SettingsInfoRow(icon: "number", title: "Port", value: maskedPort)
+                    SettingsInfoRow(icon: "person.fill", title: "Username", value: maskedUsername)
                     SettingsInfoRow(icon: "circle.fill", title: "Status",
                                    value: connectionViewModel.isConnected ? "Connected" : "Disconnected",
                                    valueColor: connectionViewModel.isConnected ? .axSuccess : .axError)
@@ -255,8 +257,8 @@ struct ServerSettingsTab: View {
                 } else {
                     VStack(spacing: AXSpacing.sm) {
                         SettingsInfoRow(icon: "number", title: "SSH Port", value: vm.sshPort)
-                        SettingsToggleRow(icon: "person.crop.circle.badge.exclamationmark", title: "Permit Root Login", isOn: $vm.permitRootLogin, tint: .axError)
-                        SettingsToggleRow(icon: "key.horizontal", title: "Password Auth", isOn: $vm.passwordAuthEnabled, tint: .axWarning)
+                        ServerSettingsToggleRow(icon: "person.crop.circle.badge.exclamationmark", title: "Permit Root Login", isOn: $vm.permitRootLogin, tint: .axError)
+                        ServerSettingsToggleRow(icon: "key.horizontal", title: "Password Auth", isOn: $vm.passwordAuthEnabled, tint: .axWarning)
                         SettingsInfoRow(icon: "person.2.badge.key", title: "Max Auth Tries", value: vm.maxAuthTries)
                         SettingsInfoRow(icon: "key.fill", title: "Authorized Keys", value: "\(vm.authorizedKeysCount)")
 
@@ -377,7 +379,10 @@ struct ServerSettingsTab: View {
                             }
                             Spacer()
                             if user.name != "root" {
-                                Button(action: { Task { await vm.deleteUser(user.name) } }) {
+                                Button(action: {
+                                    userToDelete = user.name
+                                    showDeleteUserConfirmation = true
+                                }) {
                                     Image(systemName: "trash").font(.system(size: 11)).foregroundColor(.axError.opacity(0.7))
                                 }
                                 .buttonStyle(PlainButtonStyle())
@@ -468,6 +473,8 @@ struct ServerSettingsTab: View {
     // MARK: - Danger Zone
 
     @State private var showRemoveAlert = false
+    @State private var showDeleteUserConfirmation = false
+    @State private var userToDelete: String = ""
 
     private var dangerZoneCard: some View {
         AXCard {
@@ -495,11 +502,31 @@ struct ServerSettingsTab: View {
             }
         }
         .overlay(RoundedRectangle(cornerRadius: AXCornerRadius.lg).stroke(Color.axError.opacity(0.2), lineWidth: 1))
-        .alert("Remove Server?", isPresented: $showRemoveAlert) {
-            Button("Cancel", role: .cancel) {}
-            Button("Remove", role: .destructive) {}
-        } message: {
-            Text("Remove \"\(server.name)\"? This cannot be undone.")
+        .overlay {
+            if showRemoveAlert {
+                AXDeleteConfirmation(
+                    title: "Remove Server?",
+                    itemName: server.name,
+                    warning: "This will permanently remove the server from your fleet. This cannot be undone.",
+                    requireTypeConfirm: true,
+                    onConfirm: { showRemoveAlert = false },
+                    onCancel: { showRemoveAlert = false }
+                )
+            }
+            if showDeleteUserConfirmation {
+                AXDeleteConfirmation(
+                    title: "Delete System User?",
+                    itemName: userToDelete,
+                    icon: "person.crop.circle.badge.minus",
+                    warning: "This will remove the system user and may affect running services.",
+                    onConfirm: {
+                        let name = userToDelete
+                        showDeleteUserConfirmation = false
+                        Task { await vm.deleteUser(name) }
+                    },
+                    onCancel: { showDeleteUserConfirmation = false }
+                )
+            }
         }
     }
 
@@ -593,6 +620,26 @@ struct ServerSettingsTab: View {
             .cornerRadius(AXCornerRadius.md)
         }
         .buttonStyle(PlainButtonStyle())
+    }
+
+    // MARK: - Privacy Masking
+
+    private var isMasking: Bool { settings.maskServerInfo && settings.maskInDashboard }
+
+    private var maskedHost: String {
+        isMasking && settings.maskIPAddresses ? PrivacyMask.ip(server.host) : server.host
+    }
+
+    private var maskedUsername: String {
+        isMasking && settings.maskUsernames ? PrivacyMask.username(server.username) : server.username
+    }
+
+    private var maskedPort: String {
+        isMasking && settings.maskPortNumbers ? PrivacyMask.port(server.port) : "\(server.port)"
+    }
+
+    private func maskedIP(_ ip: String) -> String {
+        isMasking && settings.maskIPAddresses ? PrivacyMask.ip(ip) : ip
     }
 }
 

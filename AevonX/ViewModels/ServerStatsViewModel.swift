@@ -62,9 +62,10 @@ public class ServerStatsViewModel: ObservableObject {
     /// Stats polling task
     private var pollingTask: Task<Void, Never>?
     
-    /// Polling interval from configuration
+    /// Polling interval from settings (falls back to InternalConfiguration)
     private var pollingInterval: TimeInterval {
-        InternalConfiguration.statsPollingInterval
+        let interval = AppSettingsManager.shared.statsRefreshInterval
+        return interval > 0 ? TimeInterval(interval) : InternalConfiguration.statsPollingInterval
     }
     
     /// Maximum history points to keep

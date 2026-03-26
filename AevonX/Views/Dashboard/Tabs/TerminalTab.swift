@@ -17,9 +17,11 @@ struct TerminalTab: View {
     let server: Server
     let serverId: String
     @ObservedObject var viewModel: ServerConnectionViewModel
+    @EnvironmentObject var settings: AppSettingsManager
     @StateObject private var preferences = TerminalPreferences.shared
     @State private var showSettings = false
     @State private var showSnippets = false
+    @State private var showDisconnectConfirm = false
     
     // Active session
     private var activeVM: TerminalViewModel? {
@@ -227,7 +229,13 @@ struct TerminalTab: View {
                 .background(Color.axBorder)
             
             // Disconnect
-            Button(action: { activeVM?.disconnect() }) {
+            Button(action: {
+                if AppSettingsManager.shared.shouldConfirm(for: SettingsKey.confirmDisconnectServer) {
+                    showDisconnectConfirm = true
+                } else {
+                    activeVM?.disconnect()
+                }
+            }) {
                 HStack(spacing: AXSpacing.xxs) {
                     Image(systemName: "power")
                         .font(.system(size: 10))
@@ -241,6 +249,14 @@ struct TerminalTab: View {
                 .cornerRadius(AXCornerRadius.md)
             }
             .buttonStyle(PlainButtonStyle())
+            .alert("Disconnect Server", isPresented: $showDisconnectConfirm) {
+                Button("Disconnect", role: .destructive) {
+                    activeVM?.disconnect()
+                }
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                Text("Are you sure you want to disconnect from this server?")
+            }
         }
     }
     
@@ -271,7 +287,7 @@ struct TerminalTab: View {
                         .font(.system(size: 11, design: .monospaced))
                         .foregroundColor(.axTextSecondary)
                     
-                    Text(server.host)
+                    Text(settings.maskServerInfo && settings.maskInDashboard && settings.maskIPAddresses ? PrivacyMask.ip(server.host) : server.host)
                         .font(.system(size: 11, design: .monospaced))
                         .foregroundColor(.axAccentBlue)
                         .lineLimit(1)

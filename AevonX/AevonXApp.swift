@@ -11,6 +11,8 @@ import AevonXCoreBridge
 @main
 struct AevonXApp: App {
     @StateObject private var authViewModel = AuthViewModel()
+    @StateObject private var settingsManager = AppSettingsManager.shared
+    @StateObject private var updateService = AppUpdateService.shared
     @Environment(\.scenePhase) private var scenePhase
     
     // Go Core handles all SSH connections — CoreShutdown disconnects everything
@@ -32,9 +34,14 @@ struct AevonXApp: App {
         WindowGroup {
             ContentView()
                 .environmentObject(authViewModel)
+                .environmentObject(settingsManager)
+                .environmentObject(updateService)
                 .onAppear {
                     // Initialize auth state when app appears (deferred from init)
                     authViewModel.initializeIfNeeded()
+                    // Auto-check for updates on launch
+                    updateService.checkOnLaunchIfNeeded()
+                    updateService.startPeriodicCheck()
                 }
         }
         .windowStyle(.titleBar)
@@ -47,6 +54,9 @@ struct AevonXApp: App {
             CommandGroup(replacing: .appInfo) {
                 Button("About AevonX") {
                     // Show about panel
+                }
+                Button("Check for Updates...") {
+                    Task { await updateService.checkForUpdate() }
                 }
             }
             
@@ -124,7 +134,10 @@ struct AevonXApp: App {
     /// Called when app enters foreground
     private func appWillEnterForeground() async {
         CoreLogger.shared.info("App entering foreground", module: "AppLifecycle")
-        
+
+        // Check auto-lock timeout
+        await MainActor.run { settingsManager.checkAutoLock() }
+
         // Resume any suspended operations
         await resumeBackgroundOperations()
     }
@@ -132,7 +145,10 @@ struct AevonXApp: App {
     /// Called when app enters background
     private func appDidEnterBackground() async {
         CoreLogger.shared.info("App entering background", module: "AppLifecycle")
-        
+
+        // Record the time for auto-lock timeout calculation
+        await MainActor.run { settingsManager.updateLastActiveTime() }
+
         // Pause non-essential operations
         await pauseForegroundOperations()
     }
@@ -171,6 +187,19 @@ struct AevonXApp: App {
                 await self.appWillTerminate()
             }
         }
+
+        // Window minimize — lock if setting enabled
+        NotificationCenter.default.addObserver(
+            forName: NSWindow.didMiniaturizeNotification,
+            object: nil,
+            queue: .main
+        ) { _ in
+            Task { @MainActor in
+                if self.settingsManager.lockOnMinimize && self.settingsManager.appLockEnabled {
+                    self.settingsManager.lock()
+                }
+            }
+        }
         #endif
         
         // Handle authentication state changes
@@ -199,6 +228,9 @@ struct AevonXApp: App {
     /// it on wake and trigger automatic reconnection.
     private func deviceWillSleep() async {
         CoreLogger.shared.info("Device going to sleep — keeping connections alive", module: "AppLifecycle")
+        if settingsManager.lockOnSleep && settingsManager.appLockEnabled {
+            await MainActor.run { settingsManager.lock() }
+        }
     }
     
     /// Called when device wakes up
@@ -214,7 +246,14 @@ struct AevonXApp: App {
     /// Called when app is about to terminate
     private func appWillTerminate() async {
         CoreLogger.shared.info("App terminating - cleaning up connections", module: "AppLifecycle")
-        
+
+        // Clear clipboard if setting is enabled
+        if settingsManager.clearClipboardOnExit {
+            #if os(macOS)
+            NSPasteboard.general.clearContents()
+            #endif
+        }
+
         // Disconnect all SSH connections via Go Core
         CoreBridge.shared.shutdown()
     }
