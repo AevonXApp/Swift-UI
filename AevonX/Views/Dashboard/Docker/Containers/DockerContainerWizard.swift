@@ -75,12 +75,12 @@ struct DockerContainerWizard: View {
                         HStack(spacing: 4) {
                             Image(systemName: "chevron.left")
                                 .font(.system(size: 10))
-                            Text("Back")
+                            Text(L10n.Button.back)
                         }
                     }
                     .buttonStyle(AXSecondaryButtonStyle())
                 } else {
-                    Button("Cancel") { dismiss() }
+                    Button(L10n.Button.cancel) { dismiss() }
                         .buttonStyle(AXSecondaryButtonStyle())
                 }
                 

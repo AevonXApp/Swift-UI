@@ -214,7 +214,7 @@ struct BruteForceSubTab: View {
                         Circle()
                             .fill(isInstalled ? Color.axSuccess : Color.axError)
                             .frame(width: 7, height: 7)
-                        Text(isInstalled ? "Active" : "Not Installed")
+                        Text(isInstalled ? L10n.Status.active : "Not Installed")
                             .font(AXTypography.caption)
                             .foregroundColor(isInstalled ? .axSuccess : .axError)
                     }
@@ -314,7 +314,7 @@ struct BruteForceSubTab: View {
                                 let _ = await securityManager.fail2banSetMaxRetry(count: maxRetries, serverId: serverId)
                             }
                         }) {
-                            Text("Apply")
+                            Text(L10n.Button.apply)
                                 .font(AXTypography.headline)
                                 .foregroundColor(.white)
                                 .padding(.horizontal, AXSpacing.lg)
@@ -355,7 +355,7 @@ struct BruteForceSubTab: View {
                                 let _ = await securityManager.fail2banSetBanTime(seconds: banDuration, serverId: serverId)
                             }
                         }) {
-                            Text("Apply")
+                            Text(L10n.Button.apply)
                                 .font(AXTypography.headline)
                                 .foregroundColor(.white)
                                 .padding(.horizontal, AXSpacing.lg)

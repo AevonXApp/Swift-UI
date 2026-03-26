@@ -299,7 +299,7 @@ struct AntiIntrusionSubTab: View {
                                         HStack(spacing: AXSpacing.xxs) {
                                             Image(systemName: "trash")
                                                 .font(.system(size: 10))
-                                            Text("Remove")
+                                            Text(L10n.Button.remove)
                                                 .font(.system(size: 11, weight: .medium))
                                         }
                                         .foregroundColor(.axError)

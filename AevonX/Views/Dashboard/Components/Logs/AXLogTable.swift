@@ -120,7 +120,7 @@ struct AXLogTable: View {
                     HStack(spacing: 4) {
                         if isRefreshing { ProgressView().scaleEffect(0.5) }
                         else { Image(systemName: "arrow.clockwise").font(.system(size: 11)) }
-                        Text("Refresh").font(.system(size: 11, weight: .medium))
+                        Text(L10n.Button.refresh).font(.system(size: 11, weight: .medium))
                     }
                 }
                 .buttonStyle(.bordered)

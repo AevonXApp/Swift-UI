@@ -87,11 +87,11 @@ public struct DatabaseTypeCard: View {
     private var installedContent: some View {
         VStack(alignment: .leading, spacing: AXSpacing.sm) {
             HStack {
-                Text("Version:")
+                Text(L10n.Engine.versionColon)
                     .font(AXTypography.subheadline)
                     .foregroundColor(.axTextSecondary)
                 
-                Text(installationState.installedVersion ?? "Unknown")
+                Text(installationState.installedVersion ?? L10n.Status.unknown)
                     .font(AXTypography.subheadline)
                     .fontWeight(.medium)
                     .foregroundColor(.axTextPrimary)
@@ -101,7 +101,7 @@ public struct DatabaseTypeCard: View {
             
             if let path = installationState.installPath {
                 HStack {
-                    Text("Path:")
+                    Text(L10n.Engine.pathColon)
                         .font(AXTypography.caption)
                         .foregroundColor(.axTextSecondary)
                     
@@ -117,7 +117,7 @@ public struct DatabaseTypeCard: View {
             HStack(spacing: AXSpacing.md) {
                 DBStatusIndicator(
                     isRunning: installationState.isRunning,
-                    label: installationState.isRunning ? "Running" : "Stopped"
+                    label: installationState.isRunning ? L10n.Status.running : L10n.Status.stopped
                 )
                 
                 Spacer()
@@ -134,13 +134,13 @@ public struct DatabaseTypeCard: View {
                     .font(AXTypography.body)
                     .foregroundColor(.axWarning)
                 
-                Text("Not Installed")
+                Text(L10n.Database.notInstalled)
                     .font(AXTypography.subheadline)
                     .fontWeight(.medium)
                     .foregroundColor(.axWarning)
             }
-            
-            Text("This database engine is not installed on your server. Install it to create and manage databases.")
+
+            Text(L10n.Database.notInstalledDescription)
                 .font(AXTypography.caption)
                 .foregroundColor(.axTextSecondary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -155,7 +155,7 @@ public struct DatabaseTypeCard: View {
                 Image(systemName: installationState.isInstalled ? "gearshape" : "arrow.down.circle")
                     .font(AXTypography.body)
                 
-                Text(installationState.isInstalled ? "Manage" : "Install")
+                Text(installationState.isInstalled ? L10n.Database.manage : L10n.Button.install)
                     .font(AXTypography.subheadline)
                     .fontWeight(.medium)
             }
@@ -209,15 +209,15 @@ private struct StatusBadge: View {
     private var statusText: String {
         switch status {
         case .active:
-            return "Active"
+            return L10n.Status.active
         case .inactive:
-            return "Inactive"
+            return L10n.Status.inactive
         case .failed:
-            return "Failed"
+            return L10n.Status.failed
         case .unknown:
-            return "Unknown"
+            return L10n.Status.unknown
         case .notInstalled:
-            return "Not Installed"
+            return L10n.Database.notInstalled
         }
     }
 }

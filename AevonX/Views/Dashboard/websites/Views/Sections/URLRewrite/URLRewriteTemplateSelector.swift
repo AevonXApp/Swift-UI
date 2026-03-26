@@ -101,7 +101,7 @@ struct URLRewriteTemplateSelector: View {
                             }) {
                                 HStack(spacing: 4) {
                                     Image(systemName: "doc.on.doc")
-                                    Text("Copy")
+                                    Text(L10n.Button.copy)
                                 }
                                 .font(AXTypography.footnote).fontWeight(.medium)
                                 .foregroundColor(.axAccentBlue)
@@ -171,7 +171,7 @@ struct URLRewriteTemplateSelector: View {
             .navigationTitle("URL Rewrite Template")
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel", action: onCancel)
+                    Button(L10n.Button.cancel, action: onCancel)
                 }
             }
         }

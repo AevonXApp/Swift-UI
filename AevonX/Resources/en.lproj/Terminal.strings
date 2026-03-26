@@ -1,0 +1,25 @@
+/* Terminal.strings — Terminal, Snippets */
+
+/* Tab completion */
+"terminal.tabCompletion" = "Tab completion";
+
+/* Send interrupt */
+"terminal.sendInterrupt" = "Send interrupt (Ctrl+C)";
+
+/* Delete snippet */
+"terminal.deleteSnippet" = "Delete snippet";
+
+/* New tab */
+"terminal.newTab" = "New Tab";
+
+/* Close tab */
+"terminal.closeTab" = "Close Tab";
+
+/* Clear terminal */
+"terminal.clear" = "Clear";
+
+/* Snippets */
+"terminal.snippets" = "Snippets";
+
+/* Add snippet */
+"terminal.addSnippet" = "Add Snippet";

@@ -46,7 +46,7 @@ struct DBAddRowView: View {
             }
 
             VStack(alignment: .leading, spacing: AXSpacing.xxxs) {
-                Text("Insert Row")
+                Text(L10n.Database.insertRow)
                     .font(AXTypography.title3)
                     .fontWeight(.bold)
                     .foregroundColor(.axTextPrimary)
@@ -191,7 +191,7 @@ struct DBAddRowView: View {
             Spacer()
 
             Button { viewModel.showAddRow = false } label: {
-                Text("Cancel")
+                Text(L10n.Button.cancel)
                     .font(AXTypography.subheadline)
                     .foregroundColor(.axTextSecondary)
                     .padding(.horizontal, AXSpacing.lg)
@@ -220,7 +220,7 @@ struct DBAddRowView: View {
                     if isSubmitting {
                         ProgressView().scaleEffect(0.6).tint(.white)
                     }
-                    Text(isSubmitting ? "Inserting..." : "Insert Row")
+                    Text(isSubmitting ? "Inserting..." : L10n.Database.insertRow)
                 }
                 .font(AXTypography.subheadline)
                 .fontWeight(.bold)

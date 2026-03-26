@@ -105,7 +105,7 @@ struct DomainSection: View {
                             .textFieldStyle(.roundedBorder)
                             .font(AXTypography.monoMd)
                         Button(action: { Task { await viewModel.addAlias() } }) {
-                            Label("Add Alias", systemImage: "plus.circle.fill")
+                            Label(L10n.Website.addAlias, systemImage: "plus.circle.fill")
                                 .font(AXTypography.footnote)
                         }
                         .buttonStyle(.borderedProminent)
@@ -179,7 +179,7 @@ struct DomainSection: View {
                                     .font(AXTypography.monoMd).fontWeight(.medium)
                                     .foregroundColor(.axTextPrimary)
                                 Spacer()
-                                Text(sub.isActive ? "Active" : "Inactive")
+                                Text(sub.isActive ? L10n.Status.active : L10n.Status.inactive)
                                     .font(AXTypography.caption)
                                     .foregroundColor(sub.isActive ? .axSuccess : .axTextMuted)
                                     .padding(.horizontal, 8)
@@ -204,7 +204,7 @@ struct DomainSection: View {
                     .font(AXTypography.callout).fontWeight(.semibold)
                 Spacer()
                 Button(action: { Task { await viewModel.lookupDNS() } }) {
-                    Label(viewModel.isLoading ? "Loading..." : "Lookup", systemImage: "magnifyingglass")
+                    Label(viewModel.isLoading ? L10n.Status.loading : L10n.Website.lookup, systemImage: "magnifyingglass")
                         .font(AXTypography.footnote)
                 }
                 .buttonStyle(.borderedProminent)

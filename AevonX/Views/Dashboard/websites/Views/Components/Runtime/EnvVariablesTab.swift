@@ -160,7 +160,7 @@ struct EnvVariablesTab: View {
                             Image(systemName: "checkmark.circle.fill")
                                 .font(AXTypography.footnote)
                         }
-                        Text("Save Changes")
+                        Text(L10n.Button.saveChanges)
                             .font(AXTypography.subheadline).fontWeight(.semibold)
                     }
                     .foregroundColor(.white)
@@ -328,7 +328,7 @@ struct EnvVariablesTab: View {
                 }
                 
                 Button(action: { viewModel.addVariable() }) {
-                    Text("Add")
+                    Text(L10n.Button.add)
                         .font(AXTypography.subheadline).fontWeight(.semibold)
                         .foregroundColor(.white)
                         .padding(.horizontal, AXSpacing.lg)

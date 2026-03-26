@@ -111,11 +111,11 @@ struct PHPExtensionsSection: View {
 
     private var tableHeader: some View {
         HStack(spacing: 0) {
-            Text("Name")
+            Text(L10n.Field.name)
                 .frame(width: 140, alignment: .leading)
-            Text("Type")
+            Text(L10n.Engine.type)
                 .frame(width: 120, alignment: .leading)
-            Text("Description")
+            Text(L10n.Field.description)
                 .frame(maxWidth: .infinity, alignment: .leading)
             Text("Status")
                 .frame(width: 70, alignment: .center)
@@ -180,7 +180,7 @@ struct PHPExtensionsSection: View {
                     Button {
                         Task { await uninstallExt(item.name) }
                     } label: {
-                        Text("Uninstall")
+                        Text(L10n.Button.uninstall)
                             .font(.system(size: 11, weight: .semibold))
                             .foregroundColor(.axError)
                     }
@@ -190,7 +190,7 @@ struct PHPExtensionsSection: View {
                     Button {
                         Task { await installExt(item.name) }
                     } label: {
-                        Text("Install")
+                        Text(L10n.Button.install)
                             .font(.system(size: 11, weight: .semibold))
                             .foregroundColor(.axAccentBlue)
                     }

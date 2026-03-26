@@ -290,7 +290,7 @@ struct ModernAddDatabaseView: View {
                 VStack(spacing: AXSpacing.lg) {
                     // Username
                     VStack(alignment: .leading, spacing: AXSpacing.sm) {
-                        sectionLabel("Username", icon: "person")
+                        sectionLabel(L10n.Field.username, icon: "person")
                         styledTextField(
                             placeholder: "db_user",
                             text: $viewModel.username,
@@ -302,7 +302,7 @@ struct ModernAddDatabaseView: View {
 
                     // Password
                     VStack(alignment: .leading, spacing: AXSpacing.sm) {
-                        sectionLabel("Password", icon: "lock")
+                        sectionLabel(L10n.Field.password, icon: "lock")
                         passwordRow
                         if let err = viewModel.passwordError { errorHint(err) }
                     }
@@ -360,9 +360,9 @@ struct ModernAddDatabaseView: View {
         HStack(spacing: AXSpacing.sm) {
             Group {
                 if viewModel.showPassword {
-                    TextField("Password", text: $viewModel.password)
+                    TextField(L10n.Field.password, text: $viewModel.password)
                 } else {
-                    SecureField("Password", text: $viewModel.password)
+                    SecureField(L10n.Field.password, text: $viewModel.password)
                 }
             }
             .font(.system(.body, design: .monospaced))

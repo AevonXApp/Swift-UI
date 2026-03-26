@@ -13,7 +13,7 @@ struct DatabaseToolbar: View {
     
     var body: some View {
         HStack(spacing: AXSpacing.md) {
-            AXSearchBar(text: $viewModel.searchText, placeholder: "Search...")
+            AXSearchBar(text: $viewModel.searchText, placeholder: L10n.Database.searchDatabases)
                 .frame(width: 220)
 
             // View Mode Toggle
@@ -42,7 +42,7 @@ struct DatabaseToolbar: View {
 
             // Show "New Database" only if at least one engine is installed
             if viewModel.installedDatabaseTypesCount > 0 {
-                AXPrimaryButton(title: "New Database", icon: "plus", action: { viewModel.showAddDatabase = true })
+                AXPrimaryButton(title: L10n.Database.newDatabase, icon: "plus", action: { viewModel.showAddDatabase = true })
                     .frame(width: 160)
             }
 

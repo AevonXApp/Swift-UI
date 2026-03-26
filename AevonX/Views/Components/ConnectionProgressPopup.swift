@@ -52,8 +52,8 @@ struct ConnectionProgressPopup: View {
                             .symbolEffect(.pulse, options: .repeating, isActive: viewModel.isConnecting)
                     }
                     
-                    Text(viewModel.isConnecting ? "Connecting to \(serverName)" : 
-                         (viewModel.isConnected ? "Connected!" : "Connection Failed"))
+                    Text(viewModel.isConnecting ? L10n.Connection.connectingTo(serverName) :
+                         (viewModel.isConnected ? L10n.Status.connected : L10n.Status.connectionFailed))
                         .font(AXTypography.title2)
                         .fontWeight(.bold)
                         .foregroundColor(.axTextPrimary)
@@ -102,7 +102,7 @@ struct ConnectionProgressPopup: View {
                         Spacer()
                         
                         if viewModel.isConnecting {
-                            Text("Please wait...")
+                            Text(L10n.Status.pleaseWait)
                                 .font(AXTypography.caption)
                                 .foregroundColor(.axTextMuted)
                         }
@@ -135,7 +135,7 @@ struct ConnectionProgressPopup: View {
                                 onCancel()
                             }
                         }) {
-                            Text("Cancel")
+                            Text(L10n.Button.cancel)
                                 .font(AXTypography.subheadline)
                                 .fontWeight(.medium)
                                 .foregroundColor(.axTextPrimary)
@@ -155,7 +155,7 @@ struct ConnectionProgressPopup: View {
                                 await viewModel.connect()
                             }
                         }) {
-                            Text("Retry")
+                            Text(L10n.Button.retry)
                                 .font(AXTypography.subheadline)
                                 .fontWeight(.semibold)
                                 .foregroundColor(.axBackground)
@@ -174,7 +174,7 @@ struct ConnectionProgressPopup: View {
                             onSuccess()
                         }) {
                             HStack(spacing: AXSpacing.sm) {
-                                Text("Open Dashboard")
+                                Text(L10n.Button.openDashboard)
                                     .font(AXTypography.subheadline)
                                     .fontWeight(.semibold)
                                 Image(systemName: "arrow.right")

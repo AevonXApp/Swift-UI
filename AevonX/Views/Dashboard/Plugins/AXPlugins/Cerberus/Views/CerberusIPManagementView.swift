@@ -413,7 +413,7 @@ private extension CerberusIPManagementView {
                 Button {
                     if isBlock { showAddBlockSheet = false } else { showAddAllowSheet = false }
                 } label: {
-                    Text("Cancel")
+                    Text(L10n.Button.cancel)
                         .font(AXTypography.subheadline)
                         .fontWeight(.medium)
                         .foregroundStyle(Color.axTextSecondary)
@@ -523,7 +523,7 @@ private extension CerberusIPManagementView {
                 Button {
                     showAddCountrySheet = false
                 } label: {
-                    Text("Cancel")
+                    Text(L10n.Button.cancel)
                         .font(AXTypography.subheadline)
                         .fontWeight(.medium)
                         .foregroundStyle(Color.axTextSecondary)

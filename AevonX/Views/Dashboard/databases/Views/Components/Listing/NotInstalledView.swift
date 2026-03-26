@@ -23,11 +23,11 @@ struct NotInstalledView: View {
                 .foregroundColor(type.brandColor.opacity(0.5))
 
             VStack(spacing: AXSpacing.md) {
-                Text("\(type.displayName) Not Installed")
+                Text(L10n.Database.typeNotInstalled(type.displayName))
                     .font(AXTypography.title)
                     .foregroundColor(.axTextPrimary)
 
-                Text("Go to the Applications tab to install \(type.displayName) on your server.")
+                Text(L10n.Database.goToApplicationsToInstall(type.displayName))
                     .font(AXTypography.body)
                     .foregroundColor(.axTextSecondary)
                     .multilineTextAlignment(.center)

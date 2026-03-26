@@ -18,7 +18,7 @@ struct DockerSecurityAuditView: View {
             // Header
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Security Audit")
+                    Text(L10n.Docker.securityAudit)
                         .font(AXTypography.title2)
                         .foregroundColor(.axTextPrimary)
                     Text(container.names)

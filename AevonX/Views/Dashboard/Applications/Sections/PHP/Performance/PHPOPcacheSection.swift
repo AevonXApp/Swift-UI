@@ -40,14 +40,14 @@ struct PHPOPcacheSection: View {
                 } else {
                     LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: AXSpacing.md), count: 4), spacing: AXSpacing.md) {
                         AXStatCard(icon: "checkmark.circle.fill", label: "Status",
-                                   value: enabled ? "Enabled" : "Disabled",
+                                   value: enabled ? L10n.Status.enabled : L10n.Status.disabled,
                                    color: enabled ? .axSuccess : .axError, style: .glass)
                         AXStatCard(icon: "chart.line.uptrend.xyaxis", label: "Hit Rate",
                                    value: hitRate, color: phpPurple, style: .glass)
                         AXStatCard(icon: "doc.text.fill", label: "Cached Scripts",
                                    value: "\(cachedScripts)", color: .cyan, style: .glass)
                         AXStatCard(icon: "bolt.fill", label: "JIT",
-                                   value: jitEnabled ? "Active" : "Off",
+                                   value: jitEnabled ? L10n.Status.active : "Off",
                                    color: jitEnabled ? .axSuccess : .axTextMuted, style: .glass)
                     }
 

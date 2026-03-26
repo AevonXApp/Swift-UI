@@ -59,7 +59,7 @@ struct RedisOptimizationSection: View {
                         AppOptimizationRow(label: "hz", value: $hzValue, hint: "Server tick frequency (10-500)", placeholder: "10")
                     }
 
-                    AppOptimizationSaveButton(title: "Save", color: redisRed, isSaving: isSaving) { Task { await saveSettings() } }
+                    AppOptimizationSaveButton(title: L10n.Button.save, color: redisRed, isSaving: isSaving) { Task { await saveSettings() } }
                         .padding(.top, AXSpacing.md)
                 }.padding(AXSpacing.xl)
             }

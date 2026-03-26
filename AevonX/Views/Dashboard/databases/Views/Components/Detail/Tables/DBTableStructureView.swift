@@ -122,7 +122,7 @@ struct DBTableStructureView: View {
         HStack(spacing: 0) {
             Text("#")
                 .frame(width: 30, alignment: .center)
-            Text("Name")
+            Text(L10n.Field.name)
                 .frame(width: 160, alignment: .leading)
                 .padding(.horizontal, AXSpacing.sm)
             Text("Type")

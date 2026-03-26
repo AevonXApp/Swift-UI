@@ -42,7 +42,7 @@ struct NginxAnalyticsSection: View {
                         Text("50,000 lines").tag(50000)
                     }
                     .frame(width: 140)
-                    Button("Refresh") { Task { await loadAnalytics() } }
+                    Button(L10n.Button.refresh) { Task { await loadAnalytics() } }
                         .buttonStyle(PlainButtonStyle())
                         .font(.system(size: 12, weight: .semibold))
                         .foregroundColor(.axAccentBlue)

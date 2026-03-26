@@ -255,7 +255,7 @@ struct SSHSubTab: View {
                                 .fill(sshEnabled ? Color.axSuccess : Color.axError)
                                 .frame(width: 7, height: 7)
                                 .shadow(color: sshEnabled ? .axSuccess.opacity(0.5) : .clear, radius: 3)
-                            Text(sshEnabled ? "Active" : "Inactive")
+                            Text(sshEnabled ? L10n.Status.active : L10n.Status.inactive)
                                 .font(AXTypography.caption)
                                 .foregroundColor(sshEnabled ? .axSuccess : .axError)
                         }
@@ -368,7 +368,7 @@ struct SSHSubTab: View {
                                 let _ = await securityManager.setSSHPort(port: sshPort, serverId: serverId)
                             }
                         }) {
-                            Text("Save")
+                            Text(L10n.Button.save)
                                 .font(AXTypography.headline)
                                 .foregroundColor(.white)
                                 .padding(.horizontal, AXSpacing.lg)
@@ -407,7 +407,7 @@ struct SSHSubTab: View {
                                 let _ = await securityManager.setSSHRootLogin(mode: rootLoginSetting, serverId: serverId)
                             }
                         }) {
-                            Text("Apply")
+                            Text(L10n.Button.apply)
                                 .font(AXTypography.headline)
                                 .foregroundColor(.white)
                                 .padding(.horizontal, AXSpacing.lg)
@@ -554,7 +554,7 @@ struct SSHSubTab: View {
         VStack(spacing: AXSpacing.lg) {
             // Filter bar
             HStack(spacing: AXSpacing.md) {
-                AXRefreshButton(label: "Refresh", isLoading: isRefreshing) {
+                AXRefreshButton(label: L10n.Button.refresh, isLoading: isRefreshing) {
                     await refreshLogs()
                 }
 
@@ -806,7 +806,7 @@ struct SSHSubTab: View {
                                     HStack(spacing: AXSpacing.xxs) {
                                         Image(systemName: "trash")
                                             .font(.system(size: 10))
-                                        Text("Remove")
+                                        Text(L10n.Button.remove)
                                             .font(.system(size: 11, weight: .medium))
                                     }
                                     .foregroundColor(.axError)

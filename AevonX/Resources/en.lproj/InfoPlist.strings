@@ -1,0 +1,5 @@
+/* Privacy - Local Network Usage Description */
+"NSLocalNetworkUsageDescription" = "AevonX needs access to the local network to connect to your servers.";
+
+/* Privacy - Face ID Usage Description */
+"NSFaceIDUsageDescription" = "AevonX uses Face ID to protect your server credentials.";

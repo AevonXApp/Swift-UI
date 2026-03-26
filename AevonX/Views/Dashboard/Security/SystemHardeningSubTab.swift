@@ -162,21 +162,21 @@ struct SystemHardeningSubTab: View {
                 key: "SYN_COOKIES", label: "SYN Flood Protection",
                 description: "Protects against TCP SYN flood denial-of-service attacks",
                 icon: "shield.fill", category: .network, severity: .critical,
-                currentValue: values["SYN_COOKIES"] == "1" ? "Enabled" : "Disabled",
+                currentValue: values["SYN_COOKIES"] == "1" ? L10n.Status.enabled : L10n.Status.disabled,
                 isSecure: values["SYN_COOKIES"] == "1"
             ),
             HardeningCheck(
                 key: "SOURCE_ROUTE", label: "IP Source Routing Disabled",
                 description: "Prevents IP source routing spoofing attacks",
                 icon: "arrow.triangle.branch", category: .network, severity: .recommended,
-                currentValue: values["SOURCE_ROUTE"] == "0" ? "Disabled" : "Enabled",
+                currentValue: values["SOURCE_ROUTE"] == "0" ? L10n.Status.disabled : L10n.Status.enabled,
                 isSecure: values["SOURCE_ROUTE"] == "0"
             ),
             HardeningCheck(
                 key: "IPV6", label: "IPv6",
                 description: "Disable IPv6 if not in use to reduce attack surface",
                 icon: "network.slash", category: .network, severity: .optional,
-                currentValue: values["IPV6"] == "1" ? "Disabled" : "Enabled",
+                currentValue: values["IPV6"] == "1" ? L10n.Status.disabled : L10n.Status.enabled,
                 isSecure: true // IPv6 isn't a vulnerability itself
             ),
 
@@ -199,7 +199,7 @@ struct SystemHardeningSubTab: View {
                 key: "PASSWORD_AUTH", label: "SSH Password Authentication",
                 description: "Key-only authentication is more secure",
                 icon: "key.fill", category: .ssh, severity: .recommended,
-                currentValue: values["PASSWORD_AUTH"] == "no" ? "Disabled (Key-only)" : "Enabled",
+                currentValue: values["PASSWORD_AUTH"] == "no" ? "\(L10n.Status.disabled) (Key-only)" : L10n.Status.enabled,
                 isSecure: values["PASSWORD_AUTH"] == "no"
             ),
 
@@ -208,7 +208,7 @@ struct SystemHardeningSubTab: View {
                 key: "FAIL2BAN", label: "fail2ban Service",
                 description: "Brute force protection and intrusion prevention",
                 icon: "hand.raised.fill", category: .services, severity: .critical,
-                currentValue: values["FAIL2BAN"] == "active" ? "Active" : "Inactive",
+                currentValue: values["FAIL2BAN"] == "active" ? L10n.Status.active : L10n.Status.inactive,
                 isSecure: values["FAIL2BAN"] == "active"
             ),
         ]
@@ -216,7 +216,7 @@ struct SystemHardeningSubTab: View {
 
     private func aslrLabel(_ value: String) -> String {
         switch value {
-        case "0": return "Disabled"
+        case "0": return L10n.Status.disabled
         case "1": return "Partial"
         case "2": return "Full"
         default: return value
@@ -227,7 +227,7 @@ struct SystemHardeningSubTab: View {
         switch value {
         case "yes": return "Allowed (Insecure)"
         case "without-password": return "Keys Only"
-        case "no": return "Disabled"
+        case "no": return L10n.Status.disabled
         default: return value
         }
     }

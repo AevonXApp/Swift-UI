@@ -1,0 +1,110 @@
+/* Docker.strings — Containers, Images, Volumes, Compose, Networks */
+
+/* ── Container Actions ── */
+
+/* New container */
+"docker.newContainer" = "New Container";
+
+/* Deploy template */
+"docker.deployTemplate" = "Deploy Template";
+
+/* View logs */
+"docker.viewLogs" = "View Logs";
+
+/* Open terminal */
+"docker.openTerminal" = "Open Terminal";
+
+/* Inspect container */
+"docker.inspect" = "Inspect";
+
+/* Rollback container */
+"docker.rollback" = "Rollback";
+
+/* Clone container */
+"docker.clone" = "Clone";
+
+/* Backup container */
+"docker.backup" = "Backup";
+
+/* ── Security ── */
+
+/* Security audit */
+"docker.securityAudit" = "Security Audit";
+
+/* Auto update */
+"docker.autoUpdate" = "Auto Update";
+
+/* Image vulnerability scan */
+"docker.vulnScan" = "Image Vulnerability Scan";
+
+/* ── Resources ── */
+
+/* Memory limit */
+"docker.memoryLimit" = "Memory Limit (MB)";
+
+/* CPU limit */
+"docker.cpuLimit" = "CPU Limit (cores)";
+
+/* ── Tools ── */
+
+/* Container scheduler */
+"docker.containerScheduler" = "Container Scheduler";
+
+/* Secrets manager */
+"docker.secretsManager" = "Secrets Manager";
+
+/* Run to Compose converter */
+"docker.runToCompose" = "Run → Compose Converter";
+
+/* ── Compose ── */
+
+/* Compose up */
+"docker.composeUp" = "Up";
+
+/* Compose down */
+"docker.composeDown" = "Down";
+
+/* Compose restart */
+"docker.composeRestart" = "Restart";
+
+/* Compose logs */
+"docker.composeLogs" = "Logs";
+
+/* Compose validate */
+"docker.composeValidate" = "Validate";
+
+/* Compose scale */
+"docker.composeScale" = "Scale";
+
+/* ── Networks ── */
+
+/* Inspect network */
+"docker.inspectNetwork" = "Inspect Network";
+
+/* Remove network */
+"docker.removeNetwork" = "Remove Network";
+
+/* Create network */
+"docker.createNetwork" = "Create";
+
+/* ── Images ── */
+
+/* Pull image */
+"docker.pullImage" = "Pull";
+
+/* View layers */
+"docker.viewLayers" = "View Layers";
+
+/* Tag and push */
+"docker.tagPush" = "Tag & Push";
+
+/* Remove image */
+"docker.removeImage" = "Remove Image";
+
+/* ── Volumes ── */
+
+/* Remove volume */
+"docker.removeVolume" = "Remove Volume";
+
+/* Create volume */
+"docker.createVolume" = "Create";

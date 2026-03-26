@@ -25,13 +25,13 @@ extension DatabaseDetailViewModel {
                 type: database.type,
                 serverId: serverId
             )
-            GlobalToastManager.shared.showSuccess("Row inserted successfully")
+            GlobalToastManager.shared.showSuccess(L10n.Database.rowInserted)
             log(action: "Insert Row", detail: "Table '\(table.name)'", success: true)
             showAddRow = false
             await loadTableData()
             await loadTables()
         } catch {
-            GlobalToastManager.shared.showError("Failed to insert row: \(error.localizedDescription)")
+            GlobalToastManager.shared.showError("\(L10n.Database.rowInsertFailed): \(error.localizedDescription)")
             log(action: "Insert Row", detail: "Table '\(table.name)'", success: false, error: error.localizedDescription)
         }
     }
@@ -49,20 +49,20 @@ extension DatabaseDetailViewModel {
                 type: database.type,
                 serverId: serverId
             )
-            GlobalToastManager.shared.showSuccess("Row updated successfully")
+            GlobalToastManager.shared.showSuccess(L10n.Database.rowUpdated)
             log(action: "Update Row", detail: "Table '\(table.name)'", success: true)
             showEditRow = false
             editingRowIndex = nil
             await loadTableData()
         } catch {
-            GlobalToastManager.shared.showError("Failed to update row: \(error.localizedDescription)")
+            GlobalToastManager.shared.showError("\(L10n.Database.rowUpdateFailed): \(error.localizedDescription)")
             log(action: "Update Row", detail: "Table '\(table.name)'", success: false, error: error.localizedDescription)
         }
     }
 
     public func deleteRow(at index: Int) async {
         guard let pk = primaryKeyValues(forRowAt: index), let table = selectedTable else {
-            GlobalToastManager.shared.showError("Cannot determine primary key for this row")
+            GlobalToastManager.shared.showError(L10n.Database.noPrimaryKey)
             return
         }
         guard let serverId = serverId else { return }
@@ -75,13 +75,13 @@ extension DatabaseDetailViewModel {
                 type: database.type,
                 serverId: serverId
             )
-            GlobalToastManager.shared.showSuccess("Row deleted successfully")
+            GlobalToastManager.shared.showSuccess(L10n.Database.rowDeleted)
             log(action: "Delete Row", detail: "Table '\(table.name)'", success: true)
             selectedRows.remove(index)
             await loadTableData()
             await loadTables()
         } catch {
-            GlobalToastManager.shared.showError("Failed to delete row: \(error.localizedDescription)")
+            GlobalToastManager.shared.showError("\(L10n.Database.rowDeleteFailed): \(error.localizedDescription)")
             log(action: "Delete Row", detail: "Table '\(table.name)'", success: false, error: error.localizedDescription)
         }
     }
@@ -97,7 +97,7 @@ extension DatabaseDetailViewModel {
         }
 
         guard !pks.isEmpty else {
-            GlobalToastManager.shared.showError("Cannot determine primary keys for selected rows")
+            GlobalToastManager.shared.showError(L10n.Database.noPrimaryKeys)
             return
         }
 
@@ -109,13 +109,13 @@ extension DatabaseDetailViewModel {
                 type: database.type,
                 serverId: serverId
             )
-            GlobalToastManager.shared.showSuccess("\(pks.count) row(s) deleted successfully")
+            GlobalToastManager.shared.showSuccess(L10n.Database.rowsDeleted(pks.count))
             log(action: "Delete Rows", detail: "\(pks.count) rows from '\(table.name)'", success: true)
             selectedRows.removeAll()
             await loadTableData()
             await loadTables()
         } catch {
-            GlobalToastManager.shared.showError("Failed to delete rows: \(error.localizedDescription)")
+            GlobalToastManager.shared.showError("\(L10n.Database.rowsDeleteFailed): \(error.localizedDescription)")
             log(action: "Delete Rows", detail: "\(selectedRows.count) rows from '\(table.name)'", success: false, error: error.localizedDescription)
         }
     }
@@ -166,7 +166,7 @@ extension DatabaseDetailViewModel {
             )
             selectedRows.removeAll()
         } catch {
-            GlobalToastManager.shared.showError("Search failed: \(error.localizedDescription)")
+            GlobalToastManager.shared.showError("\(L10n.Database.searchFailed): \(error.localizedDescription)")
         }
         isSearching = false
     }

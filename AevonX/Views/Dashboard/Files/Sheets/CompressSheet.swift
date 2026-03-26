@@ -58,7 +58,7 @@ struct CompressSheetView: View {
             }
             
             HStack(spacing: AXSpacing.md) {
-                Button("Cancel") { viewModel.showCompressSheet = false }
+                Button(L10n.Button.cancel) { viewModel.showCompressSheet = false }
                     .buttonStyle(AXSecondaryButtonStyle())
                 
                 Button(action: { compressIfValid() }) {

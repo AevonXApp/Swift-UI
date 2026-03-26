@@ -833,7 +833,7 @@ struct FirewallSubTab: View {
                     .foregroundColor(.axTextTertiary)
                     .frame(maxWidth: .infinity, alignment: .leading)
 
-                AXActionButton(label: "Delete", icon: "trash", style: .destructive, size: .small) {
+                AXActionButton(label: L10n.Button.delete, icon: "trash", style: .destructive, size: .small) {
                     Task { await deleteRule(rule) }
                 }
                 .frame(width: 80, alignment: .center)
@@ -949,7 +949,7 @@ struct PortRuleSheet: View {
 
                 // Port
                 VStack(alignment: .leading, spacing: AXSpacing.sm) {
-                    Text("Port")
+                    Text(L10n.Field.port)
                         .font(AXTypography.caption)
                         .fontWeight(.semibold)
                         .foregroundColor(.axTextMuted)
@@ -1115,14 +1115,14 @@ struct PortRuleSheet: View {
 
                 Spacer()
 
-                Button("Cancel") { dismiss() }
+                Button(L10n.Button.cancel) { dismiss() }
                     .buttonStyle(PlainButtonStyle())
                     .foregroundColor(.axTextSecondary)
                     .padding(.horizontal, AXSpacing.xl)
                     .padding(.vertical, AXSpacing.sm)
 
                 Button(action: saveRule) {
-                    Text("Confirm")
+                    Text(L10n.Button.confirm)
                         .font(AXTypography.headline)
                         .foregroundColor(.white)
                         .padding(.horizontal, AXSpacing.xxl)

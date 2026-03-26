@@ -45,7 +45,7 @@ struct DatabaseLinkSection: View {
                                     .font(AXTypography.monoMd)
                             }
                             VStack(alignment: .leading, spacing: 4) {
-                                Text("Username")
+                                Text(L10n.Field.username)
                                     .font(AXTypography.footnote).foregroundColor(.axTextSecondary)
                                 TextField("db_user", text: $dbUser)
                                     .textFieldStyle(.roundedBorder)

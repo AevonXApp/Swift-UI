@@ -1,0 +1,34 @@
+/* Plugins.strings — Plugin Marketplace, Config, Install */
+
+/* Official plugin badge */
+"plugin.official" = "Official AevonX Plugin";
+
+/* Docs link */
+"plugin.docs" = "Docs";
+
+/* GitHub link */
+"plugin.github" = "GitHub";
+
+/* Discord link */
+"plugin.discord" = "Discord";
+
+/* Edit raw file */
+"plugin.editRawFile" = "Edit Raw File";
+
+/* Marketplace */
+"plugin.marketplace" = "Marketplace";
+
+/* Installed */
+"plugin.installed" = "Installed";
+
+/* Install */
+"plugin.install" = "Install";
+
+/* Uninstall */
+"plugin.uninstall" = "Uninstall";
+
+/* Configure */
+"plugin.configure" = "Configure";
+
+/* Version */
+"plugin.version" = "Version";

@@ -42,7 +42,7 @@ struct DBImportSQLView: View {
             }
 
             VStack(alignment: .leading, spacing: AXSpacing.xxxs) {
-                Text("Import SQL")
+                Text(L10n.Database.importSQL)
                     .font(AXTypography.title3)
                     .fontWeight(.bold)
                     .foregroundColor(.axTextPrimary)
@@ -166,7 +166,7 @@ struct DBImportSQLView: View {
             Spacer()
 
             Button { viewModel.showImportSQL = false } label: {
-                Text("Cancel")
+                Text(L10n.Button.cancel)
                     .font(AXTypography.subheadline)
                     .foregroundColor(.axTextSecondary)
                     .padding(.horizontal, AXSpacing.lg)
@@ -185,7 +185,7 @@ struct DBImportSQLView: View {
                     if isSubmitting {
                         ProgressView().scaleEffect(0.6).tint(.white)
                     }
-                    Text(isSubmitting ? "Importing..." : "Import SQL")
+                    Text(isSubmitting ? "Importing..." : L10n.Database.importSQL)
                 }
                 .font(AXTypography.subheadline)
                 .fontWeight(.bold)

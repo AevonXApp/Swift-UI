@@ -38,7 +38,7 @@ struct ApacheSitesSection: View {
                 Button { Task { await loadSites() } } label: {
                     HStack(spacing: 4) {
                         Image(systemName: "arrow.clockwise").font(.system(size: 11))
-                        Text("Refresh").font(.system(size: 11, weight: .medium))
+                        Text(L10n.Button.refresh).font(.system(size: 11, weight: .medium))
                     }.foregroundColor(.axAccentBlue)
                 }.buttonStyle(PlainButtonStyle())
                 Text("\(sites.count) sites").font(.system(size: 11)).foregroundColor(.axTextMuted)

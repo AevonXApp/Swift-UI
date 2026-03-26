@@ -202,7 +202,7 @@ private struct ChangeLockPasswordSheet: View {
                 Text(hasExistingPassword ? "Change Lock Password" : "Set Lock Password")
                     .font(AXTypography.headline)
                     .foregroundColor(.axTextPrimary)
-                Text("Password is stored securely in your Keychain")
+                Text(L10n.Settings.securityKeychainInfo)
                     .font(AXTypography.caption)
                     .foregroundColor(.axTextTertiary)
             }
@@ -273,7 +273,7 @@ private struct ChangeLockPasswordSheet: View {
                     Image(systemName: "checkmark.circle.fill")
                         .font(AXTypography.caption)
                         .foregroundColor(.axAccentGreen)
-                    Text("Password saved successfully")
+                    Text(L10n.Settings.securityPasswordSaved)
                         .font(AXTypography.caption)
                         .foregroundColor(.axAccentGreen)
                 }
@@ -285,7 +285,7 @@ private struct ChangeLockPasswordSheet: View {
     private var sheetFooter: some View {
         HStack {
             Spacer()
-            Button("Cancel") { dismiss() }
+            Button(L10n.Button.cancel) { dismiss() }
                 .buttonStyle(.plain)
                 .foregroundColor(.axTextSecondary)
 
@@ -295,7 +295,7 @@ private struct ChangeLockPasswordSheet: View {
                         .scaleEffect(0.7)
                         .frame(width: 60)
                 } else {
-                    Text("Save")
+                    Text(L10n.Button.save)
                         .frame(width: 60)
                 }
             }

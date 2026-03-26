@@ -88,7 +88,7 @@ struct PHPPoolsSection: View {
             HStack {
                 Text(name).font(.system(size: 15, weight: .bold)).foregroundColor(.axTextPrimary)
                 Spacer()
-                Text(enabled ? "Active" : "Disabled")
+                Text(enabled ? L10n.Status.active : L10n.Status.disabled)
                     .font(.system(size: 10, weight: .semibold))
                     .foregroundColor(enabled ? .axSuccess : .axTextMuted)
                     .padding(.horizontal, 6).padding(.vertical, 2)
@@ -169,14 +169,14 @@ struct PHPPoolsSection: View {
                 sheetField(label: "Max Children", text: $newPoolMaxChildren, placeholder: "5")
             }
             HStack {
-                Button("Cancel") { showCreateSheet = false }.buttonStyle(PlainButtonStyle())
+                Button(L10n.Button.cancel) { showCreateSheet = false }.buttonStyle(PlainButtonStyle())
                 Spacer()
                 Button {
                     Task { await createPool() }
                 } label: {
                     HStack {
                         if isCreating { ProgressView().scaleEffect(0.6) }
-                        Text("Create").font(.system(size: 12, weight: .semibold))
+                        Text(L10n.Button.create).font(.system(size: 12, weight: .semibold))
                     }
                     .foregroundColor(.white)
                     .padding(.horizontal, AXSpacing.lg).padding(.vertical, 8)

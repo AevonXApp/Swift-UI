@@ -49,7 +49,7 @@ struct DownloadFromURLSheetView: View {
             }
             
             HStack(spacing: AXSpacing.md) {
-                Button("Cancel") { viewModel.showDownloadURLSheet = false }
+                Button(L10n.Button.cancel) { viewModel.showDownloadURLSheet = false }
                     .buttonStyle(AXSecondaryButtonStyle())
                 
                 Button(action: {
@@ -67,7 +67,7 @@ struct DownloadFromURLSheetView: View {
                             Image(systemName: "arrow.down.circle")
                                 .font(.system(size: 12))
                         }
-                        Text("Download")
+                        Text(L10n.Files.download)
                     }
                     .foregroundColor(.white)
                     .padding(.horizontal, AXSpacing.lg)

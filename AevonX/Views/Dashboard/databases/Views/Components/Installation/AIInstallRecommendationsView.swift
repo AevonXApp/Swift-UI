@@ -117,7 +117,7 @@ struct AIInstallRecommendationsView: View {
 
     private var actionButtonsSection: some View {
         HStack(spacing: AXSpacing.md) {
-            Button("Cancel", action: onCancel)
+            Button(L10n.Button.cancel, action: onCancel)
                 .font(AXTypography.subheadline)
                 .foregroundColor(.axTextSecondary)
                 .buttonStyle(PlainButtonStyle())

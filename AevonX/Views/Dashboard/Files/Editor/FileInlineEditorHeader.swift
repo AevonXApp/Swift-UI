@@ -96,7 +96,7 @@ struct FileInlineEditorHeader: View {
                         Image(systemName: "square.and.arrow.down")
                             .font(.system(size: 10))
                     }
-                    Text("Save")
+                    Text(L10n.Button.save)
                         .font(.system(size: 11, weight: .semibold))
                 }
                 .foregroundColor(.white)

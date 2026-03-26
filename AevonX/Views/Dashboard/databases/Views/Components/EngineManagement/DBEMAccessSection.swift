@@ -28,7 +28,7 @@ struct DBEMAccessSection: View {
                         HStack(spacing: AXSpacing.sm) {
                             Image(systemName: "arrow.clockwise")
                                 .font(AXTypography.subheadline)
-                            Text("Refresh")
+                            Text(L10n.Button.refresh)
                                 .font(AXTypography.subheadline)
                         }
                         .foregroundColor(.axAccentBlue)

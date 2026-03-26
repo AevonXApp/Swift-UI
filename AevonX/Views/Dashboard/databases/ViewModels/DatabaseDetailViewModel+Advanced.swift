@@ -26,10 +26,10 @@ extension DatabaseDetailViewModel {
                 serverId: serverId
             )
             backups.removeAll { $0.id == backupId }
-            GlobalToastManager.shared.showSuccess("Backup deleted")
+            GlobalToastManager.shared.showSuccess(L10n.Database.backupDeleted)
             log(action: "Delete Backup", detail: backupId, success: true)
         } catch {
-            GlobalToastManager.shared.showError("Failed to delete backup: \(error.localizedDescription)")
+            GlobalToastManager.shared.showError("\(L10n.Database.backupDeleteFailed): \(error.localizedDescription)")
             log(action: "Delete Backup", detail: backupId, success: false, error: error.localizedDescription)
         }
     }
@@ -38,7 +38,7 @@ extension DatabaseDetailViewModel {
         guard let serverId = serverId else { return }
 
         isDownloadingBackup = true
-        let progressId = GlobalToastManager.shared.showProgress("Downloading backup...")
+        let progressId = GlobalToastManager.shared.showProgress("\(L10n.Database.export)...")
 
         do {
             let data = try await DatabaseBackupService.shared.downloadBackup(
@@ -57,12 +57,12 @@ extension DatabaseDetailViewModel {
             let response = panel.runModal()
             if response == .OK, let url = panel.url {
                 try data.write(to: url)
-                GlobalToastManager.shared.showSuccess("Backup saved successfully")
+                GlobalToastManager.shared.showSuccess(L10n.Database.backupSaved)
                 log(action: "Download Backup", detail: url.lastPathComponent, success: true)
             }
         } catch {
             GlobalToastManager.shared.dismiss(id: progressId)
-            GlobalToastManager.shared.showError("Download failed: \(error.localizedDescription)")
+            GlobalToastManager.shared.showError("\(L10n.Database.downloadFailed): \(error.localizedDescription)")
             log(action: "Download Backup", detail: backupId, success: false, error: error.localizedDescription)
         }
 
@@ -73,11 +73,11 @@ extension DatabaseDetailViewModel {
         guard let serverId = serverId else { return }
         let content = sqlContent.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !content.isEmpty else {
-            GlobalToastManager.shared.showError("SQL content is empty")
+            GlobalToastManager.shared.showError(L10n.Database.sqlEmpty)
             return
         }
 
-        let progressId = GlobalToastManager.shared.showProgress("Importing SQL...")
+        let progressId = GlobalToastManager.shared.showProgress("\(L10n.Database.importSQL)...")
 
         do {
             _ = try await DatabaseBackupService.shared.importSQL(
@@ -87,13 +87,13 @@ extension DatabaseDetailViewModel {
                 serverId: serverId
             )
             GlobalToastManager.shared.dismiss(id: progressId)
-            GlobalToastManager.shared.showSuccess("SQL imported successfully")
+            GlobalToastManager.shared.showSuccess(L10n.Database.sqlImported)
             log(action: "Import SQL", detail: "\(content.count) characters into '\(database.name)'", success: true)
             showImportSQL = false
             await loadTables()
         } catch {
             GlobalToastManager.shared.dismiss(id: progressId)
-            GlobalToastManager.shared.showError("Import failed: \(error.localizedDescription)")
+            GlobalToastManager.shared.showError("\(L10n.Database.importFailed): \(error.localizedDescription)")
             log(action: "Import SQL", detail: "Into '\(database.name)'", success: false, error: error.localizedDescription)
         }
     }
@@ -107,14 +107,14 @@ extension DatabaseDetailViewModel {
     /// Duplicate a row by primary key
     public func duplicateRow(at index: Int) async {
         guard let pk = primaryKeyValues(forRowAt: index), let table = selectedTable else {
-            GlobalToastManager.shared.showError("Cannot determine primary key for this row")
+            GlobalToastManager.shared.showError(L10n.Database.noPrimaryKey)
             return
         }
         guard let serverId = serverId else { return }
 
         guard let pkData = try? JSONSerialization.data(withJSONObject: pk),
               let pkJSON = String(data: pkData, encoding: .utf8) else {
-            GlobalToastManager.shared.showError("Failed to encode primary key")
+            GlobalToastManager.shared.showError(L10n.Database.encodePkFailed)
             return
         }
         let cmd = DatabasesBridge.shared.duplicateRowCmd(
@@ -124,15 +124,15 @@ extension DatabaseDetailViewModel {
             primaryKeyJSON: pkJSON
         )
         guard !cmd.isEmpty else {
-            GlobalToastManager.shared.showError("Duplicate row not supported")
+            GlobalToastManager.shared.showError(L10n.Database.duplicateNotSupported)
             return
         }
         let result = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
         if result.lowercased().contains("error") {
-            GlobalToastManager.shared.showError("Duplicate failed: \(result)")
+            GlobalToastManager.shared.showError("\(L10n.Database.duplicateFailed): \(result)")
             log(action: "Duplicate Row", detail: "Table '\(table.name)'", success: false, error: result)
         } else {
-            GlobalToastManager.shared.showSuccess("Row duplicated")
+            GlobalToastManager.shared.showSuccess(L10n.Database.rowDuplicated)
             log(action: "Duplicate Row", detail: "Table '\(table.name)'", success: true)
             await loadTableData()
             await loadTables()
@@ -150,16 +150,16 @@ extension DatabaseDetailViewModel {
             indexName: indexName
         )
         guard !cmd.isEmpty else {
-            GlobalToastManager.shared.showError("Drop index not supported")
+            GlobalToastManager.shared.showError(L10n.Database.dropIndexNotSupported)
             return
         }
 
         let result = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
         if result.lowercased().contains("error") {
-            GlobalToastManager.shared.showError("Drop index failed: \(result)")
+            GlobalToastManager.shared.showError("\(L10n.Database.dropIndexFailed): \(result)")
             log(action: "Drop Index", detail: "Index '\(indexName)'", success: false, error: result)
         } else {
-            GlobalToastManager.shared.showSuccess("Index '\(indexName)' dropped")
+            GlobalToastManager.shared.showSuccess(L10n.Database.indexDropped(indexName))
             log(action: "Drop Index", detail: "Index '\(indexName)' from '\(table.name)'", success: true)
             await loadTableStructure()
         }
@@ -176,16 +176,16 @@ extension DatabaseDetailViewModel {
             newName: newName
         )
         guard !cmd.isEmpty else {
-            GlobalToastManager.shared.showError("Rename table not supported")
+            GlobalToastManager.shared.showError(L10n.Database.renameNotSupported)
             return
         }
 
         let result = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
         if result.lowercased().contains("error") {
-            GlobalToastManager.shared.showError("Rename failed: \(result)")
+            GlobalToastManager.shared.showError("\(L10n.Database.renameFailed): \(result)")
             log(action: "Rename Table", detail: "'\(oldName)' → '\(newName)'", success: false, error: result)
         } else {
-            GlobalToastManager.shared.showSuccess("Table renamed to '\(newName)'")
+            GlobalToastManager.shared.showSuccess(L10n.Database.tableRenamed(newName))
             log(action: "Rename Table", detail: "'\(oldName)' → '\(newName)'", success: true)
             if selectedTable?.name == oldName {
                 deselectTable()
@@ -198,7 +198,7 @@ extension DatabaseDetailViewModel {
     public func restoreBackup(_ backupId: String) async {
         guard let serverId = serverId else { return }
 
-        let progressId = GlobalToastManager.shared.showProgress("Restoring backup...")
+        let progressId = GlobalToastManager.shared.showProgress("\(L10n.Database.restore)...")
         do {
             try await DatabaseBackupService.shared.restoreBackup(
                 backupPath: backupId,
@@ -207,12 +207,12 @@ extension DatabaseDetailViewModel {
                 serverId: serverId
             )
             GlobalToastManager.shared.dismiss(id: progressId)
-            GlobalToastManager.shared.showSuccess("Backup restored successfully")
+            GlobalToastManager.shared.showSuccess(L10n.Database.backupRestored)
             log(action: "Restore Backup", detail: backupId, success: true)
             await loadTables()
         } catch {
             GlobalToastManager.shared.dismiss(id: progressId)
-            GlobalToastManager.shared.showError("Restore failed: \(error.localizedDescription)")
+            GlobalToastManager.shared.showError("\(L10n.Database.restoreFailed): \(error.localizedDescription)")
             log(action: "Restore Backup", detail: backupId, success: false, error: error.localizedDescription)
         }
     }

@@ -35,7 +35,7 @@ struct AIInstallSuccessView: View {
             
             AIInstallLogView(logs: logs)
             
-            Button("Done", action: onDone)
+            Button(L10n.Button.done, action: onDone)
                 .font(AXTypography.subheadline)
                 .fontWeight(.semibold)
                 .foregroundColor(.axBackground)

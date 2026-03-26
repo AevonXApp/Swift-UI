@@ -608,7 +608,7 @@ struct CerberusAttacksView: View {
             Text("IP").font(AXTypography.monoXs).foregroundStyle(Color.axTextMuted).frame(width: 120, alignment: .leading)
             Text("Country").font(AXTypography.monoXs).foregroundStyle(Color.axTextMuted).frame(width: 40)
             Text("Method").font(AXTypography.monoXs).foregroundStyle(Color.axTextMuted).frame(width: 50)
-            Text("Path").font(AXTypography.monoXs).foregroundStyle(Color.axTextMuted).frame(maxWidth: .infinity, alignment: .leading)
+            Text(L10n.Field.path).font(AXTypography.monoXs).foregroundStyle(Color.axTextMuted).frame(maxWidth: .infinity, alignment: .leading)
             Text("Rule").font(AXTypography.monoXs).foregroundStyle(Color.axTextMuted).frame(width: 120, alignment: .leading)
             Text("Severity").font(AXTypography.monoXs).foregroundStyle(Color.axTextMuted).frame(width: 65)
         }
@@ -731,7 +731,7 @@ struct CerberusAttacksView: View {
     private func attackerSheetActions(_ attacker: AttackerInfo) -> some View {
         HStack(spacing: AXSpacing.md) {
             Button { selectedAttacker = nil } label: {
-                Text("Close")
+                Text(L10n.Button.close)
                     .font(AXTypography.subheadline)
                     .fontWeight(.medium)
                     .foregroundStyle(Color.axTextSecondary)

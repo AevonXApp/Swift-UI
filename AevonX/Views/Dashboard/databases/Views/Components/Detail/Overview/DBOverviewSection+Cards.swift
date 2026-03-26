@@ -38,7 +38,7 @@ extension DBOverviewSection {
                     HStack(spacing: AXSpacing.xxs) {
                         Image(systemName: "doc.on.doc")
                             .font(AXTypography.caption2)
-                        Text("Copy")
+                        Text(L10n.Button.copy)
                             .font(AXTypography.caption2)
                     }
                     .foregroundColor(.axTextMuted)
@@ -55,6 +55,7 @@ extension DBOverviewSection {
                 serverInfoRow(label: "Index Size", value: AXFormatter.formatBytes(viewModel.tables.reduce(0) { $0 + $1.indexSize }), icon: "list.number")
                 serverInfoRow(label: "Total Rows", value: "\(viewModel.tables.reduce(0) { $0 + Int($1.rowCount) })", icon: "number")
                 serverInfoRow(label: "Tables", value: "\(viewModel.tables.count)", icon: "tablecells")
+
             }
         }
         .padding(AXSpacing.lg)
@@ -110,16 +111,16 @@ extension DBOverviewSection {
                     Circle()
                         .fill(Color.axSuccess)
                         .frame(width: 6, height: 6)
-                    Text("Active")
+                    Text(L10n.Status.active)
                         .font(AXTypography.caption2)
                         .foregroundColor(.axSuccess)
                 }
             }
 
             HStack(spacing: AXSpacing.md) {
-                connectionField(label: "Host", value: "localhost", icon: "desktopcomputer")
-                connectionField(label: "Port", value: portForEngine(), icon: "number")
-                connectionField(label: "User", value: "root", icon: "person")
+                connectionField(label: L10n.Field.host, value: "localhost", icon: "desktopcomputer")
+                connectionField(label: L10n.Field.port, value: portForEngine(), icon: "number")
+                connectionField(label: L10n.Field.username, value: "root", icon: "person")
                 connectionField(label: "Database", value: viewModel.database.name, icon: "cylinder")
             }
 
@@ -382,7 +383,7 @@ extension DBOverviewSection {
 
     var tableColumnHeaders: some View {
         HStack(spacing: 0) {
-            Text("Name")
+            Text(L10n.Field.name)
                 .frame(maxWidth: .infinity, alignment: .leading)
             Text("Engine")
                 .frame(width: 70, alignment: .center)

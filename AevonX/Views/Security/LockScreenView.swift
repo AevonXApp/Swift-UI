@@ -70,11 +70,11 @@ struct LockScreenView: View {
 
     private var appBranding: some View {
         VStack(spacing: AXSpacing.sm) {
-            Text("AevonX")
+            Text(L10n.App.name)
                 .font(AXTypography.title)
                 .foregroundColor(.axTextPrimary)
 
-            Text("Authentication Required")
+            Text(L10n.Security.authRequired)
                 .font(AXTypography.callout)
                 .foregroundColor(.axTextSecondary)
         }
@@ -91,7 +91,7 @@ struct LockScreenView: View {
                     HStack(spacing: AXSpacing.sm) {
                         Image(systemName: "touchid")
                             .font(.system(size: 18))
-                        Text("Unlock with Biometrics")
+                        Text(L10n.Security.unlockBiometrics)
                             .font(AXTypography.headline)
                     }
                     .foregroundColor(.white)
@@ -104,7 +104,7 @@ struct LockScreenView: View {
             }
 
             Button(action: { showPasswordField = true }) {
-                Text("Use Password Instead")
+                Text(L10n.Security.usePassword)
                     .font(AXTypography.subheadline)
                     .foregroundColor(.axTextTertiary)
             }
@@ -129,7 +129,7 @@ struct LockScreenView: View {
                 .onSubmit { attemptPasswordAuth() }
 
             Button(action: attemptPasswordAuth) {
-                Text("Unlock")
+                Text(L10n.Security.unlock)
                     .font(AXTypography.headline)
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
@@ -144,7 +144,7 @@ struct LockScreenView: View {
                 showPasswordField = false
                 passwordInput = ""
             }) {
-                Text("Use Biometrics Instead")
+                Text(L10n.Security.useBiometrics)
                     .font(AXTypography.subheadline)
                     .foregroundColor(.axTextTertiary)
             }
@@ -172,7 +172,7 @@ struct LockScreenView: View {
     private var attemptsIndicator: some View {
         Group {
             if settings.failedAttempts > 0 {
-                Text("\(settings.failedAttempts) of \(settings.maxFailedAttempts) attempts used")
+                Text(L10n.Security.attemptsUsed(settings.failedAttempts, settings.maxFailedAttempts))
                     .font(AXTypography.caption)
                     .foregroundColor(.axTextMuted)
             }

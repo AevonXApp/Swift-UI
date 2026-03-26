@@ -79,7 +79,7 @@ public final class ErrorResolutionService: ObservableObject {
             currentResolution = resolution
 
         } catch {
-            self.error = "Failed to analyze error: \(error.localizedDescription)"
+            self.error = L10n.ErrorResolution.analyzeFailed
             throw error
         }
     }
@@ -113,7 +113,7 @@ public final class ErrorResolutionService: ObservableObject {
                 }
             }
         } catch {
-            self.error = "Failed to execute solution: \(error.localizedDescription)"
+            self.error = L10n.ErrorResolution.executeFailed
             throw error
         }
     }
@@ -133,9 +133,9 @@ public enum ErrorResolutionError: LocalizedError {
     public var errorDescription: String? {
         switch self {
         case .noActiveResolution:
-            return "No active error resolution context"
+            return L10n.ErrorResolution.noContext
         case .solutionFailed(let reason):
-            return "Solution execution failed: \(reason)"
+            return L10n.ErrorResolution.solutionFailed
         }
     }
 }

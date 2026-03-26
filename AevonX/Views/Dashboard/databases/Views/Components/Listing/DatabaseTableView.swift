@@ -20,13 +20,13 @@ struct DatabaseTableView: View {
             VStack(spacing: 1) {
                 // Table Header
                 HStack(spacing: AXSpacing.md) {
-                    Text("Name").frame(maxWidth: .infinity, alignment: .leading)
-                    Text("Engine").frame(width: 120, alignment: .leading)
-                    Text("Version").frame(width: 100, alignment: .leading)
-                    Text("Size").frame(width: 100, alignment: .leading)
-                    Text("Tables").frame(width: 80, alignment: .trailing)
-                    Text("Status").frame(width: 80, alignment: .center)
-                    Text("Actions").frame(width: 100, alignment: .trailing)
+                    Text(L10n.Field.name).frame(maxWidth: .infinity, alignment: .leading)
+                    Text(L10n.Engine.engine).frame(width: 120, alignment: .leading)
+                    Text(L10n.Engine.version).frame(width: 100, alignment: .leading)
+                    Text(L10n.Database.size).frame(width: 100, alignment: .leading)
+                    Text(L10n.Database.tables).frame(width: 80, alignment: .trailing)
+                    Text(L10n.Database.status).frame(width: 80, alignment: .center)
+                    Text(L10n.Database.actions).frame(width: 100, alignment: .trailing)
                 }
                 .font(AXTypography.caption)
                 .foregroundColor(.axTextMuted)

@@ -216,7 +216,7 @@ struct DBEditRowView: View {
             Spacer()
 
             Button { viewModel.showEditRow = false } label: {
-                Text("Cancel")
+                Text(L10n.Button.cancel)
                     .font(AXTypography.subheadline)
                     .foregroundColor(.axTextSecondary)
                     .padding(.horizontal, AXSpacing.lg)
@@ -251,7 +251,7 @@ struct DBEditRowView: View {
                     if isSubmitting {
                         ProgressView().scaleEffect(0.6).tint(.white)
                     }
-                    Text(isSubmitting ? "Saving..." : "Save Changes")
+                    Text(isSubmitting ? "Saving..." : L10n.Button.saveChanges)
                 }
                 .font(AXTypography.subheadline)
                 .fontWeight(.bold)

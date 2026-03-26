@@ -63,7 +63,7 @@ struct DatabaseEngineInstallCard: View {
                     HStack(spacing: AXSpacing.sm) {
                         Image(systemName: "slider.horizontal.3")
                             .font(AXTypography.subheadline)
-                        Text("Manage")
+                        Text(L10n.Database.manage)
                             .font(AXTypography.caption)
                             .fontWeight(.semibold)
                     }

@@ -239,7 +239,7 @@ private struct ComposeProjectRow: View {
                         ComposeActionButton(icon: "arrow.clockwise", color: .axTextSecondary, hoverColor: .axWarning) {
                             onAction("restart")
                         }
-                        .help("Restart")
+                        .help(L10n.Button.restart)
                         
                         ComposeActionButton(icon: "text.alignleft", color: .axTextSecondary, hoverColor: .axAccentBlue) {
                             onAction("logs")
@@ -330,7 +330,7 @@ struct DockerComposeLogsView: View {
                 if isConnected {
                     Circle().fill(Color.green).frame(width: 8, height: 8)
                 }
-                Button("Close") { isPresented = false }
+                Button(L10n.Button.close) { isPresented = false }
             }
             .padding()
             .background(Color.axBackground)

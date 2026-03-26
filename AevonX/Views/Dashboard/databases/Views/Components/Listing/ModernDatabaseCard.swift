@@ -76,7 +76,7 @@ struct ModernDatabaseCard: View {
                                 .cornerRadius(AXCornerRadius.sm)
                         }
                         .buttonStyle(.plain)
-                        .help("Open Details")
+                        .help(L10n.Database.openDetails)
 
                         Button { onBackup?() } label: {
                             Image(systemName: "arrow.down.doc")
@@ -87,7 +87,7 @@ struct ModernDatabaseCard: View {
                                 .cornerRadius(AXCornerRadius.sm)
                         }
                         .buttonStyle(.plain)
-                        .help("Create Backup")
+                        .help(L10n.Database.createBackup)
 
                         Button { onDelete?() } label: {
                             Image(systemName: "trash")
@@ -98,7 +98,7 @@ struct ModernDatabaseCard: View {
                                 .cornerRadius(AXCornerRadius.sm)
                         }
                         .buttonStyle(.plain)
-                        .help("Delete Database")
+                        .help(L10n.Database.deleteDatabase)
                     }
                     
                     // Status badge with glow
@@ -128,7 +128,7 @@ struct ModernDatabaseCard: View {
                             .font(AXTypography.caption)
                             .fontWeight(.semibold)
                             .foregroundColor(.axTextPrimary)
-                        Text("Size")
+                        Text(L10n.Database.size)
                             .font(AXTypography.caption2)
                             .foregroundColor(.axTextMuted)
                     }
@@ -140,7 +140,7 @@ struct ModernDatabaseCard: View {
                                 .font(AXTypography.caption)
                                 .fontWeight(.semibold)
                                 .foregroundColor(.axTextPrimary)
-                            Text("Tables")
+                            Text(L10n.Database.tables)
                                 .font(AXTypography.caption2)
                                 .foregroundColor(.axTextMuted)
                         }
@@ -152,7 +152,7 @@ struct ModernDatabaseCard: View {
                             .font(AXTypography.caption)
                             .fontWeight(.semibold)
                             .foregroundColor(.axTextPrimary)
-                        Text("Conns")
+                        Text(L10n.Database.conns)
                             .font(AXTypography.caption2)
                             .foregroundColor(.axTextMuted)
                     }

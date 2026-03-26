@@ -69,11 +69,11 @@ struct AddServerView: View {
                     // Wizard Navigation
                     HStack(spacing: AXSpacing.md) {
                         if !viewModel.isFirstStep {
-                            AXPrimaryButton(title: "Back", icon: "chevron.left", action: {
+                            AXPrimaryButton(title: L10n.Button.back, icon: "chevron.left", action: {
                                 withAnimation { viewModel.prevStep() }
                             }, style: .secondary)
                         } else {
-                            AXPrimaryButton(title: "Cancel", icon: nil, action: {
+                            AXPrimaryButton(title: L10n.Button.cancel, icon: nil, action: {
                                 dismiss()
                             }, style: .secondary)
                         }

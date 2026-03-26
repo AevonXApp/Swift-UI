@@ -25,11 +25,11 @@ struct HostKeyChangeAlertView: View {
                 .symbolEffect(.pulse)
             
             // Title
-            Text("Security Alert")
+            Text(L10n.Security.alert)
                 .font(.title)
                 .fontWeight(.bold)
             
-            Text("Host Key Changed")
+            Text(L10n.Security.hostKeyChanged)
                 .font(.title2)
                 .fontWeight(.semibold)
                 .foregroundStyle(.red)
@@ -43,12 +43,12 @@ struct HostKeyChangeAlertView: View {
             
             // Server info
             VStack(alignment: .leading, spacing: 12) {
-                Text("Server: \(serverName)")
+                Text(L10n.Security.serverName(serverName))
                     .font(.subheadline)
                     .fontWeight(.medium)
                 
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Expected Fingerprint:")
+                    Text(L10n.Security.expectedFingerprint)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                     Text(expectedFingerprint)
@@ -59,7 +59,7 @@ struct HostKeyChangeAlertView: View {
                 }
                 
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Actual Fingerprint:")
+                    Text(L10n.Security.actualFingerprint)
                         .font(.caption)
                         .foregroundStyle(.red)
                     Text(actualFingerprint)
@@ -79,7 +79,7 @@ struct HostKeyChangeAlertView: View {
             HStack(spacing: AXSpacing.sm) {
                 Image(systemName: "exclamationmark.triangle.fill")
                     .foregroundStyle(.orange)
-                Text("Only accept if you trust this change")
+                Text(L10n.Security.trustWarning)
                     .font(.caption)
                     .foregroundStyle(.orange)
             }
@@ -92,7 +92,7 @@ struct HostKeyChangeAlertView: View {
                 Button {
                     onCancel()
                 } label: {
-                    Text("Cancel Connection")
+                    Text(L10n.Button.cancelConnection)
                         .font(.headline)
                         .foregroundStyle(.primary)
                         .frame(maxWidth: .infinity)
@@ -104,7 +104,7 @@ struct HostKeyChangeAlertView: View {
                 Button {
                     onAccept()
                 } label: {
-                    Text("Accept New Key")
+                    Text(L10n.Security.acceptNewKey)
                         .font(.headline)
                         .foregroundStyle(.white)
                         .frame(maxWidth: .infinity)

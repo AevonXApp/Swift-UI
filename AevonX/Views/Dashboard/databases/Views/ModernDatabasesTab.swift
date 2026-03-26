@@ -101,9 +101,9 @@ struct ModernDatabasesTab: View {
         .overlay {
             if let db = databaseToDelete {
                 AXDeleteConfirmation(
-                    title: "Delete Database",
+                    title: L10n.Database.deleteDatabase,
                     itemName: db.name,
-                    warning: "This action cannot be undone.",
+                    warning: L10n.Database.cannotBeUndone,
                     onConfirm: {
                         let name = db.name
                         let type = db.type
@@ -198,7 +198,7 @@ struct ModernDatabasesTab: View {
             ProgressView()
                 .scaleEffect(1.5)
             
-            Text("Loading databases...")
+            Text(L10n.Database.loadingDatabases)
                 .font(AXTypography.subheadline)
                 .foregroundColor(.axTextSecondary)
         }
@@ -211,7 +211,7 @@ struct ModernDatabasesTab: View {
                 .font(AXTypography.largeTitle)
                 .foregroundColor(.axError)
             
-            Text("Failed to Load Databases")
+            Text(L10n.Database.failedToLoadDatabases)
                 .font(AXTypography.headline)
                 .foregroundColor(.axTextPrimary)
             
@@ -220,7 +220,7 @@ struct ModernDatabasesTab: View {
                 .foregroundColor(.axTextSecondary)
                 .multilineTextAlignment(.center)
             
-            Button("Retry") {
+            Button(L10n.Button.retry) {
                 Task {
                     await viewModel.loadData(forceRefresh: true)
                 }

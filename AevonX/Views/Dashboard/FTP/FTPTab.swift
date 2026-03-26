@@ -197,7 +197,7 @@ struct FTPTab: View {
                             HStack(spacing: AXSpacing.xs) {
                                 Image(systemName: "arrow.clockwise")
                                     .font(.system(size: 11, weight: .medium))
-                                Text("Refresh")
+                                Text(L10n.Button.refresh)
                                     .font(.system(size: 12, weight: .medium))
                             }
                             .foregroundColor(.axAccentBlue)
@@ -267,7 +267,7 @@ struct FTPTab: View {
                 Circle()
                     .fill(vm.serverInfo.isRunning ? Color.axSuccess : Color.axError)
                     .frame(width: 6, height: 6)
-                Text(vm.serverInfo.isRunning ? "Running" : "Stopped")
+                Text(vm.serverInfo.isRunning ? L10n.Status.running : L10n.Status.stopped)
                     .font(.system(size: 11, weight: .medium))
                     .foregroundColor(vm.serverInfo.isRunning ? .axSuccess : .axError)
             }
@@ -353,9 +353,9 @@ struct FTPTab: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                     Text("Quota")
                         .frame(width: 80, alignment: .center)
-                    Text("Status")
+                    Text(L10n.FTP.status)
                         .frame(width: 80, alignment: .center)
-                    Text("Password")
+                    Text(L10n.FTP.password)
                         .frame(width: 80, alignment: .center)
                     Text("Actions")
                         .frame(width: 130, alignment: .trailing)
@@ -524,7 +524,7 @@ struct FTPTab: View {
                     .foregroundColor(.axAccentBlue.opacity(0.5))
             }
             
-            Text("No FTP Users")
+            Text(L10n.FTP.noUsers)
                 .font(.system(size: 18, weight: .semibold))
                 .foregroundColor(.axTextPrimary)
             
@@ -536,7 +536,7 @@ struct FTPTab: View {
             Button(action: { vm.editingUser = nil; vm.showAddSheet = true }) {
                 HStack(spacing: AXSpacing.xs) {
                     Image(systemName: "plus").font(.system(size: 12, weight: .bold))
-                    Text("Add FTP User").font(.system(size: 13, weight: .semibold))
+                    Text(L10n.FTP.addUser).font(.system(size: 13, weight: .semibold))
                 }
                 .foregroundColor(.white)
                 .padding(.horizontal, AXSpacing.xl)

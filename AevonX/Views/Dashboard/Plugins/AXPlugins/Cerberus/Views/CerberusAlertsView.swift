@@ -410,7 +410,7 @@ private extension CerberusAlertsView {
             HStack {
                 Spacer()
                 Button { selectedAlert = nil } label: {
-                    Text("Close")
+                    Text(L10n.Button.close)
                         .font(AXTypography.subheadline)
                         .fontWeight(.medium)
                         .foregroundStyle(Color.axTextSecondary)

@@ -17,7 +17,7 @@ struct CronLogSheet: View {
             // Header
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Execution Log")
+                    Text(L10n.Cron.executionLog)
                         .font(.system(size: 18, weight: .bold))
                         .foregroundColor(.axTextPrimary)
                     if let job = vm.logJob {
@@ -32,7 +32,7 @@ struct CronLogSheet: View {
                     Button(action: { Task { await vm.clearLogs(for: job) } }) {
                         HStack(spacing: 4) {
                             Image(systemName: "trash").font(.system(size: 10))
-                            Text("Clear").font(.system(size: 11, weight: .medium))
+                            Text(L10n.Button.clear).font(.system(size: 11, weight: .medium))
                         }
                         .foregroundColor(.axError)
                         .padding(.horizontal, 8).padding(.vertical, 4)
@@ -44,7 +44,7 @@ struct CronLogSheet: View {
                     Button(action: { Task { await vm.loadLogs(for: job) } }) {
                         HStack(spacing: 4) {
                             Image(systemName: "arrow.clockwise").font(.system(size: 10))
-                            Text("Refresh").font(.system(size: 11, weight: .medium))
+                            Text(L10n.Button.refresh).font(.system(size: 11, weight: .medium))
                         }
                         .foregroundColor(.axAccentBlue)
                         .padding(.horizontal, 8).padding(.vertical, 4)
@@ -68,7 +68,7 @@ struct CronLogSheet: View {
             if vm.isLoadingLogs {
                 Spacer()
                 ProgressView().scaleEffect(0.8)
-                Text("Loading logs...").font(AXTypography.caption).foregroundColor(.axTextTertiary)
+                Text(L10n.Cron.loadingLogs).font(AXTypography.caption).foregroundColor(.axTextTertiary)
                 Spacer()
             } else if vm.logEntries.isEmpty {
                 Spacer()
@@ -76,7 +76,7 @@ struct CronLogSheet: View {
                     Image(systemName: "doc.text.magnifyingglass")
                         .font(.system(size: 36))
                         .foregroundColor(.axTextMuted)
-                    Text("No execution logs yet")
+                    Text(L10n.Cron.noLogs)
                         .font(AXTypography.body)
                         .foregroundColor(.axTextTertiary)
                     Text("Logs will appear after the task is executed")

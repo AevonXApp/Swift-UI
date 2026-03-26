@@ -15,7 +15,7 @@ struct RemoteFleetHeader: View {
         HStack(alignment: .center) {
             VStack(alignment: .leading, spacing: AXSpacing.xs) {
                 HStack(spacing: AXSpacing.md) {
-                    Text("Remote Fleet")
+                    Text(L10n.Fleet.title)
                         .font(AXTypography.largeTitle)
                         .fontWeight(.bold)
                         .foregroundColor(.axTextPrimary)
@@ -39,7 +39,7 @@ struct RemoteFleetHeader: View {
                             Circle()
                                 .fill(Color.axSuccess)
                                 .frame(width: 6, height: 6)
-                            Text("\(viewModel.decryptedServers.filter { $0.isAccessible }.count) Online")
+                            Text(L10n.Fleet.online(viewModel.decryptedServers.filter { $0.isAccessible }.count))
                                 .font(AXTypography.caption)
                                 .foregroundColor(.axTextSecondary)
                         }
@@ -51,7 +51,7 @@ struct RemoteFleetHeader: View {
                             Circle()
                                 .fill(Color.axTextMuted)
                                 .frame(width: 6, height: 6)
-                            Text("\(viewModel.decryptedServers.count - viewModel.decryptedServers.filter { $0.isAccessible }.count) Offline")
+                            Text(L10n.Fleet.offline(viewModel.decryptedServers.count - viewModel.decryptedServers.filter { $0.isAccessible }.count))
                                 .font(AXTypography.caption)
                                 .foregroundColor(.axTextSecondary)
                         }
@@ -73,7 +73,7 @@ struct RemoteFleetHeader: View {
                     HStack(spacing: AXSpacing.sm) {
                         Image(systemName: viewModel.canAddServer ? "plus.circle.fill" : "lock.fill")
                             .font(.system(size: 14))
-                        Text(viewModel.canAddServer ? "Add Server" : "Upgrade")
+                        Text(viewModel.canAddServer ? L10n.Fleet.addServer : L10n.Button.upgrade)
                     }
                     .font(AXTypography.subheadline)
                     .fontWeight(.semibold)

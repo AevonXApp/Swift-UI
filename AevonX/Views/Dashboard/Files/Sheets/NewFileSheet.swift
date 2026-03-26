@@ -16,7 +16,7 @@ struct NewFileSheetView: View {
     
     var body: some View {
         VStack(spacing: AXSpacing.lg) {
-            Text("New File")
+            Text(L10n.Files.newFile)
                 .font(AXTypography.headline)
                 .foregroundColor(.axTextPrimary)
             
@@ -32,9 +32,9 @@ struct NewFileSheetView: View {
             }
             
             HStack(spacing: AXSpacing.md) {
-                Button("Cancel") { viewModel.showNewFileSheet = false }
+                Button(L10n.Button.cancel) { viewModel.showNewFileSheet = false }
                     .buttonStyle(AXSecondaryButtonStyle())
-                Button("Create") { createIfValid() }
+                Button(L10n.Button.create) { createIfValid() }
                     .buttonStyle(AXPrimaryButtonStyle())
                     .disabled(fileName.trimmingCharacters(in: .whitespaces).isEmpty)
             }

@@ -75,7 +75,7 @@ struct DockerAIComposeGenerator: View {
                     Button(action: { step = .describe }) {
                         HStack(spacing: 4) {
                             Image(systemName: "chevron.left").font(.system(size: 10))
-                            Text("Back")
+                            Text(L10n.Button.back)
                         }
                     }
                     .buttonStyle(AXSecondaryButtonStyle())

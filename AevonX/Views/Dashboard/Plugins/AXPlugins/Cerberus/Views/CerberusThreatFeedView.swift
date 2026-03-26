@@ -97,7 +97,7 @@ struct CerberusThreatFeedView: View {
                 Text("Threat Intelligence")
                     .font(AXTypography.title3)
                     .foregroundStyle(Color.axTextPrimary)
-                AXBadge(text: "Active", color: .axAccentGreen, style: .soft)
+                AXBadge(text: L10n.Status.active, color: .axAccentGreen, style: .soft)
             }
             heroSubtitle(status)
         }
@@ -125,7 +125,7 @@ struct CerberusThreatFeedView: View {
                     Image(systemName: "arrow.triangle.2.circlepath")
                         .font(.system(size: 12, weight: .semibold))
                 }
-                Text("Refresh")
+                Text(L10n.Button.refresh)
                     .font(AXTypography.caption)
                     .fontWeight(.semibold)
             }

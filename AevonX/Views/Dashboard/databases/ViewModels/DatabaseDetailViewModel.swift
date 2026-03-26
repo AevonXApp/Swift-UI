@@ -215,7 +215,7 @@ public final class DatabaseDetailViewModel: ObservableObject {
             log(action: "Load Tables", detail: "Loaded \(tables.count) tables from '\(database.name)'", success: true)
         } catch {
             log(action: "Load Tables", detail: "Database '\(database.name)'", success: false, error: error.localizedDescription)
-            GlobalToastManager.shared.showError("Failed to load tables: \(error.localizedDescription)")
+            GlobalToastManager.shared.showError("\(L10n.Database.loadTablesFailed): \(error.localizedDescription)")
         }
         isLoading = false
     }
@@ -263,7 +263,7 @@ public final class DatabaseDetailViewModel: ObservableObject {
             let indexStr = try await indexes
             tableIndexes = parseIndexString(indexStr)
         } catch {
-            GlobalToastManager.shared.showError("Failed to load table structure: \(error.localizedDescription)")
+            GlobalToastManager.shared.showError("\(L10n.Database.loadStructureFailed): \(error.localizedDescription)")
         }
         isLoading = false
     }
@@ -290,7 +290,7 @@ public final class DatabaseDetailViewModel: ObservableObject {
             print("[DBDetailVM] loadTableData: browseResult rows=\(browseResult?.rows.count ?? -1) columns=\(browseResult?.columns.count ?? -1)")
         } catch {
             print("[DBDetailVM] loadTableData ERROR: \(error)")
-            GlobalToastManager.shared.showError("Failed to load data: \(error.localizedDescription)")
+            GlobalToastManager.shared.showError("\(L10n.Database.loadDataFailed): \(error.localizedDescription)")
         }
         isLoading = false
     }
@@ -381,7 +381,7 @@ public final class DatabaseDetailViewModel: ObservableObject {
         guard let serverId = serverId else { return }
 
         isCreatingBackup = true
-        operationResult = .inProgress(message: "Creating backup of '\(database.name)'...", progress: nil)
+        operationResult = .inProgress(message: "\(L10n.Database.createBackup) '\(database.name)'...", progress: nil)
 
         do {
             try await DatabaseBackupService.shared.createBackup(
@@ -391,10 +391,10 @@ public final class DatabaseDetailViewModel: ObservableObject {
             )
             // Reload backups list after creation
             await loadBackups()
-            GlobalToastManager.shared.showSuccess("Backup created successfully")
+            GlobalToastManager.shared.showSuccess(L10n.Database.backupCreated)
             log(action: "Create Backup", detail: "Database '\(database.name)'", success: true)
         } catch {
-            GlobalToastManager.shared.showError("Backup failed: \(error.localizedDescription)")
+            GlobalToastManager.shared.showError("\(L10n.Database.backupFailed): \(error.localizedDescription)")
             log(action: "Create Backup", detail: "Database '\(database.name)'", success: false, error: error.localizedDescription)
         }
 
@@ -429,11 +429,11 @@ public final class DatabaseDetailViewModel: ObservableObject {
         operationResult = .inProgress(message: progressMessage, progress: nil)
         do {
             try await execute()
-            GlobalToastManager.shared.showSuccess("\(actionLabel) successful")
+            GlobalToastManager.shared.showSuccess(L10n.Database.actionSuccessful(actionLabel))
             log(action: actionLabel, detail: detail, success: true)
             await onSuccess?()
         } catch {
-            GlobalToastManager.shared.showError("\(actionLabel) failed: \(error.localizedDescription)")
+            GlobalToastManager.shared.showError("\(L10n.Database.actionFailed(actionLabel)): \(error.localizedDescription)")
             log(action: actionLabel, detail: detail, success: false, error: error.localizedDescription)
         }
     }
@@ -534,12 +534,12 @@ public final class DatabaseDetailViewModel: ObservableObject {
                 type: database.type,
                 serverId: serverId
             )
-            GlobalToastManager.shared.showSuccess("Table '\(name)' created successfully")
+            GlobalToastManager.shared.showSuccess(L10n.Database.tableCreated(name))
             log(action: "Create Table", detail: "Table '\(name)' with \(columns.count) columns in '\(database.name)'", success: true)
             showCreateTable = false
             await loadTables()
         } catch {
-            GlobalToastManager.shared.showError("Failed to create table: \(error.localizedDescription)")
+            GlobalToastManager.shared.showError("\(L10n.Database.createTableFailed): \(error.localizedDescription)")
             log(action: "Create Table", detail: "Table '\(name)'", success: false, error: error.localizedDescription)
         }
     }

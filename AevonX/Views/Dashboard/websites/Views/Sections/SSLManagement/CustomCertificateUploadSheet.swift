@@ -14,7 +14,7 @@ struct CustomCertificateUploadSheet: View {
         VStack(spacing: 0) {
             // Header
             HStack {
-                Button("Cancel") {
+                Button(L10n.Button.cancel) {
                     viewModel.showCustomCertSheet = false
                 }
                 .foregroundColor(.axTextSecondary)

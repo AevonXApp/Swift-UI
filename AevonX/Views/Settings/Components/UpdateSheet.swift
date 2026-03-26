@@ -80,7 +80,7 @@ struct UpdateSheet: View {
                 if let version = updateService.availableVersion {
                     // Changelog
                     VStack(alignment: .leading, spacing: AXSpacing.sm) {
-                        Label("What's New", systemImage: "sparkles")
+                        Label(L10n.Update.whatsNew, systemImage: "sparkles")
                             .font(.system(size: 13, weight: .bold))
                             .foregroundColor(.axTextPrimary)
 
@@ -132,7 +132,7 @@ struct UpdateSheet: View {
             case .updateAvailable:
                 if !updateService.isForceUpdate {
                     Button(action: { dismiss() }) {
-                        Text("Later")
+                        Text(L10n.Button.later)
                             .font(.system(size: 13, weight: .medium))
                             .foregroundColor(.axTextSecondary)
                             .frame(maxWidth: .infinity)
@@ -150,7 +150,7 @@ struct UpdateSheet: View {
                         updateService.skipVersion()
                         dismiss()
                     }) {
-                        Text("Skip")
+                        Text(L10n.Button.skip)
                             .font(.system(size: 13, weight: .medium))
                             .foregroundColor(.axTextSecondary)
                             .frame(maxWidth: .infinity)
@@ -169,7 +169,7 @@ struct UpdateSheet: View {
                     HStack(spacing: AXSpacing.xs) {
                         Image(systemName: "arrow.down.circle.fill")
                             .font(.system(size: 12))
-                        Text("Download & Install")
+                        Text(L10n.Update.downloadInstall)
                             .font(.system(size: 13, weight: .bold))
                     }
                     .foregroundColor(.white)
@@ -185,7 +185,7 @@ struct UpdateSheet: View {
                     HStack(spacing: AXSpacing.xs) {
                         ProgressView()
                             .controlSize(.small)
-                        Text("Downloading...")
+                        Text(L10n.Update.downloading)
                             .font(.system(size: 13, weight: .medium))
                     }
                     .foregroundColor(.axTextSecondary)
@@ -200,7 +200,7 @@ struct UpdateSheet: View {
             case .downloaded:
                 if !updateService.isForceUpdate {
                     Button(action: { dismiss() }) {
-                        Text("Not Now")
+                        Text(L10n.Button.notNow)
                             .font(.system(size: 13, weight: .medium))
                             .foregroundColor(.axTextSecondary)
                             .frame(maxWidth: .infinity)
@@ -219,7 +219,7 @@ struct UpdateSheet: View {
                     HStack(spacing: AXSpacing.xs) {
                         Image(systemName: "arrow.clockwise.circle.fill")
                             .font(.system(size: 12))
-                        Text("Install & Restart")
+                        Text(L10n.Update.installRestart)
                             .font(.system(size: 13, weight: .bold))
                     }
                     .foregroundColor(.white)
@@ -234,7 +234,7 @@ struct UpdateSheet: View {
                 HStack(spacing: AXSpacing.xs) {
                     ProgressView()
                         .controlSize(.small)
-                    Text("Installing...")
+                    Text(L10n.Update.installing)
                         .font(.system(size: 13, weight: .medium))
                         .foregroundColor(.axTextSecondary)
                 }
@@ -249,7 +249,7 @@ struct UpdateSheet: View {
                         .lineLimit(2)
 
                     Button(action: { Task { await updateService.checkForUpdate() } }) {
-                        Text("Retry")
+                        Text(L10n.Button.retry)
                             .font(.system(size: 13, weight: .bold))
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
@@ -320,7 +320,7 @@ struct UpdateSheet: View {
     private func downloadProgressView(progress: Double) -> some View {
         VStack(spacing: AXSpacing.sm) {
             HStack {
-                Text("Downloading...")
+                Text(L10n.Update.downloading)
                     .font(.system(size: 11, weight: .medium))
                     .foregroundColor(.axTextSecondary)
                 Spacer()

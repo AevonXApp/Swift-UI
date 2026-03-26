@@ -83,7 +83,7 @@ struct FileInfoSheet: View {
             
             // Actions
             HStack(spacing: AXSpacing.md) {
-                Button("Copy Path") {
+                Button(L10n.Files.copyPath) {
                     #if os(macOS)
                     NSPasteboard.general.clearContents()
                     NSPasteboard.general.setString(file.path, forType: .string)
@@ -92,7 +92,7 @@ struct FileInfoSheet: View {
                 }
                 .buttonStyle(AXSecondaryButtonStyle())
                 
-                Button("Edit Permissions") {
+                Button(L10n.Files.editPermissions) {
                     dismiss()
                     viewModel.openPermissionsEditor(file)
                 }
@@ -100,7 +100,7 @@ struct FileInfoSheet: View {
                 
                 Spacer()
                 
-                Button("Close") { dismiss() }
+                Button(L10n.Button.close) { dismiss() }
                     .buttonStyle(AXPrimaryButtonStyle())
             }
             .padding()

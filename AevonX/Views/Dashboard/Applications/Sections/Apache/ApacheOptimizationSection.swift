@@ -64,7 +64,7 @@ struct ApacheOptimizationSection: View {
                     }
 
                     // Save
-                    AppOptimizationSaveButton(title: "Save", color: apacheRed, isSaving: isSaving) {
+                    AppOptimizationSaveButton(title: L10n.Button.save, color: apacheRed, isSaving: isSaving) {
                         Task { await saveSettings() }
                     }
                     .padding(.top, AXSpacing.md)

@@ -288,7 +288,7 @@ public final class DatabaseEngineDetailViewModel: ObservableObject {
     /// Load all engine data
     public func loadData() async {
         guard let serverId = serverId else {
-            errorMessage = "Server not configured"
+            errorMessage = L10n.Error.serverNotConfigured
             return
         }
         
@@ -380,7 +380,7 @@ public final class DatabaseEngineDetailViewModel: ObservableObject {
                 serverId: serverId
             )
         } catch {
-            errorMessage = "Failed to load error log: \(error.localizedDescription)"
+            errorMessage = "\(L10n.Engine.loadErrorLogFailed): \(error.localizedDescription)"
         }
     }
     
@@ -396,7 +396,7 @@ public final class DatabaseEngineDetailViewModel: ObservableObject {
                 serverId: serverId
             )
         } catch {
-            errorMessage = "Failed to load slow query log: \(error.localizedDescription)"
+            errorMessage = "\(L10n.Engine.loadSlowLogFailed): \(error.localizedDescription)"
         }
     }
     
@@ -471,7 +471,7 @@ public final class DatabaseEngineDetailViewModel: ObservableObject {
     
     /// Formatted version string
     public var formattedVersion: String {
-        engineInfo?.version ?? "Not installed"
+        engineInfo?.version ?? L10n.Error.serviceNotInstalled
     }
     
     /// Formatted install path

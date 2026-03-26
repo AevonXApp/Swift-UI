@@ -47,7 +47,7 @@ struct PHPConfigSection: View {
 
                     if isLoading {
                         Spacer()
-                        ProgressView("Loading...").foregroundColor(.axTextSecondary)
+                        ProgressView(L10n.Status.loading).foregroundColor(.axTextSecondary)
                         Spacer()
                     } else {
                         ScrollView {

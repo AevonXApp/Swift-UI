@@ -123,9 +123,9 @@ struct DBBackupSection: View {
             actionCard(
                 icon: "arrow.down.doc.fill",
                 iconColor: .axAccentBlue,
-                title: "Create Backup",
+                title: L10n.Database.createBackup,
                 subtitle: "Export '\(viewModel.database.name)' to a SQL dump file",
-                buttonTitle: viewModel.isCreatingBackup ? "Creating..." : "Create Backup",
+                buttonTitle: viewModel.isCreatingBackup ? "Creating..." : L10n.Database.createBackup,
                 buttonColor: .axAccentBlue,
                 isLoading: viewModel.isCreatingBackup,
                 isDisabled: viewModel.isCreatingBackup
@@ -137,9 +137,9 @@ struct DBBackupSection: View {
             actionCard(
                 icon: "square.and.arrow.down.fill",
                 iconColor: .axAccentGreen,
-                title: "Import SQL",
+                title: L10n.Database.importSQL,
                 subtitle: "Import .sql file or paste SQL content",
-                buttonTitle: "Import SQL",
+                buttonTitle: L10n.Database.importSQL,
                 buttonColor: .axAccentGreen,
                 isLoading: false,
                 isDisabled: false
@@ -151,9 +151,9 @@ struct DBBackupSection: View {
             actionCard(
                 icon: "arrow.uturn.backward.circle.fill",
                 iconColor: .axWarning,
-                title: "Restore Backup",
+                title: L10n.Database.restore,
                 subtitle: "Restore database from a previous backup file",
-                buttonTitle: viewModel.backups.isEmpty ? "No Backups" : "Restore",
+                buttonTitle: viewModel.backups.isEmpty ? "No Backups" : L10n.Database.restore,
                 buttonColor: .axWarning,
                 isLoading: false,
                 isDisabled: viewModel.backups.isEmpty

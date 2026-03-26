@@ -76,7 +76,7 @@ struct PgSQLSecuritySection: View {
             }
             HStack {
                 Spacer()
-                gradientButton(icon: "shield.checkered", label: "Apply", color: .red, isLoading: isSavingHeaders) {
+                gradientButton(icon: "shield.checkered", label: L10n.Button.apply, color: .red, isLoading: isSavingHeaders) {
                     Task { await saveHeaders() }
                 }
             }.padding(.horizontal, AXSpacing.lg).padding(.bottom, AXSpacing.md)
@@ -129,7 +129,7 @@ struct PgSQLSecuritySection: View {
             }
             HStack {
                 Spacer()
-                gradientButton(icon: "bolt.shield.fill", label: "Apply", color: .orange, isLoading: isSavingRateLimit) {
+                gradientButton(icon: "bolt.shield.fill", label: L10n.Button.apply, color: .orange, isLoading: isSavingRateLimit) {
                     Task { await saveRateLimit() }
                 }
             }.padding(.horizontal, AXSpacing.lg).padding(.bottom, AXSpacing.md)

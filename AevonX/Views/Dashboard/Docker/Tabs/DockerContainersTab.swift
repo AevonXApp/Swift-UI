@@ -80,7 +80,7 @@ struct DockerContainersTab: View {
                         .labelsHidden()
                         .onChange(of: showAll) { old, new in refreshData() }
                     
-                    Text(showAll ? "All" : "Running")
+                    Text(showAll ? "All" : L10n.Status.running)
                         .font(AXTypography.caption)
                         .foregroundColor(.axTextSecondary)
                 }
@@ -91,7 +91,7 @@ struct DockerContainersTab: View {
                 
                 // Creation Buttons
                 Button(action: { showContainerWizard = true }) {
-                    Label("New Container", systemImage: "plus")
+                    Label(L10n.Docker.newContainer, systemImage: "plus")
                         .font(AXTypography.caption)
                         .fontWeight(.semibold)
                 }
@@ -102,7 +102,7 @@ struct DockerContainersTab: View {
                 .cornerRadius(AXCornerRadius.sm)
                 
                 Button(action: { showTemplateDeploy = true }) {
-                    Label("Deploy Template", systemImage: "square.stack.3d.up.fill")
+                    Label(L10n.Docker.deployTemplate, systemImage: "square.stack.3d.up.fill")
                         .font(AXTypography.caption)
                         .fontWeight(.semibold)
                 }
@@ -171,41 +171,41 @@ struct DockerContainersTab: View {
                                         // Quick Actions Context Menu
                                         if container.isRunning {
                                             Button { handleContainerAction(id: container.id, action: "stop") } label: {
-                                                Label("Stop", systemImage: "stop.fill")
+                                                Label(L10n.Button.stop, systemImage: "stop.fill")
                                             }
                                             Button { handleContainerAction(id: container.id, action: "restart") } label: {
-                                                Label("Restart", systemImage: "arrow.clockwise")
+                                                Label(L10n.Button.restart, systemImage: "arrow.clockwise")
                                             }
                                             Divider()
                                             Button { handleContainerAction(id: container.id, action: "logs") } label: {
-                                                Label("View Logs", systemImage: "text.alignleft")
+                                                Label(L10n.Docker.viewLogs, systemImage: "text.alignleft")
                                             }
                                             Button { handleContainerAction(id: container.id, action: "terminal") } label: {
-                                                Label("Open Terminal", systemImage: "terminal.fill")
+                                                Label(L10n.Docker.openTerminal, systemImage: "terminal.fill")
                                             }
                                             Button { handleContainerAction(id: container.id, action: "inspect") } label: {
-                                                Label("Inspect", systemImage: "doc.text.magnifyingglass")
+                                                Label(L10n.Docker.inspect, systemImage: "doc.text.magnifyingglass")
                                             }
                                         } else {
                                             Button { handleContainerAction(id: container.id, action: "start") } label: {
-                                                Label("Start", systemImage: "play.fill")
+                                                Label(L10n.Button.start, systemImage: "play.fill")
                                             }
                                         }
                                         Divider()
                                         Button { handleContainerAction(id: container.id, action: "rollback") } label: {
-                                            Label("Rollback", systemImage: "arrow.uturn.backward.circle")
+                                            Label(L10n.Docker.rollback, systemImage: "arrow.uturn.backward.circle")
                                         }
                                         Button { handleContainerAction(id: container.id, action: "clone") } label: {
-                                            Label("Clone", systemImage: "doc.on.doc")
+                                            Label(L10n.Docker.clone, systemImage: "doc.on.doc")
                                         }
                                         Button { handleContainerAction(id: container.id, action: "backup") } label: {
-                                            Label("Backup", systemImage: "externaldrive.badge.plus")
+                                            Label(L10n.Docker.backup, systemImage: "externaldrive.badge.plus")
                                         }
                                         Button { handleContainerAction(id: container.id, action: "security") } label: {
-                                            Label("Security Audit", systemImage: "shield.checkered")
+                                            Label(L10n.Docker.securityAudit, systemImage: "shield.checkered")
                                         }
                                         Button { handleContainerAction(id: container.id, action: "auto_update") } label: {
-                                            Label("Auto Update", systemImage: "arrow.triangle.2.circlepath")
+                                            Label(L10n.Docker.autoUpdate, systemImage: "arrow.triangle.2.circlepath")
                                         }
                                         Divider()
                                         Button { handleContainerAction(id: container.id, action: "rename") } label: {
@@ -220,7 +220,7 @@ struct DockerContainersTab: View {
                                         if !container.isRunning {
                                             Divider()
                                             Button(role: .destructive) { handleContainerAction(id: container.id, action: "remove") } label: {
-                                                Label("Remove", systemImage: "trash")
+                                                Label(L10n.Button.remove, systemImage: "trash")
                                             }
                                         }
                                     }
@@ -326,7 +326,7 @@ struct DockerContainersTab: View {
                     }
                 }
             }
-            Button("Cancel", role: .cancel) {}
+            Button(L10n.Button.cancel, role: .cancel) {}
         } message: {
             Text("Enter a new name for this container")
         }
@@ -552,22 +552,22 @@ private struct ContainerRow: View {
                             ContainerActionButton(icon: "stop.fill", color: .axTextSecondary, hoverColor: .axError) {
                                 onAction("stop")
                             }
-                            .help("Stop")
-                            
+                            .help(L10n.Button.stop)
+
                             ContainerActionButton(icon: "arrow.clockwise", color: .axTextSecondary, hoverColor: .axWarning) {
                                 onAction("restart")
                             }
-                            .help("Restart")
-                            
+                            .help(L10n.Button.restart)
+
                             ContainerActionButton(icon: "text.alignleft", color: .axTextSecondary, hoverColor: .axAccentBlue) {
                                 onAction("logs")
                             }
-                            .help("View Logs")
-                            
+                            .help(L10n.Docker.viewLogs)
+
                             ContainerActionButton(icon: "terminal.fill", color: .axTextSecondary, hoverColor: .axSuccess) {
                                 onAction("terminal")
                             }
-                            .help("Open Terminal")
+                            .help(L10n.Docker.openTerminal)
                             
                             // Domain indicator
                             if let domain = connectedDomain {
@@ -599,29 +599,29 @@ private struct ContainerRow: View {
                             ContainerActionButton(icon: "play.fill", color: .axSuccess, hoverColor: .axSuccess) {
                                 onAction("start")
                             }
-                            .help("Start")
-                            
+                            .help(L10n.Button.start)
+
                             ContainerActionButton(icon: "text.alignleft", color: .axTextSecondary, hoverColor: .axAccentBlue) {
                                 onAction("logs")
                             }
-                            .help("View Logs")
-                            
+                            .help(L10n.Docker.viewLogs)
+
                             Menu {
                                 Button { onAction("inspect") } label: {
-                                    Label("Inspect", systemImage: "doc.text.magnifyingglass")
+                                    Label(L10n.Docker.inspect, systemImage: "doc.text.magnifyingglass")
                                 }
                                 Button { onAction("rename") } label: {
                                     Label("Rename", systemImage: "pencil")
                                 }
                                 Button { onAction("rollback") } label: {
-                                    Label("Rollback", systemImage: "arrow.uturn.backward")
+                                    Label(L10n.Docker.rollback, systemImage: "arrow.uturn.backward")
                                 }
                                 Button { onAction("clone") } label: {
-                                    Label("Clone", systemImage: "doc.on.doc")
+                                    Label(L10n.Docker.clone, systemImage: "doc.on.doc")
                                 }
                                 Divider()
                                 Button(role: .destructive) { onAction("remove") } label: {
-                                    Label("Remove", systemImage: "trash")
+                                    Label(L10n.Button.remove, systemImage: "trash")
                                 }
                             } label: {
                                 Image(systemName: "ellipsis")

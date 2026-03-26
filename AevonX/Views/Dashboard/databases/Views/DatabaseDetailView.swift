@@ -74,18 +74,18 @@ public struct DatabaseDetailView: View {
         switch item {
         case .confirmDropTable(let name):
             return Alert(
-                title: Text("Drop Table"),
-                message: Text("Are you sure you want to drop '\(name)'? This will permanently delete the table and all its data. This action cannot be undone."),
-                primaryButton: .destructive(Text("Drop Table")) {
+                title: Text(L10n.Database.dropTable),
+                message: Text(L10n.Database.confirmDropTable(name)),
+                primaryButton: .destructive(Text(L10n.Database.dropTable)) {
                     Task { await viewModel.dropTable(name) }
                 },
                 secondaryButton: .cancel()
             )
         case .confirmTruncateTable(let name):
             return Alert(
-                title: Text("Truncate Table"),
-                message: Text("Are you sure you want to truncate '\(name)'? This will remove all rows but keep the table structure."),
-                primaryButton: .destructive(Text("Truncate")) {
+                title: Text(L10n.Database.truncateTable),
+                message: Text(L10n.Database.confirmTruncateTable(name)),
+                primaryButton: .destructive(Text(L10n.Database.truncate)) {
                     Task { await viewModel.truncateTable(name) }
                 },
                 secondaryButton: .cancel()
@@ -94,9 +94,9 @@ public struct DatabaseDetailView: View {
             // This case might be less relevant here as deletion is usually handled in the main list,
             // but if supported from detail view:
             return Alert(
-                title: Text("Delete Database"),
-                message: Text("Are you sure you want to delete database '\(viewModel.database.name)'? This cannot be undone."),
-                primaryButton: .destructive(Text("Delete")) {
+                title: Text(L10n.Database.deleteDatabase),
+                message: Text(L10n.Database.confirmDeleteDatabase(viewModel.database.name)),
+                primaryButton: .destructive(Text(L10n.Button.delete)) {
                     // Logic to delete DB and pop back (requires callback or VM handling)
                     // Currently viewModel doesn't have deleteDatabase method exposed but let's keep placeholder.
                 },
@@ -104,54 +104,54 @@ public struct DatabaseDetailView: View {
             )
         case .confirmDropColumn(let name):
             return Alert(
-                title: Text("Drop Column"),
-                message: Text("Are you sure you want to drop column '\(name)'? Data in this column will be lost."),
-                primaryButton: .destructive(Text("Drop Column")) {
+                title: Text(L10n.Database.dropColumn),
+                message: Text(L10n.Database.confirmDropColumn(name)),
+                primaryButton: .destructive(Text(L10n.Database.dropColumn)) {
                     Task { await viewModel.dropColumn(name) }
                 },
                 secondaryButton: .cancel()
             )
         case .confirmDeleteRow(let index):
             return Alert(
-                title: Text("Delete Row"),
-                message: Text("Are you sure you want to delete this row?"),
-                primaryButton: .destructive(Text("Delete")) {
+                title: Text(L10n.Database.deleteRowTitle),
+                message: Text(L10n.Database.confirmDeleteRow),
+                primaryButton: .destructive(Text(L10n.Button.delete)) {
                     Task { await viewModel.deleteRow(at: index) }
                 },
                 secondaryButton: .cancel()
             )
         case .confirmDeleteSelectedRows:
             return Alert(
-                title: Text("Delete Selected Rows"),
-                message: Text("Are you sure you want to delete \(viewModel.selectedRows.count) selected rows?"),
-                primaryButton: .destructive(Text("Delete")) {
+                title: Text(L10n.Database.deleteSelectedRows),
+                message: Text(L10n.Database.confirmDeleteSelectedRows(viewModel.selectedRows.count)),
+                primaryButton: .destructive(Text(L10n.Button.delete)) {
                     Task { await viewModel.deleteSelectedRows() }
                 },
                 secondaryButton: .cancel()
             )
         case .confirmDeleteBackup(let id):
             return Alert(
-                title: Text("Delete Backup"),
-                message: Text("Are you sure you want to delete this backup file?"),
-                primaryButton: .destructive(Text("Delete")) {
+                title: Text(L10n.Database.deleteBackup),
+                message: Text(L10n.Database.confirmDeleteBackup),
+                primaryButton: .destructive(Text(L10n.Button.delete)) {
                     Task { await viewModel.deleteBackup(id) }
                 },
                 secondaryButton: .cancel()
             )
         case .confirmDropIndex(let name):
             return Alert(
-                title: Text("Drop Index"),
-                message: Text("Are you sure you want to drop index '\(name)'? This may affect query performance."),
-                primaryButton: .destructive(Text("Drop Index")) {
+                title: Text(L10n.Database.dropIndex),
+                message: Text(L10n.Database.confirmDropIndex(name)),
+                primaryButton: .destructive(Text(L10n.Database.dropIndex)) {
                     Task { await viewModel.dropIndex(name) }
                 },
                 secondaryButton: .cancel()
             )
         case .confirmRestoreBackup(let id):
             return Alert(
-                title: Text("Restore Backup"),
-                message: Text("Are you sure you want to restore from this backup? This will overwrite the current database data."),
-                primaryButton: .destructive(Text("Restore")) {
+                title: Text(L10n.Database.restoreBackup),
+                message: Text(L10n.Database.confirmRestoreBackup),
+                primaryButton: .destructive(Text(L10n.Database.restore)) {
                     Task { await viewModel.restoreBackup(id) }
                 },
                 secondaryButton: .cancel()

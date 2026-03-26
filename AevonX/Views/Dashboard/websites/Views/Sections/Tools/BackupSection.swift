@@ -96,7 +96,7 @@ struct BackupSection: View {
                                         }
                                     }
                                     Spacer()
-                                    Button("Restore") { confirmRestore = backup }
+                                    Button(L10n.Website.restore) { confirmRestore = backup }
                                         .buttonStyle(.bordered)
                                         .controlSize(.mini)
                                     Button(action: { confirmDelete = backup }) {
@@ -151,7 +151,7 @@ struct BackupSection: View {
                     itemName: backup.filename,
                     icon: "arrow.counterclockwise",
                     warning: "This will overwrite current files. A safety backup will be created first.",
-                    confirmLabel: "Restore",
+                    confirmLabel: L10n.Website.restore,
                     onConfirm: {
                         confirmRestore = nil
                         Task { await viewModel.restoreBackup(backup) }

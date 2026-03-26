@@ -354,7 +354,7 @@ struct NodeJSConfigTab: View {
                         Spacer()
                         
                         if version == viewModel.currentVersion || viewModel.currentVersion?.hasPrefix(version) == true {
-                            Text("Active")
+                            Text(L10n.Status.active)
                                 .font(AXTypography.caption).fontWeight(.semibold)
                                 .foregroundColor(.axSuccess)
                                 .padding(.horizontal, 6)

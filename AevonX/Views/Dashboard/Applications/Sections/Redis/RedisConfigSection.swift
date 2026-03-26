@@ -78,7 +78,7 @@ struct RedisConfigSection: View {
                         HStack(spacing: 4) {
                             if isSaving { ProgressView().scaleEffect(0.5) }
                             else { Image(systemName: "arrow.down.doc.fill").font(.system(size: 11)) }
-                            Text("Save").font(.system(size: 11, weight: .medium))
+                            Text(L10n.Button.save).font(.system(size: 11, weight: .medium))
                         }.foregroundColor(.axAccentBlue).padding(.horizontal, AXSpacing.sm).padding(.vertical, 4)
                             .background(Color.axAccentBlue.opacity(0.1)).cornerRadius(AXCornerRadius.sm)
                     }.buttonStyle(PlainButtonStyle()).disabled(isSaving)

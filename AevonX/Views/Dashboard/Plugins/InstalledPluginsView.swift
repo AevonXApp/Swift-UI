@@ -118,7 +118,7 @@ struct InstalledPluginRow: View {
             Button(action: onConfigure) {
                 HStack(spacing: AXSpacing.xs) {
                     Image(systemName: "slider.horizontal.3")
-                    Text("Configure")
+                    Text(L10n.Plugin.configure)
                 }
                 .font(AXTypography.caption)
                 .foregroundColor(.axAccentBlue)

@@ -75,10 +75,10 @@ struct VersionPickerSheet: View {
                 }
             }
             .background(Color.axBackground)
-            .navigationTitle("Select Version")
+            .navigationTitle(L10n.Database.selectVersion)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") {
+                    Button(L10n.Button.cancel) {
                         presentationMode.wrappedValue.dismiss()
                     }
                 }

@@ -15,7 +15,7 @@ struct DatabaseStatsBar: View {
         HStack(spacing: AXSpacing.lg) {
             AXStatCard(
                 icon: "cylinder.split.1x2",
-                label: "Databases",
+                label: L10n.Database.databases,
                 value: "\(viewModel.totalDatabaseCount)",
                 color: .axAccentBlue,
                 layout: .horizontal,
@@ -24,7 +24,7 @@ struct DatabaseStatsBar: View {
             
             AXStatCard(
                 icon: "internaldrive",
-                label: "Total Size",
+                label: L10n.Database.totalSize,
                 value: viewModel.formattedTotalSize,
                 color: .axAccentGreen,
                 layout: .horizontal,
@@ -33,7 +33,7 @@ struct DatabaseStatsBar: View {
             
             AXStatCard(
                 icon: "person.2",
-                label: "Users",
+                label: L10n.Database.users,
                 value: "\(viewModel.totalUserCount)",
                 color: .axWarning,
                 layout: .horizontal,
@@ -42,7 +42,7 @@ struct DatabaseStatsBar: View {
             
             AXStatCard(
                 icon: "server.rack",
-                label: "Engines",
+                label: L10n.Database.engines,
                 value: "\(viewModel.installedDatabaseTypesCount)/9",
                 color: .axInfo,
                 layout: .horizontal,

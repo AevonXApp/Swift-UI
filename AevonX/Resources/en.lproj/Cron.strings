@@ -1,0 +1,46 @@
+/* Cron.strings — Cron Jobs, Schedules */
+
+/* Cron manager title */
+"cron.title" = "Cron Manager";
+
+/* Add task */
+"cron.addTask" = "Add Task";
+
+/* Execution log */
+"cron.executionLog" = "Execution Log";
+
+/* Loading logs */
+"cron.loadingLogs" = "Loading logs...";
+
+/* No logs yet */
+"cron.noLogs" = "No execution logs yet";
+
+/* Disabled badge */
+"cron.disabled" = "DISABLED";
+
+/* Use template */
+"cron.useTemplate" = "Use";
+
+/* Edit task */
+"cron.editTask" = "Edit Task";
+
+/* Delete task */
+"cron.deleteTask" = "Delete Task";
+
+/* Schedule */
+"cron.schedule" = "Schedule";
+
+/* Command */
+"cron.command" = "Command";
+
+/* Every minute */
+"cron.everyMinute" = "Every Minute";
+
+/* Every hour */
+"cron.everyHour" = "Every Hour";
+
+/* Every day */
+"cron.everyDay" = "Every Day";
+
+/* Custom schedule */
+"cron.custom" = "Custom";

@@ -25,7 +25,7 @@ struct MonitoringSection: View {
                             } else {
                                 Image(systemName: "arrow.clockwise")
                             }
-                            Text("Refresh")
+                            Text(L10n.Button.refresh)
                         }
                         .font(AXTypography.subheadline).fontWeight(.medium)
                     }
@@ -60,7 +60,7 @@ struct MonitoringSection: View {
         VStack(alignment: .leading, spacing: AXSpacing.lg) {
             if let check = viewModel.healthCheck {
                 LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())], spacing: AXSpacing.md) {
-                    AXStatCard(icon: "circle.fill", label: "Status", value: check.isUp ? "Online" : "Offline", color: check.isUp ? .axSuccess : .axError)
+                    AXStatCard(icon: "circle.fill", label: "Status", value: check.isUp ? L10n.Status.online : L10n.Status.offline, color: check.isUp ? .axSuccess : .axError)
                     AXStatCard(icon: "clock", label: "Response Time", value: check.formattedResponseTime, color: (check.responseTime ?? 0) < 1.0 ? .axSuccess : .axWarning)
                     AXStatCard(icon: "number", label: "HTTP Code", value: check.httpStatus.map { "\($0)" } ?? "N/A", color: (check.httpStatus ?? 0) < 400 ? .axSuccess : .axError)
                     AXStatCard(icon: "lock.shield", label: "SSL Expires", value: check.sslDaysRemaining.map { "\($0)d" } ?? "N/A", color: (check.sslDaysRemaining ?? 999) > 30 ? .axSuccess : .axWarning)

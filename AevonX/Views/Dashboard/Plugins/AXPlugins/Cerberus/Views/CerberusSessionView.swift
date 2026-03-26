@@ -82,7 +82,7 @@ private extension CerberusSessionView {
 
     func heroBadge(enabled: Bool) -> some View {
         AXBadge(
-            text: enabled ? "Enabled" : "Disabled",
+            text: enabled ? L10n.Status.enabled : L10n.Status.disabled,
             color: enabled ? .axAccentGreen : .axTextMuted,
             style: .soft
         )
@@ -261,7 +261,7 @@ private extension CerberusSessionView {
 
     func atoStatusText(_ status: WAFSessionStatus) -> String {
         let count = status.atoDetections ?? 0
-        if !status.enabled { return "Disabled" }
+        if !status.enabled { return L10n.Status.disabled }
         return count > 0 ? "\(count) threat\(count == 1 ? "" : "s") detected" : "No threats"
     }
 

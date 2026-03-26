@@ -255,7 +255,7 @@ struct NginxProxySection: View {
 
                     // Name field
                     VStack(alignment: .leading, spacing: AXSpacing.xs) {
-                        Label("Name", systemImage: "tag.fill")
+                        Label(L10n.Field.name, systemImage: "tag.fill")
                             .font(.system(size: 11, weight: .semibold))
                             .foregroundColor(.axTextMuted)
                         HStack {
@@ -329,7 +329,7 @@ struct NginxProxySection: View {
 
             // ── Footer ────────────────────────────────────────────────
             HStack(spacing: AXSpacing.sm) {
-                Button("Cancel") {
+                Button(L10n.Button.cancel) {
                     showAddSheet = false
                 }
                 .buttonStyle(PlainButtonStyle())

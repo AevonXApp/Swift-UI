@@ -133,7 +133,7 @@ struct NginxVersionsSection: View {
                             Image(systemName: "arrow.triangle.swap")
                                 .font(.system(size: 10))
                         }
-                        Text("Switch")
+                        Text(L10n.Database.switchVersion)
                             .font(.system(size: 11, weight: .medium))
                     }
                     .foregroundColor(.axAccentBlue)
@@ -184,7 +184,7 @@ struct NginxVersionsSection: View {
                         Image(systemName: "arrow.down.circle")
                             .font(.system(size: 10))
                     }
-                    Text("Install")
+                    Text(L10n.Button.install)
                         .font(.system(size: 11, weight: .medium))
                 }
                 .foregroundColor(.axSuccess)

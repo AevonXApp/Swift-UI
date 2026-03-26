@@ -43,7 +43,7 @@ struct RedisDoctorSection: View {
                     .background(LinearGradient(colors: [.axAccentBlue, Color(red: 0, green: 0.45, blue: 0.9)], startPoint: .leading, endPoint: .trailing))
                     .cornerRadius(AXCornerRadius.md).shadow(color: Color.axAccentBlue.opacity(0.3), radius: 6, x: 0, y: 3)
             }.buttonStyle(PlainButtonStyle()).disabled(isRunning).padding(.bottom, AXSpacing.xl)
-            if isLoading { Spacer(); ProgressView("Loading..."); Spacer() }
+            if isLoading { Spacer(); ProgressView(L10n.Status.loading); Spacer() }
             else {
                 ScrollView {
                     VStack(spacing: 1) { ForEach(checks) { check in checkRow(check) } }

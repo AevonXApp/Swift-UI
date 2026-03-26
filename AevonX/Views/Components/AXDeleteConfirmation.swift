@@ -142,7 +142,7 @@ struct AXDeleteConfirmation: View {
             // Type-to-confirm field
             if requireTypeConfirm {
                 VStack(alignment: .leading, spacing: AXSpacing.xs) {
-                    Text("Type **\(itemName)** to confirm:")
+                    Text(L10n.Confirm.typeToConfirm(itemName))
                         .font(AXTypography.caption)
                         .foregroundColor(.axTextSecondary)
 
@@ -170,7 +170,7 @@ struct AXDeleteConfirmation: View {
     private var actionsSection: some View {
         HStack(spacing: AXSpacing.md) {
             Button(action: onCancel) {
-                Text("Cancel")
+                Text(L10n.Button.cancel)
                     .font(AXTypography.subheadline)
                     .fontWeight(.medium)
                     .foregroundColor(.axTextSecondary)

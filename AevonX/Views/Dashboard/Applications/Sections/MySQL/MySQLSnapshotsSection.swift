@@ -126,7 +126,7 @@ struct MySQLSnapshotsSection: View {
                     Text(diffTitle)
                         .font(.system(size: 14, weight: .bold))
                     Spacer()
-                    Button("Close") { showingDiff = false }
+                    Button(L10n.Button.close) { showingDiff = false }
                         .buttonStyle(PlainButtonStyle())
                     .foregroundColor(.axAccentBlue)
                 }

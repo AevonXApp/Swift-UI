@@ -1,0 +1,43 @@
+/* Files.strings — File Manager, Editor, Search */
+
+/* Go to path */
+"files.goToPath" = "Go to Path";
+
+/* Create file/folder */
+"files.create" = "Create";
+
+/* Copy path */
+"files.copyPath" = "Copy Path";
+
+/* Edit permissions */
+"files.editPermissions" = "Edit Permissions";
+
+/* Case sensitive toggle */
+"files.caseSensitive" = "Case Sensitive";
+
+/* Whole word toggle */
+"files.wholeWord" = "Whole Word";
+
+/* Replace action */
+"files.replace" = "Replace";
+
+/* Replace all */
+"files.replaceAll" = "All";
+
+/* Search */
+"files.search" = "Search";
+
+/* New file */
+"files.newFile" = "New File";
+
+/* New folder */
+"files.newFolder" = "New Folder";
+
+/* Rename */
+"files.rename" = "Rename";
+
+/* Download */
+"files.download" = "Download";
+
+/* Upload */
+"files.upload" = "Upload";

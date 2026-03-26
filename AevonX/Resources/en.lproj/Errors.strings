@@ -1,0 +1,265 @@
+/* Errors.strings — Error, Success, and Validation Messages */
+
+/* ── Generic Errors ── */
+
+/* Generic error fallback */
+"error.generic" = "Something went wrong. Please try again.";
+
+/* Connection failed */
+"error.connectionFailed" = "Connection failed. Please check your server settings.";
+
+/* Not connected to server */
+"error.notConnected" = "Not connected to server.";
+
+/* Connection timed out */
+"error.timeout" = "Connection timed out. Please try again.";
+
+/* Network error */
+"error.networkError" = "Network error. Check your internet connection.";
+
+/* Network unreachable */
+"error.networkUnreachable" = "Network is unreachable. Check your connection.";
+
+/* Already connected */
+"error.alreadyConnected" = "Already connected to this server.";
+
+/* ── Auth Errors ── */
+
+/* Authentication failed */
+"error.authFailed" = "Authentication failed. Please try again.";
+
+/* Session expired */
+"error.sessionExpired" = "Your session has expired. Please log in again.";
+
+/* Invalid credentials */
+"error.invalidCredentials" = "Invalid credentials. Please check your username and password.";
+
+/* Auth required */
+"error.authRequired" = "Authentication required. Please log in.";
+
+/* ── Security Errors ── */
+
+/* Host key changed */
+"error.hostKeyChanged" = "Server identity has changed. This may indicate a security issue.";
+
+/* Security check failed */
+"error.securityCheck" = "Security verification failed. Please reconnect.";
+
+/* Security threat detected */
+"error.securityThreat" = "Security alert: Connection may be compromised. Do not proceed.";
+
+/* Device changed */
+"error.deviceChanged" = "Device verification failed. Please log in again.";
+
+/* Encryption failed */
+"error.encryptionFailed" = "Encryption error. Please try again.";
+
+/* Decryption failed */
+"error.decryptionFailed" = "Failed to decrypt data. Check your encryption key.";
+
+/* ── Server/API Errors ── */
+
+/* Server error */
+"error.serverError" = "Server error. Please try again later.";
+
+/* Invalid API URL */
+"error.invalidApiUrl" = "Invalid server URL.";
+
+/* Server limit reached */
+"error.serverLimitReached" = "Server limit reached. Upgrade your plan to add more.";
+
+/* Server not accessible */
+"error.serverNotAccessible" = "Server is not accessible. Check if it's online.";
+
+/* Rate limited */
+"error.rateLimited" = "Too many requests. Please wait a moment and try again.";
+
+/* Device ID failed */
+"error.deviceIdFailed" = "Unable to identify this device. Please try again.";
+
+/* ── Command Errors ── */
+
+/* Command/operation failed */
+"error.commandFailed" = "Operation failed. Check server configuration.";
+
+/* Detection failed */
+"error.detectionFailed" = "Could not detect server configuration.";
+
+/* ── Service Errors ── */
+
+/* Service not installed */
+"error.serviceNotInstalled" = "This service is not installed on the server.";
+
+/* Unsupported operation */
+"error.unsupportedOperation" = "This operation is not supported.";
+
+/* Service connection failed */
+"error.serviceConnectionFailed" = "Failed to connect to the service.";
+
+/* Server not configured */
+"error.serverNotConfigured" = "Server not configured.";
+
+/* Invalid input */
+"error.invalidInput" = "Invalid input.";
+
+/* Invalid response */
+"error.invalidResponse" = "Invalid response from server.";
+
+/* ── Plugin Errors ── */
+
+/* Plugin not found */
+"error.pluginNotFound" = "Plugin not found.";
+
+/* Plugin setup missing */
+"error.pluginSetupMissing" = "Plugin package is incomplete.";
+
+/* Plugin setup failed */
+"error.pluginSetupFailed" = "Plugin setup failed. Please try again.";
+
+/* Plugin binary missing */
+"error.pluginBinaryMissing" = "Plugin binary not found on server.";
+
+/* Plugin health check failed */
+"error.pluginHealthFailed" = "Plugin health check failed.";
+
+/* Plugin incompatible */
+"error.pluginIncompatible" = "Plugin version is not compatible with this app version.";
+
+/* ── AI Errors ── */
+
+/* AI unavailable */
+"error.aiUnavailable" = "AI service is temporarily unavailable.";
+
+/* AI unsupported DB */
+"error.aiUnsupportedDB" = "This database type is not supported for AI installation.";
+
+/* ── Download Errors ── */
+
+/* Download link expired */
+"error.downloadExpired" = "Download link has expired. Please try again.";
+
+/* Download link already used */
+"error.downloadUsed" = "Download link already used. Please request a new one.";
+
+/* ── SSL Errors ── */
+
+/* SSL operation failed */
+"error.sslFailed" = "SSL operation failed.";
+
+/* ── Config Errors ── */
+
+/* Invalid configuration */
+"error.invalidConfig" = "Invalid configuration.";
+
+/* Config update failed */
+"error.configUpdateFailed" = "Failed to update configuration.";
+
+/* ── Installation Errors ── */
+
+/* Installation failed */
+"error.installFailed" = "Installation failed. Please try again.";
+
+/* Uninstall failed */
+"error.uninstallFailed" = "Uninstall failed.";
+
+/* Installation cancelled */
+"error.installCancelled" = "Installation was cancelled.";
+
+/* Extract failed */
+"error.extractFailed" = "Failed to extract package.";
+
+/* ── Misc Errors ── */
+
+/* SQL content empty */
+"error.sqlEmpty" = "SQL content is empty.";
+
+/* Null response */
+"error.nullResponse" = "No response from server. Please try again.";
+
+/* Invalid JSON */
+"error.invalidJSON" = "Invalid response format.";
+
+/* SSH connection failed */
+"error.sshFailed" = "SSH connection failed.";
+
+/* Server config not found */
+"error.serverConfigNotFound" = "Server configuration not found.";
+
+/* Device identify failed */
+"error.deviceIdentifyFailed" = "Failed to identify device.";
+
+/* No auth token */
+"error.noAuthToken" = "No authentication token found.";
+
+/* Decode failed */
+"error.decodeFailed" = "Failed to decode response.";
+
+/* Operation failed (with context) */
+"error.operationFailed" = "%@ failed";
+
+/* ── Success Messages ── */
+
+/* Row inserted */
+"success.rowInserted" = "Row inserted successfully";
+
+/* Row updated */
+"success.rowUpdated" = "Row updated successfully";
+
+/* Row deleted */
+"success.rowDeleted" = "Row deleted successfully";
+
+/* Row duplicated */
+"success.rowDuplicated" = "Row duplicated";
+
+/* Rows deleted (plural) */
+"success.rowsDeleted" = "%lld row(s) deleted successfully";
+
+/* Backup created */
+"success.backupCreated" = "Backup created successfully";
+
+/* Backup deleted */
+"success.backupDeleted" = "Backup deleted";
+
+/* Backup saved */
+"success.backupSaved" = "Backup saved successfully";
+
+/* Backup restored */
+"success.backupRestored" = "Backup restored successfully";
+
+/* SQL imported */
+"success.sqlImported" = "SQL imported successfully";
+
+/* Table created */
+"success.tableCreated" = "Table '%@' created successfully";
+
+/* Table renamed */
+"success.tableRenamed" = "Table renamed to '%@'";
+
+/* Index dropped */
+"success.indexDropped" = "Index '%@' dropped";
+
+/* Action successful */
+"success.actionSuccessful" = "%@ successful";
+
+/* Password saved */
+"success.passwordSaved" = "Password saved successfully";
+
+/* ── Validation Messages ── */
+
+/* Required field */
+"validation.required" = "This field is required.";
+
+/* Invalid email */
+"validation.invalidEmail" = "Please enter a valid email address.";
+
+/* Password too short */
+"validation.passwordTooShort" = "Password must be at least 8 characters.";
+
+/* Passwords don't match */
+"validation.passwordMismatch" = "Passwords do not match.";
+
+/* Invalid port */
+"validation.invalidPort" = "Port must be between 1 and 65535.";
+
+/* Name required */
+"validation.nameRequired" = "Name is required.";

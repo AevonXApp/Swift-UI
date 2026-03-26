@@ -139,7 +139,7 @@ struct ApacheConfigSection: View {
                                 Image(systemName: "arrow.down.doc.fill")
                                     .font(.system(size: 11))
                             }
-                            Text("Save")
+                            Text(L10n.Button.save)
                                 .font(.system(size: 11, weight: .medium))
                         }
                         .foregroundColor(apacheRed)

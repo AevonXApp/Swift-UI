@@ -56,7 +56,7 @@ struct DockerHubSearchView: View {
                 }
                 
                 Button(action: search) {
-                    Text("Search")
+                    Text(L10n.Button.search)
                         .font(.system(size: 11, weight: .semibold))
                         .foregroundColor(.white)
                         .padding(.horizontal, 12)

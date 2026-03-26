@@ -31,7 +31,7 @@ struct DockerSchedulerView: View {
         VStack(spacing: 0) {
             // Header
             HStack {
-                Label("Container Scheduler", systemImage: "clock.badge.checkmark")
+                Label(L10n.Docker.containerScheduler, systemImage: "clock.badge.checkmark")
                     .font(AXTypography.title2)
                     .foregroundColor(.axTextPrimary)
                 Spacer()
@@ -123,7 +123,7 @@ struct DockerSchedulerView: View {
                                 
                                 HStack {
                                     Spacer()
-                                    Button("Cancel") { showAddForm = false }
+                                    Button(L10n.Button.cancel) { showAddForm = false }
                                         .buttonStyle(.plain)
                                         .foregroundColor(.axTextSecondary)
                                     

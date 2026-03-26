@@ -23,7 +23,7 @@ struct SiteConfigSection: View {
                     HStack(spacing: AXSpacing.sm) {
                         // Templates
                         Button(action: { showTemplates.toggle() }) {
-                            Label("Templates", systemImage: "doc.on.doc")
+                            Label(L10n.Website.templates, systemImage: "doc.on.doc")
                                 .font(AXTypography.subheadline).fontWeight(.medium)
                         }
                         .buttonStyle(.bordered)
@@ -159,7 +159,7 @@ struct SiteConfigSection: View {
                 Text("Config Templates")
                     .font(AXTypography.title3).fontWeight(.bold)
                 Spacer()
-                Button("Close") { showTemplates = false }
+                Button(L10n.Button.close) { showTemplates = false }
                     .buttonStyle(.plain)
             }
             .padding()
@@ -213,7 +213,7 @@ struct SiteConfigSection: View {
                 Text("Config Backups")
                     .font(AXTypography.title3).fontWeight(.bold)
                 Spacer()
-                Button("Close") { showBackups = false }
+                Button(L10n.Button.close) { showBackups = false }
                     .buttonStyle(.plain)
             }
             .padding()
@@ -237,7 +237,7 @@ struct SiteConfigSection: View {
                                         .foregroundColor(.axTextTertiary)
                                 }
                                 Spacer()
-                                Button("Restore") {
+                                Button(L10n.Website.restore) {
                                     Task { await viewModel.restoreBackup(backup) }
                                     showBackups = false
                                 }

@@ -31,21 +31,21 @@ enum SettingsTab: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .general: return "General"
-        case .security: return "Security"
-        case .privacy: return "Privacy"
-        case .appearance: return "Appearance"
-        case .serverList: return "Server List"
-        case .dashboard: return "Dashboard"
-        case .terminal: return "Terminal"
-        case .fileManager: return "File Manager"
-        case .database: return "Database"
-        case .network: return "Network"
-        case .notifications: return "Notifications"
-        case .confirmations: return "Confirmations"
-        case .keyboard: return "Keyboard"
-        case .dataStorage: return "Data & Storage"
-        case .about: return "About"
+        case .general: return L10n.Settings.tabGeneral
+        case .security: return L10n.Settings.tabSecurity
+        case .privacy: return L10n.Settings.tabPrivacy
+        case .appearance: return L10n.Settings.tabAppearance
+        case .serverList: return L10n.Settings.tabServerList
+        case .dashboard: return L10n.Settings.tabDashboard
+        case .terminal: return L10n.Settings.tabTerminal
+        case .fileManager: return L10n.Settings.tabFileManager
+        case .database: return L10n.Settings.tabDatabase
+        case .network: return L10n.Settings.tabNetwork
+        case .notifications: return L10n.Settings.tabNotifications
+        case .confirmations: return L10n.Settings.tabConfirmations
+        case .keyboard: return L10n.Settings.tabKeyboard
+        case .dataStorage: return L10n.Settings.tabDataStorage
+        case .about: return L10n.Settings.tabAbout
         }
     }
 
@@ -112,7 +112,7 @@ struct SettingsView: View {
 
     private var settingsHeader: some View {
         HStack {
-            Text("Settings")
+            Text(L10n.Settings.title)
                 .font(AXTypography.largeTitle)
                 .foregroundColor(.axTextPrimary)
 

@@ -328,13 +328,13 @@ public enum DatabaseInstallationError: LocalizedError {
     public var errorDescription: String? {
         switch self {
         case .stepFailed(let step, let reason):
-            return "Step '\(step)' failed: \(reason)"
+            return L10n.Install.stepFailed(step, reason)
         case .validationFailed(let step, let reason):
-            return "Validation for '\(step)' failed: \(reason)"
+            return L10n.Install.validationFailed(step, reason)
         case .cancelled:
-            return "Installation was cancelled"
+            return L10n.Install.cancelled
         case .missingRecommendation:
-            return "No installation recommendation available"
+            return L10n.Install.noRecommendation
         }
     }
 }

@@ -103,7 +103,7 @@ struct ScheduledBackupSection: View {
 
                         HStack(spacing: AXSpacing.md) {
                             Button(action: { Task { await viewModel.createSchedule() } }) {
-                                Label("Create Schedule", systemImage: "calendar.badge.plus")
+                                Label(L10n.Website.createSchedule, systemImage: "calendar.badge.plus")
                                     .font(AXTypography.subheadline).fontWeight(.semibold)
                                     .frame(maxWidth: .infinity)
                             }
@@ -112,7 +112,7 @@ struct ScheduledBackupSection: View {
                             .disabled(viewModel.isLoading)
 
                             Button(action: { Task { await viewModel.runBackupNow() } }) {
-                                Label("Backup Now", systemImage: "archivebox.fill")
+                                Label(L10n.Website.backupNow, systemImage: "archivebox.fill")
                                     .font(AXTypography.subheadline).fontWeight(.semibold)
                             }
                             .buttonStyle(.bordered)

@@ -57,11 +57,11 @@ struct ModernAddUserView: View {
             VStack(alignment: .leading, spacing: AXSpacing.lg) {
                 // Username
                 VStack(alignment: .leading, spacing: AXSpacing.xs) {
-                    Text("Username")
+                    Text(L10n.Field.username)
                         .font(AXTypography.caption)
                         .fontWeight(.semibold)
                         .foregroundColor(.axTextSecondary)
-                    TextField("username", text: $username)
+                    TextField(L10n.Field.username, text: $username)
                         .textFieldStyle(.plain)
                         .padding(AXSpacing.md)
                         .background(Color.axSurface)
@@ -71,15 +71,15 @@ struct ModernAddUserView: View {
                 
                 // Password
                 VStack(alignment: .leading, spacing: AXSpacing.xs) {
-                    Text("Password")
+                    Text(L10n.Field.password)
                         .font(AXTypography.caption)
                         .fontWeight(.semibold)
                         .foregroundColor(.axTextSecondary)
                     HStack {
                         if showPassword {
-                            TextField("password", text: $password)
+                            TextField(L10n.Field.password, text: $password)
                         } else {
-                            SecureField("password", text: $password)
+                            SecureField(L10n.Field.password, text: $password)
                         }
                         Button { showPassword.toggle() } label: {
                             Image(systemName: showPassword ? "eye.slash" : "eye")
@@ -103,7 +103,7 @@ struct ModernAddUserView: View {
                 
                 // Host
                 VStack(alignment: .leading, spacing: AXSpacing.xs) {
-                    Text("Host")
+                    Text(L10n.Field.host)
                         .font(AXTypography.caption)
                         .fontWeight(.semibold)
                         .foregroundColor(.axTextSecondary)
@@ -124,7 +124,7 @@ struct ModernAddUserView: View {
     
     private var footer: some View {
         HStack {
-            Button("Cancel") { dismiss() }
+            Button(L10n.Button.cancel) { dismiss() }
                 .buttonStyle(.plain)
                 .foregroundColor(.axTextSecondary)
             Spacer()

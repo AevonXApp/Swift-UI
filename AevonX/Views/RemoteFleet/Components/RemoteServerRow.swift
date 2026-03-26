@@ -79,7 +79,7 @@ struct RemoteServerRow: View {
                             .cornerRadius(AXCornerRadius.full)
                     }
                     if server.tags.count > 2 {
-                        Text("+\(server.tags.count - 2)")
+                        Text(L10n.Fleet.moreTagsCount(server.tags.count - 2))
                             .font(AXTypography.caption2)
                             .foregroundColor(.axTextMuted)
                     }
@@ -100,7 +100,7 @@ struct RemoteServerRow: View {
                 HStack(spacing: AXSpacing.xs) {
                     Image(systemName: "bolt.fill")
                         .font(.system(size: 10))
-                    Text("Connect")
+                    Text(L10n.Button.connect)
                         .font(AXTypography.caption2)
                 }
                 .foregroundColor(.axBackground)
@@ -117,17 +117,17 @@ struct RemoteServerRow: View {
                     print("[RemoteServerRow] Menu Connect tapped for: \(server.name)")
                     onConnect()
                 }) {
-                    Label("Connect", systemImage: "bolt.fill")
+                    Label(L10n.Button.connect, systemImage: "bolt.fill")
                 }
 
                 Button(action: onEdit) {
-                    Label("Edit Server", systemImage: "pencil")
+                    Label(L10n.Fleet.editServer, systemImage: "pencil")
                 }
 
                 Button(action: {
                     // Duplicate action placeholder
                 }) {
-                    Label("Duplicate", systemImage: "doc.on.doc")
+                    Label(L10n.Fleet.duplicate, systemImage: "doc.on.doc")
                 }
 
                 Divider()
@@ -139,7 +139,7 @@ struct RemoteServerRow: View {
                         onDelete()
                     }
                 }) {
-                    Label("Delete Server", systemImage: "trash")
+                    Label(L10n.Fleet.deleteServer, systemImage: "trash")
                 }
             } label: {
                 Image(systemName: "ellipsis.circle")
@@ -190,7 +190,7 @@ struct RemoteServerRow: View {
     }
     
     private var statusText: String {
-        server.isAccessible ? "Online" : "Offline"
+        server.isAccessible ? L10n.Fleet.statusOnline : L10n.Fleet.statusOffline
     }
     
     private var accessLevelIcon: String {

@@ -37,7 +37,7 @@ struct LiteSpeedModulesSection: View {
                                     .foregroundColor(.axTextPrimary)
                                     .lineLimit(1)
                                 Spacer()
-                                Text(module.enabled ? "Active" : "Inactive")
+                                Text(module.enabled ? L10n.Status.active : L10n.Status.inactive)
                                     .font(AXTypography.caption2).fontWeight(.semibold)
                                     .foregroundColor(module.enabled ? lsGreen : .axTextMuted)
                             }

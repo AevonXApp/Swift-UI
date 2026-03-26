@@ -185,7 +185,7 @@ struct MySQLVersionsSection: View {
                         Image(systemName: "arrow.down.circle")
                             .font(.system(size: 10))
                     }
-                    Text("Install")
+                    Text(L10n.Button.install)
                         .font(.system(size: 11, weight: .medium))
                 }
                 .foregroundColor(.axSuccess)

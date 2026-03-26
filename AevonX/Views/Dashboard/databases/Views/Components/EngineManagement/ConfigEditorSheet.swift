@@ -21,15 +21,15 @@ struct ConfigEditorSheet: View {
                 }
             }
             .background(Color.axBackground)
-            .navigationTitle("Edit Configuration")
+            .navigationTitle(L10n.Database.editConfig)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") {
+                    Button(L10n.Button.cancel) {
                         presentationMode.wrappedValue.dismiss()
                     }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") {
+                    Button(L10n.Button.save) {
                         Task {
                             await viewModel.saveConfiguration()
                             // Dismiss handled by VM success or manual if preferred, 

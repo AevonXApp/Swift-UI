@@ -69,8 +69,8 @@ public struct AXAdvancedLogsView: View {
             await viewModel.loadLogs()
         }
         .alert("Clear Logs", isPresented: $showClearConfirmation) {
-            Button("Cancel", role: .cancel) { }
-            Button("Clear", role: .destructive) {
+            Button(L10n.Button.cancel, role: .cancel) { }
+            Button(L10n.Button.clear, role: .destructive) {
                 Task { await viewModel.clearLogs() }
             }
         } message: {
@@ -104,7 +104,7 @@ public struct AXAdvancedLogsView: View {
                         Image(systemName: "arrow.clockwise")
                             .font(.system(size: 11, weight: .semibold))
                         if !viewModel.isLoading {
-                            Text("Refresh")
+                            Text(L10n.Button.refresh)
                                 .font(.system(size: 11, weight: .medium))
                         }
                     }
@@ -122,7 +122,7 @@ public struct AXAdvancedLogsView: View {
                     HStack(spacing: 6) {
                         Image(systemName: "trash")
                             .font(.system(size: 11, weight: .semibold))
-                        Text("Clear")
+                        Text(L10n.Button.clear)
                             .font(.system(size: 11, weight: .medium))
                     }
                     .foregroundColor(.axError)

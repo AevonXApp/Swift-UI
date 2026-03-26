@@ -162,7 +162,7 @@ struct MySQLOptimizationSection: View {
 
                     // Save button
                     AppOptimizationSaveButton(
-                        title: "Save",
+                        title: L10n.Button.save,
                         color: Color(red: 0.27, green: 0.47, blue: 0.63),
                         isSaving: isSaving
                     ) {

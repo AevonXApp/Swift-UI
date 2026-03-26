@@ -23,7 +23,7 @@ extension DatabaseEngineDetailViewModel {
                 loadRedisPassword()
             }
         } catch {
-            errorMessage = "Failed to load configuration: \(error.localizedDescription)"
+            errorMessage = "\(L10n.Engine.loadConfigFailed): \(error.localizedDescription)"
         }
     }
 
@@ -49,7 +49,7 @@ extension DatabaseEngineDetailViewModel {
         guard let serverId = currentServerId, databaseType == .redis else { return }
 
         isPerformingServiceAction = true
-        operationResult = .inProgress(message: "Updating Redis password...", progress: nil)
+        operationResult = .inProgress(message: "\(L10n.Status.loading)", progress: nil)
 
         do {
             let currentConfig = try await DatabaseEngineService.shared.getConfiguration(type: databaseType, serverId: serverId)
@@ -80,12 +80,12 @@ extension DatabaseEngineDetailViewModel {
             redisPassword = newPassword
             await loadConfiguration()
 
-            operationResult = .success(message: "Password updated successfully!")
-            activeAlert = .operationSuccess(message: "Redis password has been updated. You may need to restart the service for changes to take effect.")
+            operationResult = .success(message: L10n.Success.passwordSaved)
+            activeAlert = .operationSuccess(message: L10n.Success.passwordSaved)
 
         } catch {
-            operationResult = .failure(message: "Failed to update password: \(error.localizedDescription)")
-            activeAlert = .operationFailure(message: "Failed to update Redis password: \(error.localizedDescription)")
+            operationResult = .failure(message: "\(L10n.Engine.updatePasswordFailed): \(error.localizedDescription)")
+            activeAlert = .operationFailure(message: "\(L10n.Engine.updateRedisPasswordFailed): \(error.localizedDescription)")
         }
 
         isPerformingServiceAction = false
@@ -96,7 +96,7 @@ extension DatabaseEngineDetailViewModel {
         guard let serverId = currentServerId, let currentConfig = configuration else { return }
 
         isPerformingServiceAction = true
-        operationResult = .inProgress(message: "Saving configuration...", progress: nil)
+        operationResult = .inProgress(message: "\(L10n.Status.loading)", progress: nil)
 
         do {
             let newConfig = DatabaseConfiguration(
@@ -108,13 +108,13 @@ extension DatabaseEngineDetailViewModel {
             try await DatabaseEngineService.shared.updateConfiguration(newConfig, type: databaseType, serverId: serverId)
             await loadConfiguration()
 
-            operationResult = .success(message: "Configuration saved successfully!")
-            activeAlert = .operationSuccess(message: "Configuration has been saved. You may need to restart the service for changes to take effect.")
+            operationResult = .success(message: L10n.Database.actionSuccessful(L10n.Button.saveChanges))
+            activeAlert = .operationSuccess(message: L10n.Database.actionSuccessful(L10n.Button.saveChanges))
             showConfigEditor = false
 
         } catch {
-            operationResult = .failure(message: "Failed to save: \(error.localizedDescription)")
-            activeAlert = .operationFailure(message: "Failed to save configuration: \(error.localizedDescription)")
+            operationResult = .failure(message: "\(L10n.Engine.saveFailed): \(error.localizedDescription)")
+            activeAlert = .operationFailure(message: "\(L10n.Engine.saveConfigFailed): \(error.localizedDescription)")
         }
 
         isPerformingServiceAction = false
@@ -123,10 +123,10 @@ extension DatabaseEngineDetailViewModel {
     /// Save configuration content to the server
     public func saveConfiguration(content: String) async {
         await performOperation(
-            progressMessage: "Saving configuration...",
-            successMessage: "Configuration saved successfully!",
-            successAlert: "Configuration has been saved. A restart may be required for changes to take effect.",
-            failurePrefix: "Save failed",
+            progressMessage: "\(L10n.Status.loading)",
+            successMessage: L10n.Database.actionSuccessful(L10n.Button.saveChanges),
+            successAlert: L10n.Database.actionSuccessful(L10n.Button.saveChanges),
+            failurePrefix: L10n.Engine.saveFailed,
             reloadAfterSuccess: false
         ) {
             let config = DatabaseConfiguration(engineType: databaseType, settings: [:], rawContent: content)
@@ -155,7 +155,7 @@ extension DatabaseEngineDetailViewModel {
             }
             availableVersions = normalized
         } catch {
-            errorMessage = "Failed to fetch available versions: \(error.localizedDescription)"
+            errorMessage = "\(L10n.Engine.fetchVersionsFailed): \(error.localizedDescription)"
             availableVersions = []
         }
 
@@ -183,8 +183,8 @@ extension DatabaseEngineDetailViewModel {
             await loadData()
 
         } catch {
-            operationResult = .failure(message: "Installation failed: \(error.localizedDescription)")
-            activeAlert = .operationFailure(message: "Failed to install \(databaseType.displayName) \(version.version): \(error.localizedDescription)")
+            operationResult = .failure(message: "\(L10n.Engine.installFailed): \(error.localizedDescription)")
+            activeAlert = .operationFailure(message: "\(L10n.Engine.installVersionFailed(databaseType.displayName, version.version)): \(error.localizedDescription)")
         }
 
         isPerformingServiceAction = false
@@ -211,8 +211,8 @@ extension DatabaseEngineDetailViewModel {
             await loadData()
 
         } catch {
-            operationResult = .failure(message: "Update failed: \(error.localizedDescription)")
-            activeAlert = .operationFailure(message: "Failed to update \(databaseType.displayName): \(error.localizedDescription)")
+            operationResult = .failure(message: "\(L10n.Engine.updateFailed): \(error.localizedDescription)")
+            activeAlert = .operationFailure(message: "\(L10n.Engine.updateTypeFailed(databaseType.displayName)): \(error.localizedDescription)")
         }
 
         isPerformingServiceAction = false
@@ -225,18 +225,18 @@ extension DatabaseEngineDetailViewModel {
         guard let serverId = currentServerId else { return }
 
         isAnalyzingPerformance = true
-        operationResult = .inProgress(message: "Analyzing performance...", progress: nil)
+        operationResult = .inProgress(message: "\(L10n.Status.loading)", progress: nil)
 
         do {
             metrics = try await DatabaseMetricsService.shared.getMetrics(type: databaseType, serverId: serverId)
             performanceStats = try await DatabaseMetricsService.shared.getPerformanceStats(type: databaseType, serverId: serverId)
 
             updateHealthStatus()
-            operationResult = .success(message: "Performance analysis complete!")
-            activeAlert = .operationSuccess(message: "Performance analysis has been updated with the latest metrics.")
+            operationResult = .success(message: L10n.Database.actionSuccessful("Performance analysis"))
+            activeAlert = .operationSuccess(message: L10n.Database.actionSuccessful("Performance analysis"))
         } catch {
-            operationResult = .failure(message: "Analysis failed: \(error.localizedDescription)")
-            activeAlert = .operationFailure(message: "Failed to analyze performance: \(error.localizedDescription)")
+            operationResult = .failure(message: "\(L10n.Engine.analysisFailed): \(error.localizedDescription)")
+            activeAlert = .operationFailure(message: "\(L10n.Engine.analyzePerformanceFailed): \(error.localizedDescription)")
         }
 
         isAnalyzingPerformance = false
@@ -248,7 +248,7 @@ extension DatabaseEngineDetailViewModel {
             progressMessage: "Applying '\(preset)' preset...",
             successMessage: "'\(preset)' preset applied!",
             successAlert: "The '\(preset)' optimization preset has been applied. Restart the service for changes to take effect.",
-            failurePrefix: "Failed to apply preset",
+            failurePrefix: L10n.Database.actionFailed(L10n.Button.apply),
             reloadAfterSuccess: false
         ) {
             let currentConfig = try await DatabaseEngineService.shared.getConfiguration(type: databaseType, serverId: currentServerId!)

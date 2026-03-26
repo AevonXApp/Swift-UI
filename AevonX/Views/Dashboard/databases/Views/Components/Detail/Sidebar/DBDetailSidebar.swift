@@ -35,7 +35,7 @@ struct DBDetailSidebar: View {
                     HStack(spacing: AXSpacing.xxs) {
                         Image(systemName: "chevron.left")
                             .font(AXTypography.caption2).fontWeight(.bold)
-                        Text("Back")
+                        Text(L10n.Button.back)
                             .font(AXTypography.footnote).fontWeight(.semibold)
                     }
                     .foregroundColor(.axAccentBlue)
@@ -147,7 +147,7 @@ struct DBDetailSidebar: View {
             viewModel.showCreateTable = true
             viewModel.currentSection = .tables
         } label: {
-            quickActionRow(icon: "plus.rectangle", title: "Create Table", color: .axAccentGreen)
+            quickActionRow(icon: "plus.rectangle", title: L10n.Database.createTable, color: .axAccentGreen)
         }
         .buttonStyle(.plain)
 
@@ -168,7 +168,7 @@ struct DBDetailSidebar: View {
         Button {
             viewModel.showImportSQL = true
         } label: {
-            quickActionRow(icon: "arrow.up.doc", title: "Import SQL", color: .purple)
+            quickActionRow(icon: "arrow.up.doc", title: L10n.Database.importSQL, color: .purple)
         }
         .buttonStyle(.plain)
 

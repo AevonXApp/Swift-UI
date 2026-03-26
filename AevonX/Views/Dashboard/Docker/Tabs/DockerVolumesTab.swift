@@ -39,7 +39,7 @@ struct DockerVolumesTab: View {
                 Button(action: { showCreateSheet = true }) {
                     HStack(spacing: 6) {
                         Image(systemName: "plus.circle")
-                        Text("Create Volume")
+                        Text(L10n.Docker.createVolume)
                     }
                     .font(AXTypography.subheadline)
                     .foregroundColor(.white)
@@ -219,7 +219,7 @@ private struct VolumeRow: View {
                     }
                     .buttonStyle(.plain)
                     .onHover { hover in isHovered = hover }
-                    .help("Remove Volume")
+                    .help(L10n.Docker.removeVolume)
                 }
             }
         }
@@ -235,7 +235,7 @@ private struct CreateVolumeSheet: View {
     
     var body: some View {
         VStack(spacing: AXSpacing.lg) {
-            Text("Create Volume")
+            Text(L10n.Docker.createVolume)
                 .font(AXTypography.title3)
                 .foregroundColor(.axTextPrimary)
             
@@ -258,7 +258,7 @@ private struct CreateVolumeSheet: View {
             }
             
             HStack(spacing: AXSpacing.md) {
-                Button("Cancel") {
+                Button(L10n.Button.cancel) {
                     isOpen = false
                 }
                 .buttonStyle(.plain)
@@ -271,8 +271,8 @@ private struct CreateVolumeSheet: View {
                     RoundedRectangle(cornerRadius: AXCornerRadius.sm)
                         .stroke(Color.axBorder, lineWidth: 1)
                 )
-                
-                Button("Create") {
+
+                Button(L10n.Button.create) {
                     if !volumeName.isEmpty {
                         onCreate(volumeName, driver)
                         isOpen = false

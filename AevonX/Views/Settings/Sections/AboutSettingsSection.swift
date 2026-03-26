@@ -121,7 +121,7 @@ private struct AboutHeroCard: View {
                 .padding(.top, AXSpacing.lg)
 
                 // App name
-                Text("AevonX")
+                Text(L10n.App.name)
                     .font(.system(size: 32, weight: .heavy, design: .rounded))
                     .foregroundStyle(
                         LinearGradient(
@@ -132,7 +132,7 @@ private struct AboutHeroCard: View {
                     )
 
                 // Tagline
-                Text("Server Management, Reimagined.")
+                Text(L10n.App.tagline)
                     .font(.system(size: 14, weight: .medium))
                     .foregroundColor(.axTextSecondary)
                     .tracking(0.5)
@@ -470,7 +470,7 @@ private struct AboutDebugSection: View {
         switch updateService.state {
         case .upToDate: return "You're up to date"
         case .updateAvailable: return "Version \(updateService.availableVersion?.version ?? "") available"
-        case .downloading: return "Downloading..."
+        case .downloading: return L10n.Update.downloading
         case .downloaded: return "Ready to install"
         case .error(let msg): return msg
         default: return nil

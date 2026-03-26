@@ -118,7 +118,7 @@ struct DockerComposeEditor: View {
                 Button(action: save) {
                     HStack(spacing: 4) {
                         if isSaving { ProgressView().controlSize(.small) }
-                        Text("Save")
+                        Text(L10n.Button.save)
                     }
                 }
                 .buttonStyle(AXSecondaryButtonStyle())

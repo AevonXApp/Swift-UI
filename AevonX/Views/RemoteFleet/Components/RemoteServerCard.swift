@@ -65,7 +65,7 @@ struct RemoteServerCard: View {
                             .fill(server.isAccessible ? Color.axSuccess : Color.axTextMuted)
                             .frame(width: 5, height: 5)
                         
-                        Text(server.isAccessible ? "Online" : "Offline")
+                        Text(server.isAccessible ? L10n.Fleet.statusOnline : L10n.Fleet.statusOffline)
                             .font(.system(size: 9, weight: .semibold))
                             .foregroundColor(server.isAccessible ? .axSuccess : .axTextMuted)
                     }
@@ -126,7 +126,7 @@ struct RemoteServerCard: View {
                             .clipShape(Capsule())
                     }
                     if server.tags.count > 2 {
-                        Text("+\(server.tags.count - 2)")
+                        Text(L10n.Fleet.moreTagsCount(server.tags.count - 2))
                             .font(.system(size: 9, weight: .medium))
                             .foregroundColor(.axTextMuted)
                     }
@@ -144,7 +144,7 @@ struct RemoteServerCard: View {
                     HStack(spacing: 5) {
                         Image(systemName: "bolt.fill")
                             .font(.system(size: 10, weight: .bold))
-                        Text("Connect")
+                        Text(L10n.Button.connect)
                             .font(.system(size: 11, weight: .semibold))
                             .lineLimit(1)
                             .fixedSize(horizontal: true, vertical: false)
@@ -199,10 +199,10 @@ struct RemoteServerCard: View {
         .onTapGesture { onTap() }
         .contextMenu {
             Button(action: onEdit) {
-                Label("Edit Server", systemImage: "pencil")
+                Label(L10n.Fleet.editServer, systemImage: "pencil")
             }
             Button(action: { NSPasteboard.general.clearContents(); NSPasteboard.general.setString(server.host, forType: .string) }) {
-                Label("Copy IP Address", systemImage: "doc.on.clipboard")
+                Label(L10n.Fleet.copyIP, systemImage: "doc.on.clipboard")
             }
             Divider()
             Button(role: .destructive, action: {
@@ -212,7 +212,7 @@ struct RemoteServerCard: View {
                     onDelete()
                 }
             }) {
-                Label("Delete", systemImage: "trash")
+                Label(L10n.Button.delete, systemImage: "trash")
             }
         }
         .overlay {

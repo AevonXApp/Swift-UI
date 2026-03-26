@@ -97,7 +97,7 @@ struct LiteSpeedSitesSection: View {
 
             Spacer()
 
-            Text(enabled ? "ENABLED" : "DISABLED")
+            Text(enabled ? L10n.Status.enabled.uppercased() : L10n.Status.disabled.uppercased())
                 .font(AXTypography.caption2).fontWeight(.bold)
                 .foregroundColor(enabled ? lsGreen : .axError)
                 .padding(.horizontal, 5).padding(.vertical, 2)

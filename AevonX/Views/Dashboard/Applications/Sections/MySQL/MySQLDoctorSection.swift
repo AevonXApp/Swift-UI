@@ -83,7 +83,7 @@ struct MySQLDoctorSection: View {
             // Checks list
             if isLoading {
                 Spacer()
-                ProgressView("Loading...")
+                ProgressView(L10n.Status.loading)
                 Spacer()
             } else {
                 ScrollView {

@@ -43,7 +43,7 @@ struct FindReplaceBar: View {
                         .cornerRadius(3)
                 }
                 .buttonStyle(PlainButtonStyle())
-                .help("Case Sensitive")
+                .help(L10n.Files.caseSensitive)
                 
                 Button(action: { wholeWord.toggle(); updateMatchCount() }) {
                     Text("W")
@@ -54,7 +54,7 @@ struct FindReplaceBar: View {
                         .cornerRadius(3)
                 }
                 .buttonStyle(PlainButtonStyle())
-                .help("Whole Word")
+                .help(L10n.Files.wholeWord)
                 
                 // Match info
                 if !findText.isEmpty {
@@ -113,11 +113,11 @@ struct FindReplaceBar: View {
                         .textFieldStyle(PlainTextFieldStyle())
                         .font(.system(size: 12))
                     
-                    Button("Replace") { replaceCurrent() }
+                    Button(L10n.Files.replace) { replaceCurrent() }
                         .font(.system(size: 11))
                         .disabled(matchCount == 0)
                     
-                    Button("All") { replaceAll() }
+                    Button(L10n.Files.replaceAll) { replaceAll() }
                         .font(.system(size: 11))
                         .disabled(matchCount == 0)
                 }

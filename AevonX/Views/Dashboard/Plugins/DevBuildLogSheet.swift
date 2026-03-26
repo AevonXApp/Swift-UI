@@ -275,7 +275,7 @@ struct DevBuildLogSheet: View {
                     HStack(spacing: 6) {
                         Image(systemName: "checkmark.circle.fill")
                             .font(.system(size: 12))
-                        Text("Done")
+                        Text(L10n.Button.done)
                             .font(.system(size: 12, weight: .semibold))
                     }
                     .foregroundColor(.white)
@@ -288,7 +288,7 @@ struct DevBuildLogSheet: View {
                 }
                 .buttonStyle(.plain)
             } else if hasFailed {
-                Button("Retry") {
+                Button(L10n.Button.retry) {
                     steps = []
                     hasFailed = false
                     isComplete = false
@@ -304,7 +304,7 @@ struct DevBuildLogSheet: View {
             Spacer()
             
             if !isInstalling {
-                Button(isComplete ? "Close" : "Cancel") {
+                Button(isComplete ? L10n.Button.close : L10n.Button.cancel) {
                     if isComplete && !hasFailed {
                         Task {
                             await AevonXCoreBridge.HookLoader.shared.load(serverId: serverId, force: true)

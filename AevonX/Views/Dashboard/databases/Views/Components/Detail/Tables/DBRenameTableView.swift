@@ -115,7 +115,7 @@ struct DBRenameTableView: View {
             // Actions
             HStack(spacing: AXSpacing.md) {
                 Button { dismiss() } label: {
-                    Text("Cancel")
+                    Text(L10n.Button.cancel)
                         .font(AXTypography.subheadline).fontWeight(.semibold)
                         .foregroundColor(.axTextSecondary)
                         .frame(maxWidth: .infinity)

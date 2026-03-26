@@ -93,7 +93,7 @@ struct PHPVersionsSection: View {
                     .foregroundColor(.axTextPrimary)
                 Spacer()
                 if isActive {
-                    Text("Active")
+                    Text(L10n.Status.active)
                         .font(.system(size: 10, weight: .bold))
                         .foregroundColor(.axSuccess)
                         .padding(.horizontal, 6).padding(.vertical, 2)
@@ -135,7 +135,7 @@ struct PHPVersionsSection: View {
                         } label: {
                             HStack(spacing: 4) {
                                 Image(systemName: "trash").font(.system(size: 9))
-                                Text("Uninstall").font(.system(size: 10, weight: .semibold))
+                                Text(L10n.Button.uninstall).font(.system(size: 10, weight: .semibold))
                             }
                             .foregroundColor(.axError)
                         }
@@ -178,7 +178,7 @@ struct PHPVersionsSection: View {
             } label: {
                 HStack(spacing: 4) {
                     Image(systemName: "arrow.down.circle.fill").font(.system(size: 10))
-                    Text("Install").font(.system(size: 11, weight: .semibold))
+                    Text(L10n.Button.install).font(.system(size: 11, weight: .semibold))
                 }
                 .foregroundColor(phpPurple)
             }

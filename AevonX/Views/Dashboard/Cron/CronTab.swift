@@ -87,7 +87,7 @@ struct CronTab: View {
                     Image(systemName: "clock.badge.checkmark")
                         .font(.system(size: 18, weight: .semibold))
                         .foregroundColor(.axAccentBlue)
-                    Text("Cron Manager")
+                    Text(L10n.Cron.title)
                         .font(.system(size: 18, weight: .bold))
                         .foregroundColor(.axTextPrimary)
                 }
@@ -120,7 +120,7 @@ struct CronTab: View {
                     HStack(spacing: AXSpacing.xs) {
                         Image(systemName: "plus")
                             .font(.system(size: 12, weight: .bold))
-                        Text("Add Task")
+                        Text(L10n.Cron.addTask)
                             .font(.system(size: 12, weight: .semibold))
                     }
                     .foregroundColor(.white)

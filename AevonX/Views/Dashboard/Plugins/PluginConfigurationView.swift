@@ -91,21 +91,21 @@ struct PluginConfigurationView: View {
                         HStack(spacing: AXSpacing.sm) {
                             if let docs = info.docsUrl, let url = URL(string: docs) {
                                 Link(destination: url) {
-                                    Label("Docs", systemImage: "book.fill")
+                                    Label(L10n.Plugin.docs, systemImage: "book.fill")
                                         .font(.caption2)
                                 }
                                 .buttonStyle(AXLinkButtonStyle())
                             }
                             if let github = info.githubUrl, let url = URL(string: github) {
                                 Link(destination: url) {
-                                    Label("GitHub", systemImage: "chevron.left.forwardslash.chevron.right")
+                                    Label(L10n.Plugin.github, systemImage: "chevron.left.forwardslash.chevron.right")
                                         .font(.caption2)
                                 }
                                 .buttonStyle(AXLinkButtonStyle())
                             }
                             if let discord = info.discordUrl, let url = URL(string: discord) {
                                 Link(destination: url) {
-                                    Label("Discord", systemImage: "bubble.left.and.bubble.right.fill")
+                                    Label(L10n.Plugin.discord, systemImage: "bubble.left.and.bubble.right.fill")
                                         .font(.caption2)
                                 }
                                 .buttonStyle(AXLinkButtonStyle())
@@ -118,8 +118,8 @@ struct PluginConfigurationView: View {
                 Spacer()
                 
                 Picker("", selection: $editMode) {
-                    Text("Settings").tag(ConfigEditMode.keyValue)
-                    Text("Raw File").tag(ConfigEditMode.raw)
+                    Text(L10n.Plugin.configure).tag(ConfigEditMode.keyValue)
+                    Text(L10n.Plugin.editRawFile).tag(ConfigEditMode.raw)
                 }
                 .pickerStyle(SegmentedPickerStyle())
                 .frame(width: 160)
@@ -138,7 +138,7 @@ struct PluginConfigurationView: View {
                             .scaleEffect(0.8)
                             .frame(width: 60)
                     } else {
-                        Text("Save Changes")
+                        Text(L10n.Button.saveChanges)
                             .font(AXTypography.caption)
                             .fontWeight(.semibold)
                             .foregroundColor(.white)
@@ -200,7 +200,7 @@ struct PluginConfigurationView: View {
                             .font(AXTypography.caption)
                             .foregroundColor(.axTextSecondary)
                         
-                        Button("Edit Raw File") {
+                        Button(L10n.Plugin.editRawFile) {
                             editMode = .raw
                         }
                         .buttonStyle(AXSecondaryButtonStyle())

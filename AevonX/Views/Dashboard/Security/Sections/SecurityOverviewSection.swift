@@ -150,7 +150,7 @@ struct SecurityOverviewSection: View {
                 Text(label)
                     .font(.system(size: 12, weight: .medium))
                     .foregroundColor(.axTextPrimary)
-                Text(active ? "Active" : "Inactive")
+                Text(active ? L10n.Status.active : L10n.Status.inactive)
                     .font(.system(size: 10))
                     .foregroundColor(active ? .axSuccess : .axTextMuted)
             }

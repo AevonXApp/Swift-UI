@@ -40,7 +40,7 @@ struct CronJobRow: View {
                         .lineLimit(1)
                     
                     if !job.isEnabled {
-                        Text("DISABLED")
+                        Text(L10n.Cron.disabled)
                             .font(.system(size: 8, weight: .bold))
                             .foregroundColor(.axTextMuted)
                             .padding(.horizontal, 5)

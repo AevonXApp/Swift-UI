@@ -17,23 +17,23 @@ struct RemoteFleetNoResultsView: View {
                 .foregroundColor(.axTextMuted)
 
             VStack(spacing: AXSpacing.sm) {
-                Text("No Servers Found")
+                Text(L10n.Fleet.noResults)
                     .font(AXTypography.title2)
                     .fontWeight(.semibold)
                     .foregroundColor(.axTextPrimary)
 
                 if let filter = selectedFilter {
-                    Text("No \(filter.rawValue.lowercased()) servers match your criteria")
+                    Text(L10n.Fleet.noFilterResults(filter.rawValue.lowercased()))
                         .font(AXTypography.body)
                         .foregroundColor(.axTextSecondary)
                         .multilineTextAlignment(.center)
                 } else if !searchText.isEmpty {
-                    Text("No servers match '\(searchText)'")
+                    Text(L10n.Fleet.noSearchResults(searchText))
                         .font(AXTypography.body)
                         .foregroundColor(.axTextSecondary)
                 }
 
-                Text("Try adjusting your filters or search criteria")
+                Text(L10n.Fleet.adjustFilters)
                     .font(AXTypography.caption)
                     .foregroundColor(.axTextTertiary)
             }
@@ -43,7 +43,7 @@ struct RemoteFleetNoResultsView: View {
                     Button(action: { searchText = "" }) {
                         HStack(spacing: AXSpacing.xs) {
                             Image(systemName: "xmark.circle")
-                            Text("Clear Search")
+                            Text(L10n.Fleet.clearSearch)
                         }
                         .font(AXTypography.subheadline)
                         .foregroundColor(.axTextPrimary)
@@ -63,7 +63,7 @@ struct RemoteFleetNoResultsView: View {
                     Button(action: { selectedFilter = nil }) {
                         HStack(spacing: AXSpacing.xs) {
                             Image(systemName: "line.3.horizontal.decrease.circle")
-                            Text("Clear Filter")
+                            Text(L10n.Fleet.clearFilter)
                         }
                         .font(AXTypography.subheadline)
                         .foregroundColor(.axTextPrimary)

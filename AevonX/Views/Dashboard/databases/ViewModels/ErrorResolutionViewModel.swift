@@ -60,7 +60,7 @@ public class ErrorResolutionViewModel: ObservableObject {
     
     public func startAnalysis() async {
         guard let step = erroredStep, let log = errorLog else {
-            errorMessage = "Missing error context"
+            errorMessage = L10n.ErrorResolution.noContext
             return
         }
         

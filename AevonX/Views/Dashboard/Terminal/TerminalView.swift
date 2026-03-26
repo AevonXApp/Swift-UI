@@ -45,7 +45,7 @@ struct TerminalView: View {
             if viewModel.isConnected {
                 inputBar(theme: theme)
             } else if viewModel.state == .connecting || viewModel.state == .reconnecting(attempt: 0) {
-                statusBar(text: "Connecting...", color: theme.yellow, background: theme.background)
+                statusBar(text: L10n.Status.connecting, color: theme.yellow, background: theme.background)
             }
         }
         .background(theme.background)
@@ -189,7 +189,7 @@ struct TerminalView: View {
                             )
                     }
                     .buttonStyle(PlainButtonStyle())
-                    .help("Tab completion")
+                    .help(L10n.Terminal.tabCompletion)
                     
                     // Ctrl+C
                     Button(action: { viewModel.sendInterrupt() }) {
@@ -206,7 +206,7 @@ struct TerminalView: View {
                             )
                     }
                     .buttonStyle(PlainButtonStyle())
-                    .help("Send interrupt (Ctrl+C)")
+                    .help(L10n.Terminal.sendInterrupt)
                 }
             }
             .padding(.horizontal, 16)

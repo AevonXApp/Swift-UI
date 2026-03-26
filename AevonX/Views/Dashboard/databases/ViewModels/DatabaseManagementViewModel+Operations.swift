@@ -225,11 +225,11 @@ public enum DatabaseOperationError: LocalizedError {
     public var errorDescription: String? {
         switch self {
         case .serverNotConfigured:
-            return "Server not configured"
+            return L10n.Error.serverNotConfigured
         case .notConnected:
-            return "Not connected to server"
+            return L10n.Error.notConnected
         case .operationFailed(let reason):
-            return "Operation failed: \(reason)"
+            return L10n.Database.operationFailed(reason)
         }
     }
 }

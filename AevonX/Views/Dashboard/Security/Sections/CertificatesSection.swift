@@ -20,7 +20,7 @@ struct CertificatesSection: View {
 
     @State private var isLoading = true
     @State private var certificates: [CertificateInfo] = []
-    @State private var tlsVersion = "Unknown"
+    @State private var tlsVersion = L10n.Status.unknown
     @State private var searchText = ""
 
     private let securityManager = SecurityManager.shared

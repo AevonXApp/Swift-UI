@@ -1067,7 +1067,7 @@ struct DockerTemplateDeployView: View {
             
             // Deploy button
             HStack {
-                Button("Cancel") { selectedTemplate = nil }
+                Button(L10n.Button.cancel) { selectedTemplate = nil }
                     .buttonStyle(AXSecondaryButtonStyle())
                 Spacer()
                 Button(action: deploy) {

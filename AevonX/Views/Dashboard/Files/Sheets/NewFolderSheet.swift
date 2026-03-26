@@ -16,7 +16,7 @@ struct NewFolderSheetView: View {
     
     var body: some View {
         VStack(spacing: AXSpacing.lg) {
-            Text("New Folder")
+            Text(L10n.Files.newFolder)
                 .font(AXTypography.headline)
                 .foregroundColor(.axTextPrimary)
             
@@ -32,9 +32,9 @@ struct NewFolderSheetView: View {
             }
             
             HStack(spacing: AXSpacing.md) {
-                Button("Cancel") { viewModel.showNewFolderSheet = false }
+                Button(L10n.Button.cancel) { viewModel.showNewFolderSheet = false }
                     .buttonStyle(AXSecondaryButtonStyle())
-                Button("Create") { createIfValid() }
+                Button(L10n.Button.create) { createIfValid() }
                     .buttonStyle(AXPrimaryButtonStyle())
                     .disabled(folderName.trimmingCharacters(in: .whitespaces).isEmpty)
             }

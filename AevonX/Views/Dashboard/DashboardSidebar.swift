@@ -231,7 +231,7 @@ struct DashboardSidebar: View {
                         }
                     }
                 }) {
-                    Text(viewModel.isConnected ? "Disconnect" : "Connect")
+                    Text(viewModel.isConnected ? L10n.Button.disconnect : L10n.Button.connect)
                         .font(.system(size: 9, weight: .bold, design: .rounded))
                         .foregroundColor(viewModel.isConnected ? .axError : .axSuccess)
                         .padding(.horizontal, AXSpacing.sm)
@@ -258,7 +258,7 @@ struct DashboardSidebar: View {
                     viewModel.selectedTab = .terminal
                 }
 
-                SidebarQuickAction(icon: "arrow.clockwise", label: "Restart", color: .axWarning, isEnabled: viewModel.isConnected) {
+                SidebarQuickAction(icon: "arrow.clockwise", label: L10n.Button.restart, color: .axWarning, isEnabled: viewModel.isConnected) {
                     viewModel.isRestartConfirming = true
                 }
 
@@ -467,9 +467,9 @@ struct DashboardConnectionStatusIndicator: View {
     }
 
     private var statusText: String {
-        if viewModel.isConnected { return "Connected" }
+        if viewModel.isConnected { return L10n.Status.connected }
         if viewModel.isReconnecting { return "Reconnecting..." }
-        if viewModel.isConnecting { return "Connecting..." }
-        return "Disconnected"
+        if viewModel.isConnecting { return L10n.Status.connecting }
+        return L10n.Status.disconnected
     }
 }

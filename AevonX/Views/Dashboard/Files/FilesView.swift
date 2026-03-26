@@ -121,9 +121,9 @@ struct FilesView: View {
                 )
             }
         }
-        .alert("Go to Path", isPresented: $viewModel.showGoToPath) {
+        .alert(L10n.Files.goToPath, isPresented: $viewModel.showGoToPath) {
             TextField("/var/www", text: $viewModel.goToPathText)
-            Button("Cancel", role: .cancel) {}
+            Button(L10n.Button.cancel, role: .cancel) {}
             Button("Go") { viewModel.goToPath(viewModel.goToPathText) }
         }
         .onChange(of: viewModel.searchText) { _, newValue in
@@ -177,7 +177,7 @@ struct FilesView: View {
                     VStack(spacing: AXSpacing.md) {
                         ProgressView()
                             .progressViewStyle(CircularProgressViewStyle(tint: .axAccentBlue))
-                        Text("Loading file...")
+                        Text(L10n.Status.loading)
                             .font(AXTypography.caption)
                             .foregroundColor(.axTextSecondary)
                     }

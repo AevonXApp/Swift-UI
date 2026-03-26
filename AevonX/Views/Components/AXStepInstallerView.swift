@@ -283,11 +283,11 @@ public struct AXStepInstallerView: View {
                                 .font(AXTypography.caption)
                                 .foregroundColor(.axTextSecondary)
                         } else if viewModel.isComplete {
-                            Text("All steps completed successfully")
+                            Text(L10n.Installer.allComplete)
                                 .font(AXTypography.caption)
                                 .foregroundColor(.axSuccess)
                         } else if viewModel.hasFailed {
-                            Text("Installation failed")
+                            Text(L10n.Installer.failed)
                                 .font(AXTypography.caption)
                                 .foregroundColor(.axError)
                         }
@@ -430,7 +430,7 @@ public struct AXStepInstallerView: View {
         HStack {
             // Step counter
             HStack(spacing: AXSpacing.xs) {
-                Text("Step \(max(viewModel.currentStepIndex + 1, 1))/\(viewModel.steps.count)")
+                Text(L10n.Installer.stepProgress(max(viewModel.currentStepIndex + 1, 1), viewModel.steps.count))
                     .font(.system(size: 11, weight: .medium, design: .monospaced))
                     .foregroundColor(.axTextTertiary)
             }
@@ -442,7 +442,7 @@ public struct AXStepInstallerView: View {
                     HStack(spacing: 6) {
                         Image(systemName: "xmark")
                             .font(.system(size: 11, weight: .semibold))
-                        Text("Cancel")
+                        Text(L10n.Button.cancel)
                             .font(.system(size: 12, weight: .semibold))
                     }
                     .foregroundColor(.white)
@@ -457,7 +457,7 @@ public struct AXStepInstallerView: View {
                     HStack(spacing: 6) {
                         Image(systemName: viewModel.isComplete ? "checkmark" : "arrow.uturn.backward")
                             .font(.system(size: 11, weight: .semibold))
-                        Text(viewModel.isComplete ? "Done" : "Dismiss")
+                        Text(viewModel.isComplete ? L10n.Button.done : L10n.Button.close)
                             .font(.system(size: 12, weight: .semibold))
                     }
                     .foregroundColor(.white)

@@ -50,7 +50,7 @@ struct FTPSettingsSheet: View {
                                     .fill(vm.serverInfo.isRunning ? Color.axSuccess : Color.axError)
                                     .frame(width: 10, height: 10)
                                     .shadow(color: (vm.serverInfo.isRunning ? Color.axSuccess : Color.axError).opacity(0.5), radius: 4)
-                                Text(vm.serverInfo.isRunning ? "Running" : "Stopped")
+                                Text(vm.serverInfo.isRunning ? L10n.Status.running : L10n.Status.stopped)
                                     .font(.system(size: 13, weight: .semibold))
                                     .foregroundColor(vm.serverInfo.isRunning ? .axSuccess : .axError)
                             }
@@ -74,25 +74,25 @@ struct FTPSettingsSheet: View {
                             // Service controls
                             HStack(spacing: AXSpacing.sm) {
                                 serviceButton(
-                                    label: "Start",
+                                    label: L10n.Button.start,
                                     icon: "play.fill",
                                     color: .axSuccess,
                                     disabled: vm.serverInfo.isRunning
                                 ) {
                                     Task { await vm.startService() }
                                 }
-                                
+
                                 serviceButton(
-                                    label: "Stop",
+                                    label: L10n.Button.stop,
                                     icon: "stop.fill",
                                     color: .axError,
                                     disabled: !vm.serverInfo.isRunning
                                 ) {
                                     Task { await vm.stopService() }
                                 }
-                                
+
                                 serviceButton(
-                                    label: "Restart",
+                                    label: L10n.Button.restart,
                                     icon: "arrow.clockwise",
                                     color: .axWarning,
                                     disabled: false
@@ -115,7 +115,7 @@ struct FTPSettingsSheet: View {
                                     Image(systemName: "network")
                                         .font(.system(size: 11))
                                         .foregroundColor(.axTextMuted)
-                                    TextField("Port", text: $portText)
+                                    TextField(L10n.Field.port, text: $portText)
                                         .textFieldStyle(PlainTextFieldStyle())
                                         .font(.system(size: 13, design: .monospaced))
                                         .frame(width: 80)
@@ -155,7 +155,7 @@ struct FTPSettingsSheet: View {
                     settingsGroup("Connection Info") {
                         VStack(alignment: .leading, spacing: AXSpacing.sm) {
                             infoRow("Address", value: vm.serverInfo.ftpAddress)
-                            infoRow("Port", value: "\(vm.serverInfo.port)")
+                            infoRow(L10n.Field.port, value: "\(vm.serverInfo.port)")
                             infoRow("Protocol", value: "FTP / FTPS")
                         }
                     }

@@ -1,0 +1,182 @@
+/* Auth.strings — Login, Signup, Vault, Profile, Subscription */
+
+/* ── Auth ── */
+
+/* Create account title */
+"auth.createAccount" = "Create your account";
+
+/* Forgot password link */
+"auth.forgotPassword" = "Forgot Password?";
+
+/* Reset password info */
+"auth.resetPasswordInfo" = "We'll send you a link to reset your password.";
+
+/* Back to sign in */
+"auth.backToSignIn" = "Back to Sign In";
+
+/* No account - sign up */
+"auth.noAccountSignUp" = "Don't have an account? Sign Up";
+
+/* Has account - sign in */
+"auth.hasAccountSignIn" = "Already have an account? Sign In";
+
+/* Checking trial eligibility */
+"auth.checkingTrial" = "Checking trial eligibility...";
+
+/* Trial already used */
+"auth.trialUsed" = "This device has already been used for a trial.";
+
+/* Password strength label */
+"auth.passwordStrength" = "Password Strength:";
+
+/* Sign in button */
+"auth.signIn" = "Sign In";
+
+/* Sign up button */
+"auth.signUp" = "Sign Up";
+
+/* Send reset link */
+"auth.sendResetLink" = "Send Reset Link";
+
+/* ── Profile ── */
+
+/* Profile title */
+"profile.title" = "Profile";
+
+/* Sign out */
+"profile.signOut" = "Sign Out";
+
+/* Edit profile */
+"profile.edit" = "Edit Profile";
+
+/* Change password description */
+"profile.changePasswordDesc" = "Change your account password";
+
+/* No sessions found */
+"profile.noSessions" = "No sessions found";
+
+/* Sign out all devices */
+"profile.signOutAll" = "Sign Out All Devices";
+
+/* Current device badge */
+"profile.currentDevice" = "Current";
+
+/* Current plan section */
+"profile.currentPlan" = "Current Plan";
+
+/* Manage subscription */
+"profile.manageSubscription" = "Manage Subscription";
+
+/* Change password title */
+"profile.changePassword" = "Change Password";
+
+/* API keys unavailable */
+"profile.apiKeysUnavailable" = "API Keys are not available on the current plan.";
+
+/* Recent activity section */
+"profile.recentActivity" = "Recent Activity";
+
+/* No activity recorded */
+"profile.noActivity" = "No activity recorded yet.";
+
+/* Encryption key section */
+"profile.encryptionKey" = "Encryption Key";
+
+/* Zero-knowledge active */
+"profile.zeroKnowledgeActive" = "Zero-Knowledge Encryption Active";
+
+/* Encryption description */
+"profile.encryptionDescription" = "Your server credentials are encrypted with your personal key.";
+
+/* Backup key button */
+"profile.backupKey" = "Backup Key";
+
+/* Backup key description */
+"profile.backupKeyDesc" = "View and copy your encryption key for safekeeping.";
+
+/* Encryption key warning */
+"profile.encryptionKeyWarning" = "If you lose your Encryption Key, your encrypted data cannot be recovered.";
+
+/* ── Subscription ── */
+
+/* Trial active */
+"subscription.trialActive" = "Trial Active";
+
+/* Days remaining */
+"subscription.daysRemaining" = "%lld days remaining";
+
+/* Trial expired */
+"subscription.trialExpired" = "Trial Expired";
+
+/* Upgrade to continue */
+"subscription.upgradeToContinue" = "Upgrade to continue";
+
+/* Free plan */
+"subscription.freePlan" = "Free Plan";
+
+/* Trial badge */
+"subscription.trial" = "TRIAL";
+
+/* Subscribe now */
+"subscription.subscribeNow" = "Subscribe Now";
+
+/* ── Vault ── */
+
+/* Key description */
+"vault.keyDescription" = "This 256-bit key is the ONLY way to recover your encrypted data.";
+
+/* Secure storage required */
+"vault.secureStorageRequired" = "SECURE STORAGE REQUIRED";
+
+/* Finish setup */
+"vault.finishSetup" = "Finish Setup";
+
+/* Enter recovery key title */
+"vault.enterRecoveryKey" = "Enter Recovery Key";
+
+/* Enter key instruction */
+"vault.enterKeyInstruction" = "Enter the 256-bit Recovery Key you saved during setup.";
+
+/* Zero knowledge label */
+"vault.zeroKnowledge" = "Zero-Knowledge Security";
+
+/* Verify locally */
+"vault.verifyLocally" = "Your key will be verified locally on this device.";
+
+/* Verify & unlock */
+"vault.verifyUnlock" = "Verify & Unlock";
+
+/* Vault secured */
+"vault.secured" = "Vault Secured";
+
+/* Secured description */
+"vault.securedDescription" = "Your encryption key is safely locked in the vault.";
+
+/* Enter app button */
+"vault.enterApp" = "Enter AevonX";
+
+/* ── Recovery ── */
+
+/* Recovery key title */
+"recovery.title" = "Your Recovery Key";
+
+/* Write down now warning */
+"recovery.writeDownNow" = "Write this down now. You will never see it again.";
+
+/* Critical warning title */
+"recovery.criticalWarning" = "CRITICAL WARNING";
+
+/* Loss warning */
+"recovery.lossWarning" = "If you lose this Recovery Key, your encrypted data CANNOT be recovered. There is no reset option.";
+
+/* Generate recovery key */
+"recovery.generate" = "Generate Recovery Key";
+
+/* Stored securely checkbox */
+"recovery.storedSecurely" = "I have securely saved my Recovery Key";
+
+/* Understand loss checkbox */
+"recovery.understandLoss" = "I understand that if I lose it, my data is lost forever";
+
+/* Read warning checkbox */
+"recovery.readWarning" = "I've read the warning";

@@ -162,7 +162,7 @@ struct NginxOptimizationSection: View {
 
                     // Save button
                     AppOptimizationSaveButton(
-                        title: "Save",
+                        title: L10n.Button.save,
                         color: Color(red: 0, green: 0.59, blue: 0.22),
                         isSaving: isSaving
                     ) {

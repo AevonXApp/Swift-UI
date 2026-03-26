@@ -51,10 +51,10 @@ struct CustomContextMenuView: View {
                     TerminalLaunchHelper.openTerminal(at: file.path, serverId: viewModel.serverId)
                 }
             } else {
-                menuItem("Edit", icon: "pencil.circle.fill", color: .blue) {
+                menuItem(L10n.Button.edit, icon: "pencil.circle.fill", color: .blue) {
                     viewModel.openFileEditor(file)
                 }
-                menuItem("Download", icon: "arrow.down.circle.fill", color: .cyan) {
+                menuItem(L10n.Files.download, icon: "arrow.down.circle.fill", color: .cyan) {
                     viewModel.downloadFile(file)
                 }
             }
@@ -70,7 +70,7 @@ struct CustomContextMenuView: View {
             menuDivider
             
             // Clipboard
-            menuItem("Copy", icon: "doc.on.doc.fill", color: .blue) {
+            menuItem(L10n.Button.copy, icon: "doc.on.doc.fill", color: .blue) {
                 viewModel.selectSingleFile(file)
                 viewModel.copyFiles()
             }
@@ -87,7 +87,7 @@ struct CustomContextMenuView: View {
             menuDivider
             
             // File ops
-            menuItem("Rename", icon: "character.cursor.ibeam", color: .yellow) {
+            menuItem(L10n.Files.rename, icon: "character.cursor.ibeam", color: .yellow) {
                 viewModel.startRename(file)
             }
             menuItem("Duplicate", icon: "plus.square.on.square.fill", color: .yellow) {
@@ -97,7 +97,7 @@ struct CustomContextMenuView: View {
                 viewModel.symlinkSourceFile = file
                 viewModel.showSymlinkSheet = true
             }
-            menuItem("Copy Path", icon: "text.badge.checkmark", color: .gray) {
+            menuItem(L10n.Files.copyPath, icon: "text.badge.checkmark", color: .gray) {
                 viewModel.copyPath(file)
             }
             
@@ -135,7 +135,7 @@ struct CustomContextMenuView: View {
             menuDivider
             
             // Delete
-            menuItem("Delete", icon: "trash.fill", color: .red, isDestructive: true) {
+            menuItem(L10n.Button.delete, icon: "trash.fill", color: .red, isDestructive: true) {
                 viewModel.confirmDelete([file])
             }
         }

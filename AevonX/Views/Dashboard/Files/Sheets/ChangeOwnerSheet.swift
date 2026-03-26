@@ -90,9 +90,9 @@ struct ChangeOwnerSheetView: View {
                 .cornerRadius(AXCornerRadius.sm)
             
             HStack(spacing: AXSpacing.md) {
-                Button("Cancel") { viewModel.showChangeOwnerSheet = false }
+                Button(L10n.Button.cancel) { viewModel.showChangeOwnerSheet = false }
                     .buttonStyle(AXSecondaryButtonStyle())
-                Button("Apply") {
+                Button(L10n.Button.apply) {
                     guard let file = viewModel.changeOwnerFile else { return }
                     viewModel.changeOwner(file: file, owner: owner, group: group, recursive: recursive)
                 }

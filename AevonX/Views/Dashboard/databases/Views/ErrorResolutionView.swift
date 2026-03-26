@@ -50,11 +50,11 @@ public struct ErrorResolutionView: View {
     private var headerView: some View {
         HStack {
             VStack(alignment: .leading, spacing: AXSpacing.xs) {
-                Text("Error Resolution")
+                Text(L10n.ErrorResolution.title)
                     .font(AXTypography.title)
                     .foregroundColor(.axTextPrimary)
                 
-                Text(viewModel.erroredStep?.title ?? "Installation Error")
+                Text(viewModel.erroredStep?.title ?? L10n.ErrorResolution.installationError)
                     .font(AXTypography.subheadline)
                     .foregroundColor(.axError)
             }
@@ -101,11 +101,11 @@ public struct ErrorResolutionView: View {
             ProgressView()
                 .scaleEffect(1.5)
             
-            Text("Analyzing Error...")
+            Text(L10n.ErrorResolution.analyzingError)
                 .font(AXTypography.headline)
                 .foregroundColor(.axTextPrimary)
-            
-            Text("AI is diagnosing the issue and finding solutions")
+
+            Text(L10n.ErrorResolution.aiDiagnosing)
                 .font(AXTypography.subheadline)
                 .foregroundColor(.axTextSecondary)
         }
@@ -118,7 +118,7 @@ public struct ErrorResolutionView: View {
                 // Analysis Section
                 if let analysis = viewModel.analysis {
                     VStack(alignment: .leading, spacing: AXSpacing.md) {
-                        Text("Diagnosis")
+                        Text(L10n.ErrorResolution.diagnosis)
                             .font(AXTypography.headline)
                             .foregroundColor(.axTextPrimary)
                         
@@ -127,7 +127,7 @@ public struct ErrorResolutionView: View {
                             .foregroundColor(.axTextSecondary)
                         
                         HStack {
-                            Text("Root Cause:")
+                            Text(L10n.ErrorResolution.rootCause)
                                 .fontWeight(.semibold)
                             Text(analysis.rootCause)
                         }
@@ -141,7 +141,7 @@ public struct ErrorResolutionView: View {
                     Divider().background(Color.axBorder)
                     
                     // Solutions Section
-                    Text("Suggested Solutions")
+                    Text(L10n.ErrorResolution.suggestedSolutions)
                         .font(AXTypography.headline)
                         .foregroundColor(.axTextPrimary)
                     
@@ -161,7 +161,7 @@ public struct ErrorResolutionView: View {
         VStack(spacing: AXSpacing.lg) {
             ProgressView()
                 .scaleEffect(1.5)
-            Text("Executing Solution...")
+            Text(L10n.ErrorResolution.executingSolution)
                 .font(AXTypography.headline)
                 .foregroundColor(.axTextPrimary)
         }
@@ -174,11 +174,11 @@ public struct ErrorResolutionView: View {
                 .font(AXTypography.largeTitle)
                 .foregroundColor(.axSuccess)
             
-            Text("Issue Resolved")
+            Text(L10n.ErrorResolution.issueResolved)
                 .font(AXTypography.title2)
                 .foregroundColor(.axTextPrimary)
             
-            Button("Resume Installation") {
+            Button(L10n.ErrorResolution.resumeInstallation) {
                 dismiss() // Logic to resume needs to be handled by parent
             }
             .buttonStyle(PrimaryButtonStyle(accentColor: viewModel.databaseType.brandColor))
@@ -192,16 +192,16 @@ public struct ErrorResolutionView: View {
                 .font(AXTypography.largeTitle)
                 .foregroundColor(.axError)
             
-            Text("Resolution Failed")
+            Text(L10n.ErrorResolution.resolutionFailed)
                 .font(AXTypography.headline)
                 .foregroundColor(.axTextPrimary)
             
-            Text(viewModel.errorMessage ?? "Unknown error")
+            Text(viewModel.errorMessage ?? L10n.Error.generic)
                 .font(AXTypography.body)
                 .foregroundColor(.axTextSecondary)
                 .multilineTextAlignment(.center)
             
-            Button("Try Again") {
+            Button(L10n.Button.tryAgain) {
                 Task {
                     await viewModel.startAnalysis()
                 }
@@ -245,7 +245,7 @@ private struct SolutionCard: View {
             }
             
             Button(action: onExecute) {
-                Text(solution.isAutomated ? "Auto-Fix" : "Execute Manually")
+                Text(solution.isAutomated ? L10n.ErrorResolution.autoFix : L10n.ErrorResolution.executeManually)
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(PrimaryButtonStyle(accentColor: accentColor))

@@ -266,7 +266,7 @@ struct DBAddColumnView: View {
             Spacer()
 
             Button { viewModel.showAddColumn = false } label: {
-                Text("Cancel")
+                Text(L10n.Button.cancel)
                     .font(AXTypography.subheadline)
                     .foregroundColor(.axTextSecondary)
                     .padding(.horizontal, AXSpacing.lg)

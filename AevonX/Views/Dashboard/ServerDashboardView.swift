@@ -143,13 +143,13 @@ struct ServerDashboardView: View {
                 break
             }
         }
-        .alert("Connection Error", isPresented: $viewModel.showConnectionError) {
-            Button("Retry") {
+        .alert(L10n.Dashboard.connectionError, isPresented: $viewModel.showConnectionError) {
+            Button(L10n.Button.retry) {
                 Task {
                     await viewModel.connect()
                 }
             }
-            Button("Cancel", role: .cancel) {}
+            Button(L10n.Button.cancel, role: .cancel) {}
         } message: {
             Text(viewModel.connectionError ?? "Unknown error")
         }
@@ -165,7 +165,7 @@ struct ServerDashboardView: View {
                     message: "This will reboot the host machine. All active sessions and services will be disconnected.",
                     icon: "arrow.clockwise",
                     iconColor: .axWarning,
-                    actionTitle: "Restart",
+                    actionTitle: L10n.Button.restart,
                     actionColor: .axWarning,
                     note: "The server will be unavailable for 2-3 minutes during reboot.",
                     onConfirm: {
@@ -333,15 +333,15 @@ struct ConnectionStatusIndicator: View {
     
     private var connectionStatusText: String {
         if viewModel.isConnected {
-            return "Connected"
+            return L10n.Status.connected
         } else if viewModel.isReconnecting {
             return "Reconnecting..."
         } else if viewModel.isConnecting {
             return viewModel.connectionStage.rawValue
         } else if viewModel.connectionError != nil {
-            return "Failed"
+            return L10n.Status.failed
         } else {
-            return "Disconnected"
+            return L10n.Status.disconnected
         }
     }
 }

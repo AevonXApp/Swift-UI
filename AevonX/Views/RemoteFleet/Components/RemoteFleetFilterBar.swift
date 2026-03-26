@@ -23,7 +23,7 @@ struct RemoteFleetFilterBar: View {
                         .font(.system(size: 14))
                         .foregroundColor(.axTextMuted)
 
-                    TextField("Search by name, host, or tags...", text: $searchText)
+                    TextField(L10n.Fleet.searchPlaceholder, text: $searchText)
                         .font(AXTypography.body)
                         .foregroundColor(.axTextPrimary)
                         .textFieldStyle(PlainTextFieldStyle())
@@ -147,14 +147,14 @@ struct RemoteFleetFilterBar: View {
                 }
 
                 FilterPill(title: "All", isSelected: selectedFilter == nil, action: { withAnimation { selectedFilter = nil } })
-                FilterPill(title: "Online", isSelected: selectedFilter == .online, action: { withAnimation { selectedFilter = .online } })
-                FilterPill(title: "Offline", isSelected: selectedFilter == .offline, action: { withAnimation { selectedFilter = .offline } })
+                FilterPill(title: L10n.Fleet.statusOnline, isSelected: selectedFilter == .online, action: { withAnimation { selectedFilter = .online } })
+                FilterPill(title: L10n.Fleet.statusOffline, isSelected: selectedFilter == .offline, action: { withAnimation { selectedFilter = .offline } })
 
                 if selectedFilter != nil || !searchText.isEmpty {
                     Divider().frame(height: 16).background(Color.axBorder)
                     HStack(spacing: AXSpacing.xs) {
                         Image(systemName: "checkmark.circle.fill").font(.system(size: 10)).foregroundColor(.axAccentBlue)
-                        Text("\(filteredCount) of \(viewModel.decryptedServers.count)")
+                        Text(L10n.Fleet.filterCount(filteredCount, viewModel.decryptedServers.count))
                             .font(AXTypography.caption).fontWeight(.medium).foregroundColor(.axTextPrimary)
                     }
                     .padding(.horizontal, AXSpacing.sm).padding(.vertical, AXSpacing.xxs)

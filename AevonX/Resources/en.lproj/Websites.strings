@@ -1,0 +1,69 @@
+/* Websites.strings — Sites, SSL, Domains, Configuration */
+
+/* ── Actions ── */
+
+/* Clone site */
+"website.clone" = "Clone";
+
+/* Redeploy */
+"website.redeploy" = "Redeploy";
+
+/* View logs */
+"website.viewLogs" = "View Logs";
+
+/* Edit configuration */
+"website.editConfig" = "Edit Configuration";
+
+/* ── SSL ── */
+
+/* Issue Let's Encrypt certificate */
+"website.issueLetsEncrypt" = "Issue Let's Encrypt Certificate";
+
+/* Upload custom certificate */
+"website.uploadCert" = "Upload Custom Certificate";
+
+/* ── URL Rewrite ── */
+
+/* Add rule */
+"website.addRule" = "Add Rule";
+
+/* Browse templates */
+"website.browseTemplates" = "Browse Templates";
+
+/* ── Backups ── */
+
+/* Create schedule */
+"website.createSchedule" = "Create Schedule";
+
+/* Backup now */
+"website.backupNow" = "Backup Now";
+
+/* ── Domain ── */
+
+/* Add alias */
+"website.addAlias" = "Add Alias";
+
+/* Create domain */
+"website.createDomain" = "Create";
+
+/* Lookup domain */
+"website.lookup" = "Lookup";
+
+/* ── Config ── */
+
+/* Templates */
+"website.templates" = "Templates";
+
+/* Backups */
+"website.backups" = "Backups";
+
+/* Restore */
+"website.restore" = "Restore";
+
+/* ── Directory ── */
+
+/* Go up one level */
+"website.goUpLevel" = "Go up one level";
+
+/* Select current */
+"website.selectCurrent" = "Select Current";

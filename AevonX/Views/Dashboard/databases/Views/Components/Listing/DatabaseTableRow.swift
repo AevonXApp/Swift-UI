@@ -87,7 +87,7 @@ struct DatabaseTableRow: View {
                         .foregroundColor(.axAccentBlue)
                 }
                 .buttonStyle(.plain)
-                .help("Open Details")
+                .help(L10n.Database.openDetails)
 
                 Button { onBackup?() } label: {
                     Image(systemName: "arrow.down.doc")
@@ -95,7 +95,7 @@ struct DatabaseTableRow: View {
                         .foregroundColor(.axAccentGreen)
                 }
                 .buttonStyle(.plain)
-                .help("Create Backup")
+                .help(L10n.Database.createBackup)
 
                 Button { onDelete?() } label: {
                     Image(systemName: "trash")
@@ -103,7 +103,7 @@ struct DatabaseTableRow: View {
                         .foregroundColor(.axError)
                 }
                 .buttonStyle(.plain)
-                .help("Delete Database")
+                .help(L10n.Database.deleteDatabase)
             }
             .frame(width: 100, alignment: .trailing)
         }

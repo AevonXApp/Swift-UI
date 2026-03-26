@@ -1,0 +1,91 @@
+/* Fleet.strings — Remote Fleet / Server Management */
+
+/* Fleet title */
+"fleet.title" = "Remote Fleet";
+
+/* Online count */
+"fleet.online" = "%lld Online";
+
+/* Offline count */
+"fleet.offline" = "%lld Offline";
+
+/* Loading servers */
+"fleet.loading" = "Loading servers...";
+
+/* No servers */
+"fleet.noServers" = "No Servers Yet";
+
+/* Add first server */
+"fleet.addFirstServer" = "Add your first server to get started";
+
+/* Add server button */
+"fleet.addServer" = "Add Server";
+
+/* No results */
+"fleet.noResults" = "No Servers Found";
+
+/* No filter results */
+"fleet.noFilterResults" = "No %@ servers match your criteria";
+
+/* No search results */
+"fleet.noSearchResults" = "No servers match '%@'";
+
+/* Adjust filters */
+"fleet.adjustFilters" = "Try adjusting your filters or search criteria";
+
+/* Clear search */
+"fleet.clearSearch" = "Clear Search";
+
+/* Clear filter */
+"fleet.clearFilter" = "Clear Filter";
+
+/* Search placeholder */
+"fleet.searchPlaceholder" = "Search by name, host, or tags...";
+
+/* Filter count */
+"fleet.filterCount" = "%lld of %lld";
+
+/* Edit server */
+"fleet.editServer" = "Edit Server";
+
+/* Duplicate server */
+"fleet.duplicate" = "Duplicate";
+
+/* Delete server */
+"fleet.deleteServer" = "Delete Server";
+
+/* Copy IP */
+"fleet.copyIP" = "Copy IP Address";
+
+/* Server identity section */
+"fleet.serverIdentity" = "Server Identity";
+
+/* Connection details section */
+"fleet.connectionDetails" = "Connection Details";
+
+/* Authentication section */
+"fleet.authentication" = "Authentication";
+
+/* Server name help */
+"fleet.serverNameHelp" = "Server name is not encrypted and visible in the server list.";
+
+/* Tags help */
+"fleet.tagsHelp" = "Add tags like 'production', 'staging' to organize servers.";
+
+/* Tags placeholder */
+"fleet.tagsPlaceholder" = "production, staging, web, database";
+
+/* Current password kept */
+"fleet.currentPasswordKept" = "• current password kept";
+
+/* Current key kept */
+"fleet.currentKeyKept" = "• current key kept";
+
+/* More tags overflow */
+"fleet.moreTags" = "+%lld";
+
+/* Status online */
+"fleet.statusOnline" = "Online";
+
+/* Status offline */
+"fleet.statusOffline" = "Offline";

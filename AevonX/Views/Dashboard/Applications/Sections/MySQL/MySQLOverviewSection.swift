@@ -206,11 +206,11 @@ struct MySQLOverviewSection: View {
             ) {
                 quickAction(
                     icon: isRunning ? "stop.fill" : "play.fill",
-                    title: isRunning ? "Stop" : "Start",
+                    title: isRunning ? L10n.Button.stop : L10n.Button.start,
                     color: isRunning ? .axError : .axSuccess,
                     action: isRunning ? "stop" : "start"
                 )
-                quickAction(icon: "arrow.clockwise", title: "Restart", color: .axWarning, action: "restart")
+                quickAction(icon: "arrow.clockwise", title: L10n.Button.restart, color: .axWarning, action: "restart")
                 quickAction(icon: "arrow.triangle.2.circlepath", title: "Reload", color: .axAccentBlue, action: "reload")
                 quickAction(icon: "doc.text.magnifyingglass", title: "Config Test", color: .purple, action: "configtest")
             }

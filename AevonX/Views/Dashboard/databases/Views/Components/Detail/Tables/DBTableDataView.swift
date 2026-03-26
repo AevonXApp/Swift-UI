@@ -62,7 +62,7 @@ struct DBTableDataView: View {
             Spacer()
             ProgressView()
                 .scaleEffect(1.2)
-            Text("Loading data...")
+            Text(L10n.Status.loading)
                 .font(AXTypography.subheadline)
                 .foregroundColor(.axTextMuted)
             Spacer()

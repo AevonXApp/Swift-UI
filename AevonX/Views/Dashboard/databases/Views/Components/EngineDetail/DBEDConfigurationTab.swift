@@ -24,7 +24,7 @@ struct DBEDConfigurationTab: View {
 
                             Spacer()
 
-                            Button("Edit") {
+                            Button(L10n.Button.edit) {
                                 Task {
                                     await viewModel.loadConfiguration()
                                     viewModel.configEditContent = viewModel.configuration?.rawContent ?? ""
@@ -56,7 +56,7 @@ struct DBEDConfigurationTab: View {
 
                             Spacer()
 
-                            Button("Switch Version") {
+                            Button(L10n.Database.switchVersion) {
                                 viewModel.showVersionSwitcher = true
                             }
                             .buttonStyle(.plain)
@@ -76,7 +76,7 @@ struct DBEDConfigurationTab: View {
                                 .foregroundColor(.axTextPrimary)
                         }
 
-                        Button("Install New Version") {
+                        Button(L10n.Database.installVersion) {
                             viewModel.showInstallVersion = true
                         }
                         .font(AXTypography.subheadline)
@@ -135,7 +135,7 @@ struct DBEDConfigurationTab: View {
                                             await viewModel.updateRedisPassword(newPassword: viewModel.redisPassword)
                                         }
                                     } label: {
-                                        Text("Save")
+                                        Text(L10n.Button.save)
                                             .font(AXTypography.subheadline)
                                             .fontWeight(.semibold)
                                             .foregroundColor(.axBackground)

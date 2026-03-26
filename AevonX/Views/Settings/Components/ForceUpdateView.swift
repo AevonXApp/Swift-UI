@@ -65,12 +65,12 @@ struct ForceUpdateView: View {
 
     private var textSection: some View {
         VStack(spacing: AXSpacing.md) {
-            Text("Update Required")
+            Text(L10n.Update.required)
                 .font(.system(size: 24, weight: .bold, design: .rounded))
                 .foregroundColor(.axTextPrimary)
 
             if let version = updateService.availableVersion {
-                Text("AevonX \(version.version) is required to continue.")
+                Text(L10n.Update.versionRequired(version.version))
                     .font(.system(size: 14))
                     .foregroundColor(.axTextSecondary)
                     .multilineTextAlignment(.center)
@@ -95,7 +95,7 @@ struct ForceUpdateView: View {
                     HStack(spacing: AXSpacing.sm) {
                         Image(systemName: "arrow.down.circle.fill")
                             .font(.system(size: 14))
-                        Text("Download & Install")
+                        Text(L10n.Update.downloadInstall)
                             .font(.system(size: 15, weight: .bold))
                     }
                     .foregroundColor(.white)
@@ -116,7 +116,7 @@ struct ForceUpdateView: View {
             case .downloading(let progress):
                 VStack(spacing: AXSpacing.sm) {
                     HStack {
-                        Text("Downloading...")
+                        Text(L10n.Update.downloading)
                             .font(.system(size: 12, weight: .medium))
                             .foregroundColor(.axTextSecondary)
                         Spacer()
@@ -142,7 +142,7 @@ struct ForceUpdateView: View {
                     HStack(spacing: AXSpacing.sm) {
                         Image(systemName: "arrow.clockwise.circle.fill")
                             .font(.system(size: 14))
-                        Text("Install & Restart")
+                        Text(L10n.Update.installRestart)
                             .font(.system(size: 15, weight: .bold))
                     }
                     .foregroundColor(.white)
@@ -158,7 +158,7 @@ struct ForceUpdateView: View {
                 HStack(spacing: AXSpacing.sm) {
                     ProgressView()
                         .controlSize(.regular)
-                    Text("Installing update...")
+                    Text(L10n.Update.installingUpdate)
                         .font(.system(size: 14, weight: .medium))
                         .foregroundColor(.axTextSecondary)
                 }
@@ -175,7 +175,7 @@ struct ForceUpdateView: View {
                     }
 
                     Button(action: { Task { await updateService.downloadUpdate() } }) {
-                        Text("Retry")
+                        Text(L10n.Button.retry)
                             .font(.system(size: 13, weight: .bold))
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
@@ -196,7 +196,7 @@ struct ForceUpdateView: View {
     // MARK: - Footer
 
     private var footerSection: some View {
-        Text("This update is required for security and compatibility.")
+        Text(L10n.Update.requiredReason)
             .font(.system(size: 10))
             .foregroundColor(.axTextMuted)
             .multilineTextAlignment(.center)

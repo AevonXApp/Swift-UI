@@ -155,8 +155,8 @@ struct AuthTypePicker: View {
     
     var body: some View {
         HStack(spacing: 0) {
-            authOption(type: .password, icon: "lock.fill", label: "Password")
-            authOption(type: .privateKey, icon: "key.fill", label: "Private Key")
+            authOption(type: .password, icon: "lock.fill", label: L10n.Field.password)
+            authOption(type: .privateKey, icon: "key.fill", label: L10n.Field.privateKey)
         }
         .background(Color.axBackgroundTertiary)
         .cornerRadius(AXCornerRadius.md)

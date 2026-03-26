@@ -55,7 +55,7 @@ struct ReconnectionOverlayView: View {
                 
                 // Status text
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(viewModel.reconnectionFailed ? "Reconnection Failed" : "Reconnecting...")
+                    Text(viewModel.reconnectionFailed ? L10n.Status.connectionFailed : L10n.Status.connecting)
                         .font(.system(size: 12, weight: .semibold))
                         .foregroundColor(.axTextPrimary)
                     
@@ -70,7 +70,7 @@ struct ReconnectionOverlayView: View {
                 
                 // Attempt counter
                 if viewModel.reconnectionAttempt > 0 && !viewModel.reconnectionFailed {
-                    Text("Attempt \(viewModel.reconnectionAttempt)/\(viewModel.reconnectionMaxAttempts)")
+                    Text(L10n.Connection.attemptProgress(viewModel.reconnectionAttempt, viewModel.reconnectionMaxAttempts))
                         .font(.system(size: 10, weight: .medium, design: .monospaced))
                         .foregroundColor(.axTextMuted)
                         .padding(.horizontal, 8)
@@ -82,7 +82,7 @@ struct ReconnectionOverlayView: View {
                 // Action button
                 if viewModel.reconnectionFailed {
                     Button(action: { viewModel.retryReconnection() }) {
-                        Text("Retry")
+                        Text(L10n.Button.retry)
                             .font(.system(size: 10, weight: .bold))
                             .foregroundColor(.axAccentBlue)
                             .padding(.horizontal, 10)
@@ -163,7 +163,7 @@ struct ReconnectionOverlayView: View {
                 
                 // Title and message
                 VStack(spacing: AXSpacing.sm) {
-                    Text(viewModel.reconnectionFailed ? "Reconnection Failed" : "Reconnecting to Server")
+                    Text(viewModel.reconnectionFailed ? L10n.Status.connectionFailed : L10n.Status.connecting)
                         .font(AXTypography.headline)
                         .foregroundColor(.axTextPrimary)
                     
@@ -204,14 +204,14 @@ struct ReconnectionOverlayView: View {
                         
                         // Attempt and timing info
                         HStack {
-                            Text("Attempt \(viewModel.reconnectionAttempt) of \(viewModel.reconnectionMaxAttempts)")
+                            Text(L10n.Connection.attemptProgress(viewModel.reconnectionAttempt, viewModel.reconnectionMaxAttempts))
                                 .font(.system(size: 11, weight: .medium, design: .monospaced))
                                 .foregroundColor(.axTextSecondary)
                             
                             Spacer()
                             
                             if viewModel.reconnectionNextRetryIn > 0 {
-                                Text("Next retry in \(Int(viewModel.reconnectionNextRetryIn))s")
+                                Text(L10n.Connection.nextRetryIn(Int(viewModel.reconnectionNextRetryIn)))
                                     .font(.system(size: 11))
                                     .foregroundColor(.axTextMuted)
                             }
@@ -224,7 +224,7 @@ struct ReconnectionOverlayView: View {
                 HStack(spacing: AXSpacing.md) {
                     // Cancel button
                     Button(action: { viewModel.cancelReconnection() }) {
-                        Text("Cancel")
+                        Text(L10n.Button.cancel)
                             .font(.system(size: 12, weight: .semibold))
                             .foregroundColor(.axTextSecondary)
                             .frame(width: 100, height: 34)
@@ -240,7 +240,7 @@ struct ReconnectionOverlayView: View {
                     // Retry button (only shown on failure)
                     if viewModel.reconnectionFailed {
                         Button(action: { viewModel.retryReconnection() }) {
-                            Text("Retry")
+                            Text(L10n.Button.retry)
                                 .font(.system(size: 12, weight: .bold))
                                 .foregroundColor(.white)
                                 .frame(width: 100, height: 34)

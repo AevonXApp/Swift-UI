@@ -57,7 +57,7 @@ struct ProfileView: View {
         VStack(spacing: 0) {
             // Header
             HStack {
-                Text("Profile")
+                Text(L10n.Profile.title)
                     .font(AXTypography.largeTitle)
                     .foregroundColor(.axTextPrimary)
                 
@@ -192,7 +192,7 @@ struct LoggedInView: View {
                     HStack(spacing: AXSpacing.xs) {
                         Image(systemName: "arrow.right.square")
                             .font(.system(size: 12, weight: .semibold))
-                        Text("Sign Out")
+                        Text(L10n.Profile.signOut)
                             .font(AXTypography.caption)
                             .fontWeight(.semibold)
                     }
@@ -311,12 +311,12 @@ struct AccountTab: View {
             SettingsSection(title: "Profile Information", icon: "person") {
                 VStack(spacing: AXSpacing.md) {
                     HStack {
-                        Text("Full Name")
+                        Text(L10n.Field.fullName)
                             .font(AXTypography.body)
                             .foregroundColor(.axTextPrimary)
                         Spacer()
                         if isEditing {
-                            TextField("Your name", text: $editName)
+                            TextField(L10n.Field.yourName, text: $editName)
                                 .font(AXTypography.body)
                                 .foregroundColor(.axTextPrimary)
                                 .frame(width: 200)
@@ -329,7 +329,7 @@ struct AccountTab: View {
                     }
                     
                     HStack {
-                        Text("Email")
+                        Text(L10n.Field.email)
                             .font(AXTypography.body)
                             .foregroundColor(.axTextPrimary)
                         Spacer()
@@ -349,7 +349,7 @@ struct AccountTab: View {
                     HStack {
                         Spacer()
                         if isEditing {
-                            Button("Cancel") {
+                            Button(L10n.Button.cancel) {
                                 isEditing = false
                                 profileError = nil
                                 editName = authViewModel.currentUser?.name ?? ""
@@ -362,7 +362,7 @@ struct AccountTab: View {
                                 if isSavingProfile {
                                     ProgressView().scaleEffect(0.7)
                                 } else {
-                                    Text("Save")
+                                    Text(L10n.Button.save)
                                         .font(AXTypography.subheadline)
                                         .fontWeight(.medium)
                                         .foregroundColor(.axBackground)
@@ -375,7 +375,7 @@ struct AccountTab: View {
                             .buttonStyle(PlainButtonStyle())
                             .disabled(isSavingProfile || editName.trimmingCharacters(in: .whitespaces).isEmpty)
                         } else {
-                            Button("Edit Profile") { isEditing = true }
+                            Button(L10n.Profile.edit) { isEditing = true }
                                 .buttonStyle(PlainButtonStyle())
                                 .foregroundColor(.axAccentBlue)
                                 .font(AXTypography.subheadline)
@@ -389,15 +389,15 @@ struct AccountTab: View {
                 VStack(spacing: AXSpacing.md) {
                     HStack {
                         VStack(alignment: .leading, spacing: AXSpacing.xxs) {
-                            Text("Password")
+                            Text(L10n.Field.password)
                                 .font(AXTypography.body)
                                 .foregroundColor(.axTextPrimary)
-                            Text("Change your account password")
+                            Text(L10n.Profile.changePasswordDesc)
                                 .font(AXTypography.caption)
                                 .foregroundColor(.axTextTertiary)
                         }
                         Spacer()
-                        Button("Change") { showChangePassword = true }
+                        Button(L10n.Button.change) { showChangePassword = true }
                             .font(AXTypography.subheadline)
                             .foregroundColor(.axAccentBlue)
                             .buttonStyle(PlainButtonStyle())
@@ -424,7 +424,7 @@ struct AccountTab: View {
                     } else if let err = sessionError {
                         Text(err).font(AXTypography.caption).foregroundColor(.axError)
                     } else if sessions.isEmpty {
-                        Text("No sessions found")
+                        Text(L10n.Profile.noSessions)
                             .font(AXTypography.caption)
                             .foregroundColor(.axTextMuted)
                     } else {
@@ -439,7 +439,7 @@ struct AccountTab: View {
                     if !sessions.isEmpty {
                         Divider().background(Color.axBorder)
                         Button(action: signOutAllDevices) {
-                            Text("Sign Out All Devices")
+                            Text(L10n.Profile.signOutAll)
                                 .font(AXTypography.subheadline)
                                 .foregroundColor(.axError)
                         }
@@ -552,7 +552,7 @@ struct SessionRow: View {
                         .foregroundColor(.axTextPrimary)
                     
                     if session.isCurrent {
-                        Text("Current")
+                        Text(L10n.Profile.currentDevice)
                             .font(AXTypography.caption2)
                             .fontWeight(.bold)
                             .foregroundColor(.axSuccess)
@@ -619,7 +619,7 @@ struct SubscriptionTab: View {
                 VStack(alignment: .leading, spacing: AXSpacing.lg) {
                     HStack {
                         VStack(alignment: .leading, spacing: AXSpacing.xxs) {
-                            Text("Current Plan")
+                            Text(L10n.Profile.currentPlan)
                                 .font(AXTypography.caption)
                                 .foregroundColor(.axTextSecondary)
                             
@@ -630,7 +630,7 @@ struct SubscriptionTab: View {
                                     .foregroundColor(subscription.color)
                                 
                                 if authViewModel.trialRemainingDays != nil {
-                                    Text("TRIAL")
+                                    Text(L10n.Subscription.trial)
                                         .font(AXTypography.caption2)
                                         .fontWeight(.bold)
                                         .foregroundColor(.axAccentBlue)
@@ -646,7 +646,7 @@ struct SubscriptionTab: View {
                         
                         if subscription != .enterprise {
                             Button(action: openUpgradePage) {
-                                Text("Upgrade")
+                                Text(L10n.Button.upgrade)
                                     .font(AXTypography.subheadline)
                                     .fontWeight(.medium)
                                     .foregroundColor(.axBackground)
@@ -680,7 +680,7 @@ struct SubscriptionTab: View {
                         HStack {
                             Spacer()
                             Button(action: openManageSubscription) {
-                                Text("Manage Subscription")
+                                Text(L10n.Profile.manageSubscription)
                                     .font(AXTypography.caption)
                                     .foregroundColor(.axAccentBlue)
                             }
@@ -714,7 +714,7 @@ struct ChangePasswordSheet: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: AXSpacing.xl) {
-            Text("Change Password")
+            Text(L10n.Profile.changePassword)
                 .font(AXTypography.title2)
                 .foregroundColor(.axTextPrimary)
             
@@ -746,7 +746,7 @@ struct ChangePasswordSheet: View {
             
             HStack {
                 Spacer()
-                Button("Cancel", action: onCancel)
+                Button(L10n.Button.cancel, action: onCancel)
                     .buttonStyle(PlainButtonStyle())
                     .foregroundColor(.axTextSecondary)
                 
@@ -754,7 +754,7 @@ struct ChangePasswordSheet: View {
                     if isLoading {
                         ProgressView().scaleEffect(0.7)
                     } else {
-                        Text("Save")
+                        Text(L10n.Button.save)
                             .fontWeight(.medium)
                             .foregroundColor(.axBackground)
                             .padding(.horizontal, AXSpacing.md)
@@ -786,14 +786,14 @@ struct TrialBanner: View {
                 .foregroundColor(isExpired == true ? .axError : .axAccentBlue)
             
             VStack(alignment: .leading, spacing: AXSpacing.xxs) {
-                Text(isExpired == true ? "Trial Expired" : "Free Trial Active")
+                Text(isExpired == true ? L10n.Subscription.trialExpired : L10n.Subscription.trialActive)
                     .font(AXTypography.subheadline)
                     .fontWeight(.semibold)
                     .foregroundColor(.axTextPrimary)
                 
-                Text(isExpired == true 
-                     ? "Upgrade to continue using all features" 
-                     : "\(remainingDays ?? 0) days remaining in your free trial")
+                Text(isExpired == true
+                     ? L10n.Subscription.upgradeToContinue
+                     : L10n.Subscription.daysRemaining(remainingDays ?? 0))
                     .font(AXTypography.caption)
                     .foregroundColor(.axTextSecondary)
             }
@@ -801,7 +801,7 @@ struct TrialBanner: View {
             Spacer()
             
             Button(action: {}) {
-                Text("Upgrade Now")
+                Text(L10n.Button.upgradeNow)
                     .font(AXTypography.subheadline)
                     .fontWeight(.medium)
                     .foregroundColor(.axBackground)
@@ -924,7 +924,7 @@ struct ActivityTab: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: AXSpacing.xl) {
-            Text("Recent Activity")
+            Text(L10n.Profile.recentActivity)
                 .font(AXTypography.headline)
                 .foregroundColor(.axTextPrimary)
             
@@ -933,7 +933,7 @@ struct ActivityTab: View {
             } else if let err = loadError {
                 Text(err).font(AXTypography.caption).foregroundColor(.axError)
             } else if activities.isEmpty {
-                Text("No activity recorded yet.")
+                Text(L10n.Profile.noActivity)
                     .font(AXTypography.body)
                     .foregroundColor(.axTextMuted)
             } else {
@@ -1037,11 +1037,11 @@ struct LegacyLoginView: View {
                         .foregroundColor(.axAccentBlue)
                 }
                 
-                Text("AevonX")
+                Text(L10n.App.name)
                     .font(.system(size: 28, weight: .bold, design: .rounded))
                     .foregroundColor(.axTextPrimary)
-                
-                Text(isSignUp ? "Create your account" : "Sign in to your account")
+
+                Text(isSignUp ? L10n.Auth.createAccount : "Sign in to your account")
                     .font(AXTypography.callout)
                     .foregroundColor(.axTextSecondary)
             }
@@ -1049,10 +1049,10 @@ struct LegacyLoginView: View {
             // Form
             VStack(spacing: AXSpacing.lg) {
                 VStack(alignment: .leading, spacing: AXSpacing.sm) {
-                    Text("Email")
+                    Text(L10n.Field.email)
                         .font(AXTypography.caption)
                         .foregroundColor(.axTextSecondary)
-                    
+
                     TextField("", text: $email)
                         .font(AXTypography.body)
                         .foregroundColor(.axTextPrimary)
@@ -1065,9 +1065,9 @@ struct LegacyLoginView: View {
                         .cornerRadius(AXCornerRadius.md)
                         .textFieldStyle(PlainTextFieldStyle())
                 }
-                
+
                 VStack(alignment: .leading, spacing: AXSpacing.sm) {
-                    Text("Password")
+                    Text(L10n.Field.password)
                         .font(AXTypography.caption)
                         .foregroundColor(.axTextSecondary)
                     
@@ -1085,7 +1085,7 @@ struct LegacyLoginView: View {
                 }
                 
                 Button(action: { isLoggedIn = true }) {
-                    Text(isSignUp ? "Create Account" : "Sign In")
+                    Text(isSignUp ? L10n.Auth.createAccount : L10n.Auth.signIn)
                         .font(AXTypography.body)
                         .fontWeight(.semibold)
                         .foregroundColor(.axBackground)
@@ -1098,7 +1098,7 @@ struct LegacyLoginView: View {
                 .padding(.top, AXSpacing.md)
                 
                 Button(action: { isSignUp.toggle() }) {
-                    Text(isSignUp ? "Already have an account? Sign In" : "Don't have an account? Sign Up")
+                    Text(isSignUp ? L10n.Auth.hasAccountSignIn : L10n.Auth.noAccountSignUp)
                         .font(AXTypography.subheadline)
                         .foregroundColor(.axAccentBlue)
                 }
@@ -1123,7 +1123,7 @@ struct EncryptionTab: View {
         VStack(alignment: .leading, spacing: AXSpacing.xl) {
             // Encryption Key Status Section
             HStack {
-                Text("Encryption Key")
+                Text(L10n.Profile.encryptionKey)
                     .font(AXTypography.headline)
                     .foregroundColor(.axTextPrimary)
                 
@@ -1135,7 +1135,7 @@ struct EncryptionTab: View {
                             .fill(Color.axSuccess)
                             .frame(width: 8, height: 8)
                         
-                        Text("Active")
+                        Text(L10n.Status.active)
                             .font(AXTypography.caption)
                             .foregroundColor(.axSuccess)
                     }
@@ -1164,12 +1164,12 @@ struct EncryptionTab: View {
                                 .foregroundColor(.axSuccess)
                             
                             VStack(alignment: .leading, spacing: AXSpacing.xxs) {
-                                Text("Zero-Knowledge Encryption Active")
+                                Text(L10n.Profile.zeroKnowledgeActive)
                                     .font(AXTypography.title3)
                                     .fontWeight(.semibold)
                                     .foregroundColor(.axTextPrimary)
                                 
-                                Text("Your server credentials are encrypted with your personal encryption key. Only you can access them.")
+                                Text(L10n.Profile.encryptionDescription)
                                     .font(AXTypography.callout)
                                     .foregroundColor(.axTextSecondary)
                             }
@@ -1213,12 +1213,12 @@ struct EncryptionTab: View {
                                         .frame(width: 28)
                                     
                                     VStack(alignment: .leading, spacing: 2) {
-                                        Text("Backup Key")
+                                        Text(L10n.Profile.backupKey)
                                             .font(AXTypography.subheadline)
                                             .fontWeight(.medium)
                                             .foregroundColor(.axTextPrimary)
                                         
-                                        Text("View and copy your encryption key (requires biometric)")
+                                        Text(L10n.Profile.backupKeyDesc)
                                             .font(AXTypography.caption)
                                             .foregroundColor(.axTextTertiary)
                                     }
@@ -1246,7 +1246,7 @@ struct EncryptionTab: View {
                         .font(.system(size: 12))
                         .foregroundColor(.axWarning)
                     
-                    Text("If you lose your Encryption Key, your encrypted server data cannot be recovered. Make sure to back it up securely.")
+                    Text(L10n.Profile.encryptionKeyWarning)
                         .font(AXTypography.caption)
                         .foregroundColor(.axTextTertiary)
                     

@@ -72,7 +72,7 @@ struct NginxCacheSection: View {
                     Text("\(keys)").font(.system(size: 12, weight: .semibold)).foregroundColor(.axTextPrimary)
                 }
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Path").font(.system(size: 9)).foregroundColor(.axTextMuted)
+                    Text(L10n.Field.path).font(.system(size: 9)).foregroundColor(.axTextMuted)
                     Text(path).font(.system(size: 10, design: .monospaced)).foregroundColor(.axTextSecondary).lineLimit(1)
                 }
             }

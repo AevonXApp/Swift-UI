@@ -1,0 +1,92 @@
+/* Settings.strings — All Settings Sections + Updates */
+
+/* ── Settings ── */
+
+/* Settings title */
+"settings.title" = "Settings";
+
+/* General tab */
+"settings.tab.general" = "General";
+
+/* Security tab */
+"settings.tab.security" = "Security";
+
+/* Privacy tab */
+"settings.tab.privacy" = "Privacy";
+
+/* Appearance tab */
+"settings.tab.appearance" = "Appearance";
+
+/* Server list tab */
+"settings.tab.serverList" = "Server List";
+
+/* Dashboard tab */
+"settings.tab.dashboard" = "Dashboard";
+
+/* Terminal tab */
+"settings.tab.terminal" = "Terminal";
+
+/* File manager tab */
+"settings.tab.fileManager" = "File Manager";
+
+/* Database tab */
+"settings.tab.database" = "Database";
+
+/* Network tab */
+"settings.tab.network" = "Network";
+
+/* Notifications tab */
+"settings.tab.notifications" = "Notifications";
+
+/* Confirmations tab */
+"settings.tab.confirmations" = "Confirmations";
+
+/* Keyboard tab */
+"settings.tab.keyboard" = "Keyboard";
+
+/* Data & Storage tab */
+"settings.tab.dataStorage" = "Data & Storage";
+
+/* About tab */
+"settings.tab.about" = "About";
+
+/* Proxy host label */
+"settings.network.proxyHost" = "Proxy Host";
+
+/* Port label */
+"settings.network.port" = "Port";
+
+/* Keychain info */
+"settings.security.keychainInfo" = "Password is stored securely in your Keychain";
+
+/* Password saved */
+"settings.security.passwordSaved" = "Password saved successfully";
+
+/* ── Update ── */
+
+/* What's new label */
+"update.whatsNew" = "What's New";
+
+/* Required update */
+"update.required" = "Update Required";
+
+/* Download & Install button */
+"update.downloadInstall" = "Download & Install";
+
+/* Downloading status */
+"update.downloading" = "Downloading...";
+
+/* Install & Restart button */
+"update.installRestart" = "Install & Restart";
+
+/* Installing status */
+"update.installing" = "Installing...";
+
+/* Version required message */
+"update.versionRequired" = "AevonX %@ is required to continue.";
+
+/* Installing update status */
+"update.installingUpdate" = "Installing update...";
+
+/* Required reason */
+"update.requiredReason" = "This update is required for security and compatibility.";

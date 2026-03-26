@@ -83,7 +83,7 @@ struct DockerRunToComposeView: View {
                                 isCopied = true
                                 DispatchQueue.main.asyncAfter(deadline: .now() + 2) { isCopied = false }
                             } label: {
-                                Label(isCopied ? "Copied!" : "Copy", systemImage: isCopied ? "checkmark" : "doc.on.doc")
+                                Label(isCopied ? "Copied!" : L10n.Button.copy, systemImage: isCopied ? "checkmark" : "doc.on.doc")
                                     .font(AXTypography.caption)
                             }
                             .buttonStyle(.plain)

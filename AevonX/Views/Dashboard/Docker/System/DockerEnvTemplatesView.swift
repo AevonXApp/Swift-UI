@@ -77,7 +77,7 @@ struct DockerEnvTemplatesView: View {
                                 
                                 HStack {
                                     Spacer()
-                                    Button("Cancel") { showAddForm = false }
+                                    Button(L10n.Button.cancel) { showAddForm = false }
                                         .buttonStyle(.plain).foregroundColor(.axTextSecondary)
                                     Button {
                                         saveTemplate()

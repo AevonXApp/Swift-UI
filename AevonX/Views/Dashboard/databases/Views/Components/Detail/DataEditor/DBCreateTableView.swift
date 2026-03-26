@@ -44,7 +44,7 @@ struct DBCreateTableView: View {
             }
 
             VStack(alignment: .leading, spacing: AXSpacing.xxxs) {
-                Text("Create Table")
+                Text(L10n.Database.createTable)
                     .font(AXTypography.title3)
                     .fontWeight(.bold)
                     .foregroundColor(.axTextPrimary)
@@ -150,7 +150,7 @@ struct DBCreateTableView: View {
                     HStack(spacing: AXSpacing.xxs) {
                         Image(systemName: "doc.on.doc")
                             .font(AXTypography.caption2)
-                        Text("Copy")
+                        Text(L10n.Button.copy)
                             .font(AXTypography.caption2)
                     }
                     .foregroundColor(.axAccentBlue)
@@ -226,7 +226,7 @@ struct DBCreateTableView: View {
 
     var columnHeaderRow: some View {
         HStack(spacing: AXSpacing.sm) {
-            Text("Name")
+            Text(L10n.Field.name)
                 .frame(width: 140, alignment: .leading)
             Text("Type")
                 .frame(width: 100, alignment: .leading)

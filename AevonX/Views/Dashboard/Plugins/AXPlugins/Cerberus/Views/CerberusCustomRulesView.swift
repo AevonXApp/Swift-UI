@@ -102,8 +102,8 @@ struct CerberusCustomRulesView: View {
     private var statsRow: some View {
         HStack(spacing: AXSpacing.md) {
             statCard(label: "Total Rules", value: "\(viewModel.customRules.count)", color: .axAccentBlue, icon: "list.bullet.rectangle")
-            statCard(label: "Enabled", value: "\(enabledCount)", color: .axAccentGreen, icon: "checkmark.shield")
-            statCard(label: "Disabled", value: "\(disabledCount)", color: .axTextMuted, icon: "pause.circle")
+            statCard(label: L10n.Status.enabled, value: "\(enabledCount)", color: .axAccentGreen, icon: "checkmark.shield")
+            statCard(label: L10n.Status.disabled, value: "\(disabledCount)", color: .axTextMuted, icon: "pause.circle")
         }
     }
 
@@ -384,7 +384,7 @@ struct CerberusCustomRulesView: View {
     private var ruleSheetActions: some View {
         HStack(spacing: AXSpacing.md) {
             Button { dismissSheet() } label: {
-                Text("Cancel")
+                Text(L10n.Button.cancel)
                     .font(AXTypography.subheadline)
                     .fontWeight(.medium)
                     .foregroundStyle(Color.axTextSecondary)

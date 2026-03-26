@@ -108,7 +108,7 @@ struct AdvancedDomainSection: View {
                             Text(sub.fullDomain)
                                 .font(AXTypography.monoMd)
                             Spacer()
-                            Text(sub.isActive ? "Active" : "Inactive")
+                            Text(sub.isActive ? L10n.Status.active : L10n.Status.inactive)
                                 .font(AXTypography.caption)
                                 .foregroundColor(sub.isActive ? .axSuccess : .axTextMuted)
                         }
@@ -129,7 +129,7 @@ struct AdvancedDomainSection: View {
                     .font(AXTypography.headline)
                 Spacer()
                 Button(action: { Task { await viewModel.lookupDNS() } }) {
-                    Label("Lookup", systemImage: "magnifyingglass")
+                    Label(L10n.Website.lookup, systemImage: "magnifyingglass")
                         .font(AXTypography.subheadline)
                 }
                 .buttonStyle(.borderedProminent)

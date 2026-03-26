@@ -20,8 +20,8 @@ struct DatabaseEngineOverview: View {
                 VStack(spacing: AXSpacing.xl) {
                     AXEmptyState(
                         icon: "cylinder.split.1x2",
-                        title: "No Database Engines Installed",
-                        description: "Go to the Applications tab to install database engines like MySQL, PostgreSQL, or Redis. Installed engines will appear here automatically.",
+                        title: L10n.Database.noEnginesInstalled,
+                        description: L10n.Database.noEnginesDescription,
                         actionLabel: nil,
                         action: nil
                     )
@@ -31,9 +31,9 @@ struct DatabaseEngineOverview: View {
                 // Has engines but no databases
                 AXEmptyState(
                     icon: "cylinder.split.1x2",
-                    title: "No Databases Found",
-                    description: "You have database engines installed but haven't created any databases yet. Create your first database to get started.",
-                    actionLabel: "Create First Database",
+                    title: L10n.Database.noDatabasesFound,
+                    description: L10n.Database.noDatabasesDescription,
+                    actionLabel: L10n.Database.createFirstDatabase,
                     action: { viewModel.showAddDatabase = true }
                 )
                 .padding(.top, AXSpacing.xl)

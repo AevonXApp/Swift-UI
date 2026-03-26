@@ -59,7 +59,7 @@ struct RedisSecuritySection: View {
                 toggleRow(label: "requirepass", hint: "Password authentication enabled", isOn: $hsts)
             }
             HStack { Spacer()
-                gradientButton(icon: "shield.checkered", label: "Apply", color: .red, isLoading: isSavingHeaders) { Task { await saveHeaders() } }
+                gradientButton(icon: "shield.checkered", label: L10n.Button.apply, color: .red, isLoading: isSavingHeaders) { Task { await saveHeaders() } }
             }.padding(.horizontal, AXSpacing.lg).padding(.bottom, AXSpacing.md)
         }
     }

@@ -58,7 +58,7 @@ public actor DatabaseEngineService {
         let cmd = bridge.startCmd(engine: type.rawValue)
         let result = await ssh.executeAsync(serverID: serverId, command: cmd)
         if result.lowercased().contains("error") || result.lowercased().contains("failed") {
-            throw DatabaseServiceError.operationFailed("Start failed: \(result)")
+            throw DatabaseServiceError.operationFailed(L10n.Service.startFailed)
         }
     }
 
@@ -66,7 +66,7 @@ public actor DatabaseEngineService {
         let cmd = bridge.stopCmd(engine: type.rawValue)
         let result = await ssh.executeAsync(serverID: serverId, command: cmd)
         if result.lowercased().contains("error") || result.lowercased().contains("failed") {
-            throw DatabaseServiceError.operationFailed("Stop failed: \(result)")
+            throw DatabaseServiceError.operationFailed(L10n.Service.stopFailed)
         }
     }
 
@@ -74,7 +74,7 @@ public actor DatabaseEngineService {
         let cmd = bridge.restartCmd(engine: type.rawValue)
         let result = await ssh.executeAsync(serverID: serverId, command: cmd)
         if result.lowercased().contains("error") || result.lowercased().contains("failed") {
-            throw DatabaseServiceError.operationFailed("Restart failed: \(result)")
+            throw DatabaseServiceError.operationFailed(L10n.Service.restartFailed)
         }
     }
 
@@ -106,7 +106,7 @@ public actor DatabaseEngineService {
         let cmd = bridge.installCmd(engine: type.rawValue, version: version)
         let result = await ssh.executeAsync(serverID: serverId, command: cmd)
         if result.lowercased().contains("error") && !result.lowercased().contains("already") {
-            throw DatabaseServiceError.operationFailed("Installation failed: \(result)")
+            throw DatabaseServiceError.operationFailed(L10n.Service.installFailed)
         }
     }
 
@@ -114,7 +114,7 @@ public actor DatabaseEngineService {
         let cmd = bridge.uninstallCmd(engine: type.rawValue)
         let result = await ssh.executeAsync(serverID: serverId, command: cmd)
         if result.lowercased().contains("error") && !result.lowercased().contains("not installed") {
-            throw DatabaseServiceError.operationFailed("Uninstall failed: \(result)")
+            throw DatabaseServiceError.operationFailed(L10n.Service.uninstallFailed)
         }
     }
 
@@ -135,7 +135,7 @@ public actor DatabaseEngineService {
         let cmd = bridge.writeConfigCmd(engine: type.rawValue, content: config.content)
         let result = await ssh.executeAsync(serverID: serverId, command: cmd)
         if result.lowercased().contains("error") {
-            throw DatabaseServiceError.operationFailed("Config update failed: \(result)")
+            throw DatabaseServiceError.operationFailed(L10n.Service.configUpdateFailed)
         }
     }
 

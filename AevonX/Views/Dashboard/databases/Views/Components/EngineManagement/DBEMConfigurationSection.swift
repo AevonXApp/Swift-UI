@@ -34,7 +34,7 @@ struct DBEMConfigurationSection: View {
 
                             Spacer()
 
-                            Button("Edit") {
+                            Button(L10n.Button.edit) {
                                 Task {
                                     await viewModel.loadConfiguration()
                                     viewModel.configEditContent = viewModel.configuration?.rawContent ?? ""
@@ -65,7 +65,7 @@ struct DBEMConfigurationSection: View {
 
                             Spacer()
 
-                            Button("Switch Version") {
+                            Button(L10n.Database.switchVersion) {
                                 viewModel.showVersionSwitcher = true
                             }
                             .font(AXTypography.subheadline)
@@ -77,7 +77,7 @@ struct DBEMConfigurationSection: View {
 
                         DBEMInfoRow(label: "Current Version", value: viewModel.formattedVersion)
 
-                        Button("Install New Version") {
+                        Button(L10n.Database.installVersion) {
                             viewModel.showInstallVersion = true
                         }
                         .font(AXTypography.subheadline)
@@ -136,7 +136,7 @@ struct DBEMConfigurationSection: View {
                                             await viewModel.updateRedisPassword(newPassword: viewModel.redisPassword)
                                         }
                                     } label: {
-                                        Text("Save")
+                                        Text(L10n.Button.save)
                                             .font(AXTypography.subheadline)
                                             .fontWeight(.semibold)
                                             .foregroundColor(.axBackground)

@@ -25,7 +25,7 @@ struct DirectoryBrowserView: View {
                         .lineLimit(1)
                 }
                 Spacer()
-                Button("Cancel") {
+                Button(L10n.Button.cancel) {
                     dismiss()
                 }
                 .foregroundColor(.axTextSecondary)
@@ -46,11 +46,11 @@ struct DirectoryBrowserView: View {
                 }
                 .buttonStyle(PlainButtonStyle())
                 .disabled(viewModel.currentBrowsingPath == "/")
-                .help("Go up one level")
+                .help(L10n.Website.goUpLevel)
                 
                 Spacer()
                 
-                Button("Select Current") {
+                Button(L10n.Website.selectCurrent) {
                     viewModel.selectCurrentDirectory()
                     dismiss()
                 }
@@ -70,7 +70,7 @@ struct DirectoryBrowserView: View {
                 if viewModel.isLoadingBrowsingItems {
                     HStack {
                         Spacer()
-                        ProgressView("Loading...")
+                        ProgressView(L10n.Status.loading)
                         Spacer()
                     }
                     .listRowBackground(Color.clear)

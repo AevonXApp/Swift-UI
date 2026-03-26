@@ -116,7 +116,7 @@ struct GitTab: View {
             
             // Actions
             HStack(spacing: AXSpacing.sm) {
-                Button("Cancel") {
+                Button(L10n.Button.cancel) {
                     vm.showCommitSheet = false
                     vm.commitMessage = ""
                 }
@@ -952,7 +952,7 @@ struct GitTab: View {
                             .overlay(RoundedRectangle(cornerRadius: 4).stroke(Color.axBorder, lineWidth: 1))
                             .cornerRadius(AXCornerRadius.sm)
                         
-                        Button("Save") { Task { await vm.stashSave() } }
+                        Button(L10n.Button.save) { Task { await vm.stashSave() } }
                             .font(AXTypography.caption).fontWeight(.bold)
                             .foregroundColor(.white)
                             .padding(.horizontal, 10)

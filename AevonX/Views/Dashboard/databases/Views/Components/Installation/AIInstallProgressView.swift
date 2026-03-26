@@ -52,7 +52,7 @@ struct AIInstallProgressView: View {
             Spacer()
             
             // Cancel button
-            Button("Cancel Installation", action: onCancel)
+            Button(L10n.Button.cancel, action: onCancel)
                 .font(AXTypography.subheadline)
                 .foregroundColor(.axError)
                 .padding(.horizontal, AXSpacing.lg)

@@ -20,7 +20,7 @@ struct InstalledDatabaseView: View {
             // Toolbar with service controls
             HStack(spacing: AXSpacing.md) {
                 // Search
-                AXSearchBar(text: $viewModel.searchText, placeholder: "Search databases...")
+                AXSearchBar(text: $viewModel.searchText, placeholder: L10n.Database.searchDatabases)
                     .frame(width: 280)
                 
                 // View Mode Toggle
@@ -58,7 +58,7 @@ struct InstalledDatabaseView: View {
                     Button(action: { viewModel.showAddDatabase = true }) {
                         HStack(spacing: AXSpacing.sm) {
                             Image(systemName: "plus")
-                            Text("New Database")
+                            Text(L10n.Database.newDatabase)
                         }
                         .font(AXTypography.subheadline)
                         .fontWeight(.medium)
@@ -75,7 +75,7 @@ struct InstalledDatabaseView: View {
                             Image(systemName: "arrow.clockwise")
                                 .rotationEffect(.degrees(viewModel.isLoading ? 360 : 0))
                                 .animation(viewModel.isLoading ? Animation.linear(duration: 1).repeatForever(autoreverses: false) : .default, value: viewModel.isLoading)
-                            Text("Refresh")
+                            Text(L10n.Button.refresh)
                         }
                         .font(AXTypography.subheadline)
                         .fontWeight(.medium)
@@ -101,9 +101,9 @@ struct InstalledDatabaseView: View {
                      Spacer()
                      AXEmptyState(
                         icon: "cylinder",
-                        title: "No Databases",
-                        description: "No databases found for \(type.displayName). Create one to get started.",
-                        actionLabel: "Create Database",
+                        title: L10n.Database.noDatabases,
+                        description: L10n.Database.noDatabasesFor(type.displayName),
+                        actionLabel: L10n.Database.createDatabase,
                         action: { viewModel.showAddDatabase = true }
                      )
                      Spacer()

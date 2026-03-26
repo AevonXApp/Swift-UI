@@ -26,7 +26,7 @@ struct KeyboardSettingsSection: View {
         SettingsSection(title: "Navigation", icon: "arrow.left.arrow.right") {
             shortcutRow("Remote Fleet", shortcut: "Cmd+1")
             shortcutRow("Profile", shortcut: "Cmd+3")
-            shortcutRow("Settings", shortcut: "Cmd+,")
+            shortcutRow(L10n.Settings.title, shortcut: "Cmd+,")
         }
     }
 

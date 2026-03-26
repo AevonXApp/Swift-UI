@@ -82,7 +82,7 @@ struct PgSQLOptimizationSection: View {
                     }
 
                     // Save button
-                    AppOptimizationSaveButton(title: "Save", color: pgsqlBlue, isSaving: isSaving) {
+                    AppOptimizationSaveButton(title: L10n.Button.save, color: pgsqlBlue, isSaving: isSaving) {
                         Task { await saveSettings() }
                     }
                     .padding(.top, AXSpacing.md)

@@ -45,7 +45,7 @@ struct EngineMigrationSection: View {
             .padding(AXSpacing.xl)
         }
         .alert("Confirm Engine Migration", isPresented: $showConfirmation) {
-            Button("Cancel", role: .cancel) {}
+            Button(L10n.Button.cancel, role: .cancel) {}
             Button("Migrate", role: .destructive) {
                 Task { await performMigration() }
             }
@@ -149,7 +149,7 @@ struct EngineMigrationSection: View {
                 Circle()
                     .fill(Color.axSuccess)
                     .frame(width: 6, height: 6)
-                Text("Active")
+                Text(L10n.Status.active)
                     .font(.system(size: 10, weight: .semibold))
                     .foregroundColor(.axSuccess)
             }

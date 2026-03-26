@@ -44,9 +44,9 @@ struct DatabaseListView: View {
                     type: database.type,
                     serverId: serverId
                 )
-                GlobalToastManager.shared.showSuccess("Backup created for '\(database.name)'")
+                GlobalToastManager.shared.showSuccess(L10n.Database.backupCreatedFor(database.name))
             } catch {
-                GlobalToastManager.shared.showError("Backup failed: \(error.localizedDescription)")
+                GlobalToastManager.shared.showError("\(L10n.Database.backupFailed): \(error.localizedDescription)")
             }
         }
     }

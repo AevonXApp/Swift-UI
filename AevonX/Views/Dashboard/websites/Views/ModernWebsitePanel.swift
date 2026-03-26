@@ -278,7 +278,7 @@ struct ModernWebsitePanel: View {
                             HStack(spacing: AXSpacing.xs) {
                                 Image(systemName: "chevron.left")
                                     .font(AXTypography.footnote).fontWeight(.bold)
-                                Text("Back")
+                                Text(L10n.Button.back)
                                     .font(AXTypography.caption)
                                     .fontWeight(.semibold)
                             }
@@ -646,7 +646,7 @@ struct ModernWebsitePanel: View {
                     AXStatCard(
                         icon: "lock.shield.fill",
                         label: "SSL Certificate",
-                        value: viewModel.website.sslEnabled ? "Active" : "Inactive",
+                        value: viewModel.website.sslEnabled ? L10n.Status.active : L10n.Status.inactive,
                         color: viewModel.website.sslEnabled ? .axSuccess : .axWarning
                     )
 
@@ -1035,7 +1035,7 @@ struct ModernWebsitePanel: View {
                                     Spacer()
 
                                     if version == viewModel.phpVersion {
-                                        Text("Active")
+                                        Text(L10n.Status.active)
                                             .font(AXTypography.caption).fontWeight(.semibold)
                                             .foregroundColor(.axSuccess)
                                             .padding(.horizontal, 8)

@@ -13,7 +13,7 @@ import AevonXCoreBridge
 struct FileListHeader: View {
     var body: some View {
         HStack(spacing: 0) {
-            headerColumn("Name", width: nil, alignment: .leading)
+            headerColumn(L10n.Field.name, width: nil, alignment: .leading)
             headerColumn("Size", width: 80, alignment: .trailing)
             headerColumn("Mode", width: 50, alignment: .center)
             headerColumn("Owner", width: 70, alignment: .center)

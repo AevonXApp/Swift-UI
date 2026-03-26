@@ -603,7 +603,7 @@ struct CerberusTrafficView: View {
         HStack {
             Spacer()
             Button { selectedDomainName = nil } label: {
-                Text("Close")
+                Text(L10n.Button.close)
                     .font(AXTypography.subheadline)
                     .fontWeight(.medium)
                     .foregroundStyle(Color.axTextSecondary)
@@ -685,8 +685,8 @@ struct CerberusTrafficView: View {
             Text("IP").font(AXTypography.monoXs).foregroundStyle(Color.axTextMuted).frame(width: 115, alignment: .leading)
             Text("").frame(width: 25)
             Text("Method").font(AXTypography.monoXs).foregroundStyle(Color.axTextMuted).frame(width: 50)
-            Text("Host").font(AXTypography.monoXs).foregroundStyle(Color.axTextMuted).frame(width: 120, alignment: .leading)
-            Text("Path").font(AXTypography.monoXs).foregroundStyle(Color.axTextMuted).frame(maxWidth: .infinity, alignment: .leading)
+            Text(L10n.Field.host).font(AXTypography.monoXs).foregroundStyle(Color.axTextMuted).frame(width: 120, alignment: .leading)
+            Text(L10n.Field.path).font(AXTypography.monoXs).foregroundStyle(Color.axTextMuted).frame(maxWidth: .infinity, alignment: .leading)
             Text("Status").font(AXTypography.monoXs).foregroundStyle(Color.axTextMuted).frame(width: 45)
             Text("Latency").font(AXTypography.monoXs).foregroundStyle(Color.axTextMuted).frame(width: 55)
             Text("Bot").font(AXTypography.monoXs).foregroundStyle(Color.axTextMuted).frame(width: 30)

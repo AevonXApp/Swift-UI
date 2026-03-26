@@ -588,7 +588,7 @@ private struct AppCard3D: View {
                                         .fill(Color.axError.opacity(0.6))
                                         .frame(width: 6, height: 6)
                                 }
-                                Text(app.isRunning ? "Running" : "Stopped")
+                                Text(app.isRunning ? L10n.Status.running : L10n.Status.stopped)
                                     .font(.system(size: 10, weight: .semibold))
                                     .foregroundColor(app.isRunning ? .axSuccess : .axError)
                             }
@@ -738,7 +738,7 @@ private struct AvailableAppRow: View {
                         Image(systemName: "arrow.down.circle.fill")
                             .font(.system(size: 11))
                     }
-                    Text("Install")
+                    Text(L10n.Button.install)
                         .font(.system(size: 11, weight: .semibold))
                 }
                 .foregroundColor(.white)

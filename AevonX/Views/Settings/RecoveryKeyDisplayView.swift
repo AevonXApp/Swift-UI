@@ -32,11 +32,11 @@ struct RecoveryKeyDisplayView: View {
                             .foregroundColor(.axAccentBlue)
                     }
                     
-                    Text("Your Recovery Key")
+                    Text(L10n.Recovery.title)
                         .font(.system(size: 28, weight: .bold, design: .rounded))
                         .foregroundColor(.axTextPrimary)
                     
-                    Text("Write this down now. You will never see it again.")
+                    Text(L10n.Recovery.writeDownNow)
                         .font(AXTypography.body)
                         .foregroundColor(.axTextSecondary)
                         .multilineTextAlignment(.center)
@@ -51,13 +51,13 @@ struct RecoveryKeyDisplayView: View {
                                 .foregroundColor(.axError)
                                 .font(.title2)
                             
-                            Text("CRITICAL WARNING")
+                            Text(L10n.Recovery.criticalWarning)
                                 .font(AXTypography.subheadline)
                                 .fontWeight(.bold)
                                 .foregroundColor(.axError)
                         }
                         
-                        Text("If you lose this Recovery Key, your encrypted data CANNOT be recovered. Not even AevonX support can help you. There is no password reset, no backup, no recovery.")
+                        Text(L10n.Recovery.lossWarning)
                             .font(AXTypography.callout)
                             .foregroundColor(.axTextSecondary)
                     }
@@ -156,7 +156,7 @@ struct RecoveryKeyDisplayView: View {
                             } else {
                                 HStack {
                                     Image(systemName: "key.fill")
-                                    Text("Generate Recovery Key")
+                                    Text(L10n.Recovery.generate)
                                 }
                                 .font(AXTypography.body)
                                 .fontWeight(.semibold)
@@ -184,11 +184,11 @@ struct RecoveryKeyDisplayView: View {
                         .buttonStyle(PlainButtonStyle())
                         
                         VStack(alignment: .leading, spacing: 2) {
-                            Text("I have stored my Recovery Key securely")
+                            Text(L10n.Recovery.storedSecurely)
                                 .font(AXTypography.subheadline)
                                 .foregroundColor(.axTextPrimary)
                             
-                            Text("I understand that if I lose it, my data is lost forever")
+                            Text(L10n.Recovery.understandLoss)
                                 .font(AXTypography.caption)
                                 .foregroundColor(.axTextMuted)
                         }
@@ -197,7 +197,7 @@ struct RecoveryKeyDisplayView: View {
                     
                     // Dismiss warning button
                     Button(action: { showWarning = false }) {
-                        Text("I've read the warning")
+                        Text(L10n.Recovery.readWarning)
                             .font(AXTypography.caption)
                             .foregroundColor(.axTextSecondary)
                     }
@@ -214,7 +214,7 @@ struct RecoveryKeyDisplayView: View {
                         dismiss()
                     }
                 }) {
-                    Text("Continue")
+                    Text(L10n.Button.continue)
                         .font(AXTypography.body)
                         .fontWeight(.semibold)
                         .foregroundColor(.axBackground)

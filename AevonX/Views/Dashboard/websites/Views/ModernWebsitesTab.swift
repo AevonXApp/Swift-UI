@@ -103,8 +103,8 @@ struct ModernWebsitesTab: View {
         }
         .alert("Clone Website", isPresented: $showCloneDialog) {
             TextField("New domain", text: $cloneDomain)
-            Button("Cancel", role: .cancel) {}
-            Button("Clone") {
+            Button(L10n.Button.cancel, role: .cancel) {}
+            Button(L10n.Website.clone) {
                 if let website = websiteToClone {
                     Task {
                         do {

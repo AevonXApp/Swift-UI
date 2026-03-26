@@ -26,7 +26,7 @@ struct URLRewriteRuleEditor: View {
         VStack(spacing: 0) {
             // Header
             HStack {
-                Button("Cancel", action: onCancel)
+                Button(L10n.Button.cancel, action: onCancel)
                     .foregroundColor(.axTextSecondary)
 
                 Spacer()
@@ -37,7 +37,7 @@ struct URLRewriteRuleEditor: View {
 
                 Spacer()
 
-                Button("Save") {
+                Button(L10n.Button.save) {
                     saveRule()
                 }
                 .foregroundColor(.axAccentBlue)
@@ -156,7 +156,7 @@ struct URLRewriteRuleEditor: View {
                         .fill(isEnabled ? Color.axSuccess : Color.axTextMuted)
                         .frame(width: 8, height: 8)
 
-                    Text(isEnabled ? "Enabled" : "Disabled")
+                    Text(isEnabled ? L10n.Status.enabled : L10n.Status.disabled)
                         .font(AXTypography.caption)
                         .foregroundColor(.axTextSecondary)
                 }

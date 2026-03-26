@@ -57,7 +57,7 @@ struct MissingToolBanner: View {
                     } else {
                         Image(systemName: "arrow.down.circle.fill")
                             .font(.system(size: 12))
-                        Text("Install")
+                        Text(L10n.Button.install)
                             .font(.system(size: 11, weight: .semibold))
                     }
                 }

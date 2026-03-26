@@ -17,7 +17,7 @@ struct DockerSecretsManagerView: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack {
-                Label("Secrets Manager", systemImage: "key.fill")
+                Label(L10n.Docker.secretsManager, systemImage: "key.fill")
                     .font(AXTypography.title2)
                     .foregroundColor(.axTextPrimary)
                 Spacer()
@@ -62,15 +62,15 @@ struct DockerSecretsManagerView: View {
                                 
                                 HStack {
                                     Spacer()
-                                    Button("Cancel") { showAddSecret = false }
+                                    Button(L10n.Button.cancel) { showAddSecret = false }
                                         .buttonStyle(.plain)
                                         .foregroundColor(.axTextSecondary)
-                                    
+
                                     Button {
                                         addSecret()
                                     } label: {
                                         if isAdding { ProgressView().scaleEffect(0.6) }
-                                        else { Text("Create") }
+                                        else { Text(L10n.Button.create) }
                                     }
                                     .buttonStyle(.plain)
                                     .padding(.horizontal, 12)

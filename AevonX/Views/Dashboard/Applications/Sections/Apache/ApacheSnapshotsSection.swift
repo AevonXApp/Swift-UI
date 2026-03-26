@@ -87,7 +87,7 @@ struct ApacheSnapshotsSection: View {
                 actionButton("Restore", icon: "arrow.uturn.backward", color: .axAccentBlue) {
                     Task { await restoreSnapshot(snap.id) }
                 }
-                actionButton("Delete", icon: "trash", color: .axError) {
+                actionButton(L10n.Button.delete, icon: "trash", color: .axError) {
                     Task { await deleteSnapshot(snap.id) }
                 }
             }

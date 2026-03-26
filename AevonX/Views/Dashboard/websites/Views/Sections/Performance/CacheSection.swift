@@ -97,7 +97,7 @@ struct CacheSection: View {
             Text(status.type.rawValue)
                 .font(AXTypography.callout).fontWeight(.semibold)
                 .foregroundColor(.axTextPrimary)
-            Text(status.enabled ? "Active" : "Inactive")
+            Text(status.enabled ? L10n.Status.active : L10n.Status.inactive)
                 .font(AXTypography.footnote)
                 .foregroundColor(status.enabled ? .axSuccess : .axTextTertiary)
 

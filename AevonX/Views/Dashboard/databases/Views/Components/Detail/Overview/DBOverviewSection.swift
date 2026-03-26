@@ -85,7 +85,7 @@ struct DBOverviewSection: View {
                         Circle()
                             .fill(Color.axSuccess)
                             .frame(width: 6, height: 6)
-                        Text("Connected")
+                        Text(L10n.Status.connected)
                     }
                     .font(AXTypography.footnote)
                     .foregroundColor(.axSuccess)
@@ -371,14 +371,14 @@ struct DBOverviewSection: View {
             }
 
             HStack(spacing: AXSpacing.md) {
-                quickActionButton(icon: "plus.circle", title: "Create Table", color: .axAccentBlue) {
+                quickActionButton(icon: "plus.circle", title: L10n.Database.createTable, color: .axAccentBlue) {
                     viewModel.currentSection = .tables
                     viewModel.showCreateTable = true
                 }
                 quickActionButton(icon: "terminal", title: "Run Query", color: .axAccentGreen) {
                     viewModel.currentSection = .queryConsole
                 }
-                quickActionButton(icon: "arrow.down.doc", title: "Create Backup", color: .axWarning) {
+                quickActionButton(icon: "arrow.down.doc", title: L10n.Database.createBackup, color: .axWarning) {
                     viewModel.currentSection = .backup
                 }
                 quickActionButton(icon: "tablecells.badge.ellipsis", title: "Browse Data", color: .axInfo) {
@@ -387,7 +387,7 @@ struct DBOverviewSection: View {
                         viewModel.currentSection = .tables
                     }
                 }
-                quickActionButton(icon: "arrow.up.doc", title: "Import SQL", color: .purple) {
+                quickActionButton(icon: "arrow.up.doc", title: L10n.Database.importSQL, color: .purple) {
                     viewModel.currentSection = .importSQL
                 }
                 quickActionButton(icon: "clock", title: "Activity Log", color: .axTextSecondary) {

@@ -166,7 +166,7 @@ private extension CerberusModulesView {
                 Circle()
                     .fill(module.enabled ? Color.axAccentGreen : Color.axTextMuted)
                     .frame(width: 6, height: 6)
-                Text(module.enabled ? "Active" : "Disabled")
+                Text(module.enabled ? L10n.Status.active : L10n.Status.disabled)
                     .font(AXTypography.caption)
                     .foregroundStyle(module.enabled ? Color.axAccentGreen : Color.axTextMuted)
             }
@@ -383,7 +383,7 @@ private extension CerberusModulesView {
                 .foregroundStyle(Color.axTextPrimary)
             Spacer()
             if !enabled {
-                AXBadge(text: "Disabled", color: .axTextMuted, style: .soft)
+                AXBadge(text: L10n.Status.disabled, color: .axTextMuted, style: .soft)
             }
         }
     }

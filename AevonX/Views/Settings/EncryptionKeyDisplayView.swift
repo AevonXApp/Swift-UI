@@ -36,7 +36,7 @@ struct EncryptionKeyDisplayView: View {
                 VStack(spacing: AXSpacing.md) {
                     ProgressView()
                         .scaleEffect(1.2)
-                    Text("Verifying identity...")
+                    Text(L10n.Encryption.verifyingIdentity)
                         .font(AXTypography.caption)
                         .foregroundColor(.axTextSecondary)
                 }
@@ -102,11 +102,11 @@ struct EncryptionKeyDisplayView: View {
             }
             
             VStack(spacing: AXSpacing.xs) {
-                Text("Your Encryption Key")
+                Text(L10n.Encryption.yourKey)
                     .font(.system(size: 22, weight: .bold, design: .rounded))
                     .foregroundColor(.axTextPrimary)
                 
-                Text("Save this key securely. It's the only way to recover your encrypted data.")
+                Text(L10n.Encryption.saveSecurely)
                     .font(AXTypography.callout)
                     .foregroundColor(.axTextSecondary)
                     .multilineTextAlignment(.center)
@@ -148,7 +148,7 @@ struct EncryptionKeyDisplayView: View {
                 Image(systemName: "exclamationmark.triangle.fill")
                     .font(.system(size: 12))
                     .foregroundColor(.axWarning)
-                Text("This key will be hidden when you close this window.")
+                Text(L10n.Encryption.keyHiddenOnClose)
                     .font(AXTypography.caption)
                     .foregroundColor(.axTextTertiary)
             }
@@ -172,7 +172,7 @@ struct EncryptionKeyDisplayView: View {
             Button(action: { Task { await authenticateAndLoadKey() } }) {
                 HStack(spacing: AXSpacing.xs) {
                     Image(systemName: "arrow.clockwise")
-                    Text("Try Again")
+                    Text(L10n.Button.tryAgain)
                 }
                 .font(AXTypography.subheadline)
                 .fontWeight(.medium)

@@ -20,7 +20,7 @@ extension DatabaseEngineDetailViewModel {
             progressMessage: "Starting \(databaseType.displayName)...",
             successMessage: "\(databaseType.displayName) started successfully!",
             successAlert: "\(databaseType.displayName) service has been started.",
-            failurePrefix: "Failed to start"
+            failurePrefix: L10n.Service.startFailed
         ) {
             try await DatabaseEngineService.shared.startService(type: databaseType, serverId: currentServerId!)
             try await Task.sleep(nanoseconds: 2_000_000_000)
@@ -33,7 +33,7 @@ extension DatabaseEngineDetailViewModel {
             progressMessage: "Stopping \(databaseType.displayName)...",
             successMessage: "\(databaseType.displayName) stopped successfully!",
             successAlert: "\(databaseType.displayName) service has been stopped.",
-            failurePrefix: "Failed to stop"
+            failurePrefix: L10n.Service.stopFailed
         ) {
             try await DatabaseEngineService.shared.stopService(type: databaseType, serverId: currentServerId!)
             try await Task.sleep(nanoseconds: 2_000_000_000)
@@ -46,7 +46,7 @@ extension DatabaseEngineDetailViewModel {
             progressMessage: "Restarting \(databaseType.displayName)...",
             successMessage: "\(databaseType.displayName) restarted successfully!",
             successAlert: "\(databaseType.displayName) service has been restarted.",
-            failurePrefix: "Failed to restart"
+            failurePrefix: L10n.Service.restartFailed
         ) {
             try await DatabaseEngineService.shared.restartService(type: databaseType, serverId: currentServerId!)
             try await Task.sleep(nanoseconds: 3_000_000_000)
@@ -59,7 +59,7 @@ extension DatabaseEngineDetailViewModel {
             progressMessage: "Enabling \(databaseType.displayName) on boot...",
             successMessage: "\(databaseType.displayName) will start on boot!",
             successAlert: "\(databaseType.displayName) has been enabled to start on system boot.",
-            failurePrefix: "Failed to enable"
+            failurePrefix: L10n.Service.startFailed
         ) {
             try await DatabaseEngineService.shared.enableService(type: databaseType, serverId: currentServerId!)
         }
@@ -71,7 +71,7 @@ extension DatabaseEngineDetailViewModel {
             progressMessage: "Disabling \(databaseType.displayName) on boot...",
             successMessage: "\(databaseType.displayName) will not start on boot!",
             successAlert: "\(databaseType.displayName) has been disabled from starting on system boot.",
-            failurePrefix: "Failed to disable"
+            failurePrefix: L10n.Service.stopFailed
         ) {
             try await DatabaseEngineService.shared.disableService(type: databaseType, serverId: currentServerId!)
         }
@@ -141,7 +141,7 @@ extension DatabaseEngineDetailViewModel {
             progressMessage: "Uninstalling \(databaseType.displayName)...",
             successMessage: "\(databaseType.displayName) uninstalled successfully!",
             successAlert: "\(databaseType.displayName) has been uninstalled from the server.",
-            failurePrefix: "Uninstall failed"
+            failurePrefix: L10n.Service.uninstallFailed
         ) {
             try await DatabaseEngineService.shared.uninstallDatabaseEngine(type: databaseType, serverId: currentServerId!)
         }

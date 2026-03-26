@@ -127,8 +127,8 @@ struct EngineInfoCard: View {
                 DBEMInfoRow(label: "Version", value: viewModel.formattedVersion)
                 DBEMInfoRow(label: "Install Path", value: viewModel.formattedInstallPath)
                 DBEMInfoRow(label: "Status", value: viewModel.engineInfo?.status.rawValue.capitalized ?? "Unknown")
-                DBEMInfoRow(label: "Service", value: viewModel.isRunning ? "Running" : "Stopped")
-                DBEMInfoRow(label: "Boot", value: viewModel.isBootEnabled ? "Enabled" : "Disabled")
+                DBEMInfoRow(label: "Service", value: viewModel.isRunning ? L10n.Status.running : L10n.Status.stopped)
+                DBEMInfoRow(label: "Boot", value: viewModel.isBootEnabled ? L10n.Status.enabled : L10n.Status.disabled)
                 DBEMInfoRow(label: "Config File", value: viewModel.configFilePath)
             }
             .padding(AXSpacing.lg)

@@ -56,11 +56,11 @@ struct SignUpView: View {
                         VStack(alignment: .leading, spacing: AXSpacing.sm) {
                             sectionTitle("IDENTITY")
 
-                            AuthFormField(label: "Full Name", icon: "person.fill", text: $name)
+                            AuthFormField(label: L10n.Field.fullName, icon: "person.fill", text: $name)
 
                             // Username with live validation
                             VStack(alignment: .leading, spacing: AXSpacing.xs) {
-                                Text("Username")
+                                Text(L10n.Field.username)
                                     .font(AXTypography.caption)
                                     .foregroundColor(.axTextSecondary)
 
@@ -120,7 +120,7 @@ struct SignUpView: View {
                         VStack(alignment: .leading, spacing: AXSpacing.sm) {
                             sectionTitle("SECURITY")
 
-                            AuthFormField(label: "Password", icon: "lock.fill", text: $password, isSecure: true, asciiOnly: true)
+                            AuthFormField(label: L10n.Field.password, icon: "lock.fill", text: $password, isSecure: true, asciiOnly: true)
                             AuthFormField(label: "Confirm Password", icon: "lock.rotation", text: $confirmPassword, isSecure: true, asciiOnly: true)
 
                             if !password.isEmpty {
@@ -132,7 +132,7 @@ struct SignUpView: View {
 
                         // Create Account Button
                         AuthPrimaryButton(
-                            title: "Create Account",
+                            title: L10n.Auth.createAccount,
                             icon: "person.badge.plus",
                             isLoading: viewModel.isLoading
                         ) {
@@ -148,7 +148,7 @@ struct SignUpView: View {
                         }
 
                         // Switch to Sign In
-                        Button("Already have an account? Sign In") {
+                        Button(L10n.Auth.hasAccountSignIn) {
                             onSwitchToLogin()
                         }
                         .font(AXTypography.caption)
@@ -200,11 +200,11 @@ struct SignUpView: View {
                 .shadow(color: Color.axAccentBlue.opacity(0.35), radius: 20, y: 8)
                 .scaleEffect(logoScale)
 
-            Text("AevonX")
+            Text(L10n.App.name)
                 .font(.system(size: 30, weight: .bold, design: .rounded))
                 .foregroundColor(.axTextPrimary)
 
-            Text("Create your account")
+            Text(L10n.Auth.createAccount)
                 .font(AXTypography.callout)
                 .foregroundColor(.axTextSecondary)
         }

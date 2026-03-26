@@ -69,7 +69,7 @@ struct CerberusDashboardView: View {
                     .foregroundStyle(Color.axTextSecondary)
                     .lineLimit(2)
                 Spacer()
-                Button("Retry") { Task { await viewModel.loadDashboard() } }
+                Button(L10n.Button.retry) { Task { await viewModel.loadDashboard() } }
                     .font(AXTypography.caption)
                     .fontWeight(.semibold)
                     .foregroundStyle(Color.axAccentBlue)

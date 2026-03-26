@@ -162,7 +162,7 @@ private struct DockerSchedulerInline: View {
         VStack(alignment: .leading, spacing: AXSpacing.lg) {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Container Scheduler")
+                    Text(L10n.Docker.containerScheduler)
                         .font(.system(size: 16, weight: .bold))
                         .foregroundColor(.axTextPrimary)
                     Text("Schedule automatic container actions using cron")
@@ -214,9 +214,9 @@ private struct DockerSchedulerInline: View {
                 .frame(width: 200)
                 
                 Picker("Action", selection: $selectedAction) {
-                    Text("Restart").tag("restart")
-                    Text("Stop").tag("stop")
-                    Text("Start").tag("start")
+                    Text(L10n.Button.restart).tag("restart")
+                    Text(L10n.Button.stop).tag("stop")
+                    Text(L10n.Button.start).tag("start")
                 }
                 .frame(width: 120)
             }
@@ -242,7 +242,7 @@ private struct DockerSchedulerInline: View {
                 
                 Spacer()
                 
-                Button("Add") { addSchedule() }
+                Button(L10n.Button.add) { addSchedule() }
                     .buttonStyle(.plain)
                     .font(.system(size: 11, weight: .semibold))
                     .foregroundColor(.white)
@@ -336,7 +336,7 @@ private struct DockerSecretsInline: View {
         VStack(alignment: .leading, spacing: AXSpacing.lg) {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Docker Secrets")
+                    Text(L10n.Docker.secretsManager)
                         .font(.system(size: 16, weight: .bold))
                         .foregroundColor(.axTextPrimary)
                     Text("Manage sensitive data for containers (requires Swarm mode)")
@@ -361,7 +361,7 @@ private struct DockerSecretsInline: View {
                         .textFieldStyle(.roundedBorder).frame(width: 200)
                     SecureField("Secret value", text: $newValue)
                         .textFieldStyle(.roundedBorder).frame(width: 200)
-                    Button("Create") { createSecret() }
+                    Button(L10n.Button.create) { createSecret() }
                         .buttonStyle(.plain)
                         .font(.system(size: 11, weight: .semibold))
                         .foregroundColor(.black)
@@ -740,7 +740,7 @@ private struct DockerEnvTemplatesInline: View {
                         .padding(6).background(Color.axSurface).cornerRadius(6).overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.axBorder))
                     HStack {
                         Spacer()
-                        Button("Save") { saveTemplate() }
+                        Button(L10n.Button.save) { saveTemplate() }
                             .buttonStyle(.plain).font(.system(size: 11, weight: .semibold))
                             .foregroundColor(.white).padding(.horizontal, 12).padding(.vertical, 5)
                             .background(tName.isEmpty ? Color.axTextMuted : Color.cyan).cornerRadius(6)
@@ -995,14 +995,14 @@ private struct DockerAutoUpdateInline: View {
                 Text("Watchtower: ")
                     .font(.system(size: 12, weight: .medium))
                     .foregroundColor(.axTextPrimary)
-                Text(watchtowerRunning ? "Running" : "Not Running")
+                Text(watchtowerRunning ? L10n.Status.running : "Not Running")
                     .font(.system(size: 12))
                     .foregroundColor(watchtowerRunning ? .axSuccess : .axTextMuted)
                 Spacer()
                 Button {
                     toggleWatchtower()
                 } label: {
-                    Text(watchtowerRunning ? "Stop" : "Deploy")
+                    Text(watchtowerRunning ? L10n.Button.stop : "Deploy")
                         .font(.system(size: 11, weight: .semibold))
                         .foregroundColor(watchtowerRunning ? .axError : .axSuccess)
                         .padding(.horizontal, 10).padding(.vertical, 4)

@@ -35,7 +35,7 @@ struct FileListContent: View {
         VStack(spacing: AXSpacing.md) {
             ProgressView()
                 .progressViewStyle(CircularProgressViewStyle(tint: .axAccentBlue))
-            Text("Loading files...")
+            Text(L10n.Status.loading)
                 .font(AXTypography.caption)
                 .foregroundColor(.axTextSecondary)
         }
@@ -51,7 +51,7 @@ struct FileListContent: View {
                 .font(AXTypography.caption)
                 .foregroundColor(.axTextSecondary)
                 .multilineTextAlignment(.center)
-            Button("Retry") { viewModel.refresh() }
+            Button(L10n.Button.retry) { viewModel.refresh() }
                 .buttonStyle(AXSecondaryButtonStyle())
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)

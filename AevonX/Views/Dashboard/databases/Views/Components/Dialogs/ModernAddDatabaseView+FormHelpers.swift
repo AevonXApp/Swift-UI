@@ -26,7 +26,7 @@ extension ModernAddDatabaseView {
                 }
                 Spacer()
                 Button(action: { onCreated(); dismiss() }) {
-                    Text("Done")
+                    Text(L10n.Button.done)
                         .font(AXTypography.subheadline)
                         .fontWeight(.bold)
                         .foregroundColor(.white)
@@ -51,7 +51,7 @@ extension ModernAddDatabaseView {
                 Spacer()
 
                 Button(action: { dismiss() }) {
-                    Text("Cancel")
+                    Text(L10n.Button.cancel)
                         .font(AXTypography.subheadline)
                         .foregroundColor(.axTextSecondary)
                         .padding(.horizontal, AXSpacing.lg)

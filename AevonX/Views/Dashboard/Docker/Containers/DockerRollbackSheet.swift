@@ -21,7 +21,7 @@ struct DockerRollbackSheet: View {
             // Header
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Rollback")
+                    Text(L10n.Docker.rollback)
                         .font(AXTypography.title2)
                         .foregroundColor(.axTextPrimary)
                     Text(container.names)
@@ -160,7 +160,7 @@ struct DockerRollbackSheet: View {
                                         Button {
                                             rollbackToSnapshot(snapshot)
                                         } label: {
-                                            Label("Rollback", systemImage: "arrow.uturn.backward")
+                                            Label(L10n.Docker.rollback, systemImage: "arrow.uturn.backward")
                                                 .font(AXTypography.caption)
                                                 .fontWeight(.semibold)
                                         }

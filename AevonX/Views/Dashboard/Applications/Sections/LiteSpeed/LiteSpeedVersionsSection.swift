@@ -41,7 +41,7 @@ struct LiteSpeedVersionsSection: View {
                                         .font(AXTypography.monoLg).fontWeight(.semibold)
                                         .foregroundColor(.axTextPrimary)
                                     if version.isActive {
-                                        Text("Active")
+                                        Text(L10n.Status.active)
                                             .font(AXTypography.caption).fontWeight(.bold)
                                             .foregroundColor(lsGreen)
                                     }

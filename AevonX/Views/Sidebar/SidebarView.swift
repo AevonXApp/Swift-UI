@@ -157,7 +157,7 @@ struct SidebarView: View {
 
                 
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("AevonX")
+                    Text(L10n.App.name)
                         .font(.system(size: 19, weight: .bold, design: .rounded))
                         .foregroundStyle(
                             LinearGradient(
@@ -244,11 +244,11 @@ struct SidebarView: View {
                             .foregroundColor(.axAccentGreen)
                         
                         VStack(alignment: .leading, spacing: 1) {
-                            Text("Trial Active")
+                            Text(L10n.Subscription.trialActive)
                                 .font(.system(size: 11, weight: .semibold))
                                 .foregroundColor(.axTextPrimary)
                             
-                            Text("\(authViewModel.trialRemainingDays ?? 0) days remaining")
+                            Text(L10n.Subscription.daysRemaining(authViewModel.trialRemainingDays ?? 0))
                                 .font(.system(size: 10, weight: .medium))
                                 .foregroundColor(.axAccentGreen)
                         }
@@ -262,7 +262,7 @@ struct SidebarView: View {
                         HStack(spacing: AXSpacing.xs) {
                             Image(systemName: "arrow.clockwise")
                                 .font(.system(size: 11, weight: .semibold))
-                            Text("Renew")
+                            Text(L10n.Button.renew)
                                 .font(.system(size: 11, weight: .semibold))
                         }
                         .foregroundColor(.white)
@@ -287,11 +287,11 @@ struct SidebarView: View {
                             .foregroundColor(.axWarning)
                         
                         VStack(alignment: .leading, spacing: 1) {
-                            Text("Trial Expired")
+                            Text(L10n.Subscription.trialExpired)
                                 .font(.system(size: 11, weight: .semibold))
                                 .foregroundColor(.axTextPrimary)
                             
-                            Text("Upgrade to continue")
+                            Text(L10n.Subscription.upgradeToContinue)
                                 .font(.system(size: 10, weight: .medium))
                                 .foregroundColor(.axWarning)
                         }
@@ -304,7 +304,7 @@ struct SidebarView: View {
                         HStack(spacing: AXSpacing.xs) {
                             Image(systemName: "sparkles")
                                 .font(.system(size: 11, weight: .semibold))
-                            Text("Upgrade Now")
+                            Text(L10n.Button.upgradeNow)
                                 .font(.system(size: 11, weight: .semibold))
                         }
                         .foregroundColor(.white)
@@ -328,7 +328,7 @@ struct SidebarView: View {
                             .font(.system(size: 13))
                             .foregroundColor(.axTextMuted)
                         
-                        Text("Free Plan")
+                        Text(L10n.Subscription.freePlan)
                             .font(.system(size: 11, weight: .semibold))
                             .foregroundColor(.axTextSecondary)
                         
@@ -340,7 +340,7 @@ struct SidebarView: View {
                         HStack(spacing: AXSpacing.xs) {
                             Image(systemName: "sparkles")
                                 .font(.system(size: 11, weight: .semibold))
-                            Text("Upgrade")
+                            Text(L10n.Button.upgrade)
                                 .font(.system(size: 11, weight: .semibold))
                         }
                         .foregroundColor(.white)
@@ -392,7 +392,7 @@ struct SidebarView: View {
                         .shadow(color: .axSuccess.opacity(0.5), radius: 3)
                 }
                 
-                Text("Connected")
+                Text(L10n.Status.connected)
                     .font(.system(size: 11, weight: .medium))
                     .foregroundColor(.axTextSecondary)
                 

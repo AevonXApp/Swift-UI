@@ -64,7 +64,7 @@ struct EditServerView: View {
                     }
 
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("Edit Server")
+                        Text(L10n.Fleet.editServer)
                             .font(AXTypography.title2)
                             .fontWeight(.bold)
                             .foregroundColor(.axTextPrimary)
@@ -95,7 +95,7 @@ struct EditServerView: View {
                 
                 // Server Identity Section
                 VStack(alignment: .leading, spacing: AXSpacing.md) {
-                    Text("Server Identity")
+                    Text(L10n.Fleet.serverIdentity)
                         .font(AXTypography.headline)
                         .foregroundColor(.axTextPrimary)
                         .padding(.horizontal, AXSpacing.lg)
@@ -103,10 +103,10 @@ struct EditServerView: View {
                     VStack(spacing: AXSpacing.md) {
                         // Name
                         VStack(alignment: .leading, spacing: AXSpacing.xs) {
-                            Text("Server Name")
+                            Text(L10n.Field.serverName)
                                 .font(AXTypography.caption)
                                 .foregroundColor(.axTextMuted)
-                            TextField("Server Name", text: $name)
+                            TextField(L10n.Field.serverName, text: $name)
                                 .font(AXTypography.body)
                                 .foregroundColor(.axTextPrimary)
                                 .padding(AXSpacing.md)
@@ -122,7 +122,7 @@ struct EditServerView: View {
                                 Image(systemName: "info.circle")
                                     .font(.system(size: 10))
                                     .foregroundColor(.axAccentBlue)
-                                Text("Server name is not encrypted, to allow easy identification in web purchases.")
+                                Text(L10n.Fleet.serverNameHelp)
                                     .font(AXTypography.caption2)
                                     .foregroundColor(.axTextMuted)
                             }
@@ -130,7 +130,7 @@ struct EditServerView: View {
                         
                         // Icon Picker
                         VStack(alignment: .leading, spacing: AXSpacing.sm) {
-                            Text("Icon")
+                            Text(L10n.Field.icon)
                                 .font(AXTypography.caption)
                                 .foregroundColor(.axTextMuted)
                             ScrollView(.horizontal, showsIndicators: false) {
@@ -156,7 +156,7 @@ struct EditServerView: View {
                         
                         // Color Picker
                         VStack(alignment: .leading, spacing: AXSpacing.sm) {
-                            Text("Color")
+                            Text(L10n.Field.color)
                                 .font(AXTypography.caption)
                                 .foregroundColor(.axTextMuted)
                             HStack(spacing: AXSpacing.sm) {
@@ -187,7 +187,7 @@ struct EditServerView: View {
                         // Tags with helper text
                         VStack(alignment: .leading, spacing: AXSpacing.xs) {
                             HStack(spacing: AXSpacing.xs) {
-                                Text("Tags (optional)")
+                                Text(L10n.Field.tags)
                                     .font(AXTypography.caption)
                                     .foregroundColor(.axTextMuted)
 
@@ -197,7 +197,7 @@ struct EditServerView: View {
                                     .help("Add tags like 'production', 'staging', or 'development' to enable environment filters")
                             }
 
-                            TextField("production, staging, web, database", text: $tagsText)
+                            TextField(L10n.Fleet.tagsPlaceholder, text: $tagsText)
                                 .font(AXTypography.body)
                                 .foregroundColor(.axTextPrimary)
                                 .padding(AXSpacing.md)
@@ -250,7 +250,7 @@ struct EditServerView: View {
                 
                 // Connection Details Section
                 VStack(alignment: .leading, spacing: AXSpacing.md) {
-                    Text("Connection Details")
+                    Text(L10n.Fleet.connectionDetails)
                         .font(AXTypography.headline)
                         .foregroundColor(.axTextPrimary)
                         .padding(.horizontal, AXSpacing.lg)
@@ -258,10 +258,10 @@ struct EditServerView: View {
                     VStack(spacing: AXSpacing.md) {
                         // Host
                         VStack(alignment: .leading, spacing: AXSpacing.xs) {
-                            Text("Host")
+                            Text(L10n.Field.host)
                                 .font(AXTypography.caption)
                                 .foregroundColor(.axTextMuted)
-                            TextField("server.example.com", text: $host)
+                            TextField(L10n.Field.hostPlaceholder, text: $host)
                                 .font(AXTypography.body)
                                 .foregroundColor(.axTextPrimary)
                                 .padding(AXSpacing.md)
@@ -276,7 +276,7 @@ struct EditServerView: View {
                         HStack(spacing: AXSpacing.md) {
                             // Port
                             VStack(alignment: .leading, spacing: AXSpacing.xs) {
-                                Text("Port")
+                                Text(L10n.Field.port)
                                     .font(AXTypography.caption)
                                     .foregroundColor(.axTextMuted)
                                 TextField("22", text: $port)
@@ -294,10 +294,10 @@ struct EditServerView: View {
                             
                             // Username
                             VStack(alignment: .leading, spacing: AXSpacing.xs) {
-                                Text("Username")
+                                Text(L10n.Field.username)
                                     .font(AXTypography.caption)
                                     .foregroundColor(.axTextMuted)
-                                TextField("root", text: $username)
+                                TextField(L10n.Field.usernamePlaceholder, text: $username)
                                     .font(AXTypography.body)
                                     .foregroundColor(.axTextPrimary)
                                     .padding(AXSpacing.md)
@@ -324,7 +324,7 @@ struct EditServerView: View {
                 
                 // Authentication Section
                 VStack(alignment: .leading, spacing: AXSpacing.md) {
-                    Text("Authentication")
+                    Text(L10n.Fleet.authentication)
                         .font(AXTypography.headline)
                         .foregroundColor(.axTextPrimary)
                         .padding(.horizontal, AXSpacing.lg)
@@ -339,7 +339,7 @@ struct EditServerView: View {
                                     HStack(spacing: AXSpacing.xs) {
                                         Image(systemName: type == .password ? "lock.fill" : "key.fill")
                                             .font(.system(size: 12))
-                                        Text(type == .password ? "Password" : "Private Key")
+                                        Text(type == .password ? L10n.Field.password : L10n.Field.privateKey)
                                             .font(AXTypography.caption)
                                             .fontWeight(.medium)
                                     }
@@ -359,11 +359,11 @@ struct EditServerView: View {
                         if authType == .password {
                             VStack(alignment: .leading, spacing: AXSpacing.xs) {
                                 HStack {
-                                    Text("Password")
+                                    Text(L10n.Field.password)
                                         .font(AXTypography.caption)
                                         .foregroundColor(.axTextMuted)
                                     if hasExistingPassword && password.isEmpty {
-                                        Text("• current password kept")
+                                        Text(L10n.Fleet.currentPasswordKept)
                                             .font(AXTypography.caption2)
                                             .foregroundColor(.axAccentGreen)
                                     }
@@ -382,11 +382,11 @@ struct EditServerView: View {
                         } else {
                             VStack(alignment: .leading, spacing: AXSpacing.sm) {
                                 HStack {
-                                    Text("Private Key")
+                                    Text(L10n.Field.privateKey)
                                         .font(AXTypography.caption)
                                         .foregroundColor(.axTextMuted)
                                     if hasExistingPrivateKey && privateKey.isEmpty {
-                                        Text("• current key kept")
+                                        Text(L10n.Fleet.currentKeyKept)
                                             .font(AXTypography.caption2)
                                             .foregroundColor(.axAccentGreen)
                                     }
@@ -404,7 +404,7 @@ struct EditServerView: View {
                                     )
                                 
                                 VStack(alignment: .leading, spacing: AXSpacing.xs) {
-                                    Text("Key Passphrase (optional)")
+                                    Text(L10n.Field.keyPassphrase)
                                         .font(AXTypography.caption)
                                         .foregroundColor(.axTextMuted)
                                     SecureField("Optional passphrase", text: $keyPassphrase)
@@ -445,7 +445,7 @@ struct EditServerView: View {
                             HStack(spacing: AXSpacing.xs) {
                                 Image(systemName: "xmark")
                                     .font(.system(size: 12))
-                                Text("Cancel")
+                                Text(L10n.Button.cancel)
                             }
                             .font(AXTypography.subheadline)
                             .fontWeight(.medium)
@@ -483,7 +483,7 @@ struct EditServerView: View {
                             HStack(spacing: AXSpacing.xs) {
                                 Image(systemName: "checkmark.circle.fill")
                                     .font(.system(size: 14))
-                                Text("Save Changes")
+                                Text(L10n.Button.saveChanges)
                             }
                             .font(AXTypography.subheadline)
                             .fontWeight(.semibold)

@@ -51,7 +51,7 @@ struct DockerImagesTab: View {
                 Button(action: { showPullSheet = true }) {
                     HStack(spacing: 6) {
                         Image(systemName: "arrow.down.circle")
-                        Text("Pull Image")
+                        Text(L10n.Docker.pullImage)
                     }
                     .font(AXTypography.subheadline)
                     .foregroundColor(.white)
@@ -154,11 +154,11 @@ struct DockerImagesTab: View {
         .overlay {
             if let id = imageToRemove {
                 AXDeleteConfirmation(
-                    title: "Remove Image",
+                    title: L10n.Docker.removeImage,
                     itemName: id,
                     icon: "photo",
                     warning: "This will permanently remove the Docker image.",
-                    confirmLabel: "Remove",
+                    confirmLabel: L10n.Button.remove,
                     onConfirm: {
                         imageToRemove = nil
                         handleRemoveImage(id: id)
@@ -315,8 +315,8 @@ private struct ImageRow: View {
                                 .cornerRadius(AXCornerRadius.sm)
                         }
                         .buttonStyle(.plain)
-                        .help("View Layers")
-                        
+                        .help(L10n.Docker.viewLayers)
+
                         Button(action: onTagPush) {
                             Image(systemName: "tag.fill")
                                 .font(.system(size: 14))
@@ -326,8 +326,8 @@ private struct ImageRow: View {
                                 .cornerRadius(AXCornerRadius.sm)
                         }
                         .buttonStyle(.plain)
-                        .help("Tag & Push")
-                        
+                        .help(L10n.Docker.tagPush)
+
                         Button(action: onRemove) {
                             Image(systemName: "trash")
                                 .font(.system(size: 14))
@@ -338,7 +338,7 @@ private struct ImageRow: View {
                         }
                         .buttonStyle(.plain)
                         .onHover { hover in isHovered = hover }
-                        .help("Remove Image")
+                        .help(L10n.Docker.removeImage)
                     }
                 }
             }
@@ -354,7 +354,7 @@ private struct PullImageSheet: View {
     
     var body: some View {
         VStack(spacing: AXSpacing.lg) {
-            Text("Pull Image")
+            Text(L10n.Docker.pullImage)
                 .font(AXTypography.title3)
                 .foregroundColor(.axTextPrimary)
             
@@ -374,7 +374,7 @@ private struct PullImageSheet: View {
             }
             
             HStack(spacing: AXSpacing.md) {
-                Button("Cancel") {
+                Button(L10n.Button.cancel) {
                     isOpen = false
                 }
                 .buttonStyle(.plain)
@@ -387,7 +387,7 @@ private struct PullImageSheet: View {
                     RoundedRectangle(cornerRadius: AXCornerRadius.sm)
                         .stroke(Color.axBorder, lineWidth: 1)
                 )
-                
+
                 Button("Pull") {
                     if !imageName.isEmpty {
                         onPull(imageName)

@@ -79,7 +79,7 @@ struct UnifiedDatabaseDetailView: View {
                     .font(AXTypography.title3)
                     .foregroundColor(.axTextPrimary)
 
-                Text("Engine Management")
+                Text(L10n.Engine.engineManagement)
                     .font(AXTypography.footnote)
                     .foregroundColor(.axTextMuted)
             }
@@ -92,7 +92,7 @@ struct UnifiedDatabaseDetailView: View {
                     .fill(serviceStatus == "active" ? Color.green : Color.gray)
                     .frame(width: 8, height: 8)
 
-                Text(serviceStatus == "active" ? "Running" : "Stopped")
+                Text(serviceStatus == "active" ? L10n.Status.running : L10n.Status.stopped)
                     .font(AXTypography.subheadline)
                     .foregroundColor(serviceStatus == "active" ? .green : .axTextMuted)
             }
@@ -159,7 +159,7 @@ struct UnifiedDatabaseDetailView: View {
             VStack(spacing: 16) {
                 ProgressView()
                     .scaleEffect(1.2)
-                Text("Loading \(databaseType.displayName) data…")
+                Text(L10n.Engine.loadingData(databaseType.displayName))
                     .font(AXTypography.callout)
                     .foregroundColor(.axTextMuted)
             }
@@ -180,18 +180,18 @@ struct UnifiedDatabaseDetailView: View {
         VStack(alignment: .leading, spacing: 20) {
             // Service Control
             VStack(alignment: .leading, spacing: 12) {
-                Label("Service Control", systemImage: "power")
+                Label(L10n.Engine.serviceControl, systemImage: "power")
                     .font(AXTypography.callout).fontWeight(.semibold)
                     .foregroundColor(.axTextPrimary)
 
                 HStack(spacing: 12) {
-                    serviceButton("Start", icon: "play.fill", color: .green) {
+                    serviceButton(L10n.Button.start, icon: "play.fill", color: .green) {
                         await controlService("start")
                     }
-                    serviceButton("Stop", icon: "stop.fill", color: .red) {
+                    serviceButton(L10n.Button.stop, icon: "stop.fill", color: .red) {
                         await controlService("stop")
                     }
-                    serviceButton("Restart", icon: "arrow.clockwise", color: .orange) {
+                    serviceButton(L10n.Button.restart, icon: "arrow.clockwise", color: .orange) {
                         await controlService("restart")
                     }
                 }
@@ -205,14 +205,14 @@ struct UnifiedDatabaseDetailView: View {
 
             // Info Grid
             VStack(alignment: .leading, spacing: 12) {
-                Label("Engine Info", systemImage: "info.circle")
+                Label(L10n.Engine.engineInfo, systemImage: "info.circle")
                     .font(AXTypography.callout).fontWeight(.semibold)
                     .foregroundColor(.axTextPrimary)
 
-                infoRow("Engine", databaseType.displayName)
-                infoRow("Version", version)
-                infoRow("Type", databaseType.isRelational ? "Relational (SQL)" : "NoSQL")
-                infoRow("Status", serviceStatus == "active" ? "Running" : "Stopped")
+                infoRow(L10n.Engine.engine, databaseType.displayName)
+                infoRow(L10n.Engine.version, version)
+                infoRow(L10n.Engine.type, databaseType.isRelational ? L10n.Engine.relationalSQL : L10n.Engine.noSQL)
+                infoRow(L10n.Database.status, serviceStatus == "active" ? L10n.Status.running : L10n.Status.stopped)
             }
             .padding(16)
             .background(
@@ -227,12 +227,12 @@ struct UnifiedDatabaseDetailView: View {
 
     private var configSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Label("Configuration", systemImage: "gearshape")
+            Label(L10n.Engine.configuration, systemImage: "gearshape")
                 .font(AXTypography.callout).fontWeight(.semibold)
                 .foregroundColor(.axTextPrimary)
 
             if configContent.isEmpty {
-                Text("No configuration loaded")
+                Text(L10n.Engine.noConfigLoaded)
                     .font(AXTypography.callout)
                     .foregroundColor(.axTextMuted)
                     .padding()
@@ -264,11 +264,11 @@ struct UnifiedDatabaseDetailView: View {
 
     private var logsSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Label("Service Logs", systemImage: "doc.text")
+            Label(L10n.Engine.serviceLogs, systemImage: "doc.text")
                 .font(AXTypography.callout).fontWeight(.semibold)
                 .foregroundColor(.axTextPrimary)
 
-            Text("Log viewer for \(databaseType.displayName)")
+            Text(L10n.Engine.logViewerFor(databaseType.displayName))
                 .font(AXTypography.callout)
                 .foregroundColor(.axTextMuted)
         }
@@ -285,13 +285,13 @@ struct UnifiedDatabaseDetailView: View {
 
     private var versionsSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Label("Version Management", systemImage: "shippingbox")
+            Label(L10n.Engine.versionManagement, systemImage: "shippingbox")
                 .font(AXTypography.callout).fontWeight(.semibold)
                 .foregroundColor(.axTextPrimary)
 
-            infoRow("Current Version", version)
+            infoRow(L10n.Engine.currentVersion, version)
 
-            Text("Version management for \(databaseType.displayName)")
+            Text(L10n.Engine.versionManagementFor(databaseType.displayName))
                 .font(AXTypography.callout)
                 .foregroundColor(.axTextMuted)
         }

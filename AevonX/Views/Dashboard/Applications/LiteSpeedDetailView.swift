@@ -220,9 +220,9 @@ struct LiteSpeedDetailView: View {
 
                     HStack(spacing: AXSpacing.md) {
                         sidebarStat(icon: "circle.fill",
-                                    label: (status?.isRunning ?? app.isRunning) ? "Running" : "Stopped",
+                                    label: (status?.isRunning ?? app.isRunning) ? L10n.Status.running : L10n.Status.stopped,
                                     color: (status?.isRunning ?? app.isRunning) ? .axSuccess : .axError)
-                        sidebarStat(icon: "shippingbox.fill", label: app.version ?? "Unknown", color: .axAccentBlue)
+                        sidebarStat(icon: "shippingbox.fill", label: app.version ?? L10n.Status.unknown, color: .axAccentBlue)
                     }
                 }
                 .padding(AXSpacing.lg)
@@ -281,7 +281,7 @@ struct LiteSpeedDetailView: View {
                     .fill((status?.isRunning ?? app.isRunning) ? Color.axSuccess : Color.axError)
                     .frame(width: 8, height: 8)
                     .shadow(color: (status?.isRunning ?? app.isRunning) ? .axSuccess.opacity(0.5) : .clear, radius: 4)
-                Text((status?.isRunning ?? app.isRunning) ? "Running" : "Stopped")
+                Text((status?.isRunning ?? app.isRunning) ? L10n.Status.running : L10n.Status.stopped)
                     .font(AXTypography.caption)
                     .foregroundColor((status?.isRunning ?? app.isRunning) ? .axSuccess : .axError)
             }

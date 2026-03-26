@@ -109,7 +109,7 @@ struct DockerImageTagPush: View {
                                 HStack(spacing: 4) {
                                     if isPushing { ProgressView().controlSize(.small) }
                                     Image(systemName: "icloud.and.arrow.up").font(.system(size: 10))
-                                    Text(isPushing ? "Pushing..." : "Tag & Push")
+                                    Text(isPushing ? "Pushing..." : L10n.Docker.tagPush)
                                 }
                                 .foregroundColor(.white)
                                 .padding(.horizontal, 12)

@@ -1,0 +1,37 @@
+/* FTP.strings — FTP Users, Paths */
+
+/* FTP title */
+"ftp.title" = "FTP Users";
+
+/* Add user */
+"ftp.addUser" = "Add User";
+
+/* Edit user */
+"ftp.editUser" = "Edit User";
+
+/* Delete user */
+"ftp.deleteUser" = "Delete User";
+
+/* Home directory */
+"ftp.homeDirectory" = "Home Directory";
+
+/* Username */
+"ftp.username" = "Username";
+
+/* Password */
+"ftp.password" = "Password";
+
+/* Status */
+"ftp.status" = "Status";
+
+/* Enabled */
+"ftp.enabled" = "Enabled";
+
+/* Disabled */
+"ftp.disabled" = "Disabled";
+
+/* No users */
+"ftp.noUsers" = "No FTP Users";
+
+/* Add first user */
+"ftp.addFirstUser" = "Add your first FTP user to get started";

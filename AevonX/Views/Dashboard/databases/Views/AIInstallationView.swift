@@ -87,9 +87,9 @@ public struct AIInstallationView: View {
         } else {
             // Fallback empty state
             VStack {
-                Text("No recommendations available.")
+                Text(L10n.Install.noRecommendationsAvailable)
                     .foregroundStyle(.secondary)
-                Button("Retry") {
+                Button(L10n.Button.retry) {
                     Task { await viewModel.analyzeServer() }
                 }
             }

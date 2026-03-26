@@ -315,7 +315,7 @@ struct AddWebsiteView: View {
     private var actions: some View {
         HStack(spacing: AXSpacing.md) {
             Button(action: { dismiss() }) {
-                Text("Cancel")
+                Text(L10n.Button.cancel)
                     .font(AXTypography.subheadline)
                     .foregroundColor(.axTextSecondary)
                     .padding(.horizontal, AXSpacing.lg)
@@ -404,7 +404,7 @@ struct DirectoryBrowserSheet: View {
                 VStack {
                     Spacer()
                     ProgressView()
-                    Text("Loading...")
+                    Text(L10n.Status.loading)
                         .font(AXTypography.caption)
                         .foregroundColor(.axTextSecondary)
                     Spacer()
@@ -492,7 +492,7 @@ struct DirectoryBrowserSheet: View {
                 Button(action: {
                     Task { await viewModel.createNewFolder() }
                 }) {
-                    Text("Create")
+                    Text(L10n.Button.create)
                         .font(AXTypography.caption)
                         .fontWeight(.medium)
                         .foregroundColor(.axBackground)
@@ -525,7 +525,7 @@ struct DirectoryBrowserSheet: View {
                 Button(action: {
                     viewModel.selectDirectory(viewModel.browserCurrentPath)
                 }) {
-                    Text("Select")
+                    Text(L10n.Button.select)
                         .font(AXTypography.subheadline)
                         .fontWeight(.semibold)
                         .foregroundColor(.axBackground)

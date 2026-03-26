@@ -23,7 +23,7 @@ struct PHPOptimizationSection: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: AXSpacing.xl) {
                     if isLoading {
-                        AppOptimizationGroup(title: "Loading...", icon: "slider.horizontal.3", color: phpPurple) {
+                        AppOptimizationGroup(title: L10n.Status.loading, icon: "slider.horizontal.3", color: phpPurple) {
                             ForEach(0..<5, id: \.self) { _ in AppOptimizationSkeletonRow() }
                         }
                     } else {

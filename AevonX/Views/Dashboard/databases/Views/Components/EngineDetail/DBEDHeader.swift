@@ -19,7 +19,7 @@ struct DBEDHeader: View {
                 Button(action: onDismiss) {
                     HStack(spacing: AXSpacing.sm) {
                         Image(systemName: "chevron.left")
-                        Text("Back")
+                        Text(L10n.Button.back)
                     }
                     .foregroundColor(.axTextSecondary)
                 }

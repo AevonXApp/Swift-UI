@@ -95,7 +95,7 @@ struct CronScriptLibrary: View {
                 Button(action: { vm.importTemplate(template) }) {
                     HStack(spacing: 3) {
                         Image(systemName: "plus.circle.fill").font(.system(size: 10))
-                        Text("Use").font(.system(size: 10, weight: .semibold))
+                        Text(L10n.Cron.useTemplate).font(.system(size: 10, weight: .semibold))
                     }
                     .foregroundColor(.axAccentBlue)
                     .padding(.horizontal, 8)

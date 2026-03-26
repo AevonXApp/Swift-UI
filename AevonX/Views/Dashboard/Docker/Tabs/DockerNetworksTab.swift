@@ -39,7 +39,7 @@ struct DockerNetworksTab: View {
                 Button(action: { showCreateSheet = true }) {
                     HStack(spacing: 6) {
                         Image(systemName: "plus.circle")
-                        Text("Create Network")
+                        Text(L10n.Docker.createNetwork)
                     }
                     .font(AXTypography.subheadline)
                     .foregroundColor(.white)
@@ -231,8 +231,8 @@ private struct NetworkRow: View {
                                 .cornerRadius(AXCornerRadius.sm)
                         }
                         .buttonStyle(.plain)
-                        .help("Inspect Network")
-                        
+                        .help(L10n.Docker.inspectNetwork)
+
                         Button(action: onRemove) {
                             Image(systemName: "trash")
                                 .font(.system(size: 14))
@@ -243,7 +243,7 @@ private struct NetworkRow: View {
                         }
                         .buttonStyle(.plain)
                         .onHover { hover in isHovered = hover }
-                        .help("Remove Network")
+                        .help(L10n.Docker.removeNetwork)
                         .disabled(isSystemNetwork(network.name))
                         .opacity(isSystemNetwork(network.name) ? 0.3 : 1.0)
                     }
@@ -266,7 +266,7 @@ private struct CreateNetworkSheet: View {
     
     var body: some View {
         VStack(spacing: AXSpacing.lg) {
-            Text("Create Network")
+            Text(L10n.Docker.createNetwork)
                 .font(AXTypography.title3)
                 .foregroundColor(.axTextPrimary)
             
@@ -295,7 +295,7 @@ private struct CreateNetworkSheet: View {
             }
             
             HStack(spacing: AXSpacing.md) {
-                Button("Cancel") {
+                Button(L10n.Button.cancel) {
                     isOpen = false
                 }
                 .buttonStyle(.plain)
@@ -308,8 +308,8 @@ private struct CreateNetworkSheet: View {
                     RoundedRectangle(cornerRadius: AXCornerRadius.sm)
                         .stroke(Color.axBorder, lineWidth: 1)
                 )
-                
-                Button("Create") {
+
+                Button(L10n.Button.create) {
                     if !networkName.isEmpty {
                         onCreate(networkName, driver)
                         isOpen = false

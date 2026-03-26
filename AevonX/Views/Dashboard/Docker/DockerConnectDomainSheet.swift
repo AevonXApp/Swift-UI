@@ -102,7 +102,7 @@ struct DockerConnectDomainSheet: View {
                         }
                         .padding(.top, AXSpacing.sm)
                         
-                        Button("Done") { dismiss() }
+                        Button(L10n.Button.done) { dismiss() }
                             .buttonStyle(.plain)
                             .padding(.horizontal, 24)
                             .padding(.vertical, 10)
@@ -126,15 +126,15 @@ struct DockerConnectDomainSheet: View {
                             }
                             
                             HStack(spacing: AXSpacing.md) {
-                                Button("Back") {
+                                Button(L10n.Button.back) {
                                     isConnecting = false
                                     hasFailed = false
                                     progressSteps.removeAll()
                                 }
                                 .buttonStyle(.plain)
                                 .foregroundColor(.axTextSecondary)
-                                
-                                Button("Retry") {
+
+                                Button(L10n.Button.retry) {
                                     hasFailed = false
                                     errorMessage = nil
                                     progressSteps.removeAll()
@@ -189,7 +189,7 @@ struct DockerConnectDomainSheet: View {
                                         Circle()
                                             .fill(Color.axSuccess)
                                             .frame(width: 6, height: 6)
-                                        Text("Connected")
+                                        Text(L10n.Status.connected)
                                             .font(.system(size: 10, weight: .semibold))
                                     }
                                     .foregroundColor(.axSuccess)
@@ -273,7 +273,7 @@ struct DockerConnectDomainSheet: View {
                         } label: {
                             HStack(spacing: 6) {
                                 Image(systemName: "xmark.circle")
-                                Text("Disconnect")
+                                Text(L10n.Button.disconnect)
                             }
                             .font(.system(size: 13, weight: .medium))
                             .foregroundColor(.axError)
@@ -449,7 +449,7 @@ struct DockerConnectDomainSheet: View {
                 
                 // Footer
                 HStack {
-                    Button("Cancel") { dismiss() }
+                    Button(L10n.Button.cancel) { dismiss() }
                         .buttonStyle(.plain)
                         .foregroundColor(.axTextSecondary)
                     

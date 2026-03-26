@@ -71,7 +71,7 @@ struct DBTableIndexesView: View {
                             HStack(spacing: AXSpacing.xxs) {
                                 Image(systemName: "doc.text")
                                     .font(AXTypography.caption2)
-                                Text("Copy All")
+                                Text(L10n.Button.copy)
                                     .font(AXTypography.caption)
                                     .fontWeight(.semibold)
                             }
@@ -134,7 +134,7 @@ struct DBTableIndexesView: View {
 
     private var indexHeader: some View {
         HStack(spacing: 0) {
-            Text("Name")
+            Text(L10n.Field.name)
                 .frame(width: 200, alignment: .leading)
                 .padding(.horizontal, AXSpacing.sm)
             Text("Columns")

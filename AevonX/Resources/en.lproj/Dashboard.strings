@@ -1,0 +1,73 @@
+/* Dashboard.strings — Overview, Applications (Nginx/Apache/PHP/etc.) */
+
+/* ── Overview ── */
+
+/* Connection error */
+"dashboard.connectionError" = "Connection Error";
+
+/* ── Applications ── */
+
+/* Snapshot create failed */
+"dashboard.snapshotCreateFailed" = "Failed to create snapshot";
+
+/* Snapshot restore failed */
+"dashboard.snapshotRestoreFailed" = "Failed to restore snapshot";
+
+/* Snapshot delete failed */
+"dashboard.snapshotDeleteFailed" = "Failed to delete snapshot";
+
+/* Encode settings failed */
+"dashboard.encodeSettingsFailed" = "Failed to encode settings";
+
+/* Apply security failed */
+"dashboard.applySecurityFailed" = "Failed to apply security settings";
+
+/* Save config failed */
+"dashboard.saveConfigFailed" = "Failed to save config";
+
+/* App install failed */
+"dashboard.appInstallFailed" = "Failed to install %@ %@";
+
+/* ── PM2 / Process Manager ── */
+
+/* PM2 install failed */
+"dashboard.pm2InstallFailed" = "Failed to install PM2";
+
+/* PM2 start failed */
+"dashboard.pm2StartFailed" = "Start failed";
+
+/* PM2 stop failed */
+"dashboard.pm2StopFailed" = "Stop failed";
+
+/* PM2 restart failed */
+"dashboard.pm2RestartFailed" = "Restart failed";
+
+/* PM2 delete failed */
+"dashboard.pm2DeleteFailed" = "Delete failed";
+
+/* PM2 save failed */
+"dashboard.pm2SaveFailed" = "Save failed";
+
+/* ── Environment ── */
+
+/* Env save failed */
+"dashboard.envSaveFailed" = "Failed to save";
+
+/* ── Node.js ── */
+
+/* Node switch failed */
+"dashboard.nodeSwitchFailed" = "Switch failed";
+
+/* ── PHP ── */
+
+/* Xdebug toggle failed */
+"dashboard.phpXdebugFailed" = "Failed to toggle Xdebug";
+
+/* PHP audit failed */
+"dashboard.phpAuditFailed" = "Audit failed";
+
+/* Clean sessions failed */
+"dashboard.phpCleanSessionsFailed" = "Failed to clean sessions";
+
+/* OPcache reset failed */
+"dashboard.phpOpcacheResetFailed" = "Failed to reset OPcache";

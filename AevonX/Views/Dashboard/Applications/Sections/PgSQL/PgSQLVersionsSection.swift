@@ -130,7 +130,7 @@ struct PgSQLVersionsSection: View {
                 HStack(spacing: 4) {
                     if actionInProgress == "install_\(version.version)" { ProgressView().scaleEffect(0.5) }
                     else { Image(systemName: "arrow.down.circle").font(.system(size: 10)) }
-                    Text("Install").font(.system(size: 11, weight: .medium))
+                    Text(L10n.Button.install).font(.system(size: 11, weight: .medium))
                 }
                 .foregroundColor(.axSuccess).padding(.horizontal, AXSpacing.sm).padding(.vertical, 4)
                 .background(Color.axSuccess.opacity(0.1)).cornerRadius(AXCornerRadius.sm)

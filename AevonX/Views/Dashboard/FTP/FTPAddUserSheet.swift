@@ -33,7 +33,7 @@ struct FTPAddUserSheet: View {
             // Header
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(isEditing ? "Edit FTP User" : "Add FTP User")
+                    Text(isEditing ? L10n.FTP.editUser : L10n.FTP.addUser)
                         .font(.system(size: 18, weight: .bold))
                         .foregroundColor(.axTextPrimary)
                     Text("Configure FTP access credentials and permissions")
@@ -57,7 +57,7 @@ struct FTPAddUserSheet: View {
                 VStack(spacing: AXSpacing.xl) {
                     // Username
                     VStack(alignment: .leading, spacing: AXSpacing.sm) {
-                        formLabel("Username")
+                        formLabel(L10n.FTP.username)
                         TextField("FTP username", text: $username)
                             .font(.system(size: 13))
                             .textFieldStyle(PlainTextFieldStyle())
@@ -71,9 +71,9 @@ struct FTPAddUserSheet: View {
                     
                     // Password
                     VStack(alignment: .leading, spacing: AXSpacing.sm) {
-                        formLabel("Password")
+                        formLabel(L10n.FTP.password)
                         HStack(spacing: AXSpacing.sm) {
-                            TextField("Password", text: $password)
+                            TextField(L10n.FTP.password, text: $password)
                                 .font(.system(size: 13, design: .monospaced))
                                 .textFieldStyle(PlainTextFieldStyle())
                                 .padding(AXSpacing.sm)
@@ -223,7 +223,7 @@ struct FTPAddUserSheet: View {
                                 // Select / Cancel
                                 HStack {
                                     Button(action: { showDirBrowser = false }) {
-                                        Text("Cancel")
+                                        Text(L10n.Button.cancel)
                                             .font(.system(size: 11, weight: .medium))
                                             .foregroundColor(.axTextSecondary)
                                             .padding(.horizontal, AXSpacing.md)
@@ -246,7 +246,7 @@ struct FTPAddUserSheet: View {
                                     }) {
                                         HStack(spacing: 4) {
                                             Image(systemName: "checkmark").font(.system(size: 10, weight: .bold))
-                                            Text("Select").font(.system(size: 11, weight: .semibold))
+                                            Text(L10n.Button.select).font(.system(size: 11, weight: .semibold))
                                         }
                                         .foregroundColor(.white)
                                         .padding(.horizontal, AXSpacing.md)
@@ -358,7 +358,7 @@ struct FTPAddUserSheet: View {
             
             // Footer
             HStack {
-                Button("Cancel") { dismiss() }
+                Button(L10n.Button.cancel) { dismiss() }
                     .buttonStyle(PlainButtonStyle())
                     .foregroundColor(.axTextSecondary)
                     .padding(.horizontal, AXSpacing.xl)
@@ -376,7 +376,7 @@ struct FTPAddUserSheet: View {
                             Image(systemName: "checkmark")
                                 .font(.system(size: 12, weight: .bold))
                         }
-                        Text(isEditing ? "Save Changes" : "Create User")
+                        Text(isEditing ? L10n.Button.saveChanges : "Create User")
                             .font(.system(size: 13, weight: .semibold))
                     }
                     .foregroundColor(.white)

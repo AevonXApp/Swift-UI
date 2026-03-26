@@ -131,7 +131,7 @@ struct TerminalSnippetsSheet: View {
                     )
                 
                 VStack(alignment: .leading, spacing: 1) {
-                    Text("Command Snippets")
+                    Text(L10n.Terminal.snippets)
                         .font(.system(size: 15, weight: .bold))
                         .foregroundColor(.axTextPrimary)
                     Text("\(snippetsManager.allSnippets.count) commands • \(snippetsManager.customSnippets.count) custom")
@@ -147,7 +147,7 @@ struct TerminalSnippetsSheet: View {
                 HStack(spacing: 5) {
                     Image(systemName: "plus")
                         .font(.system(size: 10, weight: .bold))
-                    Text("New Snippet")
+                    Text(L10n.Terminal.addSnippet)
                         .font(.system(size: 11, weight: .semibold))
                 }
                 .foregroundColor(.white)
@@ -254,7 +254,7 @@ struct TerminalSnippetsSheet: View {
                             HStack(spacing: 4) {
                                 Image(systemName: "plus")
                                     .font(.system(size: 10, weight: .bold))
-                                Text("Add Snippet")
+                                Text(L10n.Terminal.addSnippet)
                                     .font(.system(size: 12, weight: .medium))
                             }
                             .foregroundColor(.axAccentBlue)
@@ -370,7 +370,7 @@ struct TerminalSnippetsSheet: View {
                         .cornerRadius(AXCornerRadius.xs)
                 }
                 .buttonStyle(PlainButtonStyle())
-                .help("Delete snippet")
+                .help(L10n.Terminal.deleteSnippet)
             }
         }
         .padding(.horizontal, AXSpacing.md)
@@ -595,7 +595,7 @@ struct AddSnippetSheet: View {
             HStack {
                 Spacer()
                 
-                Button("Cancel") { dismiss() }
+                Button(L10n.Button.cancel) { dismiss() }
                     .buttonStyle(PlainButtonStyle())
                     .foregroundColor(.axTextSecondary)
                     .padding(.horizontal, AXSpacing.lg)
@@ -613,7 +613,7 @@ struct AddSnippetSheet: View {
                     HStack(spacing: 5) {
                         Image(systemName: "plus.circle.fill")
                             .font(.system(size: 12))
-                        Text("Add Snippet")
+                        Text(L10n.Terminal.addSnippet)
                             .font(.system(size: 12, weight: .semibold))
                     }
                     .foregroundColor(.white)

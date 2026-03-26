@@ -88,7 +88,7 @@ struct AXConfirmationDialog: View {
                 // Actions
                 HStack(spacing: AXSpacing.md) {
                     Button(action: onCancel) {
-                        Text("Cancel")
+                        Text(L10n.Button.cancel)
                             .font(AXTypography.subheadline)
                             .fontWeight(.medium)
                             .foregroundColor(.axTextSecondary)

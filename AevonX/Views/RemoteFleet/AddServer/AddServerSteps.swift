@@ -13,10 +13,10 @@ struct AddServerIdentityStep: View {
     @ObservedObject var viewModel: AddServerViewModel
     
     var body: some View {
-        GlassCard(icon: "tag.fill", title: "Server Identity", iconColor: .axAccentBlue) {
+        GlassCard(icon: "tag.fill", title: L10n.Fleet.serverIdentity, iconColor: .axAccentBlue) {
             VStack(spacing: AXSpacing.lg) {
                 PremiumTextField(
-                    title: "Server Name",
+                    title: L10n.Field.serverName,
                     text: $viewModel.name,
                     placeholder: "My Production Server",
                     icon: "text.cursor"
@@ -27,7 +27,7 @@ struct AddServerIdentityStep: View {
                     Image(systemName: "info.circle")
                         .font(.system(size: 10))
                         .foregroundColor(.axAccentBlue)
-                    Text("Server name is not encrypted, to allow easy identification in web purchases.")
+                    Text(L10n.Fleet.serverNameHelp)
                         .font(AXTypography.caption2)
                         .foregroundColor(.axTextMuted)
                 }
@@ -39,7 +39,7 @@ struct AddServerIdentityStep: View {
                         Image(systemName: "app.fill")
                             .font(.system(size: 10))
                             .foregroundColor(.axTextMuted)
-                        Text("Icon")
+                        Text(L10n.Field.icon)
                             .font(AXTypography.caption)
                             .foregroundColor(.axTextMuted)
                     }
@@ -71,7 +71,7 @@ struct AddServerIdentityStep: View {
                         Image(systemName: "paintpalette.fill")
                             .font(.system(size: 10))
                             .foregroundColor(.axTextMuted)
-                        Text("Color")
+                        Text(L10n.Field.color)
                             .font(AXTypography.caption)
                             .foregroundColor(.axTextMuted)
                     }
@@ -122,18 +122,18 @@ struct AddServerConnectionStep: View {
     @ObservedObject var viewModel: AddServerViewModel
     
     var body: some View {
-        GlassCard(icon: "network", title: "Connection Details", iconColor: .axAccentGreen) {
+        GlassCard(icon: "network", title: L10n.Fleet.connectionDetails, iconColor: .axAccentGreen) {
             VStack(spacing: AXSpacing.lg) {
                 PremiumTextField(
-                    title: "Host",
+                    title: L10n.Field.host,
                     text: $viewModel.host,
-                    placeholder: "server.example.com",
+                    placeholder: L10n.Field.hostPlaceholder,
                     icon: "globe"
                 )
                 
                 HStack(spacing: AXSpacing.md) {
                     PremiumTextField(
-                        title: "Port",
+                        title: L10n.Field.port,
                         text: Binding(
                             get: { String(viewModel.port) },
                             set: { viewModel.port = Int($0) ?? 22 }
@@ -144,9 +144,9 @@ struct AddServerConnectionStep: View {
                     .frame(maxWidth: 100)
                     
                     PremiumTextField(
-                        title: "Username",
+                        title: L10n.Field.username,
                         text: $viewModel.username,
-                        placeholder: "root",
+                        placeholder: L10n.Field.usernamePlaceholder,
                         icon: "person"
                     )
                 }
@@ -160,7 +160,7 @@ struct AddServerAuthStep: View {
     @ObservedObject var viewModel: AddServerViewModel
     
     var body: some View {
-        GlassCard(icon: "key.fill", title: "Authentication", iconColor: .orange) {
+        GlassCard(icon: "key.fill", title: L10n.Fleet.authentication, iconColor: .orange) {
             VStack(spacing: AXSpacing.lg) {
                 // Auth Type Selector
                 AuthTypePicker(selection: $viewModel.authType)
@@ -168,7 +168,7 @@ struct AddServerAuthStep: View {
                 // Auth Fields
                 if viewModel.authType == .password {
                     PremiumSecureField(
-                        title: "Password",
+                        title: L10n.Field.password,
                         text: $viewModel.password,
                         placeholder: "Enter SSH password",
                         icon: "lock.fill"
@@ -179,7 +179,7 @@ struct AddServerAuthStep: View {
                             Image(systemName: "doc.text")
                                 .font(.system(size: 12))
                                 .foregroundColor(.axTextMuted)
-                            Text("Private Key")
+                            Text(L10n.Field.privateKey)
                                 .font(AXTypography.caption)
                                 .foregroundColor(.axTextMuted)
                             

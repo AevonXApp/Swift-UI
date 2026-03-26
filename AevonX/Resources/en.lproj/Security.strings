@@ -1,0 +1,119 @@
+/* Security.strings — Lock Screen, Encryption, Host Keys, Vault */
+
+/* ── Lock Screen ── */
+
+/* Auth required */
+"security.authRequired" = "Authentication Required";
+
+/* Unlock with biometrics */
+"security.unlockBiometrics" = "Unlock with Biometrics";
+
+/* Use password instead */
+"security.usePassword" = "Use Password Instead";
+
+/* Unlock button */
+"security.unlock" = "Unlock";
+
+/* Use biometrics instead */
+"security.useBiometrics" = "Use Biometrics Instead";
+
+/* Attempts used */
+"security.attemptsUsed" = "%lld of %lld attempts used";
+
+/* ── Host Key ── */
+
+/* Security alert title */
+"security.alert" = "Security Alert";
+
+/* Host key changed */
+"security.hostKeyChanged" = "Host Key Changed";
+
+/* Host key warning */
+"security.hostKeyWarning" = "The server's identity has changed. This could indicate a security issue.";
+
+/* Server name */
+"security.serverName" = "Server: %@";
+
+/* Expected fingerprint */
+"security.expectedFingerprint" = "Expected Fingerprint:";
+
+/* Actual fingerprint */
+"security.actualFingerprint" = "Actual Fingerprint:";
+
+/* Trust warning */
+"security.trustWarning" = "Only accept if you trust this change.";
+
+/* Accept new key */
+"security.acceptNewKey" = "Accept New Key";
+
+/* ── Encryption ── */
+
+/* Decryption error title */
+"encryption.decryptionError" = "Decryption Error";
+
+/* Error details label */
+"encryption.errorDetails" = "Error Details:";
+
+/* Affected servers */
+"encryption.affectedServers" = "Affected servers: %lld";
+
+/* What can you do title */
+"encryption.whatCanYouDo" = "What can you do?";
+
+/* Help enter key */
+"encryption.helpEnterKey" = "Enter your Encryption Key if you have one";
+
+/* Help logout */
+"encryption.helpLogout" = "Try logging out and logging back in";
+
+/* Help delete servers */
+"encryption.helpDeleteServers" = "Delete affected servers and re-add them";
+
+/* Enter encryption key label */
+"encryption.enterKey" = "Enter Encryption Key:";
+
+/* Key placeholder */
+"encryption.keyPlaceholder" = "XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX";
+
+/* Key provided help */
+"encryption.keyProvidedHelp" = "The encryption key was provided when you set up your account";
+
+/* Verifying identity */
+"encryption.verifyingIdentity" = "Verifying identity...";
+
+/* Your encryption key title */
+"encryption.yourKey" = "Your Encryption Key";
+
+/* Save key securely */
+"encryption.saveSecurely" = "Save this key securely. You will need it to recover your data.";
+
+/* Key hidden on close */
+"encryption.keyHiddenOnClose" = "This key will be hidden when you close this window.";
+
+/* ── Connection ── */
+
+/* Connecting to server */
+"connection.connectingTo" = "Connecting to %@";
+
+/* Attempt progress */
+"connection.attemptProgress" = "Attempt %lld/%lld";
+
+/* Next retry in seconds */
+"connection.nextRetryIn" = "Next retry in %llds";
+
+/* ── Installer ── */
+
+/* All steps complete */
+"installer.allComplete" = "All steps completed successfully";
+
+/* Installation failed */
+"installer.failed" = "Installation failed";
+
+/* Step progress */
+"installer.stepProgress" = "Step %lld/%lld";
+
+/* ── Confirmation ── */
+
+/* Type name to confirm */
+"confirm.typeToConfirm" = "Type **%@** to confirm:";
+

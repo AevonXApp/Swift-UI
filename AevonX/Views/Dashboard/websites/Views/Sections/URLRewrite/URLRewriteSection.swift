@@ -105,7 +105,7 @@ struct URLRewriteSection: View {
             }) {
                 HStack(spacing: AXSpacing.sm) {
                     Image(systemName: "plus.circle.fill")
-                    Text("Add Rule")
+                    Text(L10n.Website.addRule)
                 }
             }
             .buttonStyle(AXPrimaryButtonStyle())
@@ -115,7 +115,7 @@ struct URLRewriteSection: View {
             }) {
                 HStack(spacing: AXSpacing.sm) {
                     Image(systemName: "doc.text.fill")
-                    Text("Use Template")
+                    Text(L10n.Website.browseTemplates)
                 }
             }
             .buttonStyle(AXSecondaryButtonStyle())
@@ -169,13 +169,13 @@ struct URLRewriteSection: View {
             }
 
             HStack(spacing: AXSpacing.md) {
-                Button("Add Rule") {
+                Button(L10n.Website.addRule) {
                     viewModel.selectedRule = nil
                     viewModel.isEditingRule = true
                 }
                 .buttonStyle(AXPrimaryButtonStyle())
 
-                Button("Browse Templates") {
+                Button(L10n.Website.browseTemplates) {
                     viewModel.showTemplateSheet = true
                 }
                 .buttonStyle(AXSecondaryButtonStyle())

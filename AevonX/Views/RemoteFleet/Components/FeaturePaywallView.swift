@@ -61,7 +61,7 @@ struct FeaturePaywallView: View {
                     HStack(spacing: AXSpacing.xs) {
                         Image(systemName: "sparkles")
                             .font(.system(size: 12))
-                        Text("Subscribe Now")
+                        Text(L10n.Button.subscribeNow)
                             .fontWeight(.semibold)
                     }
                     .font(AXTypography.subheadline)
@@ -79,7 +79,7 @@ struct FeaturePaywallView: View {
                 }
                 .buttonStyle(PlainButtonStyle())
 
-                Button("Maybe Later") { dismiss() }
+                Button(L10n.Button.maybeLater) { dismiss() }
                     .font(AXTypography.caption)
                     .foregroundColor(.axTextMuted)
                     .buttonStyle(PlainButtonStyle())

@@ -19,7 +19,7 @@ struct AIInstallErrorView: View {
                 .font(AXTypography.largeTitle)
                 .foregroundColor(.axError)
             
-            Text("Analysis Failed")
+            Text(L10n.Engine.analysisFailed)
                 .font(AXTypography.headline)
                 .foregroundColor(.axTextPrimary)
             
@@ -29,7 +29,7 @@ struct AIInstallErrorView: View {
                 .multilineTextAlignment(.center)
                 .frame(maxWidth: 400)
             
-            Button("Try Again", action: onRetry)
+            Button(L10n.Button.retry, action: onRetry)
                 .font(AXTypography.subheadline)
                 .foregroundColor(databaseType.brandColor)
                 .padding(.horizontal, AXSpacing.lg)

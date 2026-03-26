@@ -13,7 +13,7 @@ struct DatabaseTabSwitcher: View {
     let availableDatabaseTypes: [DatabaseType]
     
     private var tabs: [AXTabItem] {
-        var items = [AXTabItem(label: "All", icon: "square.grid.2x2")]
+        var items = [AXTabItem(label: L10n.Database.all, icon: "square.grid.2x2")]
         items += availableDatabaseTypes.map {
             AXTabItem(label: $0.displayName, icon: $0.iconName)
         }

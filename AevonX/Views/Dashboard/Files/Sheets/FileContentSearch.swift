@@ -66,7 +66,7 @@ struct FileContentSearchSheet: View {
                             .scaleEffect(0.6)
                     }
                     
-                    Button("Search") { performSearch() }
+                    Button(L10n.Button.search) { performSearch() }
                         .buttonStyle(AXPrimaryButtonStyle())
                         .disabled(query.trimmingCharacters(in: .whitespaces).isEmpty || isSearching)
                 }
@@ -77,7 +77,7 @@ struct FileContentSearchSheet: View {
                 .overlay(RoundedRectangle(cornerRadius: AXCornerRadius.md).stroke(Color.axBorder, lineWidth: 1))
                 
                 HStack(spacing: AXSpacing.md) {
-                    Toggle("Case Sensitive", isOn: $caseSensitive)
+                    Toggle(L10n.Files.caseSensitive, isOn: $caseSensitive)
                         .font(.system(size: 11))
                         .foregroundColor(.axTextSecondary)
                     

@@ -13,7 +13,7 @@ struct LoadingServersView: View {
             ProgressView()
                 .scaleEffect(1.2)
             
-            Text("Loading servers...")
+            Text(L10n.Fleet.loading)
                 .font(AXTypography.body)
                 .foregroundColor(.axTextSecondary)
         }
@@ -32,11 +32,11 @@ struct RemoteFleetEmptyStateView: View {
                 .font(.system(size: 48))
                 .foregroundColor(.axTextMuted)
             
-            Text("No Servers Yet")
+            Text(L10n.Fleet.noServers)
                 .font(AXTypography.title2)
                 .foregroundColor(.axTextPrimary)
             
-            Text("Add your first server to get started")
+            Text(L10n.Fleet.addFirstServer)
                 .font(AXTypography.body)
                 .foregroundColor(.axTextSecondary)
             
@@ -45,7 +45,7 @@ struct RemoteFleetEmptyStateView: View {
             }) {
                 HStack(spacing: AXSpacing.sm) {
                     Image(systemName: "plus")
-                    Text("Add Server")
+                    Text(L10n.Fleet.addServer)
                 }
                 .font(AXTypography.subheadline)
                 .fontWeight(.medium)

@@ -70,10 +70,10 @@ struct DBActivityLogSection: View {
             // Filter
             Picker("Filter", selection: $filterType) {
                 Text("All").tag("all")
-                Text("Create").tag("create")
+                Text(L10n.Button.create).tag("create")
                 Text("Insert").tag("insert")
                 Text("Update").tag("update")
-                Text("Delete").tag("delete")
+                Text(L10n.Button.delete).tag("delete")
                 Text("Alter").tag("alter")
                 Text("Query").tag("select")
                 Text("Backup").tag("backup")
@@ -94,7 +94,7 @@ struct DBActivityLogSection: View {
                     HStack(spacing: AXSpacing.xxs) {
                         Image(systemName: "doc.on.doc")
                             .font(AXTypography.caption2)
-                        Text("Export")
+                        Text(L10n.Database.export)
                             .font(AXTypography.caption)
                             .fontWeight(.semibold)
                     }
@@ -117,7 +117,7 @@ struct DBActivityLogSection: View {
                     HStack(spacing: AXSpacing.xxs) {
                         Image(systemName: "trash")
                             .font(AXTypography.caption2)
-                        Text("Clear")
+                        Text(L10n.Button.clear)
                             .font(AXTypography.caption)
                             .fontWeight(.semibold)
                     }

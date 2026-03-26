@@ -42,9 +42,9 @@ struct SymlinkSheetView: View {
             }
             
             HStack(spacing: AXSpacing.md) {
-                Button("Cancel") { viewModel.showSymlinkSheet = false }
+                Button(L10n.Button.cancel) { viewModel.showSymlinkSheet = false }
                     .buttonStyle(AXSecondaryButtonStyle())
-                Button("Create") { createIfValid() }
+                Button(L10n.Button.create) { createIfValid() }
                     .buttonStyle(AXPrimaryButtonStyle())
                     .disabled(linkName.trimmingCharacters(in: .whitespaces).isEmpty)
             }

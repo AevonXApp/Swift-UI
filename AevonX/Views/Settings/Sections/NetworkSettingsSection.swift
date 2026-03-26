@@ -81,7 +81,7 @@ struct NetworkSettingsSection: View {
 
                 HStack(spacing: AXSpacing.md) {
                     VStack(alignment: .leading, spacing: AXSpacing.xxxs) {
-                        Text("Proxy Host")
+                        Text(L10n.Settings.networkProxyHost)
                             .font(AXTypography.caption)
                             .foregroundColor(.axTextTertiary)
                         TextField("hostname", text: $settings.proxyHost)
@@ -94,7 +94,7 @@ struct NetworkSettingsSection: View {
                     }
 
                     VStack(alignment: .leading, spacing: AXSpacing.xxxs) {
-                        Text("Port")
+                        Text(L10n.Settings.networkPort)
                             .font(AXTypography.caption)
                             .foregroundColor(.axTextTertiary)
                         TextField("1080", value: $settings.proxyPort, format: .number)

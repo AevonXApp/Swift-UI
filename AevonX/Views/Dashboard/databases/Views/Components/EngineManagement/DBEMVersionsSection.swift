@@ -27,7 +27,7 @@ struct DBEMVersionsSection: View {
                         HStack(spacing: AXSpacing.sm) {
                             Image(systemName: "arrow.clockwise")
                                 .font(AXTypography.subheadline)
-                            Text("Refresh")
+                            Text(L10n.Button.refresh)
                                 .font(AXTypography.subheadline)
                         }
                         .foregroundColor(.axAccentBlue)
@@ -50,7 +50,7 @@ struct DBEMVersionsSection: View {
 
                             Spacer()
 
-                            Text(viewModel.isRunning ? "Active" : "Stopped")
+                            Text(viewModel.isRunning ? L10n.Status.active : L10n.Status.stopped)
                                 .font(AXTypography.caption)
                                 .foregroundColor(viewModel.isRunning ? .axSuccess : .axWarning)
                                 .padding(.horizontal, AXSpacing.sm)
@@ -162,7 +162,7 @@ struct DBEMVersionsSection: View {
                                     Spacer()
 
                                     if version.version != viewModel.engineInfo?.version {
-                                        Button("Install") {
+                                        Button(L10n.Button.install) {
                                             viewModel.showInstallConfirmation(version: version)
                                         }
                                         .font(AXTypography.caption)

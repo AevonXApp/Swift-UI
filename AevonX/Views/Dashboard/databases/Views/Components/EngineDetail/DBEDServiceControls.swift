@@ -15,7 +15,7 @@ struct DBEDServiceControls: View {
         HStack(spacing: AXSpacing.md) {
             // Start
             AXActionButton(
-                label: "Start",
+                label: L10n.Button.start,
                 icon: "play.fill",
                 style: .success,
                 size: .regular
@@ -26,7 +26,7 @@ struct DBEDServiceControls: View {
 
             // Stop
             AXActionButton(
-                label: "Stop",
+                label: L10n.Button.stop,
                 icon: "stop.fill",
                 style: .destructive,
                 size: .regular
@@ -37,7 +37,7 @@ struct DBEDServiceControls: View {
 
             // Restart
             AXActionButton(
-                label: "Restart",
+                label: L10n.Button.restart,
                 icon: "arrow.clockwise",
                 style: .warning,
                 size: .regular

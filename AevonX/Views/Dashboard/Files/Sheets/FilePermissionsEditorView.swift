@@ -47,7 +47,7 @@ struct FilePermissionsEditorView: View {
             // Header
             HStack {
                 VStack(alignment: .leading, spacing: AXSpacing.xxs) {
-                    Text("Edit Permissions")
+                    Text(L10n.Files.editPermissions)
                         .font(AXTypography.headline)
                         .foregroundColor(.axTextPrimary)
                     if let file = viewModel.permissionsFile {
@@ -139,7 +139,7 @@ struct FilePermissionsEditorView: View {
             // Footer
             HStack(spacing: AXSpacing.md) {
                 Button(action: { viewModel.isPermissionsEditorOpen = false }) {
-                    Text("Cancel")
+                    Text(L10n.Button.cancel)
                         .font(AXTypography.subheadline)
                         .foregroundColor(.axTextSecondary)
                         .padding(.horizontal, AXSpacing.lg)
@@ -159,7 +159,7 @@ struct FilePermissionsEditorView: View {
                                 .progressViewStyle(CircularProgressViewStyle(tint: .axBackground))
                                 .scaleEffect(0.6)
                         }
-                        Text("Apply")
+                        Text(L10n.Button.apply)
                     }
                     .font(AXTypography.subheadline)
                     .fontWeight(.semibold)

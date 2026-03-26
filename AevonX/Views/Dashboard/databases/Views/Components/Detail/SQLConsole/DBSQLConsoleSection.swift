@@ -370,7 +370,7 @@ struct DBSQLConsoleSection: View {
                     HStack(spacing: AXSpacing.xxs) {
                         Image(systemName: "xmark")
                             .font(AXTypography.caption2)
-                        Text("Clear")
+                        Text(L10n.Button.clear)
                             .font(AXTypography.caption)
                     }
                     .foregroundColor(.axTextMuted)

@@ -28,7 +28,7 @@ struct DockerAutoUpdateSheet: View {
             // Header
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Auto Update")
+                    Text(L10n.Docker.autoUpdate)
                         .font(AXTypography.title2)
                         .foregroundColor(.axTextPrimary)
                     Text(container.names)
@@ -164,7 +164,7 @@ struct DockerAutoUpdateSheet: View {
                                 Circle()
                                     .fill(watchtowerRunning ? Color.axSuccess : Color.axTextMuted)
                                     .frame(width: 8, height: 8)
-                                Text(watchtowerRunning ? "Running" : "Not Running")
+                                Text(watchtowerRunning ? L10n.Status.running : "Not Running")
                                     .font(AXTypography.caption2)
                                     .foregroundColor(watchtowerRunning ? .axSuccess : .axTextMuted)
                             }
@@ -183,7 +183,7 @@ struct DockerAutoUpdateSheet: View {
                                     Button {
                                         removeWatchtower()
                                     } label: {
-                                        Label("Remove", systemImage: "trash")
+                                        Label(L10n.Button.remove, systemImage: "trash")
                                             .font(AXTypography.caption)
                                     }
                                     .buttonStyle(.plain)

@@ -217,7 +217,7 @@ struct AXPluginGateView<Content: View>: View {
                 .frame(maxWidth: 400)
 
             AXPrimaryButton(
-                title: "Retry",
+                title: L10n.Button.retry,
                 icon: "arrow.clockwise",
                 action: {
                     Task { await gate.check(slug: slug, serverId: serverId) }

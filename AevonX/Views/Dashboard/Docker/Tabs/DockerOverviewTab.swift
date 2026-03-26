@@ -231,8 +231,8 @@ struct DockerOverviewTab: View {
     
     private var statusText: String {
         switch serviceStatus {
-        case .active: return "Running"
-        case .inactive: return "Stopped"
+        case .active: return L10n.Status.running
+        case .inactive: return L10n.Status.stopped
         case .failed: return "Failed"
         default: return "Unknown"
         }

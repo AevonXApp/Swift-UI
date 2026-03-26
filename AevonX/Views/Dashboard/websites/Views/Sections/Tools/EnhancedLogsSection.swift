@@ -88,8 +88,8 @@ struct EnhancedLogsSection: View {
                 .frame(minWidth: 620, minHeight: 520)
         }
         .alert("Clear Log", isPresented: $showClearConfirmation) {
-            Button("Cancel", role: .cancel) {}
-            Button("Clear", role: .destructive) {
+            Button(L10n.Button.cancel, role: .cancel) {}
+            Button(L10n.Button.clear, role: .destructive) {
                 Task { await viewModel.clearLog() }
             }
         } message: {
@@ -99,7 +99,7 @@ struct EnhancedLogsSection: View {
             get: { ipToBlock != nil },
             set: { if !$0 { ipToBlock = nil } }
         )) {
-            Button("Cancel", role: .cancel) { ipToBlock = nil }
+            Button(L10n.Button.cancel, role: .cancel) { ipToBlock = nil }
             Button("Block", role: .destructive) {
                 if let ip = ipToBlock {
                     Task { await viewModel.blockIP(ip) }

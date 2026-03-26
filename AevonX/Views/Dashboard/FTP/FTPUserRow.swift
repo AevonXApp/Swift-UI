@@ -41,7 +41,7 @@ struct FTPUserRow: View {
                             .lineLimit(1)
                         
                         if user.status == .inactive {
-                            Text("DISABLED")
+                            Text(L10n.FTP.disabled)
                                 .font(.system(size: 7, weight: .heavy))
                                 .foregroundColor(.axTextMuted)
                                 .padding(.horizontal, 4)

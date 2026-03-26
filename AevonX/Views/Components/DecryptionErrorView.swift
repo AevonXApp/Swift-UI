@@ -21,7 +21,7 @@ struct DecryptionErrorView: View {
                     .font(.title2)
                     .foregroundColor(.axWarning)
                 
-                Text("Decryption Error")
+                Text(L10n.Encryption.decryptionError)
                     .font(.headline)
                     .foregroundColor(.axTextPrimary)
                 
@@ -47,7 +47,7 @@ struct DecryptionErrorView: View {
                 // Error description
                 if let error = viewModel.encryptionError {
                     VStack(alignment: .leading, spacing: AXSpacing.sm) {
-                        Text("Error Details:")
+                        Text(L10n.Encryption.errorDetails)
                             .font(.subheadline)
                             .fontWeight(.semibold)
                             .foregroundColor(.axTextSecondary)
@@ -77,7 +77,7 @@ struct DecryptionErrorView: View {
                         Image(systemName: "server.rack")
                             .foregroundColor(.axTextMuted)
                         
-                        Text("Affected servers: \(viewModel.failedServerIds.count)")
+                        Text(L10n.Encryption.affectedServers(viewModel.failedServerIds.count))
                             .font(.caption)
                             .foregroundColor(.axTextMuted)
                     }
@@ -85,15 +85,15 @@ struct DecryptionErrorView: View {
                 
                 // Help text
                 VStack(alignment: .leading, spacing: AXSpacing.xs) {
-                    Text("What can you do?")
+                    Text(L10n.Encryption.whatCanYouDo)
                         .font(.subheadline)
                         .fontWeight(.semibold)
                         .foregroundColor(.axTextSecondary)
                     
                     VStack(alignment: .leading, spacing: AXSpacing.xs) {
-                        helpItem(icon: "key.fill", text: "Enter your Encryption Key if you have one")
-                        helpItem(icon: "arrow.clockwise", text: "Try logging out and logging back in")
-                        helpItem(icon: "trash", text: "Delete affected servers and re-add them")
+                        helpItem(icon: "key.fill", text: L10n.Encryption.helpEnterKey)
+                        helpItem(icon: "arrow.clockwise", text: L10n.Encryption.helpLogout)
+                        helpItem(icon: "trash", text: L10n.Encryption.helpDeleteServers)
                     }
                 }
             }
@@ -107,7 +107,7 @@ struct DecryptionErrorView: View {
                 Button {
                     viewModel.dismissEncryptionError()
                 } label: {
-                    Text("Close")
+                    Text(L10n.Button.close)
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.bordered)
@@ -122,7 +122,7 @@ struct DecryptionErrorView: View {
                             ProgressView()
                                 .scaleEffect(0.8)
                         }
-                        Text("Restore Keys")
+                        Text(L10n.Button.restoreKeys)
                     }
                     .frame(maxWidth: .infinity)
                 }
@@ -140,7 +140,7 @@ struct DecryptionErrorView: View {
     
     private var keyInputSection: some View {
         VStack(alignment: .leading, spacing: AXSpacing.sm) {
-            Text("Enter Encryption Key:")
+            Text(L10n.Encryption.enterKey)
                 .font(.subheadline)
                 .fontWeight(.semibold)
                 .foregroundColor(.axTextSecondary)
@@ -149,7 +149,7 @@ struct DecryptionErrorView: View {
                 Image(systemName: "key.fill")
                     .foregroundColor(.axAccentBlue)
                 
-                SecureField("XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX", text: $keyInput)
+                SecureField(L10n.Encryption.keyPlaceholder, text: $keyInput)
                     .textFieldStyle(.plain)
                     .font(.system(.body, design: .monospaced))
                     .focused($isInputFocused)
@@ -169,7 +169,7 @@ struct DecryptionErrorView: View {
                     .stroke(isInputFocused ? Color.axAccentBlue : Color.axBorder, lineWidth: 1)
             )
             
-            Text("The encryption key was provided when you set up your account")
+            Text(L10n.Encryption.keyProvidedHelp)
                 .font(.caption)
                 .foregroundColor(.axTextMuted)
         }

@@ -62,11 +62,11 @@ struct SetupGenerationView: View {
                         .foregroundColor(.axAccentBlue)
                 }
                 
-                Text("Your Recovery Key")
+                Text(L10n.Recovery.title)
                     .font(.system(size: 28, weight: .bold, design: .rounded))
                     .foregroundColor(.axTextPrimary)
-                
-                Text("This 256-bit key is the ONLY way to access your encrypted data. We do not store it.")
+
+                Text(L10n.Vault.keyDescription)
                     .font(AXTypography.body)
                     .foregroundColor(.axTextSecondary)
                     .multilineTextAlignment(.center)
@@ -117,7 +117,7 @@ struct SetupGenerationView: View {
                         .foregroundColor(.axError)
                         .font(.title3)
                     
-                    Text("SECURE STORAGE REQUIRED")
+                    Text(L10n.Vault.secureStorageRequired)
                         .font(AXTypography.subheadline)
                         .fontWeight(.bold)
                         .foregroundColor(.axError)
@@ -146,7 +146,7 @@ struct SetupGenerationView: View {
                 }
                 .buttonStyle(PlainButtonStyle())
                 
-                Text("I have securely saved my Recovery Key")
+                Text(L10n.Recovery.storedSecurely)
                     .font(AXTypography.caption)
                     .foregroundColor(.axTextSecondary)
             }
@@ -169,7 +169,7 @@ struct SetupGenerationView: View {
                             .background(Color.axAccentBlue)
                             .cornerRadius(AXCornerRadius.md)
                     } else {
-                        Text("Finish Setup")
+                        Text(L10n.Vault.finishSetup)
                             .font(AXTypography.body)
                             .fontWeight(.semibold)
                             .foregroundColor(.axBackground)
@@ -187,7 +187,7 @@ struct SetupGenerationView: View {
                         if signOut != nil {
                             Image(systemName: "rectangle.portrait.and.arrow.right")
                         }
-                        Text(signOut != nil ? "Sign Out" : "Cancel")
+                        Text(signOut != nil ? L10n.Profile.signOut : L10n.Button.cancel)
                     }
                     .font(AXTypography.subheadline)
                     .foregroundColor(signOut != nil ? .axError : .axTextSecondary)
@@ -196,7 +196,7 @@ struct SetupGenerationView: View {
                 .disabled(viewModel.isLoading)
             }
             .frame(maxWidth: 400)
-            
+
             Spacer()
         }
     }
@@ -224,11 +224,11 @@ struct RecoveryEntryView: View {
                         .foregroundColor(.axAccentBlue)
                 }
                 
-                Text("Enter Recovery Key")
+                Text(L10n.Vault.enterRecoveryKey)
                     .font(.system(size: 28, weight: .bold, design: .rounded))
                     .foregroundColor(.axTextPrimary)
-                
-                Text("Enter the 256-bit Recovery Key you saved when setting up your account.")
+
+                Text(L10n.Vault.enterKeyInstruction)
                     .font(AXTypography.body)
                     .foregroundColor(.axTextSecondary)
                     .multilineTextAlignment(.center)
@@ -260,11 +260,11 @@ struct RecoveryEntryView: View {
             
             // Security Reinsurance
             VStack(alignment: .leading, spacing: AXSpacing.sm) {
-                Label("Zero-Knowledge Security", systemImage: "shield.lefthalf.filled")
+                Label(L10n.Vault.zeroKnowledge, systemImage: "shield.lefthalf.filled")
                     .font(AXTypography.subheadline)
                     .fontWeight(.bold)
                 
-                Text("Your key will be verified locally and matched against a one-way hash on our server. We never see your raw key.")
+                Text(L10n.Vault.verifyLocally)
                     .font(AXTypography.caption)
                     .foregroundColor(.axTextSecondary)
             }
@@ -290,7 +290,7 @@ struct RecoveryEntryView: View {
                             .background(Color.axAccentBlue)
                             .cornerRadius(AXCornerRadius.md)
                     } else {
-                        Text("Verify & Unlock")
+                        Text(L10n.Vault.verifyUnlock)
                             .font(AXTypography.body)
                             .fontWeight(.semibold)
                             .foregroundColor(.axBackground)
@@ -308,7 +308,7 @@ struct RecoveryEntryView: View {
                         if signOut != nil {
                             Image(systemName: "rectangle.portrait.and.arrow.right")
                         }
-                        Text(signOut != nil ? "Sign Out" : "Cancel")
+                        Text(signOut != nil ? L10n.Profile.signOut : L10n.Button.cancel)
                     }
                     .font(AXTypography.subheadline)
                     .foregroundColor(signOut != nil ? .axError : .axTextSecondary)
@@ -317,7 +317,7 @@ struct RecoveryEntryView: View {
                 .disabled(viewModel.isLoading)
             }
             .frame(maxWidth: 400)
-            
+
             Spacer()
         }
     }
@@ -423,7 +423,7 @@ struct SuccessView: View {
 
                 // Text content
                 VStack(spacing: 12) {
-                    Text("Vault Secured")
+                    Text(L10n.Vault.secured)
                         .font(.system(size: 30, weight: .bold, design: .rounded))
                         .foregroundStyle(
                             LinearGradient(
@@ -456,7 +456,7 @@ struct SuccessView: View {
                 // CTA Button
                 Button(action: { dismiss() }) {
                     HStack(spacing: 10) {
-                        Text("Enter AevonX")
+                        Text(L10n.Vault.enterApp)
                             .font(.system(size: 15, weight: .semibold))
                         Image(systemName: "arrow.right")
                             .font(.system(size: 13, weight: .bold))
@@ -548,7 +548,7 @@ struct PasswordStrengthView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: AXSpacing.sm) {
             HStack {
-                Text("Password Strength:")
+                Text(L10n.Auth.passwordStrength)
                     .font(AXTypography.caption)
                     .foregroundColor(.axTextSecondary)
                 

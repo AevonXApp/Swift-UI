@@ -273,7 +273,7 @@ public final class AddDatabaseViewModel: ObservableObject {
                 }
             }
 
-            operationResult = .success(message: "Database '\(databaseName)' created successfully!")
+            operationResult = .success(message: L10n.Database.tableCreated(databaseName))
             didSucceed = true
 
         } catch {

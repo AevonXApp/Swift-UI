@@ -1,0 +1,517 @@
+/* Database.strings — Database Operations, Tables, Engine */
+
+/* ── Database Operations ── */
+
+/* Create backup */
+"database.createBackup" = "Create Backup";
+
+/* Restore backup */
+"database.restore" = "Restore";
+
+/* Import SQL */
+"database.importSQL" = "Import SQL";
+
+/* Export */
+"database.export" = "Export";
+
+/* Create table */
+"database.createTable" = "Create Table";
+
+/* Drop table */
+"database.drop" = "Drop";
+
+/* Truncate table */
+"database.truncate" = "Truncate";
+
+/* Optimize table */
+"database.optimize" = "Optimize";
+
+/* Repair table */
+"database.repair" = "Repair";
+
+/* Insert row */
+"database.insertRow" = "Insert Row";
+
+/* Update row */
+"database.updateRow" = "Update";
+
+/* Delete row */
+"database.deleteRow" = "Delete";
+
+/* Duplicate row */
+"database.duplicateRow" = "Duplicate";
+
+/* Edit configuration */
+"database.editConfig" = "Edit Configuration";
+
+/* Switch version */
+"database.switchVersion" = "Switch Version";
+
+/* Install new version */
+"database.installVersion" = "Install New Version";
+
+/* Select version */
+"database.selectVersion" = "Select Version";
+
+/* ── Toast / Status Messages ── */
+
+/* Row inserted */
+"database.rowInserted" = "Row inserted successfully";
+
+/* Row insert failed */
+"database.rowInsertFailed" = "Failed to insert row";
+
+/* Row updated */
+"database.rowUpdated" = "Row updated successfully";
+
+/* Row update failed */
+"database.rowUpdateFailed" = "Failed to update row";
+
+/* No primary key */
+"database.noPrimaryKey" = "Cannot determine primary key for this row";
+
+/* Row deleted */
+"database.rowDeleted" = "Row deleted successfully";
+
+/* Row delete failed */
+"database.rowDeleteFailed" = "Failed to delete row";
+
+/* No primary keys */
+"database.noPrimaryKeys" = "Cannot determine primary keys for selected rows";
+
+/* Rows deleted */
+"database.rowsDeleted" = "%lld row(s) deleted successfully";
+
+/* Rows delete failed */
+"database.rowsDeleteFailed" = "Failed to delete rows";
+
+/* Search failed */
+"database.searchFailed" = "Search failed";
+
+/* Backup deleted */
+"database.backupDeleted" = "Backup deleted";
+
+/* Backup delete failed */
+"database.backupDeleteFailed" = "Failed to delete backup";
+
+/* Backup saved */
+"database.backupSaved" = "Backup saved successfully";
+
+/* Download failed */
+"database.downloadFailed" = "Download failed";
+
+/* SQL empty */
+"database.sqlEmpty" = "SQL content is empty";
+
+/* SQL imported */
+"database.sqlImported" = "SQL imported successfully";
+
+/* Import failed */
+"database.importFailed" = "Import failed";
+
+/* Encode PK failed */
+"database.encodePkFailed" = "Failed to encode primary key";
+
+/* Duplicate not supported */
+"database.duplicateNotSupported" = "Duplicate row not supported";
+
+/* Duplicate failed */
+"database.duplicateFailed" = "Duplicate failed";
+
+/* Row duplicated */
+"database.rowDuplicated" = "Row duplicated";
+
+/* Drop index not supported */
+"database.dropIndexNotSupported" = "Drop index not supported";
+
+/* Drop index failed */
+"database.dropIndexFailed" = "Drop index failed";
+
+/* Index dropped */
+"database.indexDropped" = "Index '%@' dropped";
+
+/* Rename not supported */
+"database.renameNotSupported" = "Rename table not supported";
+
+/* Rename failed */
+"database.renameFailed" = "Rename failed";
+
+/* Table renamed */
+"database.tableRenamed" = "Table renamed to '%@'";
+
+/* Backup restored */
+"database.backupRestored" = "Backup restored successfully";
+
+/* Restore failed */
+"database.restoreFailed" = "Restore failed";
+
+/* Load tables failed */
+"database.loadTablesFailed" = "Failed to load tables";
+
+/* Load structure failed */
+"database.loadStructureFailed" = "Failed to load table structure";
+
+/* Load data failed */
+"database.loadDataFailed" = "Failed to load data";
+
+/* Backup created */
+"database.backupCreated" = "Backup created successfully";
+
+/* Backup failed */
+"database.backupFailed" = "Backup failed";
+
+/* Action successful */
+"database.actionSuccessful" = "%@ successful";
+
+/* Action failed */
+"database.actionFailed" = "%@ failed";
+
+/* Table created */
+"database.tableCreated" = "Table '%@' created successfully";
+
+/* Create table failed */
+"database.createTableFailed" = "Failed to create table";
+
+/* Operation failed with context */
+"database.operationFailed" = "Operation failed: %@";
+
+/* ── Database UI Labels ── */
+
+/* Delete database */
+"database.deleteDatabase" = "Delete Database";
+
+/* Drop table */
+"database.dropTable" = "Drop Table";
+
+/* Truncate table */
+"database.truncateTable" = "Truncate Table";
+
+/* Drop column */
+"database.dropColumn" = "Drop Column";
+
+/* Delete selected rows */
+"database.deleteSelectedRows" = "Delete Selected Rows";
+
+/* Delete backup */
+"database.deleteBackup" = "Delete Backup";
+
+/* Drop index */
+"database.dropIndex" = "Drop Index";
+
+/* Delete row title */
+"database.deleteRowTitle" = "Delete Row";
+
+/* Restore backup */
+"database.restoreBackup" = "Restore Backup";
+
+/* Cannot be undone warning */
+"database.cannotBeUndone" = "This action cannot be undone.";
+
+/* Loading databases */
+"database.loadingDatabases" = "Loading databases...";
+
+/* Failed to load databases */
+"database.failedToLoadDatabases" = "Failed to Load Databases";
+
+/* New database */
+"database.newDatabase" = "New Database";
+
+/* No databases */
+"database.noDatabases" = "No Databases";
+
+/* No engines installed */
+"database.noEnginesInstalled" = "No Database Engines Installed";
+
+/* No databases found */
+"database.noDatabasesFound" = "No Databases Found";
+
+/* Create first database */
+"database.createFirstDatabase" = "Create First Database";
+
+/* Search databases placeholder */
+"database.searchDatabases" = "Search databases...";
+
+/* Manage */
+"database.manage" = "Manage";
+
+/* Not installed */
+"database.notInstalled" = "Not Installed";
+
+/* Open details */
+"database.openDetails" = "Open Details";
+
+/* Databases label */
+"database.databases" = "Databases";
+
+/* Total size label */
+"database.totalSize" = "Total Size";
+
+/* Users label */
+"database.users" = "Users";
+
+/* Engines label */
+"database.engines" = "Engines";
+
+/* All filter */
+"database.all" = "All";
+
+/* Tables label */
+"database.tables" = "Tables";
+
+/* Size label */
+"database.size" = "Size";
+
+/* Actions label */
+"database.actions" = "Actions";
+
+/* Status label */
+"database.status" = "Status";
+
+/* Connections label */
+"database.conns" = "Conns";
+
+/* No recommendations available */
+"database.noRecommendationsAvailable" = "No recommendations available.";
+
+/* No engines description */
+"database.noEnginesDescription" = "Go to the Applications tab to install database engines like MySQL, PostgreSQL, or Redis. Installed engines will appear here automatically.";
+
+/* No databases description */
+"database.noDatabasesDescription" = "You have database engines installed but haven't created any databases yet. Create your first database to get started.";
+
+/* Not installed description */
+"database.notInstalledDescription" = "This database engine is not installed on your server. Install it to create and manage databases.";
+
+/* Create database */
+"database.createDatabase" = "Create Database";
+
+/* ── Database Alert Messages ── */
+
+/* Confirm drop table */
+"database.confirmDropTable" = "Are you sure you want to drop '%@'? This will permanently delete the table and all its data. This action cannot be undone.";
+
+/* Confirm truncate table */
+"database.confirmTruncateTable" = "Are you sure you want to truncate '%@'? This will remove all rows but keep the table structure.";
+
+/* Confirm delete database */
+"database.confirmDeleteDatabase" = "Are you sure you want to delete database '%@'? This cannot be undone.";
+
+/* Confirm drop column */
+"database.confirmDropColumn" = "Are you sure you want to drop column '%@'? Data in this column will be lost.";
+
+/* Confirm delete row */
+"database.confirmDeleteRow" = "Are you sure you want to delete this row?";
+
+/* Confirm delete selected rows */
+"database.confirmDeleteSelectedRows" = "Are you sure you want to delete %lld selected rows?";
+
+/* Confirm delete backup */
+"database.confirmDeleteBackup" = "Are you sure you want to delete this backup file?";
+
+/* Confirm drop index */
+"database.confirmDropIndex" = "Are you sure you want to drop index '%@'? This may affect query performance.";
+
+/* Confirm restore backup */
+"database.confirmRestoreBackup" = "Are you sure you want to restore from this backup? This will overwrite the current database data.";
+
+/* Backup created for database */
+"database.backupCreatedFor" = "Backup created for '%@'";
+
+/* No databases for engine */
+"database.noDatabasesFor" = "No databases found for %@. Create one to get started.";
+
+/* Type not installed */
+"database.typeNotInstalled" = "%@ Not Installed";
+
+/* Go to applications to install */
+"database.goToApplicationsToInstall" = "Go to the Applications tab to install %@ on your server.";
+
+/* ── Engine ── */
+
+/* Engine management */
+"engine.engineManagement" = "Engine Management";
+
+/* Service control */
+"engine.serviceControl" = "Service Control";
+
+/* Engine info */
+"engine.engineInfo" = "Engine Info";
+
+/* Configuration */
+"engine.configuration" = "Configuration";
+
+/* No config loaded */
+"engine.noConfigLoaded" = "No configuration loaded";
+
+/* Service logs */
+"engine.serviceLogs" = "Service Logs";
+
+/* Version management */
+"engine.versionManagement" = "Version Management";
+
+/* Current version */
+"engine.currentVersion" = "Current Version";
+
+/* Engine */
+"engine.engine" = "Engine";
+
+/* Version: label */
+"engine.versionColon" = "Version:";
+
+/* Path: label */
+"engine.pathColon" = "Path:";
+
+/* Version */
+"engine.version" = "Version";
+
+/* Type */
+"engine.type" = "Type";
+
+/* Relational SQL */
+"engine.relationalSQL" = "Relational (SQL)";
+
+/* NoSQL */
+"engine.noSQL" = "NoSQL";
+
+/* Loading data for engine */
+"engine.loadingData" = "Loading %@ data…";
+
+/* Log viewer for engine */
+"engine.logViewerFor" = "Log viewer for %@";
+
+/* Version management for engine */
+"engine.versionManagementFor" = "Version management for %@";
+
+/* Load config failed */
+"engine.loadConfigFailed" = "Failed to load configuration";
+
+/* Update password failed */
+"engine.updatePasswordFailed" = "Failed to update password";
+
+/* Update Redis password failed */
+"engine.updateRedisPasswordFailed" = "Failed to update Redis password";
+
+/* Save failed */
+"engine.saveFailed" = "Failed to save";
+
+/* Save config failed */
+"engine.saveConfigFailed" = "Failed to save configuration";
+
+/* Fetch versions failed */
+"engine.fetchVersionsFailed" = "Failed to fetch available versions";
+
+/* Install failed */
+"engine.installFailed" = "Installation failed";
+
+/* Install version failed */
+"engine.installVersionFailed" = "Failed to install %@ %@";
+
+/* Update failed */
+"engine.updateFailed" = "Update failed";
+
+/* Update type failed */
+"engine.updateTypeFailed" = "Failed to update %@";
+
+/* Analysis failed */
+"engine.analysisFailed" = "Analysis failed";
+
+/* Analyze performance failed */
+"engine.analyzePerformanceFailed" = "Failed to analyze performance";
+
+/* Load error log failed */
+"engine.loadErrorLogFailed" = "Failed to load error log";
+
+/* Load slow query log failed */
+"engine.loadSlowLogFailed" = "Failed to load slow query log";
+
+/* ── Service Control ── */
+
+/* Start failed */
+"service.startFailed" = "Start failed";
+
+/* Stop failed */
+"service.stopFailed" = "Stop failed";
+
+/* Restart failed */
+"service.restartFailed" = "Restart failed";
+
+/* Install failed */
+"service.installFailed" = "Installation failed";
+
+/* Uninstall failed */
+"service.uninstallFailed" = "Uninstall failed";
+
+/* Config update failed */
+"service.configUpdateFailed" = "Config update failed";
+
+/* ── Installation ── */
+
+/* Step failed */
+"install.stepFailed" = "Step '%@' failed: %@";
+
+/* Validation failed */
+"install.validationFailed" = "Validation for '%@' failed: %@";
+
+/* Installation cancelled */
+"install.cancelled" = "Installation was cancelled";
+
+/* No recommendation */
+"install.noRecommendation" = "No installation recommendation available";
+
+/* No recommendations available */
+"install.noRecommendationsAvailable" = "No recommendations available.";
+
+/* ── Error Resolution ── */
+
+/* Analyze failed */
+"errorResolution.analyzeFailed" = "Failed to analyze error";
+
+/* Execute failed */
+"errorResolution.executeFailed" = "Failed to execute solution";
+
+/* No context */
+"errorResolution.noContext" = "No active error resolution context";
+
+/* Solution failed */
+"errorResolution.solutionFailed" = "Solution execution failed";
+
+/* ── Error Resolution UI ── */
+
+/* Error resolution title */
+"errorResolution.title" = "Error Resolution";
+
+/* Installation error */
+"errorResolution.installationError" = "Installation Error";
+
+/* Analyzing error */
+"errorResolution.analyzingError" = "Analyzing Error...";
+
+/* AI diagnosing */
+"errorResolution.aiDiagnosing" = "AI is diagnosing the issue and finding solutions";
+
+/* Diagnosis */
+"errorResolution.diagnosis" = "Diagnosis";
+
+/* Root cause */
+"errorResolution.rootCause" = "Root Cause:";
+
+/* Suggested solutions */
+"errorResolution.suggestedSolutions" = "Suggested Solutions";
+
+/* Executing solution */
+"errorResolution.executingSolution" = "Executing Solution...";
+
+/* Issue resolved */
+"errorResolution.issueResolved" = "Issue Resolved";
+
+/* Resume installation */
+"errorResolution.resumeInstallation" = "Resume Installation";
+
+/* Resolution failed */
+"errorResolution.resolutionFailed" = "Resolution Failed";
+
+/* Auto-fix */
+"errorResolution.autoFix" = "Auto-Fix";
+
+/* Execute manually */
+"errorResolution.executeManually" = "Execute Manually";

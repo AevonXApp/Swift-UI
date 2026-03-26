@@ -46,7 +46,7 @@ struct DBEDOverviewTab: View {
                 DBInfoRow(label: "Version", value: viewModel.formattedVersion)
                 DBInfoRow(label: "Install Path", value: viewModel.formattedInstallPath)
                 DBInfoRow(label: "Status", value: viewModel.engineInfo?.status.rawValue.capitalized ?? "Unknown")
-                DBInfoRow(label: "Service", value: viewModel.isRunning ? "Running" : "Stopped")
+                DBInfoRow(label: "Service", value: viewModel.isRunning ? L10n.Status.running : L10n.Status.stopped)
             }
             .padding(AXSpacing.lg)
         }

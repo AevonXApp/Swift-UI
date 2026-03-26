@@ -75,7 +75,7 @@ struct DockerQuickCreateView: View {
             
             // Footer
             HStack {
-                Button("Cancel") { dismiss() }
+                Button(L10n.Button.cancel) { dismiss() }
                     .buttonStyle(AXSecondaryButtonStyle())
                 
                 Spacer()

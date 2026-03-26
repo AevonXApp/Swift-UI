@@ -86,7 +86,7 @@ struct DockerComposeValidator: View {
                                 }) {
                                     HStack(spacing: 4) {
                                         Image(systemName: "doc.on.doc").font(.system(size: 9))
-                                        Text("Copy").font(.system(size: 9))
+                                        Text(L10n.Button.copy).font(.system(size: 9))
                                     }
                                     .foregroundColor(.axAccentBlue)
                                 }

@@ -133,7 +133,7 @@ struct LiteSpeedConfigSection: View {
                                 Image(systemName: "square.and.arrow.down")
                                     .font(AXTypography.footnote)
                             }
-                            Text("Save")
+                            Text(L10n.Button.save)
                                 .font(AXTypography.footnote).fontWeight(.medium)
                         }
                         .foregroundColor(.white)

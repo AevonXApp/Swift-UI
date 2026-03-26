@@ -112,12 +112,12 @@ struct SSLManagementSection: View {
             }
 
             HStack(spacing: AXSpacing.md) {
-                Button("Issue Let's Encrypt Certificate") {
+                Button(L10n.Website.issueLetsEncrypt) {
                     viewModel.showLetsEncryptSheet = true
                 }
                 .buttonStyle(AXPrimaryButtonStyle())
 
-                Button("Upload Custom Certificate") {
+                Button(L10n.Website.uploadCert) {
                     viewModel.showCustomCertSheet = true
                 }
                 .buttonStyle(AXSecondaryButtonStyle())
@@ -378,7 +378,7 @@ struct SSLManagementSection: View {
                 }
 
                 SSLActionButton(
-                    title: "Upload Custom Certificate",
+                    title: L10n.Website.uploadCert,
                     subtitle: "Replace with your own SSL certificate",
                     icon: "arrow.up.doc.fill",
                     color: .axAccentBlue,

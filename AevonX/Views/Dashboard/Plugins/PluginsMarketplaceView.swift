@@ -79,7 +79,7 @@ struct PluginsMarketplaceView: View {
                     Text("Please select a server first.")
                         .font(AXTypography.caption)
                         .foregroundColor(.axTextSecondary)
-                    Button("Close") { pluginToInstall = nil }
+                    Button(L10n.Button.close) { pluginToInstall = nil }
                         .buttonStyle(AXSecondaryButtonStyle())
                 }
                 .padding(AXSpacing.xxl)
@@ -134,7 +134,7 @@ struct PluginsMarketplaceView: View {
                 HStack(spacing: AXSpacing.xs) {
                     Image(systemName: "arrow.clockwise")
                         .font(.system(size: 12, weight: .semibold))
-                    Text("Search")
+                    Text(L10n.Button.search)
                         .font(AXTypography.caption)
                         .fontWeight(.semibold)
                 }
@@ -228,7 +228,7 @@ struct PluginsMarketplaceView: View {
                 icon: "exclamationmark.triangle",
                 title: "Something went wrong",
                 description: error,
-                actionLabel: "Retry",
+                actionLabel: L10n.Button.retry,
                 action: { Task { await viewModel.loadMarketplace() } }
             )
         } else {
@@ -430,7 +430,7 @@ struct PluginCard: View {
                                             endPoint: .bottomTrailing
                                         )
                                     )
-                                    .help("Official AevonX Plugin")
+                                    .help(L10n.Plugin.official)
                             }
 
                             if isDevOnly {
@@ -643,13 +643,13 @@ struct PluginCard: View {
                         .cornerRadius(AXCornerRadius.sm)
                 }
                 .buttonStyle(PlainButtonStyle())
-                .help("Uninstall")
+                .help(L10n.Plugin.uninstall)
 
                 Button(action: onSettings) {
                     HStack(spacing: AXSpacing.xxs) {
                         Image(systemName: "slider.horizontal.3")
                             .font(.system(size: 10))
-                        Text("Settings")
+                        Text(L10n.Plugin.configure)
                             .font(.system(size: 10, weight: .semibold))
                     }
                     .foregroundColor(.axTextPrimary)
@@ -713,7 +713,7 @@ struct PluginCard: View {
                 HStack(spacing: AXSpacing.xxs) {
                     Image(systemName: "arrow.down.circle.fill")
                         .font(.system(size: 11))
-                    Text("Install")
+                    Text(L10n.Plugin.install)
                         .font(.system(size: 11, weight: .bold))
                 }
                 .foregroundColor(.axBackground)

@@ -163,7 +163,7 @@ private extension CerberusDomainsView {
                     .foregroundStyle(Color.axTextPrimary)
                 if ws.port > 0 {
                     HStack(spacing: AXSpacing.xs) {
-                        Text("Port")
+                        Text(L10n.Field.port)
                             .font(AXTypography.caption)
                             .foregroundStyle(Color.axTextTertiary)
                         Text("\(ws.port)")
@@ -345,7 +345,7 @@ private extension CerberusDomainsView {
                     .font(AXTypography.caption2)
                     .foregroundStyle(Color.axTextTertiary)
                 if domain.enabled {
-                    AXBadge(text: "Active", color: .axAccentGreen, style: .soft)
+                    AXBadge(text: L10n.Status.active, color: .axAccentGreen, style: .soft)
                 }
             }
         }
@@ -454,7 +454,7 @@ private extension CerberusDomainsView {
                     showAddSheet = false
                     newDomain = ""
                 } label: {
-                    Text("Cancel")
+                    Text(L10n.Button.cancel)
                         .font(AXTypography.subheadline)
                         .fontWeight(.medium)
                         .foregroundStyle(Color.axTextSecondary)

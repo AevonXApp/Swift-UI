@@ -75,7 +75,7 @@ struct AXIPBlockSheet: View {
 
                 HStack(spacing: AXSpacing.md) {
                     Button(action: { dismiss() }) {
-                        Text("Cancel")
+                        Text(L10n.Button.cancel)
                             .font(.system(size: 13, weight: .semibold))
                             .foregroundColor(.axTextSecondary)
                             .padding(.horizontal, AXSpacing.lg)

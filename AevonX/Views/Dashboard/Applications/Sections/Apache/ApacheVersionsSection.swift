@@ -84,7 +84,7 @@ struct ApacheVersionsSection: View {
                     if isUninstalling == version.version {
                         ProgressView().scaleEffect(0.6)
                     } else {
-                        Text("Uninstall").font(.system(size: 11, weight: .medium))
+                        Text(L10n.Button.uninstall).font(.system(size: 11, weight: .medium))
                             .foregroundColor(.axError)
                     }
                 }
@@ -97,7 +97,7 @@ struct ApacheVersionsSection: View {
                     if isInstalling == version.version {
                         ProgressView().scaleEffect(0.6)
                     } else {
-                        Text("Install").font(.system(size: 11, weight: .semibold))
+                        Text(L10n.Button.install).font(.system(size: 11, weight: .semibold))
                             .foregroundColor(.white).padding(.horizontal, 10).padding(.vertical, 4)
                             .background(apacheRed).cornerRadius(AXCornerRadius.sm)
                     }

@@ -196,8 +196,8 @@ struct ApacheOverviewSection: View {
         VStack(alignment: .leading, spacing: AXSpacing.md) {
             AXSectionTitle(title: "Quick Actions", icon: "bolt.fill")
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: AXSpacing.md), count: 4), spacing: AXSpacing.md) {
-                quickAction(icon: isRunning ? "stop.fill" : "play.fill", title: isRunning ? "Stop" : "Start", color: isRunning ? .axError : .axSuccess, action: isRunning ? "stop" : "start")
-                quickAction(icon: "arrow.clockwise", title: "Restart", color: .axWarning, action: "restart")
+                quickAction(icon: isRunning ? "stop.fill" : "play.fill", title: isRunning ? L10n.Button.stop : L10n.Button.start, color: isRunning ? .axError : .axSuccess, action: isRunning ? "stop" : "start")
+                quickAction(icon: "arrow.clockwise", title: L10n.Button.restart, color: .axWarning, action: "restart")
                 quickAction(icon: "arrow.triangle.2.circlepath", title: "Reload", color: .axAccentBlue, action: "reload")
                 quickAction(icon: "doc.text.magnifyingglass", title: "Test Config", color: .purple, action: "configtest")
             }

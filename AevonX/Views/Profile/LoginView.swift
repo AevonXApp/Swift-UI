@@ -75,7 +75,7 @@ private struct SignInContent: View {
                         .shadow(color: Color.axAccentBlue.opacity(0.35), radius: 20, y: 8)
                         .scaleEffect(logoScale)
 
-                    Text("AevonX")
+                    Text(L10n.App.name)
                         .font(.system(size: 30, weight: .bold, design: .rounded))
                         .foregroundColor(.axTextPrimary)
 
@@ -98,12 +98,12 @@ private struct SignInContent: View {
                     if showForgotPassword {
                         AuthFormField(label: "Email Address", icon: "envelope.fill", text: $forgotEmail, asciiOnly: true)
 
-                        Text("We'll send you a link to reset your password.")
+                        Text(L10n.Auth.resetPasswordInfo)
                             .font(AXTypography.caption)
                             .foregroundColor(.axTextSecondary)
                             .multilineTextAlignment(.center)
 
-                        AuthPrimaryButton(title: "Send Reset Link", icon: "paperplane.fill", isLoading: viewModel.isLoading) {
+                        AuthPrimaryButton(title: L10n.Auth.sendResetLink, icon: "paperplane.fill", isLoading: viewModel.isLoading) {
                             Task {
                                 await viewModel.forgotPassword(email: forgotEmail)
                                 if viewModel.errorMessage == nil {
@@ -112,7 +112,7 @@ private struct SignInContent: View {
                             }
                         }
 
-                        Button("Back to Sign In") {
+                        Button(L10n.Auth.backToSignIn) {
                             withAnimation(.easeInOut(duration: 0.25)) {
                                 showForgotPassword = false
                                 viewModel.errorMessage = nil
@@ -127,14 +127,14 @@ private struct SignInContent: View {
                         AuthFormField(label: "Email or Username", icon: "person.fill", text: $loginField, asciiOnly: true)
                         AuthFormField(label: "Password", icon: "lock.fill", text: $password, isSecure: true, asciiOnly: true)
 
-                        AuthPrimaryButton(title: "Sign In", icon: "arrow.right", isLoading: viewModel.isLoading) {
+                        AuthPrimaryButton(title: L10n.Auth.signIn, icon: "arrow.right", isLoading: viewModel.isLoading) {
                             Task {
                                 await viewModel.login(login: loginField, password: password)
                             }
                         }
 
                         HStack {
-                            Button("Forgot Password?") {
+                            Button(L10n.Auth.forgotPassword) {
                                 withAnimation(.easeInOut(duration: 0.25)) {
                                     showForgotPassword = true
                                     viewModel.errorMessage = nil
@@ -146,7 +146,7 @@ private struct SignInContent: View {
 
                             Spacer()
 
-                            Button("Don't have an account? Sign Up") {
+                            Button(L10n.Auth.noAccountSignUp) {
                                 onSwitchToSignUp()
                             }
                             .font(AXTypography.caption)
@@ -329,7 +329,7 @@ struct TrialStatusBanner: View {
             case .unknown:
                 HStack(spacing: AXSpacing.sm) {
                     ProgressView().scaleEffect(0.7)
-                    Text("Checking trial eligibility...").font(AXTypography.caption).foregroundColor(.axTextSecondary)
+                    Text(L10n.Auth.checkingTrial).font(AXTypography.caption).foregroundColor(.axTextSecondary)
                     Spacer()
                 }
                 .padding(.horizontal, AXSpacing.md).padding(.vertical, AXSpacing.sm)

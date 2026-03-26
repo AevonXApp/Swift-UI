@@ -32,7 +32,7 @@ extension DBCreateTableView {
             Spacer()
 
             Button { viewModel.showCreateTable = false } label: {
-                Text("Cancel")
+                Text(L10n.Button.cancel)
                     .font(AXTypography.subheadline)
                     .foregroundColor(.axTextSecondary)
                     .padding(.horizontal, AXSpacing.lg)
@@ -51,7 +51,7 @@ extension DBCreateTableView {
                     if isSubmitting {
                         ProgressView().scaleEffect(0.6).tint(.white)
                     }
-                    Text(isSubmitting ? "Creating..." : "Create Table")
+                    Text(isSubmitting ? "Creating..." : L10n.Database.createTable)
                 }
                 .font(AXTypography.subheadline)
                 .fontWeight(.bold)

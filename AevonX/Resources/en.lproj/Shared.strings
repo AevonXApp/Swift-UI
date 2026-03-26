@@ -1,0 +1,270 @@
+/* Shared.strings — Buttons, Fields, Status, App Info */
+
+/* ── Buttons ── */
+
+/* Cancel action — used in 40+ dialogs */
+"button.cancel" = "Cancel";
+
+/* Save changes */
+"button.save" = "Save";
+
+/* Retry failed operation */
+"button.retry" = "Retry";
+
+/* Close dialog or panel */
+"button.close" = "Close";
+
+/* Delete item */
+"button.delete" = "Delete";
+
+/* Create new item */
+"button.create" = "Create";
+
+/* Edit existing item */
+"button.edit" = "Edit";
+
+/* Connect to server */
+"button.connect" = "Connect";
+
+/* Disconnect from server */
+"button.disconnect" = "Disconnect";
+
+/* Upgrade plan */
+"button.upgrade" = "Upgrade";
+
+/* Upgrade now (prominent) */
+"button.upgradeNow" = "Upgrade Now";
+
+/* Apply changes */
+"button.apply" = "Apply";
+
+/* Done action */
+"button.done" = "Done";
+
+/* Later / dismiss */
+"button.later" = "Later";
+
+/* Skip action */
+"button.skip" = "Skip";
+
+/* Not now / dismiss */
+"button.notNow" = "Not Now";
+
+/* Try again after failure */
+"button.tryAgain" = "Try Again";
+
+/* Maybe later / soft dismiss */
+"button.maybeLater" = "Maybe Later";
+
+/* Change value */
+"button.change" = "Change";
+
+/* Renew subscription */
+"button.renew" = "Renew";
+
+/* Continue to next step */
+"button.continue" = "Continue";
+
+/* Go back */
+"button.back" = "Back";
+
+/* Save changes (explicit) */
+"button.saveChanges" = "Save Changes";
+
+/* Cancel connection attempt */
+"button.cancelConnection" = "Cancel Connection";
+
+/* Open dashboard after connecting */
+"button.openDashboard" = "Open Dashboard";
+
+/* Restore encryption keys */
+"button.restoreKeys" = "Restore Keys";
+
+/* Subscribe now */
+"button.subscribeNow" = "Subscribe Now";
+
+/* Start action */
+"button.start" = "Start";
+
+/* Stop action */
+"button.stop" = "Stop";
+
+/* Restart action */
+"button.restart" = "Restart";
+
+/* Install action */
+"button.install" = "Install";
+
+/* Uninstall action */
+"button.uninstall" = "Uninstall";
+
+/* Refresh data */
+"button.refresh" = "Refresh";
+
+/* Copy to clipboard */
+"button.copy" = "Copy";
+
+/* Remove item */
+"button.remove" = "Remove";
+
+/* Confirm action */
+"button.confirm" = "Confirm";
+
+/* Add item */
+"button.add" = "Add";
+
+/* Clear content */
+"button.clear" = "Clear";
+
+/* Search */
+"button.search" = "Search";
+
+/* Select item */
+"button.select" = "Select";
+
+/* ── Form Fields ── */
+
+/* Username field */
+"field.username" = "Username";
+
+/* Password field */
+"field.password" = "Password";
+
+/* Email field */
+"field.email" = "Email";
+
+/* Host / hostname field */
+"field.host" = "Host";
+
+/* Port field */
+"field.port" = "Port";
+
+/* Server name field */
+"field.serverName" = "Server Name";
+
+/* Icon picker */
+"field.icon" = "Icon";
+
+/* Color picker */
+"field.color" = "Color";
+
+/* Tags field */
+"field.tags" = "Tags (optional)";
+
+/* Host placeholder */
+"field.hostPlaceholder" = "server.example.com";
+
+/* Username placeholder */
+"field.usernamePlaceholder" = "root";
+
+/* Private key field */
+"field.privateKey" = "Private Key";
+
+/* Key passphrase field */
+"field.keyPassphrase" = "Key Passphrase (optional)";
+
+/* Full name field */
+"field.fullName" = "Full Name";
+
+/* Your name placeholder */
+"field.yourName" = "Your name";
+
+/* Name field */
+"field.name" = "Name";
+
+/* Description field */
+"field.description" = "Description";
+
+/* Value field */
+"field.value" = "Value";
+
+/* Path field */
+"field.path" = "Path";
+
+/* ── Status ── */
+
+/* Connecting to server */
+"status.connecting" = "Connecting...";
+
+/* Connected to server */
+"status.connected" = "Connected";
+
+/* Disconnected from server */
+"status.disconnected" = "Disconnected";
+
+/* Loading content */
+"status.loading" = "Loading...";
+
+/* Please wait */
+"status.pleaseWait" = "Please wait...";
+
+/* Connection failed */
+"status.connectionFailed" = "Connection Failed";
+
+/* Ready to connect */
+"status.readyToConnect" = "Ready to Connect";
+
+/* Requesting authorization */
+"status.requestingAuth" = "Requesting Authorization";
+
+/* Encrypting authorization */
+"status.encryptingAuth" = "Encrypting Authorization";
+
+/* Validating authorization */
+"status.validatingAuth" = "Validating Authorization";
+
+/* Authenticating */
+"status.authenticating" = "Authenticating";
+
+/* Decrypting credentials */
+"status.decryptingCreds" = "Decrypting Credentials";
+
+/* Verifying host key */
+"status.verifyingHost" = "Verifying Host Key";
+
+/* Establishing SSH connection */
+"status.establishingSSH" = "Establishing SSH Connection";
+
+/* Disconnecting from server */
+"status.disconnecting" = "Disconnecting";
+
+/* Active status */
+"status.active" = "Active";
+
+/* Inactive status */
+"status.inactive" = "Inactive";
+
+/* Online status */
+"status.online" = "Online";
+
+/* Offline status */
+"status.offline" = "Offline";
+
+/* Running status */
+"status.running" = "Running";
+
+/* Stopped status */
+"status.stopped" = "Stopped";
+
+/* Enabled status */
+"status.enabled" = "Enabled";
+
+/* Disabled status */
+"status.disabled" = "Disabled";
+
+/* Unknown status */
+"status.unknown" = "Unknown";
+
+/* Failed status */
+"status.failed" = "Failed";
+
+/* Percentage display */
+"status.percentage" = "%lld%%";
+
+/* ── App Info ── */
+
+/* App name */
+"app.name" = "AevonX";
+
+/* App tagline */
+"app.tagline" = "Server Management, Reimagined.";

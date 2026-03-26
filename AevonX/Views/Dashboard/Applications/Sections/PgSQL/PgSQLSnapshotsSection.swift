@@ -73,7 +73,7 @@ struct PgSQLSnapshotsSection: View {
         .sheet(isPresented: $showingDiff) {
             VStack(alignment: .leading, spacing: 0) {
                 HStack { Text(diffTitle).font(.system(size: 14, weight: .bold)); Spacer()
-                    Button("Close") { showingDiff = false }.buttonStyle(PlainButtonStyle()).foregroundColor(.axAccentBlue) }.padding()
+                    Button(L10n.Button.close) { showingDiff = false }.buttonStyle(PlainButtonStyle()).foregroundColor(.axAccentBlue) }.padding()
                 Divider()
                 ScrollView {
                     Text(diffText.isEmpty ? "No differences" : diffText)

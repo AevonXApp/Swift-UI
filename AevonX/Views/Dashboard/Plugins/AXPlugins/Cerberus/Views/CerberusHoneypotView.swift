@@ -116,7 +116,7 @@ private extension CerberusHoneypotView {
         } label: {
             HStack(spacing: AXSpacing.xs) {
                 Image(systemName: "arrow.clockwise")
-                Text("Refresh")
+                Text(L10n.Button.refresh)
             }
             .font(AXTypography.caption)
             .fontWeight(.medium)

@@ -43,7 +43,7 @@ struct CronAddTaskSheet: View {
             // Header
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(isEditing ? "Edit Task" : "Add Task")
+                    Text(isEditing ? L10n.Cron.editTask : L10n.Cron.addTask)
                         .font(.system(size: 18, weight: .bold))
                         .foregroundColor(.axTextPrimary)
                     Text("Configure a scheduled task for your server")
@@ -225,7 +225,7 @@ struct CronAddTaskSheet: View {
             
             // Footer buttons
             HStack {
-                Button("Cancel") { dismiss() }
+                Button(L10n.Button.cancel) { dismiss() }
                     .buttonStyle(PlainButtonStyle())
                     .foregroundColor(.axTextSecondary)
                     .padding(.horizontal, AXSpacing.xl)
@@ -237,7 +237,7 @@ struct CronAddTaskSheet: View {
                     HStack(spacing: AXSpacing.xs) {
                         Image(systemName: "checkmark")
                             .font(.system(size: 12, weight: .bold))
-                        Text(isEditing ? "Save Changes" : "Create Task")
+                        Text(isEditing ? L10n.Button.saveChanges : L10n.Cron.addTask)
                             .font(.system(size: 13, weight: .semibold))
                     }
                     .foregroundColor(.white)

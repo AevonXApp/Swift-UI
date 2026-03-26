@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- Days remaining (subscription) -->
+    <key>subscription.daysRemaining %lld</key>
+    <dict>
+        <key>NSStringLocalizedFormatKey</key>
+        <string>%#@count@</string>
+        <key>count</key>
+        <dict>
+            <key>NSStringFormatSpecTypeKey</key>
+            <string>NSStringPluralRuleType</string>
+            <key>NSStringFormatValueTypeKey</key>
+            <string>lld</string>
+            <key>one</key>
+            <string>%lld day remaining</string>
+            <key>other</key>
+            <string>%lld days remaining</string>
+        </dict>
+    </dict>
+
+    <!-- Online server count -->
+    <key>fleet.online %lld</key>
+    <dict>
+        <key>NSStringLocalizedFormatKey</key>
+        <string>%#@count@</string>
+        <key>count</key>
+        <dict>
+            <key>NSStringFormatSpecTypeKey</key>
+            <string>NSStringPluralRuleType</string>
+            <key>NSStringFormatValueTypeKey</key>
+            <string>lld</string>
+            <key>one</key>
+            <string>%lld Online</string>
+            <key>other</key>
+            <string>%lld Online</string>
+        </dict>
+    </dict>
+
+    <!-- Offline server count -->
+    <key>fleet.offline %lld</key>
+    <dict>
+        <key>NSStringLocalizedFormatKey</key>
+        <string>%#@count@</string>
+        <key>count</key>
+        <dict>
+            <key>NSStringFormatSpecTypeKey</key>
+            <string>NSStringPluralRuleType</string>
+            <key>NSStringFormatValueTypeKey</key>
+            <string>lld</string>
+            <key>one</key>
+            <string>%lld Offline</string>
+            <key>other</key>
+            <string>%lld Offline</string>
+        </dict>
+    </dict>
+
+    <!-- Rows deleted count -->
+    <key>success.rowsDeleted %lld</key>
+    <dict>
+        <key>NSStringLocalizedFormatKey</key>
+        <string>%#@count@</string>
+        <key>count</key>
+        <dict>
+            <key>NSStringFormatSpecTypeKey</key>
+            <string>NSStringPluralRuleType</string>
+            <key>NSStringFormatValueTypeKey</key>
+            <string>lld</string>
+            <key>one</key>
+            <string>%lld row deleted successfully</string>
+            <key>other</key>
+            <string>%lld rows deleted successfully</string>
+        </dict>
+    </dict>
+
+    <!-- Database rows deleted count -->
+    <key>database.rowsDeleted %lld</key>
+    <dict>
+        <key>NSStringLocalizedFormatKey</key>
+        <string>%#@count@</string>
+        <key>count</key>
+        <dict>
+            <key>NSStringFormatSpecTypeKey</key>
+            <string>NSStringPluralRuleType</string>
+            <key>NSStringFormatValueTypeKey</key>
+            <string>lld</string>
+            <key>one</key>
+            <string>%lld row deleted successfully</string>
+            <key>other</key>
+            <string>%lld rows deleted successfully</string>
+        </dict>
+    </dict>
+
+    <!-- Security attempts used -->
+    <key>security.attemptsUsed %lld %lld</key>
+    <dict>
+        <key>NSStringLocalizedFormatKey</key>
+        <string>%#@attempts@ of %#@max@ attempts used</string>
+        <key>attempts</key>
+        <dict>
+            <key>NSStringFormatSpecTypeKey</key>
+            <string>NSStringPluralRuleType</string>
+            <key>NSStringFormatValueTypeKey</key>
+            <string>lld</string>
+            <key>one</key>
+            <string>%lld</string>
+            <key>other</key>
+            <string>%lld</string>
+        </dict>
+        <key>max</key>
+        <dict>
+            <key>NSStringFormatSpecTypeKey</key>
+            <string>NSStringPluralRuleType</string>
+            <key>NSStringFormatValueTypeKey</key>
+            <string>lld</string>
+            <key>one</key>
+            <string>%lld</string>
+            <key>other</key>
+            <string>%lld</string>
+        </dict>
+    </dict>
+</dict>
+</plist>
