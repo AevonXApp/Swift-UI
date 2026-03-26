@@ -69,8 +69,16 @@ struct FileRow: View {
                 }
                 
                 Spacer()
+
+                // Git status indicator
+                if viewModel.isGitRepo, let gitStatus = viewModel.gitStatusForFile(file.name) {
+                    Text(gitStatus.rawValue)
+                        .font(.system(size: 10, weight: .bold, design: .monospaced))
+                        .foregroundColor(gitStatusColor(gitStatus))
+                        .frame(width: 16)
+                }
             }
-            
+
             // Size
             Text(file.formattedSize)
                 .font(.system(size: 11, design: .monospaced))
@@ -107,5 +115,16 @@ struct FileRow: View {
                 onRightClick(position)
             }
         )
+    }
+
+    private func gitStatusColor(_ status: GitFileStatus) -> Color {
+        switch status {
+        case .modified: return .axWarning
+        case .added: return .axSuccess
+        case .deleted: return .axError
+        case .renamed: return .axAccentBlue
+        case .untracked: return .axTextMuted
+        case .copied: return .axAccentPurple
+        }
     }
 }

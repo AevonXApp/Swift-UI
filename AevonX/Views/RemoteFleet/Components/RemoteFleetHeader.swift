@@ -10,6 +10,7 @@ struct RemoteFleetHeader: View {
     @ObservedObject var viewModel: ServerListViewModel
     @Binding var showAddServer: Bool
     @Binding var showPaywall: Bool
+    var onLaunch: (() -> Void)? = nil
     
     var body: some View {
         HStack(alignment: .center) {
@@ -60,6 +61,25 @@ struct RemoteFleetHeader: View {
             }
 
             Spacer()
+
+            // Launch Button
+            if viewModel.isAuthenticated, let onLaunch {
+                Button(action: onLaunch) {
+                    HStack(spacing: AXSpacing.sm) {
+                        Image(systemName: "paperplane.fill")
+                            .font(.system(size: 12))
+                        Text(L10n.AXLaunch.fleetButton)
+                    }
+                    .font(AXTypography.subheadline)
+                    .fontWeight(.medium)
+                    .foregroundColor(.axAccentBlue)
+                    .padding(.horizontal, AXSpacing.md)
+                    .padding(.vertical, AXSpacing.sm)
+                    .background(Color.axAccentBlue.opacity(0.1))
+                    .cornerRadius(AXCornerRadius.md)
+                }
+                .buttonStyle(PlainButtonStyle())
+            }
 
             // Add Server Button — hidden if not logged in, shows paywall if locked
             if viewModel.isAuthenticated {

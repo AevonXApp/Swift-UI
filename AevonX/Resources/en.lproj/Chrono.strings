@@ -1,0 +1,182 @@
+/* AXChrono — Autonomous Git Deployment Engine */
+
+// Root / Navigation
+"chrono.brand" = "AXChrono";
+"chrono.subtitle" = "Autonomous Git Deployment";
+"chrono.sidebarTitle" = "AXCHRONO";
+
+// Categories
+"chrono.cat.overview" = "Overview";
+"chrono.cat.deployment" = "Deployment";
+"chrono.cat.intelligence" = "Intelligence";
+"chrono.cat.management" = "Management";
+
+// Tabs
+"chrono.tab.dashboard" = "Dashboard";
+"chrono.tab.projects" = "Projects";
+"chrono.tab.deploys" = "Deploys";
+"chrono.tab.timeline" = "Timeline";
+"chrono.tab.security" = "Security";
+"chrono.tab.approvals" = "Approvals";
+"chrono.tab.hologram" = "Hologram";
+"chrono.tab.settings" = "Settings";
+
+// Dashboard
+"chrono.dashboard.title" = "AXChrono Dashboard";
+"chrono.dashboard.activeProjects" = "Active Projects";
+"chrono.dashboard.totalDeploys" = "Total Deploys";
+"chrono.dashboard.failedThisWeek" = "Failed This Week";
+"chrono.dashboard.healthStatus" = "Health";
+"chrono.dashboard.cacheSize" = "Cache";
+"chrono.dashboard.secretsDetected" = "Secrets Detected";
+"chrono.dashboard.recentDeploys" = "Recent Deploys";
+"chrono.dashboard.activeWatchers" = "Active Watchers";
+"chrono.dashboard.alerts" = "Alerts";
+"chrono.dashboard.allHealthy" = "All Healthy";
+
+// Projects
+"chrono.projects.title" = "Tracked Projects";
+"chrono.projects.add" = "Add Project";
+"chrono.projects.empty" = "No projects tracked yet";
+"chrono.projects.path" = "Project Path";
+"chrono.projects.repoURL" = "Git Remote URL";
+"chrono.projects.branch" = "Branch to Track";
+"chrono.projects.autoDeploy" = "Auto-deploy on push";
+"chrono.projects.healthURL" = "Health check URL";
+"chrono.projects.gitAuth" = "Git Authentication";
+"chrono.projects.gitUsername" = "Username";
+"chrono.projects.gitToken" = "Token";
+"chrono.projects.watchMode" = "Watch Mode";
+"chrono.projects.pollOnly" = "Poll only";
+"chrono.projects.webhookPoll" = "Webhook + Poll fallback";
+"chrono.projects.pendingCommits" = "pending commits";
+"chrono.projects.lastDeploy" = "Last deploy";
+
+// Deploy
+"chrono.deploy.trigger" = "Deploy Now";
+"chrono.deploy.history" = "Deploy History";
+"chrono.deploy.live" = "Live Log";
+"chrono.deploy.status.success" = "Success";
+"chrono.deploy.status.failed" = "Failed";
+"chrono.deploy.status.rolledBack" = "Rolled Back";
+"chrono.deploy.status.running" = "Deploying...";
+"chrono.deploy.status.queued" = "Queued";
+"chrono.deploy.duration" = "Duration";
+"chrono.deploy.trigger.gitpulse" = "GitPulse";
+"chrono.deploy.trigger.webhook" = "Webhook";
+"chrono.deploy.trigger.manual" = "Manual";
+"chrono.deploy.filesChanged" = "Files Changed";
+"chrono.deploy.pipelineSteps" = "Pipeline Steps";
+"chrono.deploy.viewLog" = "View Full Log";
+"chrono.deploy.empty" = "No deployments yet";
+
+// Project Detail
+"chrono.projectDetail.info" = "Details";
+"chrono.projectDetail.health" = "Health Probe";
+"chrono.projectDetail.snapshots" = "Snapshots";
+"chrono.projectDetail.noHealth" = "No health probe configured";
+"chrono.projectDetail.noSnapshots" = "No snapshots available";
+"chrono.projectDetail.lastChecked" = "Last checked %@";
+
+// Rollback
+"chrono.rollback.title" = "Rollback";
+"chrono.rollback.confirm" = "Are you sure you want to rollback to this snapshot?";
+
+// Snapshots
+"chrono.snapshot.title" = "Snapshots";
+"chrono.snapshot.full" = "Full";
+"chrono.snapshot.incremental" = "Incremental";
+"chrono.snapshots.title" = "Snapshots";
+"chrono.snapshots.empty" = "No snapshots yet";
+"chrono.snapshots.restore" = "Restore";
+
+// Health
+"chrono.health.title" = "Health Monitor";
+"chrono.health.healthy" = "Healthy";
+"chrono.health.unhealthy" = "Unhealthy";
+"chrono.health.unknown" = "Unknown";
+"chrono.health.refresh" = "Refresh";
+"chrono.health.totalProbes" = "Total Probes";
+"chrono.health.degraded" = "Degraded";
+"chrono.health.down" = "Down";
+"chrono.health.empty" = "No health probes configured";
+"chrono.health.emptyHint" = "Add a health URL to a project to enable monitoring";
+"chrono.health.responseTime" = "Response Time";
+"chrono.health.lastCheck" = "Checked %@";
+
+// Scanner / Security
+"chrono.scanner.title" = "Security Scanner";
+"chrono.scanner.noIssues" = "No security issues found";
+"chrono.scanner.vaultScan" = "VaultScan";
+"chrono.scanner.threatRadar" = "ThreatRadar";
+"chrono.scanner.driftDetector" = "DriftDetector";
+"chrono.scanner.permissions" = "PermissionMatrix";
+"chrono.scanner.noSecrets" = "No secrets in diff";
+"chrono.scanner.noVulns" = "No known vulnerabilities";
+
+// Hologram
+"chrono.hologram.title" = "Deploy Hologram";
+"chrono.hologram.risk.low" = "Low Risk";
+"chrono.hologram.risk.medium" = "Medium Risk";
+"chrono.hologram.risk.high" = "High Risk";
+"chrono.hologram.filesChanged" = "Files Changed";
+"chrono.hologram.dependencies" = "Dependencies";
+"chrono.hologram.migrations" = "Migrations";
+"chrono.hologram.security" = "Security";
+"chrono.hologram.buildSteps" = "Build Steps";
+"chrono.hologram.downtime" = "Downtime";
+
+// Approvals
+"chrono.approvals.title" = "Pending Approvals";
+"chrono.approvals.empty" = "No pending approvals";
+"chrono.approvals.approve" = "Approve";
+"chrono.approvals.deny" = "Deny";
+"chrono.approvals.history" = "Approval History";
+"chrono.approvals.selfheal" = "SelfHeal — Rollback Request";
+"chrono.approvals.migration" = "Migration — Apply to Production";
+"chrono.approvals.canary" = "Canary — Advance Phase";
+"chrono.approvals.ghost" = "Ghost — Swap to Live";
+"chrono.approvals.drift" = "Drift — Revert Changes";
+"chrono.approvals.expired" = "Expired";
+
+// Timeline
+"chrono.timeline.title" = "Timeline";
+"chrono.timeline.empty" = "No events yet";
+
+// Webhook
+"chrono.webhook.title" = "Webhook Configuration";
+"chrono.webhook.url" = "Your Webhook URL";
+"chrono.webhook.secrets" = "Secrets (per provider)";
+"chrono.webhook.regenerate" = "Regenerate All";
+"chrono.webhook.test" = "Test Connection";
+"chrono.webhook.recentDeliveries" = "Recent Deliveries";
+"chrono.webhook.status.active" = "Active";
+"chrono.webhook.setupGuide" = "Setup Guide";
+
+// Settings
+"chrono.settings.title" = "AXChrono Settings";
+"chrono.settings.gitpulse" = "GitPulse Watcher";
+"chrono.settings.pollInterval" = "Poll Interval (seconds)";
+"chrono.settings.adaptivePolling" = "Adaptive Polling";
+"chrono.settings.zeroflip" = "ZeroFlip Deployment";
+"chrono.settings.maxReleases" = "Max Release Versions";
+"chrono.settings.sentinel" = "SentinelHealth";
+"chrono.settings.autoRollback" = "Auto Rollback on Failure";
+"chrono.settings.vaultScanMode" = "VaultScan Mode";
+"chrono.settings.selfHeal" = "SelfHeal Auto-Recovery";
+"chrono.settings.approvalMode" = "Approval Mode";
+"chrono.settings.approvalMode.auto" = "Auto";
+"chrono.settings.approvalMode.manual" = "Manual";
+"chrono.settings.approvalMode.smart" = "Smart";
+
+// Service
+"chrono.service.start" = "Start AXChrono";
+"chrono.service.stop" = "Stop AXChrono";
+"chrono.service.restart" = "Restart AXChrono";
+
+// Drift
+"chrono.drift.detected" = "File drift detected";
+
+// Errors
+"chrono.error.connectionFailed" = "Could not connect to AXChrono daemon";
+"chrono.error.apiError" = "API request failed";

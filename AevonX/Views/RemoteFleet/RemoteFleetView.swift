@@ -5,6 +5,7 @@
 //
 
 import SwiftUI
+import UniformTypeIdentifiers
 import AevonXCoreBridge
 
 enum ServerViewMode: String, CaseIterable {
@@ -56,12 +57,18 @@ struct RemoteFleetView: View {
     @State private var serverToEdit: ServerViewModel?
     @State private var showEditServer = false
     @State private var showPaywall = false
+    @State private var showLaunchWizard = false
+    @State private var launchTargetServer: Server?
+    @State private var launchLocalPath: String?
+    @State private var isDraggingFolder = false
     
     var body: some View {
         VStack(spacing: 0) {
             // Header & Filter Section
             VStack(spacing: AXSpacing.lg) {
-                RemoteFleetHeader(viewModel: viewModel, showAddServer: $showAddServer, showPaywall: $showPaywall)
+                RemoteFleetHeader(viewModel: viewModel, showAddServer: $showAddServer, showPaywall: $showPaywall, onLaunch: {
+                    showLaunchWizard = true
+                })
                 RemoteFleetFilterBar(
                     searchText: $searchText,
                     selectedFilter: $selectedFilter,
@@ -156,6 +163,21 @@ struct RemoteFleetView: View {
             DecryptionErrorView(viewModel: viewModel)
                 .presentationDetents([.medium, .large])
         }
+        .sheet(isPresented: $showLaunchWizard) {
+            if let server = launchTargetServer {
+                AXLaunchWizardView(server: server, localPath: launchLocalPath)
+                    .frame(minWidth: 600, minHeight: 560)
+            } else if let first = filteredServers.first {
+                AXLaunchWizardView(
+                    server: serverViewModelToServer(first),
+                    localPath: launchLocalPath
+                )
+                .frame(minWidth: 600, minHeight: 560)
+            }
+        }
+        .onDrop(of: [.fileURL], isTargeted: $isDraggingFolder) { providers in
+            handleFolderDrop(providers)
+        }
     }
     
     // MARK: - Subviews
@@ -237,8 +259,8 @@ struct RemoteFleetView: View {
         }
     }
 
-    private func navigateToServer(_ server: ServerViewModel) {
-        let fullServer = Server(
+    private func serverViewModelToServer(_ server: ServerViewModel) -> Server {
+        Server(
             id: UUID(uuidString: server.id) ?? UUID(),
             name: server.name,
             host: server.host,
@@ -247,13 +269,36 @@ struct RemoteFleetView: View {
             status: server.isAccessible ? .online : .offline,
             type: .remote,
             tags: server.tags,
-            lastConnected: nil, // Add this
+            lastConnected: nil,
             os: server.osType,
             location: server.location,
-            iconName: server.iconName, // Provide default
-            customColor: server.customColor ?? "#007AFF" // Provide default
+            iconName: server.iconName,
+            customColor: server.customColor ?? "#007AFF"
         )
-        selectedServer = fullServer
+    }
+
+    private func handleFolderDrop(_ providers: [NSItemProvider]) -> Bool {
+        guard let provider = providers.first else { return false }
+        provider.loadItem(forTypeIdentifier: "public.file-url", options: nil) { item, _ in
+            guard let data = item as? Data,
+                  let url = URL(dataRepresentation: data, relativeTo: nil),
+                  url.hasDirectoryPath else { return }
+            DispatchQueue.main.async {
+                launchLocalPath = url.path
+                showLaunchWizard = true
+            }
+        }
+        return true
+    }
+
+    private func openLaunchForServer(_ server: ServerViewModel) {
+        launchTargetServer = serverViewModelToServer(server)
+        launchLocalPath = nil
+        showLaunchWizard = true
+    }
+
+    private func navigateToServer(_ server: ServerViewModel) {
+        selectedServer = serverViewModelToServer(server)
         showServerDashboard = true
     }
 }

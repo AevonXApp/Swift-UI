@@ -1,0 +1,95 @@
+/* Git toolbar strings for File Manager */
+
+/* Toolbar */
+"git.toolbar.branch" = "Branch";
+"git.toolbar.ahead" = "ahead";
+"git.toolbar.behind" = "behind";
+"git.toolbar.lastCommit" = "Last:";
+"git.toolbar.noCommits" = "No commits yet";
+
+/* Buttons */
+"git.btn.pull" = "Pull";
+"git.btn.push" = "Push";
+"git.btn.fetch" = "Fetch";
+"git.btn.commit" = "Commit";
+"git.btn.branch" = "Branch";
+"git.btn.more" = "More";
+
+/* Commit Sheet */
+"git.commit.title" = "Commit Changes";
+"git.commit.changedFiles" = "Changed Files";
+"git.commit.message" = "Commit Message";
+"git.commit.placeholder" = "Describe your changes...";
+"git.commit.stageAll" = "Stage All & Commit";
+"git.commit.noChanges" = "No changes to commit";
+
+/* Branch Popover */
+"git.branch.title" = "Branches";
+"git.branch.local" = "Local";
+"git.branch.remote" = "Remote";
+"git.branch.current" = "current";
+"git.branch.new" = "New Branch";
+"git.branch.newPlaceholder" = "feature/my-branch";
+"git.branch.merge" = "Merge Into Current";
+"git.branch.delete" = "Delete Branch";
+"git.branch.switch" = "Switch Branch";
+
+/* Log Sheet */
+"git.log.title" = "Commit History";
+"git.log.empty" = "No commit history";
+"git.log.checkout" = "Checkout";
+
+/* Stash */
+"git.stash.title" = "Stash";
+"git.stash.save" = "Save to Stash";
+"git.stash.list" = "Stash List";
+"git.stash.pop" = "Pop Latest";
+"git.stash.drop" = "Drop";
+"git.stash.empty" = "No stash entries";
+"git.stash.messagePlaceholder" = "Optional stash message...";
+
+/* Tags */
+"git.tags.title" = "Tags";
+"git.tags.checkout" = "Checkout Tag";
+"git.tags.empty" = "No tags";
+
+/* Remotes */
+"git.remotes.title" = "Remotes";
+"git.remotes.add" = "Add Remote";
+"git.remotes.remove" = "Remove";
+"git.remotes.name" = "Remote Name";
+"git.remotes.url" = "Remote URL";
+
+/* More Menu */
+"git.more.stash" = "Stash";
+"git.more.tags" = "Tags";
+"git.more.remotes" = "Remotes";
+"git.more.history" = "Commit History";
+"git.more.dangerZone" = "Danger Zone";
+"git.more.resetHard" = "Reset Hard";
+"git.more.discardAll" = "Discard All Changes";
+"git.more.disconnect" = "Disconnect Git";
+
+/* Status Indicators */
+"git.status.modified" = "M";
+"git.status.added" = "A";
+"git.status.deleted" = "D";
+"git.status.renamed" = "R";
+"git.status.untracked" = "?";
+"git.status.conflict" = "C";
+
+/* Danger Confirmations */
+"git.danger.resetTitle" = "Reset Hard";
+"git.danger.resetMessage" = "This will discard all uncommitted changes. This cannot be undone.";
+"git.danger.discardTitle" = "Discard All Changes";
+"git.danger.discardMessage" = "All modified and untracked files will be lost.";
+"git.danger.disconnectTitle" = "Disconnect Git";
+"git.danger.disconnectMessage" = "This will remove the .git directory. Repository history will be lost.";
+
+/* Operations */
+"git.op.pulling" = "Pulling...";
+"git.op.pushing" = "Pushing...";
+"git.op.fetching" = "Fetching...";
+"git.op.committing" = "Committing...";
+"git.op.switching" = "Switching branch...";
+"git.op.merging" = "Merging...";

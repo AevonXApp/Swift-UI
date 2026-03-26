@@ -123,7 +123,36 @@ final class FileManagerViewModel: ObservableObject {
     @Published var showMissingToolBanner = false
     @Published var missingTool: MissingToolInfo?
     @Published var isInstallingTool = false
-    
+
+    // Git Integration
+    @Published var isGitRepo = false
+    @Published var gitInfo = GitRepoInfo()
+    @Published var gitFileChanges: [GitFileChange] = []
+    @Published var gitBranches: [GitBranch] = []
+    @Published var gitCommits: [GitCommit] = []
+    @Published var gitStashes: [GitStashEntry] = []
+    @Published var gitTags: [GitTag] = []
+    @Published var gitRemotes: [GitRemote] = []
+    @Published var gitOperationRunning = false
+    @Published var gitOperationMessage: String?
+    @Published var showGitCommitSheet = false
+    @Published var showGitBranchPopover = false
+    @Published var showGitLogSheet = false
+    @Published var showGitStashSheet = false
+    @Published var showGitTagsSheet = false
+    @Published var showGitRemotesSheet = false
+    @Published var showGitDangerConfirm = false
+    @Published var gitDangerAction: GitDangerAction?
+    @Published var gitCommitMessage = ""
+    @Published var gitNewBranchName = ""
+    @Published var gitStashMessage = ""
+    @Published var gitNewRemoteName = ""
+    @Published var gitNewRemoteURL = ""
+
+    enum GitDangerAction {
+        case resetHard, discardAll, disconnect
+    }
+
     // Internal State
     var hasLoadedOnce = false
     

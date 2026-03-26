@@ -61,6 +61,7 @@ enum DashboardTab: String, CaseIterable, Identifiable {
     case files = "Files"
     case security = "Security"
     case waf = "AX WAF"
+    case chrono = "AX Chrono"
     case cron = "Cron"
     case ftp = "FTP"
     case plugins = "Plugins"
@@ -79,6 +80,7 @@ enum DashboardTab: String, CaseIterable, Identifiable {
         case .files: return "folder.fill"
         case .security: return "lock.shield.fill"
         case .waf: return "shield.checkered"
+        case .chrono: return "clock.arrow.2.circlepath"
         case .cron: return "clock.arrow.circlepath"
         case .ftp: return "externaldrive.connected.to.line.below"
         case .plugins: return "puzzlepiece.fill"
@@ -90,7 +92,7 @@ enum DashboardTab: String, CaseIterable, Identifiable {
         switch self {
         case .overview, .websites, .databases, .files: return .core
         case .applications, .docker, .terminal: return .infrastructure
-        case .security, .waf: return .protection
+        case .security, .waf, .chrono: return .protection
         case .cron, .ftp, .plugins, .settings: return .system
         }
     }
@@ -106,6 +108,7 @@ enum DashboardTab: String, CaseIterable, Identifiable {
         case .files: return .yellow
         case .security: return .red
         case .waf: return Color(red: 1.0, green: 0.34, blue: 0.13)
+        case .chrono: return .axAccentPurple
         case .cron: return .teal
         case .ftp: return .indigo
         case .plugins: return .pink

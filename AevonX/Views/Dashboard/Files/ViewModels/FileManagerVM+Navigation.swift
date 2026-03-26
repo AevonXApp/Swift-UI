@@ -145,8 +145,11 @@ extension FileManagerViewModel {
         }
         
         isLoading = false
+
+        // Detect git repo in current directory
+        await detectGit()
     }
-    
+
     func refresh() {
         Task { await loadFiles() }
     }

@@ -15,6 +15,7 @@ struct RemoteServerCard: View {
     let onConnect: () -> Void
     let onEdit: () -> Void
     let onDelete: () -> Void
+    var onLaunch: (() -> Void)? = nil
 
     @EnvironmentObject var settings: AppSettingsManager
     @State private var isHovered = false
@@ -203,6 +204,11 @@ struct RemoteServerCard: View {
             }
             Button(action: { NSPasteboard.general.clearContents(); NSPasteboard.general.setString(server.host, forType: .string) }) {
                 Label(L10n.Fleet.copyIP, systemImage: "doc.on.clipboard")
+            }
+            if let onLaunch {
+                Button(action: onLaunch) {
+                    Label(L10n.AXLaunch.contextMenuLaunch, systemImage: "paperplane")
+                }
             }
             Divider()
             Button(role: .destructive, action: {

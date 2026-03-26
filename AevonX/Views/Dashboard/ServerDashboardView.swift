@@ -84,6 +84,8 @@ struct ServerDashboardView: View {
                             SecurityTab(server: server, serverId: serverId, connectionViewModel: viewModel)
                         case .waf:
                             CerberusRootView(serverId: serverId)
+                        case .chrono:
+                            ChronoRootView(serverId: serverId)
                         case .cron:
                             CronTab(serverId: serverId, connectionViewModel: viewModel)
                         case .ftp:

@@ -42,7 +42,13 @@ struct FilesView: View {
             if !viewModel.isEditorOpen {
                 FileToolbar(viewModel: viewModel)
                 Divider().background(Color.axBorder)
-                
+
+                // Git toolbar (shown when .git detected)
+                if viewModel.isGitRepo {
+                    FileGitToolbar(viewModel: viewModel)
+                    Divider().background(Color.axBorder)
+                }
+
                 // Missing tool banner
                 if viewModel.showMissingToolBanner, let tool = viewModel.missingTool {
                     MissingToolBanner(tool: tool, viewModel: viewModel)
@@ -97,6 +103,25 @@ struct FilesView: View {
         .sheet(isPresented: $viewModel.showBatchPermissions) {
             BatchPermissionsSheet(viewModel: viewModel)
         }
+        // Git sheets
+        .sheet(isPresented: $viewModel.showGitCommitSheet) {
+            FileGitCommitSheet(viewModel: viewModel)
+        }
+        .sheet(isPresented: $viewModel.showGitBranchPopover) {
+            FileGitBranchSheet(viewModel: viewModel)
+        }
+        .sheet(isPresented: $viewModel.showGitLogSheet) {
+            FileGitLogSheet(viewModel: viewModel)
+        }
+        .sheet(isPresented: $viewModel.showGitStashSheet) {
+            FileGitStashSheet(viewModel: viewModel)
+        }
+        .sheet(isPresented: $viewModel.showGitTagsSheet) {
+            FileGitTagsSheet(viewModel: viewModel)
+        }
+        .sheet(isPresented: $viewModel.showGitRemotesSheet) {
+            FileGitRemotesSheet(viewModel: viewModel)
+        }
         .overlay {
             if viewModel.showDeleteConfirmation {
                 AXDeleteConfirmation(
@@ -126,6 +151,14 @@ struct FilesView: View {
             Button(L10n.Button.cancel, role: .cancel) {}
             Button("Go") { viewModel.goToPath(viewModel.goToPathText) }
         }
+        .alert(gitDangerTitle, isPresented: $viewModel.showGitDangerConfirm) {
+            Button(L10n.Button.cancel, role: .cancel) { viewModel.gitDangerAction = nil }
+            Button(L10n.Button.confirm, role: .destructive) {
+                Task { await viewModel.executeGitDangerAction() }
+            }
+        } message: {
+            Text(gitDangerMessage)
+        }
         .onChange(of: viewModel.searchText) { _, newValue in
             viewModel.performSearch(newValue)
         }
@@ -135,8 +168,28 @@ struct FilesView: View {
         }
     }
     
+    // MARK: - Git Danger Helpers
+
+    private var gitDangerTitle: String {
+        switch viewModel.gitDangerAction {
+        case .resetHard: return L10n.FileGit.Danger.resetTitle
+        case .discardAll: return L10n.FileGit.Danger.discardTitle
+        case .disconnect: return L10n.FileGit.Danger.disconnectTitle
+        case nil: return ""
+        }
+    }
+
+    private var gitDangerMessage: String {
+        switch viewModel.gitDangerAction {
+        case .resetHard: return L10n.FileGit.Danger.resetMessage
+        case .discardAll: return L10n.FileGit.Danger.discardMessage
+        case .disconnect: return L10n.FileGit.Danger.disconnectMessage
+        case nil: return ""
+        }
+    }
+
     // MARK: - Browser View
-    
+
     private var browserView: some View {
         HStack(spacing: 0) {
             // Sidebar

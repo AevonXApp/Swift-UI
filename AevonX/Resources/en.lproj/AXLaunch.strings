@@ -1,0 +1,113 @@
+/* AXLaunch — Smart Deploy */
+
+// General
+"axlaunch.title" = "Launch Project";
+"axlaunch.update" = "Update";
+"axlaunch.launchNow" = "Launch Now";
+"axlaunch.updateNow" = "Update Now";
+"axlaunch.cancelLaunch" = "Cancel Launch";
+"axlaunch.complete" = "Launched!";
+"axlaunch.failed" = "Launch failed";
+"axlaunch.launching" = "Launching";
+"axlaunch.saveConfig" = "Save config for this project";
+
+// Steps
+"axlaunch.step.selectSource" = "Select Project";
+"axlaunch.step.detect" = "Project Detected";
+"axlaunch.step.configure" = "Configuration";
+"axlaunch.step.domain" = "Domain";
+"axlaunch.step.database" = "Database";
+"axlaunch.step.review" = "Review";
+"axlaunch.step.progress" = "Launching";
+
+// Step 1 — Source
+"axlaunch.dragDrop" = "Drag & drop your project folder here";
+"axlaunch.chooseFolder" = "Choose Folder";
+"axlaunch.or" = "or";
+"axlaunch.recentProjects" = "Recent:";
+
+// Step 2 — Detection
+"axlaunch.match" = "match";
+"axlaunch.notCorrect" = "Not correct?";
+"axlaunch.selectManually" = "Select manually";
+"axlaunch.ignoreList" = "Ignore list:";
+"axlaunch.filesToTransfer" = "files";
+"axlaunch.toTransfer" = "to transfer";
+
+// Step 3 — Configure
+"axlaunch.remotePath" = "Remote Path";
+"axlaunch.envVars" = "Environment Variables";
+"axlaunch.loadEnvExample" = "Load .env.example";
+"axlaunch.addVariable" = "Add Variable";
+"axlaunch.postSteps" = "Post-Launch Steps";
+"axlaunch.loadDefaults" = "Load defaults";
+"axlaunch.step.installDeps" = "Install dependencies";
+"axlaunch.step.runMigrations" = "Run database migrations";
+"axlaunch.step.runSeeders" = "Run seeders";
+"axlaunch.step.runBuild" = "Build assets";
+"axlaunch.step.clearCaches" = "Clear & rebuild caches";
+"axlaunch.step.restartService" = "Restart service";
+
+// Step 4 — Domain
+"axlaunch.addNewDomain" = "Add new domain";
+"axlaunch.useExistingDomain" = "Use existing domain";
+"axlaunch.skipDomain" = "Skip domain setup";
+"axlaunch.webServer" = "Web Server";
+"axlaunch.enableSSL" = "Enable SSL (Let's Encrypt)";
+"axlaunch.forceHTTPS" = "Force HTTPS redirect";
+
+// Step 5 — Database
+"axlaunch.db.autoCreate" = "Auto Create";
+"axlaunch.db.autoCreateDesc" = "AXLaunch handles everything";
+"axlaunch.db.manual" = "Manual Setup";
+"axlaunch.db.manualDesc" = "I'll specify the credentials";
+"axlaunch.db.existing" = "Use Existing";
+"axlaunch.db.existingDesc" = "Connect to an existing database";
+"axlaunch.db.none" = "No Database";
+"axlaunch.db.noneDesc" = "This project doesn't need one";
+"axlaunch.db.engine" = "Engine";
+"axlaunch.db.name" = "Database Name";
+"axlaunch.db.username" = "Username";
+"axlaunch.db.password" = "Password";
+"axlaunch.db.host" = "Host";
+"axlaunch.db.port" = "Port";
+"axlaunch.db.testConnection" = "Test Connection";
+"axlaunch.db.regenerate" = "Regenerate";
+"axlaunch.db.selectDatabase" = "Select Database";
+
+// Step 6 — Review
+"axlaunch.review.server" = "Server";
+"axlaunch.review.framework" = "Framework";
+"axlaunch.review.path" = "Path";
+"axlaunch.review.domain" = "Domain";
+"axlaunch.review.database" = "Database";
+"axlaunch.review.transfer" = "Transfer";
+"axlaunch.review.steps" = "Steps";
+
+// Diff / Update
+"axlaunch.diff.modified" = "Modified";
+"axlaunch.diff.added" = "Added";
+"axlaunch.diff.deleted" = "Deleted";
+"axlaunch.diff.transferSize" = "Transfer size";
+"axlaunch.diff.newMigrations" = "new migration files detected";
+"axlaunch.diff.changesSince" = "Changes since last launch:";
+"axlaunch.diff.viewFileList" = "View file list";
+
+// Progress
+"axlaunch.progress.connecting" = "Connecting to server";
+"axlaunch.progress.transferring" = "Transferring";
+"axlaunch.progress.configuring" = "Configuring";
+
+// Fleet integration
+"axlaunch.fleetButton" = "Launch";
+"axlaunch.contextMenu.launch" = "Launch Project";
+"axlaunch.dropHere" = "Drop here to launch";
+
+// History
+"axlaunch.history.title" = "Deploy History";
+"axlaunch.history.noHistory" = "No deploy history";
+
+// Errors
+"axlaunch.error.noFolder" = "Please select a project folder";
+"axlaunch.error.detectionFailed" = "Could not detect project type";
+"axlaunch.error.alreadyActive" = "A launch is already active on this server";
