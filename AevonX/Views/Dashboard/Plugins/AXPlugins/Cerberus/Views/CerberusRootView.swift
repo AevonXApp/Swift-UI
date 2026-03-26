@@ -87,11 +87,11 @@ private extension CerberusContentView {
             }
             VStack(alignment: .leading, spacing: AXSpacing.xxxs) {
                 HStack(spacing: AXSpacing.xs) {
-                    Text("AXCerberus")
+                    Text(L10n.Cerberus.Root.brand)
                         .font(AXTypography.headline)
                         .fontWeight(.bold)
                         .foregroundStyle(Color.axTextPrimary)
-                    Text("WAF")
+                    Text(L10n.Cerberus.Root.waf)
                         .font(AXTypography.caption)
                         .fontWeight(.semibold)
                         .foregroundStyle(Color.axAccentBlue)
@@ -100,7 +100,7 @@ private extension CerberusContentView {
                         .background(Color.axAccentBlue.opacity(0.12))
                         .clipShape(RoundedRectangle(cornerRadius: AXCornerRadius.xs))
                 }
-                Text("Layer 7 Web Application Firewall")
+                Text(L10n.Cerberus.Root.subtitle)
                     .font(AXTypography.caption)
                     .foregroundStyle(Color.axTextTertiary)
             }
@@ -110,11 +110,11 @@ private extension CerberusContentView {
     var headerLiveMetrics: some View {
         HStack(spacing: AXSpacing.xl) {
             if let ov = viewModel.overview {
-                headerMetric(value: viewModel.formatNumber(ov.totalRequests), label: "Requests", color: .axAccentBlue)
+                headerMetric(value: viewModel.formatNumber(ov.totalRequests), label: L10n.Cerberus.Root.requests, color: .axAccentBlue)
                 Divider().frame(height: 24)
-                headerMetric(value: String(format: "%.1f%%", Double(ov.protectionRate)), label: "Block Rate", color: .axError)
+                headerMetric(value: String(format: "%.1f%%", Double(ov.protectionRate)), label: L10n.Cerberus.Root.blockRate, color: .axError)
                 Divider().frame(height: 24)
-                headerMetric(value: String(format: "%.1f", Double(ov.qps)), label: "QPS", color: .axAccentGreen)
+                headerMetric(value: String(format: "%.1f", Double(ov.qps)), label: L10n.Cerberus.Root.qps, color: .axAccentGreen)
             }
         }
     }
@@ -154,14 +154,14 @@ private extension CerberusContentView {
             } else {
                 let isActive = viewModel.serviceStatus?.isActive ?? false
                 if isActive {
-                    svcBtn(icon: "stop.fill", color: .axError, tip: "Stop WAF") {
+                    svcBtn(icon: "stop.fill", color: .axError, tip: L10n.Cerberus.Root.stopWAF) {
                         Task { await viewModel.stopService() }
                     }
-                    svcBtn(icon: "arrow.clockwise", color: .axWarning, tip: "Restart WAF") {
+                    svcBtn(icon: "arrow.clockwise", color: .axWarning, tip: L10n.Cerberus.Root.restartWAF) {
                         Task { await viewModel.restartService() }
                     }
                 } else {
-                    svcBtn(icon: "play.fill", color: .axSuccess, tip: "Start WAF") {
+                    svcBtn(icon: "play.fill", color: .axSuccess, tip: L10n.Cerberus.Root.startWAF) {
                         Task { await viewModel.startService() }
                     }
                 }
@@ -216,7 +216,7 @@ private extension CerberusContentView {
                         )
                     )
             }
-            Text("CERBERUS")
+            Text(L10n.Cerberus.Root.sidebarTitle)
                 .font(.system(size: 10, weight: .heavy))
                 .foregroundColor(Color.axTextMuted)
                 .tracking(1.5)
@@ -238,34 +238,34 @@ private extension CerberusContentView {
     @ViewBuilder
     var sidebarItems: some View {
         // OVERVIEW
-        AXSidebarCategoryHeader(title: "Overview", icon: "chart.xyaxis.line")
+        AXSidebarCategoryHeader(title: L10n.Cerberus.Root.catOverview, icon: "chart.xyaxis.line")
         sidebarRow(.dashboard)
         sidebarRow(.traffic)
         sidebarRow(.attacks)
 
         // SECURITY
-        AXSidebarCategoryHeader(title: "Security", icon: "lock.shield.fill")
+        AXSidebarCategoryHeader(title: L10n.Cerberus.Root.catSecurity, icon: "lock.shield.fill")
         sidebarRow(.ipManagement)
         sidebarRow(.modules)
         sidebarRow(.honeypot)
         sidebarRowWithBadge(.alerts)
 
         // INTELLIGENCE
-        AXSidebarCategoryHeader(title: "Intelligence", icon: "brain.head.profile.fill")
+        AXSidebarCategoryHeader(title: L10n.Cerberus.Root.catIntelligence, icon: "brain.head.profile.fill")
         sidebarRow(.threatFeed)
         sidebarRow(.compliance)
         sidebarRow(.sessions)
         sidebarRow(.customRules)
 
         // MANAGEMENT
-        AXSidebarCategoryHeader(title: "Management", icon: "gearshape.2.fill")
+        AXSidebarCategoryHeader(title: L10n.Cerberus.Root.catManagement, icon: "gearshape.2.fill")
         sidebarRow(.domains)
     }
 
     func sidebarRow(_ tab: CerberusTab) -> some View {
         AXSidebarRow(
             icon: tab.icon,
-            title: tab.rawValue,
+            title: tab.label,
             color: tab.color,
             isSelected: viewModel.selectedTab == tab,
             action: { viewModel.selectedTab = tab }
@@ -275,7 +275,7 @@ private extension CerberusContentView {
     func sidebarRowWithBadge(_ tab: CerberusTab) -> some View {
         AXSidebarRow(
             icon: tab.icon,
-            title: tab.rawValue,
+            title: tab.label,
             color: tab.color,
             isSelected: viewModel.selectedTab == tab,
             action: { viewModel.selectedTab = tab }
@@ -303,7 +303,7 @@ private extension CerberusContentView {
                 Circle()
                     .fill(Color.axAccentGreen)
                     .frame(width: 6, height: 6)
-                Text("12 modules")
+                Text(L10n.Cerberus.Root.modulesCount(12))
                     .font(.system(size: 9, weight: .medium))
                     .foregroundColor(Color.axTextMuted.opacity(0.5))
                 Spacer()

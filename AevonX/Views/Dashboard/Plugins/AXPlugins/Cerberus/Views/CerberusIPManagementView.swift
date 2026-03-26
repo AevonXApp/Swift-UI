@@ -97,11 +97,11 @@ private extension CerberusIPManagementView {
 
     var ipHeroTitle: some View {
         VStack(alignment: .leading, spacing: AXSpacing.xxxs) {
-            Text("IP Guard")
+            Text(L10n.Cerberus.IP.title)
                 .font(AXTypography.title2)
                 .fontWeight(.bold)
                 .foregroundStyle(Color.axTextPrimary)
-            Text("Manage blocklists, allowlists, and geo-restrictions")
+            Text(L10n.Cerberus.IP.subtitle)
                 .font(AXTypography.caption)
                 .foregroundStyle(Color.axTextTertiary)
         }
@@ -109,13 +109,13 @@ private extension CerberusIPManagementView {
 
     var ipHeroStats: some View {
         HStack(spacing: AXSpacing.xxl) {
-            heroStat(icon: "hand.raised.fill", value: "\(viewModel.blockedIPs.count)", label: "Blocked", color: .axError)
+            heroStat(icon: "hand.raised.fill", value: "\(viewModel.blockedIPs.count)", label: L10n.Cerberus.IP.statBlocked, color: .axError)
             Divider().frame(height: 36)
-            heroStat(icon: "checkmark.shield.fill", value: "\(viewModel.allowedIPs.count)", label: "Allowed", color: .axAccentGreen)
+            heroStat(icon: "checkmark.shield.fill", value: "\(viewModel.allowedIPs.count)", label: L10n.Cerberus.IP.statAllowed, color: .axAccentGreen)
             Divider().frame(height: 36)
-            heroStat(icon: "globe.badge.chevron.backward", value: "\(viewModel.blockedCountries.count)", label: "Countries", color: .axAccentPurple)
+            heroStat(icon: "globe.badge.chevron.backward", value: "\(viewModel.blockedCountries.count)", label: L10n.Cerberus.IP.statCountries, color: .axAccentPurple)
             Divider().frame(height: 36)
-            heroStat(icon: "shield.checkered", value: "\(totalRules)", label: "Total Rules", color: .axAccentBlue)
+            heroStat(icon: "shield.checkered", value: "\(totalRules)", label: L10n.Cerberus.IP.totalRules, color: .axAccentBlue)
         }
     }
 
@@ -140,7 +140,7 @@ private extension CerberusIPManagementView {
 private extension CerberusIPManagementView {
 
     var searchBar: some View {
-        AXTextField(placeholder: "Search IPs...", text: $searchQuery, icon: "magnifyingglass")
+        AXTextField(placeholder: L10n.Cerberus.IP.searchPlaceholder, text: $searchQuery, icon: "magnifyingglass")
     }
 }
 
@@ -153,7 +153,7 @@ private extension CerberusIPManagementView {
             VStack(alignment: .leading, spacing: AXSpacing.md) {
                 blocklistHeader
                 if filteredBlockedIPs.isEmpty {
-                    ipEmptyState(text: "No blocked IPs", icon: "hand.raised.slash")
+                    ipEmptyState(text: L10n.Cerberus.IP.noBlockedIPs, icon: "hand.raised.slash")
                 } else {
                     blocklistContent
                 }
@@ -164,7 +164,7 @@ private extension CerberusIPManagementView {
     var blocklistHeader: some View {
         HStack {
             Image(systemName: "hand.raised.fill").foregroundStyle(Color.axError)
-            Text("Blocked IPs").font(AXTypography.headline).foregroundStyle(Color.axTextPrimary)
+            Text(L10n.Cerberus.IP.blockedIPs).font(AXTypography.headline).foregroundStyle(Color.axTextPrimary)
             Spacer()
             AXBadge(text: "\(filteredBlockedIPs.count)", color: .axError, style: .soft)
             addBtn(color: .axError) { showAddBlockSheet = true }
@@ -189,7 +189,7 @@ private extension CerberusIPManagementView {
             VStack(alignment: .leading, spacing: AXSpacing.md) {
                 allowlistHeader
                 if filteredAllowedIPs.isEmpty {
-                    ipEmptyState(text: "No allowed IPs", icon: "checkmark.shield")
+                    ipEmptyState(text: L10n.Cerberus.IP.noAllowedIPs, icon: "checkmark.shield")
                 } else {
                     allowlistContent
                 }
@@ -200,7 +200,7 @@ private extension CerberusIPManagementView {
     var allowlistHeader: some View {
         HStack {
             Image(systemName: "checkmark.shield.fill").foregroundStyle(Color.axAccentGreen)
-            Text("Allowed IPs").font(AXTypography.headline).foregroundStyle(Color.axTextPrimary)
+            Text(L10n.Cerberus.IP.allowedIPs).font(AXTypography.headline).foregroundStyle(Color.axTextPrimary)
             Spacer()
             AXBadge(text: "\(filteredAllowedIPs.count)", color: .axAccentGreen, style: .soft)
             addBtn(color: .axAccentGreen) { showAddAllowSheet = true }
@@ -284,11 +284,11 @@ private extension CerberusIPManagementView {
         AXCard(accentColor: .axAccentPurple) {
             VStack(alignment: .leading, spacing: AXSpacing.md) {
                 geoIPHeader
-                Text("Block all traffic from specific countries via MaxMind GeoLite2.")
+                Text(L10n.Cerberus.IP.geoIPDesc)
                     .font(AXTypography.caption)
                     .foregroundStyle(Color.axTextTertiary)
                 if viewModel.blockedCountries.isEmpty {
-                    ipEmptyState(text: "No countries blocked", icon: "globe")
+                    ipEmptyState(text: L10n.Cerberus.IP.noCountriesBlocked, icon: "globe")
                 } else {
                     countryGrid
                 }
@@ -299,7 +299,7 @@ private extension CerberusIPManagementView {
     var geoIPHeader: some View {
         HStack {
             Image(systemName: "globe.badge.chevron.backward").foregroundStyle(Color.axAccentPurple)
-            Text("Country Blocking (GeoIP)").font(AXTypography.headline).foregroundStyle(Color.axTextPrimary)
+            Text(L10n.Cerberus.IP.countryBlocking).font(AXTypography.headline).foregroundStyle(Color.axTextPrimary)
             Spacer()
             AXBadge(text: "\(viewModel.blockedCountries.count)", color: .axAccentPurple, style: .soft)
             addBtn(color: .axAccentPurple) { showAddCountrySheet = true }
@@ -363,11 +363,11 @@ private extension CerberusIPManagementView {
                         .font(.system(size: 20, weight: .semibold))
                         .foregroundStyle(accent)
                 }
-                Text(isBlock ? "Block IP Address" : "Allow IP Address")
+                Text(isBlock ? L10n.Cerberus.IP.blockIPTitle : L10n.Cerberus.IP.allowIPTitle)
                     .font(AXTypography.headline)
                     .fontWeight(.bold)
                     .foregroundStyle(Color.axTextPrimary)
-                Text(isBlock ? "Add an IP or CIDR range to the blocklist" : "Whitelist a trusted IP or CIDR range")
+                Text(isBlock ? L10n.Cerberus.IP.blockIPDesc : L10n.Cerberus.IP.allowIPDesc)
                     .font(AXTypography.caption)
                     .foregroundStyle(Color.axTextTertiary)
             }
@@ -377,12 +377,12 @@ private extension CerberusIPManagementView {
             // Input section
             VStack(spacing: AXSpacing.lg) {
                 VStack(alignment: .leading, spacing: AXSpacing.xs) {
-                    Text("IP Address / CIDR")
+                    Text(L10n.Cerberus.IP.ipLabel)
                         .font(AXTypography.caption)
                         .fontWeight(.semibold)
                         .foregroundStyle(Color.axTextSecondary)
                     AXTextField(
-                        placeholder: "e.g. 203.0.113.42 or 10.0.0.0/24",
+                        placeholder: L10n.Cerberus.IP.ipPlaceholder,
                         text: isBlock ? $newBlockIP : $newAllowIP,
                         icon: "network",
                         accentColor: accent,
@@ -395,7 +395,7 @@ private extension CerberusIPManagementView {
                     Image(systemName: "info.circle.fill")
                         .font(.system(size: 11))
                         .foregroundStyle(accent.opacity(0.6))
-                    Text("Supports IPv4, IPv6 and CIDR notation")
+                    Text(L10n.Cerberus.IP.ipHint)
                         .font(AXTypography.caption2)
                         .foregroundStyle(Color.axTextMuted)
                 }
@@ -426,7 +426,7 @@ private extension CerberusIPManagementView {
                 .buttonStyle(.plain)
 
                 AXPrimaryButton(
-                    title: isBlock ? "Block IP" : "Allow IP",
+                    title: isBlock ? L10n.Cerberus.IP.blockIPBtn : L10n.Cerberus.IP.allowIPBtn,
                     icon: iconName,
                     action: {
                         Task {
@@ -474,11 +474,11 @@ private extension CerberusIPManagementView {
                         .font(.system(size: 20, weight: .semibold))
                         .foregroundStyle(Color.axAccentPurple)
                 }
-                Text("Block Country")
+                Text(L10n.Cerberus.IP.blockCountryTitle)
                     .font(AXTypography.headline)
                     .fontWeight(.bold)
                     .foregroundStyle(Color.axTextPrimary)
-                Text("Block all traffic from a specific country via GeoIP")
+                Text(L10n.Cerberus.IP.blockCountryDesc)
                     .font(AXTypography.caption)
                     .foregroundStyle(Color.axTextTertiary)
             }
@@ -488,12 +488,12 @@ private extension CerberusIPManagementView {
             // Input
             VStack(spacing: AXSpacing.lg) {
                 VStack(alignment: .leading, spacing: AXSpacing.xs) {
-                    Text("Country Code")
+                    Text(L10n.Cerberus.IP.countryCodeLabel)
                         .font(AXTypography.caption)
                         .fontWeight(.semibold)
                         .foregroundStyle(Color.axTextSecondary)
                     AXTextField(
-                        placeholder: "e.g. CN, RU, KP",
+                        placeholder: L10n.Cerberus.IP.countryCodePlaceholder,
                         text: $newBlockCountry,
                         icon: "globe",
                         accentColor: .axAccentPurple,
@@ -505,7 +505,7 @@ private extension CerberusIPManagementView {
                     Image(systemName: "info.circle.fill")
                         .font(.system(size: 11))
                         .foregroundStyle(Color.axAccentPurple.opacity(0.6))
-                    Text("ISO 3166-1 alpha-2 code (2 letters)")
+                    Text(L10n.Cerberus.IP.countryCodeHint)
                         .font(AXTypography.caption2)
                         .foregroundStyle(Color.axTextMuted)
                 }
@@ -536,7 +536,7 @@ private extension CerberusIPManagementView {
                 .buttonStyle(.plain)
 
                 AXPrimaryButton(
-                    title: "Block Country",
+                    title: L10n.Cerberus.IP.blockCountryBtn,
                     icon: "globe.badge.chevron.backward",
                     action: {
                         Task {

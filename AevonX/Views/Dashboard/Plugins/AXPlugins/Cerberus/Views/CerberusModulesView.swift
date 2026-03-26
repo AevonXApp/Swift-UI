@@ -66,11 +66,11 @@ private extension CerberusModulesView {
 
     var modulesHeroText: some View {
         VStack(alignment: .leading, spacing: AXSpacing.xxxs) {
-            Text("Security Control Center")
+            Text(L10n.Cerberus.Modules.title)
                 .font(AXTypography.title2)
                 .fontWeight(.bold)
                 .foregroundStyle(Color.axTextPrimary)
-            Text("Toggle modules live · edit config in real time · changes reload instantly")
+            Text(L10n.Cerberus.Modules.subtitle)
                 .font(AXTypography.caption)
                 .foregroundStyle(Color.axTextTertiary)
         }
@@ -194,84 +194,84 @@ private extension CerberusModulesView {
 private extension CerberusModulesView {
 
     var rateLimitPanel: some View {
-        configSection(icon: "gauge.with.dots.needle.33percent", title: "Rate Limiter",
+        configSection(icon: "gauge.with.dots.needle.33percent", title: L10n.Cerberus.Modules.rateLimiter,
                       color: .axWarning, enabled: viewModel.rateLimitEnabled) {
-            configSlider(label: "Global Limit", value: $viewModel.globalRateLimit,
+            configSlider(label: L10n.Cerberus.Modules.globalLimit, value: $viewModel.globalRateLimit,
                          range: 10...2000, unit: "req/min", color: .axWarning)
-            configSlider(label: "Login Limit", value: $viewModel.loginRateLimit,
+            configSlider(label: L10n.Cerberus.Modules.loginLimit, value: $viewModel.loginRateLimit,
                          range: 1...100, unit: "req/min", color: .axError)
-            configSlider(label: "API Limit", value: $viewModel.apiRateLimit,
+            configSlider(label: L10n.Cerberus.Modules.apiLimit, value: $viewModel.apiRateLimit,
                          range: 10...1000, unit: "req/min", color: .axAccentBlue)
-            configToggle(label: "Throttle Mode", sub: "Delay instead of hard block",
+            configToggle(label: L10n.Cerberus.Modules.throttleMode, sub: L10n.Cerberus.Modules.throttleDesc,
                          value: $viewModel.throttleMode, color: .axWarning)
-            saveBtn(label: "Save Rate Limits") { await viewModel.saveRateLimitConfig() }
+            saveBtn(label: L10n.Cerberus.Modules.saveRateLimits) { await viewModel.saveRateLimitConfig() }
         }
     }
 
     var ddosPanel: some View {
-        configSection(icon: "bolt.shield", title: "DDoS Shield",
+        configSection(icon: "bolt.shield", title: L10n.Cerberus.Modules.ddosShield,
                       color: .axError, enabled: viewModel.ddosEnabled) {
-            configSlider(label: "Spike Multiplier", value: $viewModel.ddosSpikeMultiplier,
+            configSlider(label: L10n.Cerberus.Modules.spikeMultiplier, value: $viewModel.ddosSpikeMultiplier,
                          range: 1.5...20, unit: "×", color: .axError)
-            configSlider(label: "Max Conns / IP", value: $viewModel.ddosMaxConnsPerIP,
+            configSlider(label: L10n.Cerberus.Modules.maxConnsPerIP, value: $viewModel.ddosMaxConnsPerIP,
                          range: 5...500, unit: "conns", color: .axWarning)
-            configToggle(label: "Auto Mitigate", sub: "Escalate level automatically",
+            configToggle(label: L10n.Cerberus.Modules.autoMitigate, sub: L10n.Cerberus.Modules.autoMitigateDesc,
                          value: $viewModel.ddosAutoMitigate, color: .axError)
-            saveBtn(label: "Save DDoS Config") { await viewModel.saveDDoSConfig() }
+            saveBtn(label: L10n.Cerberus.Modules.saveDDoSConfig) { await viewModel.saveDDoSConfig() }
         }
     }
 
     var credentialPanel: some View {
-        configSection(icon: "key.fill", title: "Credential Guard",
+        configSection(icon: "key.fill", title: L10n.Cerberus.Modules.credentialGuard,
                       color: .axError, enabled: viewModel.credentialEnabled) {
-            configSlider(label: "Max Attempts / IP", value: $viewModel.credMaxPerIP,
+            configSlider(label: L10n.Cerberus.Modules.maxAttemptsIP, value: $viewModel.credMaxPerIP,
                          range: 3...200, unit: "per hour", color: .axError)
-            configSlider(label: "Max Attempts / User", value: $viewModel.credMaxPerUser,
+            configSlider(label: L10n.Cerberus.Modules.maxAttemptsUser, value: $viewModel.credMaxPerUser,
                          range: 3...100, unit: "per hour", color: .axWarning)
-            saveBtn(label: "Save Credential Config") { await viewModel.saveCredentialConfig() }
+            saveBtn(label: L10n.Cerberus.Modules.saveCredConfig) { await viewModel.saveCredentialConfig() }
         }
     }
 
     var dlpPanel: some View {
-        configSection(icon: "doc.text.magnifyingglass", title: "DLP Scanner",
+        configSection(icon: "doc.text.magnifyingglass", title: L10n.Cerberus.Modules.dlpScanner,
                       color: .axAccentPurple, enabled: viewModel.dlpEnabled) {
             dlpModePicker
-            configToggle(label: "Credit Cards", sub: "Luhn-validated detection",
+            configToggle(label: L10n.Cerberus.Modules.creditCards, sub: L10n.Cerberus.Modules.creditCardsDesc,
                          value: $viewModel.dlpCreditCards, color: .axAccentPurple)
-            configToggle(label: "API Keys & Tokens", sub: "Bearer tokens, secret keys",
+            configToggle(label: L10n.Cerberus.Modules.apiKeys, sub: L10n.Cerberus.Modules.apiKeysDesc,
                          value: $viewModel.dlpAPIKeys, color: .axAccentPurple)
-            configToggle(label: "Stack Traces", sub: "Exception and DB error leaks",
+            configToggle(label: L10n.Cerberus.Modules.stackTraces, sub: L10n.Cerberus.Modules.stackTracesDesc,
                          value: $viewModel.dlpStackTraces, color: .axAccentPurple)
-            saveBtn(label: "Save DLP Config") { await viewModel.saveDLPConfig() }
+            saveBtn(label: L10n.Cerberus.Modules.saveDLPConfig) { await viewModel.saveDLPConfig() }
         }
     }
 
     var honeypotPanel: some View {
-        configSection(icon: "ant", title: "Honeypot",
+        configSection(icon: "ant", title: L10n.Cerberus.Modules.honeypot,
                       color: .axWarning, enabled: viewModel.honeypotEnabled) {
             VStack(alignment: .leading, spacing: AXSpacing.xs) {
-                Text("Trap Paths").font(AXTypography.caption).foregroundStyle(Color.axTextTertiary)
+                Text(L10n.Cerberus.Modules.trapPaths).font(AXTypography.caption).foregroundStyle(Color.axTextTertiary)
                 AXTextField(placeholder: "/wp-admin,/.env,/phpmyadmin", text: $viewModel.honeypotPaths,
                             icon: "ant", accentColor: .axWarning)
             }
-            configToggle(label: "Auto-Block Visitors", sub: "Block IPs that hit trap paths",
+            configToggle(label: L10n.Cerberus.Modules.autoBlockVisitors, sub: L10n.Cerberus.Modules.autoBlockDesc,
                          value: $viewModel.honeypotAutoBlock, color: .axWarning)
-            saveBtn(label: "Save Honeypot Config") { await viewModel.saveHoneypotConfig() }
+            saveBtn(label: L10n.Cerberus.Modules.saveHoneypotConfig) { await viewModel.saveHoneypotConfig() }
         }
     }
 
     var alertsPanel: some View {
-        configSection(icon: "bell.badge", title: "Alert Dispatcher",
+        configSection(icon: "bell.badge", title: L10n.Cerberus.Modules.alertDispatcher,
                       color: .axAccentGreen, enabled: viewModel.alertsEnabled) {
             VStack(alignment: .leading, spacing: AXSpacing.xs) {
-                Text("Webhook URL").font(AXTypography.caption).foregroundStyle(Color.axTextTertiary)
+                Text(L10n.Cerberus.Modules.webhookURL).font(AXTypography.caption).foregroundStyle(Color.axTextTertiary)
                 AXTextField(placeholder: "https://hooks.example.com/...", text: $viewModel.alertWebhookURL,
                             icon: "link", accentColor: .axAccentGreen)
             }
-            configSlider(label: "Max Alerts / Hour", value: $viewModel.alertMaxPerHour,
+            configSlider(label: L10n.Cerberus.Modules.maxAlertsPerHour, value: $viewModel.alertMaxPerHour,
                          range: 1...100, unit: "alerts", color: .axAccentGreen)
             alertSeverityPicker
-            saveBtn(label: "Save Alert Config") { await viewModel.saveAlertsConfig() }
+            saveBtn(label: L10n.Cerberus.Modules.saveAlertConfig) { await viewModel.saveAlertsConfig() }
         }
     }
 }
@@ -282,7 +282,7 @@ private extension CerberusModulesView {
 
     var dlpModePicker: some View {
         VStack(alignment: .leading, spacing: AXSpacing.xs) {
-            Text("Action Mode").font(AXTypography.caption).foregroundStyle(Color.axTextTertiary)
+            Text(L10n.Cerberus.Modules.actionMode).font(AXTypography.caption).foregroundStyle(Color.axTextTertiary)
             HStack(spacing: AXSpacing.sm) {
                 ForEach(["log", "mask", "block"], id: \.self) { mode in
                     Button { viewModel.dlpMode = mode } label: {
@@ -307,9 +307,9 @@ private extension CerberusModulesView {
     var dlpModeInfo: some View {
         let (text, color): (String, Color) = {
             switch viewModel.dlpMode {
-            case "block": return ("Blocks response", .axError)
-            case "mask":  return ("Redacts data", .axWarning)
-            default:      return ("Logs only", .axAccentGreen)
+            case "block": return (L10n.Cerberus.Modules.dlpBlocksResponse, .axError)
+            case "mask":  return (L10n.Cerberus.Modules.dlpRedactsData, .axWarning)
+            default:      return (L10n.Cerberus.Modules.dlpLogsOnly, .axAccentGreen)
             }
         }()
         return AXBadge(text: text, color: color, style: .soft)
@@ -322,7 +322,7 @@ private extension CerberusModulesView {
 
     var alertSeverityPicker: some View {
         VStack(alignment: .leading, spacing: AXSpacing.xs) {
-            Text("Minimum Severity").font(AXTypography.caption).foregroundStyle(Color.axTextTertiary)
+            Text(L10n.Cerberus.Modules.minimumSeverity).font(AXTypography.caption).foregroundStyle(Color.axTextTertiary)
             HStack(spacing: AXSpacing.sm) {
                 ForEach(["low", "medium", "high", "critical"], id: \.self) { sev in
                     Button { viewModel.alertSeverity = sev } label: {
@@ -358,7 +358,7 @@ private extension CerberusModulesView {
                 if enabled {
                     content()
                 } else {
-                    Text("Enable this module to configure it.")
+                    Text(L10n.Cerberus.Modules.enableToConfig)
                         .font(AXTypography.caption)
                         .foregroundStyle(Color.axTextMuted)
                         .padding(.vertical, AXSpacing.sm)
@@ -434,41 +434,41 @@ private extension CerberusModulesView {
 private extension CerberusModulesView {
 
     var moduleCards: [ModuleCardData] {[
-        ModuleCardData(key: "waf_enabled", name: "WAF Engine", icon: "shield.checkered",
+        ModuleCardData(key: "waf_enabled", name: L10n.Cerberus.Modules.wafEngine, icon: "shield.checkered",
                        color: .axAccentBlue, category: "Core", layer: "L7",
-                       description: "Coraza ModSecurity — SQLi, XSS, path traversal",
+                       description: L10n.Cerberus.Modules.wafDesc,
                        enabled: viewModel.wafEnabled),
-        ModuleCardData(key: "rate_limit_enabled", name: "Rate Limiter", icon: "gauge.with.dots.needle.33percent",
+        ModuleCardData(key: "rate_limit_enabled", name: L10n.Cerberus.Modules.rateLimiter, icon: "gauge.with.dots.needle.33percent",
                        color: .axWarning, category: "Traffic", layer: "L7",
-                       description: "Per-IP sliding-window rate limiting (3 tiers)",
+                       description: L10n.Cerberus.Modules.rateLimiterDesc,
                        enabled: viewModel.rateLimitEnabled),
-        ModuleCardData(key: "ddos_enabled", name: "DDoS Shield", icon: "bolt.shield",
+        ModuleCardData(key: "ddos_enabled", name: L10n.Cerberus.Modules.ddosShield, icon: "bolt.shield",
                        color: .axError, category: "Defense", layer: "L7",
-                       description: "EWMA baseline spike detection + auto-mitigation",
+                       description: L10n.Cerberus.Modules.ddosDesc,
                        enabled: viewModel.ddosEnabled),
-        ModuleCardData(key: "bot_detection_enabled", name: "Bot Detector", icon: "cpu",
+        ModuleCardData(key: "bot_detection_enabled", name: L10n.Cerberus.Modules.botDetector, icon: "cpu",
                        color: .axInfo, category: "Detection", layer: "L7",
-                       description: "User-Agent classification (human/bot/malicious)",
+                       description: L10n.Cerberus.Modules.botDesc,
                        enabled: viewModel.botDetectionEnabled),
-        ModuleCardData(key: "honeypot_enabled", name: "Honeypot", icon: "ant",
+        ModuleCardData(key: "honeypot_enabled", name: L10n.Cerberus.Modules.honeypot, icon: "ant",
                        color: .axWarning, category: "Detection", layer: "L7",
-                       description: "Trap endpoints to detect and log attackers",
+                       description: L10n.Cerberus.Modules.honeypotDesc,
                        enabled: viewModel.honeypotEnabled),
-        ModuleCardData(key: "credential_protection_enabled", name: "Credential Guard", icon: "key.fill",
+        ModuleCardData(key: "credential_protection_enabled", name: L10n.Cerberus.Modules.credentialGuard, icon: "key.fill",
                        color: .axError, category: "Auth", layer: "L7",
-                       description: "Brute force and credential stuffing detection",
+                       description: L10n.Cerberus.Modules.credDesc,
                        enabled: viewModel.credentialEnabled),
-        ModuleCardData(key: "dlp_enabled", name: "DLP Scanner", icon: "doc.text.magnifyingglass",
+        ModuleCardData(key: "dlp_enabled", name: L10n.Cerberus.Modules.dlpScanner, icon: "doc.text.magnifyingglass",
                        color: .axAccentPurple, category: "Data", layer: "L7",
-                       description: "Scans responses for credit cards, API keys, traces",
+                       description: L10n.Cerberus.Modules.dlpDesc,
                        enabled: viewModel.dlpEnabled),
-        ModuleCardData(key: "ssrf_enabled", name: "SSRF Detector", icon: "arrow.triangle.branch",
+        ModuleCardData(key: "ssrf_enabled", name: L10n.Cerberus.Modules.ssrfDetector, icon: "arrow.triangle.branch",
                        color: .axWarning, category: "Detection", layer: "L7",
-                       description: "Prevents Server-Side Request Forgery attacks",
+                       description: L10n.Cerberus.Modules.ssrfDesc,
                        enabled: viewModel.ssrfEnabled),
-        ModuleCardData(key: "alerts_enabled", name: "Alert Dispatcher", icon: "bell.badge",
+        ModuleCardData(key: "alerts_enabled", name: L10n.Cerberus.Modules.alertDispatcher, icon: "bell.badge",
                        color: .axAccentGreen, category: "Alerting", layer: "SVC",
-                       description: "Routes security events to webhooks",
+                       description: L10n.Cerberus.Modules.alertDesc,
                        enabled: viewModel.alertsEnabled),
     ]}
 }

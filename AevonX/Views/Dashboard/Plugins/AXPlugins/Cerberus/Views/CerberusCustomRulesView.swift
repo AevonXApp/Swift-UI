@@ -67,11 +67,11 @@ struct CerberusCustomRulesView: View {
 
     private var heroTitleGroup: some View {
         VStack(alignment: .leading, spacing: AXSpacing.xxxs) {
-            Text("Custom Rules Engine")
+            Text(L10n.Cerberus.Rules.title)
                 .font(AXTypography.title3)
                 .fontWeight(.bold)
                 .foregroundStyle(Color.axTextPrimary)
-            Text("DSL-based request matching & filtering")
+            Text(L10n.Cerberus.Rules.subtitle)
                 .font(AXTypography.caption)
                 .foregroundStyle(Color.axTextMuted)
         }
@@ -87,7 +87,7 @@ struct CerberusCustomRulesView: View {
 
     private var addRuleButton: some View {
         AXPrimaryButton(
-            title: "Add Rule",
+            title: L10n.Cerberus.Rules.addRule,
             icon: "plus",
             action: { showAddSheet = true },
             accentColor: .axAccentGreen
@@ -101,7 +101,7 @@ struct CerberusCustomRulesView: View {
 
     private var statsRow: some View {
         HStack(spacing: AXSpacing.md) {
-            statCard(label: "Total Rules", value: "\(viewModel.customRules.count)", color: .axAccentBlue, icon: "list.bullet.rectangle")
+            statCard(label: L10n.Cerberus.Rules.totalRules, value: "\(viewModel.customRules.count)", color: .axAccentBlue, icon: "list.bullet.rectangle")
             statCard(label: L10n.Status.enabled, value: "\(enabledCount)", color: .axAccentGreen, icon: "checkmark.shield")
             statCard(label: L10n.Status.disabled, value: "\(disabledCount)", color: .axTextMuted, icon: "pause.circle")
         }
@@ -217,7 +217,7 @@ struct CerberusCustomRulesView: View {
                     Image(systemName: "chevron.left.forwardslash.chevron.right")
                         .font(.system(size: 12, weight: .semibold))
                         .foregroundStyle(Color.axAccentPurple)
-                    Text("Syntax Reference")
+                    Text(L10n.Cerberus.Rules.syntaxReference)
                         .font(AXTypography.caption)
                         .fontWeight(.semibold)
                         .foregroundStyle(Color.axTextSecondary)
@@ -229,7 +229,7 @@ struct CerberusCustomRulesView: View {
 
     private var syntaxExampleBlock: some View {
         VStack(alignment: .leading, spacing: AXSpacing.xs) {
-            Text("WHEN <conditions> THEN <action>")
+            Text(L10n.Cerberus.Rules.syntaxFormat)
                 .font(AXTypography.monoSm)
                 .foregroundStyle(Color.axAccentGreen)
             Text("WHEN path.startsWith(\"/api\") AND method == \"POST\" THEN block")
@@ -247,9 +247,9 @@ struct CerberusCustomRulesView: View {
     private var emptyContent: some View {
         AXEmptyState(
             icon: "doc.text.magnifyingglass",
-            title: "No Custom Rules",
-            description: "Define DSL-based rules to match and filter incoming requests with precision.",
-            actionLabel: "Add Rule",
+            title: L10n.Cerberus.Rules.noRules,
+            description: L10n.Cerberus.Rules.noRulesDesc,
+            actionLabel: L10n.Cerberus.Rules.addRule,
             action: { showAddSheet = true },
             accentColor: .axAccentGreen
         )
@@ -311,11 +311,11 @@ struct CerberusCustomRulesView: View {
                     .foregroundStyle(Color.axAccentGreen)
             }
             VStack(alignment: .leading, spacing: AXSpacing.xxxs) {
-                Text("New Custom Rule")
+                Text(L10n.Cerberus.Rules.newRuleTitle)
                     .font(AXTypography.headline)
                     .fontWeight(.bold)
                     .foregroundStyle(Color.axTextPrimary)
-                Text("Define a DSL expression to match and act on requests")
+                Text(L10n.Cerberus.Rules.newRuleDesc)
                     .font(AXTypography.caption)
                     .foregroundStyle(Color.axTextTertiary)
             }
@@ -329,12 +329,12 @@ struct CerberusCustomRulesView: View {
         VStack(alignment: .leading, spacing: AXSpacing.lg) {
             // Rule ID
             VStack(alignment: .leading, spacing: AXSpacing.xs) {
-                Text("Rule ID")
+                Text(L10n.Cerberus.Rules.ruleID)
                     .font(AXTypography.caption)
                     .fontWeight(.semibold)
                     .foregroundStyle(Color.axTextSecondary)
                 AXTextField(
-                    placeholder: "e.g. block-php-admin",
+                    placeholder: L10n.Cerberus.Rules.ruleIDPlaceholder,
                     text: $newRuleID,
                     icon: "tag",
                     accentColor: .axAccentGreen
@@ -343,7 +343,7 @@ struct CerberusCustomRulesView: View {
 
             // Expression
             VStack(alignment: .leading, spacing: AXSpacing.xs) {
-                Text("Rule Expression")
+                Text(L10n.Cerberus.Rules.ruleExpression)
                     .font(AXTypography.caption)
                     .fontWeight(.semibold)
                     .foregroundStyle(Color.axTextSecondary)
@@ -361,7 +361,7 @@ struct CerberusCustomRulesView: View {
                     Image(systemName: "lightbulb.fill")
                         .font(.system(size: 10))
                         .foregroundStyle(Color.axAccentPurple)
-                    Text("Syntax Example")
+                    Text(L10n.Cerberus.Rules.syntaxExample)
                         .font(AXTypography.caption)
                         .fontWeight(.semibold)
                         .foregroundStyle(Color.axAccentPurple)
@@ -397,7 +397,7 @@ struct CerberusCustomRulesView: View {
             .buttonStyle(.plain)
 
             AXPrimaryButton(
-                title: "Add Rule",
+                title: L10n.Cerberus.Rules.addRule,
                 icon: "plus.circle.fill",
                 action: {
                     Task {

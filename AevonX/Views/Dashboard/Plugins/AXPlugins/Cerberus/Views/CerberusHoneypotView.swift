@@ -66,11 +66,11 @@ private extension CerberusHoneypotView {
 
     var honeypotHeroText: some View {
         VStack(alignment: .leading, spacing: AXSpacing.xxxs) {
-            Text("Honeypot Traps")
+            Text(L10n.Cerberus.Honeypot.title)
                 .font(AXTypography.headline)
                 .fontWeight(.bold)
                 .foregroundStyle(Color.axTextPrimary)
-            Text("Decoy endpoints detecting automated scanners")
+            Text(L10n.Cerberus.Honeypot.subtitle)
                 .font(AXTypography.caption)
                 .foregroundStyle(Color.axTextTertiary)
         }
@@ -80,19 +80,19 @@ private extension CerberusHoneypotView {
         HStack(spacing: AXSpacing.xl) {
             honeypotMiniStat(
                 value: "\(viewModel.honeypotHits.count)",
-                label: "Total Hits",
+                label: L10n.Cerberus.Honeypot.totalHits,
                 color: .axWarning
             )
             Divider().frame(height: 28)
             honeypotMiniStat(
                 value: "\(uniqueIPs)",
-                label: "Unique IPs",
+                label: L10n.Cerberus.Honeypot.uniqueIPs,
                 color: .axError
             )
             Divider().frame(height: 28)
             honeypotMiniStat(
                 value: "\(uniquePaths)",
-                label: "Trap Paths",
+                label: L10n.Cerberus.Honeypot.trapPaths,
                 color: .axAccentPurple
             )
         }
@@ -136,7 +136,7 @@ private extension CerberusHoneypotView {
 
     var logTableSection: some View {
         AXLogTable(
-            title: "Honeypot Hits",
+            title: L10n.Cerberus.Honeypot.honeypotHits,
             icon: "ant",
             columns: logColumns,
             rows: buildRows(),
@@ -145,7 +145,7 @@ private extension CerberusHoneypotView {
             rowActions: [
                 AXLogRowAction(
                     id: "block",
-                    label: "Block IP",
+                    label: L10n.Cerberus.Honeypot.blockIP,
                     icon: "hand.raised.fill",
                     color: .axError,
                     handler: { row in
@@ -163,11 +163,11 @@ private extension CerberusHoneypotView {
 
     var logColumns: [AXLogColumn] {
         [
-            AXLogColumn(id: "ip", title: "IP Address", width: 140),
-            AXLogColumn(id: "path", title: "Trap Path", width: 180),
-            AXLogColumn(id: "method", title: "Method", width: 60),
-            AXLogColumn(id: "ua", title: "User Agent", width: nil),
-            AXLogColumn(id: "time", title: "Timestamp", width: 160),
+            AXLogColumn(id: "ip", title: L10n.Cerberus.Honeypot.colIP, width: 140),
+            AXLogColumn(id: "path", title: L10n.Cerberus.Honeypot.colTrapPath, width: 180),
+            AXLogColumn(id: "method", title: L10n.Cerberus.Honeypot.colMethod, width: 60),
+            AXLogColumn(id: "ua", title: L10n.Cerberus.Honeypot.colUserAgent, width: nil),
+            AXLogColumn(id: "time", title: L10n.Cerberus.Honeypot.colTimestamp, width: 160),
         ]
     }
 
@@ -191,17 +191,17 @@ private extension CerberusHoneypotView {
 
     func buildDetails(_ hit: HoneypotHit) -> [AXLogRowDetail] {
         var details: [AXLogRowDetail] = [
-            AXLogRowDetail(label: "IP", value: hit.ip),
-            AXLogRowDetail(label: "Path", value: hit.path),
-            AXLogRowDetail(label: "Method", value: hit.method),
-            AXLogRowDetail(label: "Time", value: hit.time),
-            AXLogRowDetail(label: "User-Agent", value: hit.userAgent),
+            AXLogRowDetail(label: L10n.Cerberus.Honeypot.detailIP, value: hit.ip),
+            AXLogRowDetail(label: L10n.Cerberus.Honeypot.detailPath, value: hit.path),
+            AXLogRowDetail(label: L10n.Cerberus.Honeypot.detailMethod, value: hit.method),
+            AXLogRowDetail(label: L10n.Cerberus.Honeypot.detailTime, value: hit.time),
+            AXLogRowDetail(label: L10n.Cerberus.Honeypot.detailUA, value: hit.userAgent),
         ]
         for (key, value) in hit.headers.sorted(by: { $0.key < $1.key }) {
             details.append(AXLogRowDetail(label: "H: \(key)", value: value))
         }
         if !hit.body.isEmpty {
-            details.append(AXLogRowDetail(label: "Body", value: hit.body))
+            details.append(AXLogRowDetail(label: L10n.Cerberus.Honeypot.detailBody, value: hit.body))
         }
         return details
     }

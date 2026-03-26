@@ -57,11 +57,11 @@ private extension CerberusDomainsView {
                             endPoint: .bottomTrailing
                         )
                     )
-                Text("Domain Management")
+                Text(L10n.Cerberus.Domains.title)
                     .font(AXTypography.headline)
                     .foregroundStyle(Color.axTextPrimary)
             }
-            Text("Configure and monitor websites protected by AXCerberus WAF")
+            Text(L10n.Cerberus.Domains.subtitle)
                 .font(AXTypography.caption)
                 .foregroundStyle(Color.axTextTertiary)
         }
@@ -81,7 +81,7 @@ private extension CerberusDomainsView {
             HStack(spacing: AXSpacing.xs) {
                 Image(systemName: "arrow.triangle.2.circlepath")
                     .font(AXTypography.caption)
-                Text("Sync")
+                Text(L10n.Cerberus.Domains.sync)
                     .font(AXTypography.subheadline)
             }
             .padding(.horizontal, AXSpacing.lg)
@@ -105,7 +105,7 @@ private extension CerberusDomainsView {
             HStack(spacing: AXSpacing.xs) {
                 Image(systemName: "plus.circle.fill")
                     .font(AXTypography.caption)
-                Text("Add Domain")
+                Text(L10n.Cerberus.Domains.addDomain)
                     .font(AXTypography.subheadline)
             }
             .padding(.horizontal, AXSpacing.lg)
@@ -158,7 +158,7 @@ private extension CerberusDomainsView {
     var webServerInfo: some View {
         VStack(alignment: .leading, spacing: AXSpacing.xxxs) {
             if let ws = viewModel.webServerInfo {
-                Text(ws.type.isEmpty ? "No Web Server Detected" : ws.type.capitalized)
+                Text(ws.type.isEmpty ? L10n.Cerberus.Domains.noWebServer : ws.type.capitalized)
                     .font(AXTypography.subheadline)
                     .foregroundStyle(Color.axTextPrimary)
                 if ws.port > 0 {
@@ -172,7 +172,7 @@ private extension CerberusDomainsView {
                     }
                 }
             } else {
-                Text("Detecting web server...")
+                Text(L10n.Cerberus.Domains.detectingServer)
                     .font(AXTypography.subheadline)
                     .foregroundStyle(Color.axTextMuted)
             }
@@ -200,19 +200,19 @@ private extension CerberusDomainsView {
     var statsRow: some View {
         HStack(spacing: AXSpacing.md) {
             statCard(
-                label: "Total Domains",
+                label: L10n.Cerberus.Domains.totalDomains,
                 value: "\(viewModel.domains.count)",
                 icon: "globe",
                 color: .axAccentBlue
             )
             statCard(
-                label: "Protected",
+                label: L10n.Cerberus.Domains.protected,
                 value: "\(protectedCount)",
                 icon: "checkmark.shield.fill",
                 color: .axAccentGreen
             )
             statCard(
-                label: "Unprotected",
+                label: L10n.Cerberus.Domains.unprotected,
                 value: "\(unprotectedCount)",
                 icon: "shield.slash",
                 color: unprotectedCount > 0 ? .axWarning : .axTextMuted
@@ -269,7 +269,7 @@ private extension CerberusDomainsView {
 
     var domainListHeader: some View {
         HStack {
-            Text("Configured Domains")
+            Text(L10n.Cerberus.Domains.configuredDomains)
                 .font(AXTypography.subheadline)
                 .foregroundStyle(Color.axTextSecondary)
             Spacer()
@@ -295,9 +295,9 @@ private extension CerberusDomainsView {
         AXGlassCard {
             AXEmptyState(
                 icon: "globe",
-                title: "No Domains Configured",
-                description: "Sync to auto-detect domains from your web server or add them manually.",
-                actionLabel: "Sync Domains",
+                title: L10n.Cerberus.Domains.noDomains,
+                description: L10n.Cerberus.Domains.noDomainsDesc,
+                actionLabel: L10n.Cerberus.Domains.syncDomains,
                 action: { Task { await viewModel.syncDomains() } },
                 accentColor: .axAccentBlue
             )
@@ -341,7 +341,7 @@ private extension CerberusDomainsView {
                 .font(AXTypography.monoMd)
                 .foregroundStyle(Color.axTextPrimary)
             HStack(spacing: AXSpacing.xs) {
-                Text(domain.webServer.isEmpty ? "Unknown server" : domain.webServer)
+                Text(domain.webServer.isEmpty ? L10n.Cerberus.Domains.unknownServer : domain.webServer)
                     .font(AXTypography.caption2)
                     .foregroundStyle(Color.axTextTertiary)
                 if domain.enabled {
@@ -405,11 +405,11 @@ private extension CerberusDomainsView {
                         .font(.system(size: 20, weight: .semibold))
                         .foregroundStyle(Color.axAccentGreen)
                 }
-                Text("Add Domain")
+                Text(L10n.Cerberus.Domains.addDomainTitle)
                     .font(AXTypography.headline)
                     .fontWeight(.bold)
                     .foregroundStyle(Color.axTextPrimary)
-                Text("Enter the fully qualified domain name to protect")
+                Text(L10n.Cerberus.Domains.addDomainDesc)
                     .font(AXTypography.caption)
                     .foregroundStyle(Color.axTextTertiary)
             }
@@ -419,12 +419,12 @@ private extension CerberusDomainsView {
             // Input
             VStack(spacing: AXSpacing.lg) {
                 VStack(alignment: .leading, spacing: AXSpacing.xs) {
-                    Text("Domain Name")
+                    Text(L10n.Cerberus.Domains.domainName)
                         .font(AXTypography.caption)
                         .fontWeight(.semibold)
                         .foregroundStyle(Color.axTextSecondary)
                     AXTextField(
-                        placeholder: "example.com",
+                        placeholder: L10n.Cerberus.Domains.domainPlaceholder,
                         text: $newDomain,
                         icon: "globe",
                         accentColor: .axAccentGreen
@@ -435,7 +435,7 @@ private extension CerberusDomainsView {
                     Image(systemName: "info.circle.fill")
                         .font(.system(size: 11))
                         .foregroundStyle(Color.axAccentGreen.opacity(0.6))
-                    Text("Subdomains like api.example.com are supported")
+                    Text(L10n.Cerberus.Domains.domainHint)
                         .font(AXTypography.caption2)
                         .foregroundStyle(Color.axTextMuted)
                 }
@@ -467,7 +467,7 @@ private extension CerberusDomainsView {
                 .buttonStyle(.plain)
 
                 AXPrimaryButton(
-                    title: "Add Domain",
+                    title: L10n.Cerberus.Domains.addDomain,
                     icon: "plus.circle.fill",
                     action: {
                         let d = newDomain.trimmingCharacters(in: .whitespacesAndNewlines)

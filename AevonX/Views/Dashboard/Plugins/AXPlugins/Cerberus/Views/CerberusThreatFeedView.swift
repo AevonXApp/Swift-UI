@@ -46,8 +46,8 @@ struct CerberusThreatFeedView: View {
     private var disabledState: some View {
         AXEmptyState(
             icon: "antenna.radiowaves.left.and.right",
-            title: "Threat Intelligence Disabled",
-            description: "Enable threat_feed_enabled in WAF config to activate intelligence feeds from Spamhaus, Emerging Threats, and FireHOL.",
+            title: L10n.Cerberus.ThreatFeed.disabledTitle,
+            description: L10n.Cerberus.ThreatFeed.disabledDesc,
             accentColor: .axAccentPurple
         )
     }
@@ -94,7 +94,7 @@ struct CerberusThreatFeedView: View {
     private func heroTitleBlock(_ status: WAFThreatFeedStatus) -> some View {
         VStack(alignment: .leading, spacing: AXSpacing.xxs) {
             HStack(spacing: AXSpacing.sm) {
-                Text("Threat Intelligence")
+                Text(L10n.Cerberus.ThreatFeed.title)
                     .font(AXTypography.title3)
                     .foregroundStyle(Color.axTextPrimary)
                 AXBadge(text: L10n.Status.active, color: .axAccentGreen, style: .soft)
@@ -107,7 +107,7 @@ struct CerberusThreatFeedView: View {
         HStack(spacing: AXSpacing.xs) {
             Image(systemName: "clock")
                 .font(.system(size: 10))
-            Text(status.lastUpdate ?? "Never updated")
+            Text(status.lastUpdate ?? L10n.Cerberus.ThreatFeed.neverUpdated)
                 .font(AXTypography.caption2)
         }
         .foregroundStyle(Color.axTextTertiary)
@@ -148,17 +148,17 @@ struct CerberusThreatFeedView: View {
     private func heroBottomRow(_ status: WAFThreatFeedStatus) -> some View {
         HStack(spacing: AXSpacing.xl) {
             heroMetric(
-                label: "Total Entries",
+                label: L10n.Cerberus.ThreatFeed.totalEntries,
                 value: formatLargeNumber(status.totalEntries ?? 0),
                 color: .axAccentBlue
             )
             heroMetric(
-                label: "Threats Blocked",
+                label: L10n.Cerberus.ThreatFeed.threatsBlocked,
                 value: formatLargeNumber(status.blockedByFeed ?? 0),
                 color: .axError
             )
             heroMetric(
-                label: "Feed Sources",
+                label: L10n.Cerberus.ThreatFeed.feedSources,
                 value: "\(resolvedSources(status).count)",
                 color: .axAccentGreen
             )
@@ -183,17 +183,17 @@ struct CerberusThreatFeedView: View {
     private func statsRow(_ status: WAFThreatFeedStatus) -> some View {
         HStack(spacing: AXSpacing.md) {
             statCard(
-                icon: "list.number", label: "Total Entries",
+                icon: "list.number", label: L10n.Cerberus.ThreatFeed.totalEntries,
                 value: formatLargeNumber(status.totalEntries ?? 0),
                 color: .axAccentBlue
             )
             statCard(
-                icon: "hand.raised.fill", label: "Blocked by Feed",
+                icon: "hand.raised.fill", label: L10n.Cerberus.ThreatFeed.blockedByFeed,
                 value: formatLargeNumber(status.blockedByFeed ?? 0),
                 color: .axError
             )
             statCard(
-                icon: "checkmark.shield.fill", label: "Sources Active",
+                icon: "checkmark.shield.fill", label: L10n.Cerberus.ThreatFeed.sourcesActive,
                 value: "\(resolvedSources(status).count)",
                 color: .axAccentGreen
             )
@@ -245,7 +245,7 @@ struct CerberusThreatFeedView: View {
             Image(systemName: "square.stack.3d.up.fill")
                 .font(.system(size: 13, weight: .semibold))
                 .foregroundStyle(Color.axAccentPurple)
-            Text("Source Breakdown")
+            Text(L10n.Cerberus.ThreatFeed.sourceBreakdown)
                 .font(AXTypography.subheadline)
                 .fontWeight(.semibold)
                 .foregroundStyle(Color.axTextPrimary)
@@ -289,7 +289,7 @@ struct CerberusThreatFeedView: View {
                     .font(AXTypography.body)
                     .fontWeight(.medium)
                     .foregroundStyle(Color.axTextPrimary)
-                Text("Updated: \(source.lastUpdated)")
+                Text(L10n.Cerberus.ThreatFeed.updated(source.lastUpdated))
                     .font(AXTypography.caption2)
                     .foregroundStyle(Color.axTextTertiary)
             }

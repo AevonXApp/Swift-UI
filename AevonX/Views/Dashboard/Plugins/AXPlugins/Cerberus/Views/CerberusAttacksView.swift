@@ -21,6 +21,13 @@ struct CerberusAttacksView: View {
     enum AttackSection: String, CaseIterable {
         case overview = "Overview"
         case blockLog = "Block Log"
+
+        var label: String {
+            switch self {
+            case .overview: return L10n.Cerberus.Attacks.overview
+            case .blockLog: return L10n.Cerberus.Attacks.blockLog
+            }
+        }
     }
 
     var body: some View {
@@ -71,7 +78,7 @@ struct CerberusAttacksView: View {
         Button {
             withAnimation(.easeInOut(duration: 0.2)) { selectedSection = section }
         } label: {
-            Text(section.rawValue)
+            Text(section.label)
                 .font(AXTypography.subheadline)
                 .fontWeight(selectedSection == section ? .semibold : .regular)
                 .foregroundStyle(selectedSection == section ? Color.axAccentBlue : Color.axTextSecondary)
@@ -139,7 +146,7 @@ struct CerberusAttacksView: View {
         HStack(spacing: AXSpacing.md) {
             threatHeroIcon
             VStack(alignment: .leading, spacing: AXSpacing.xxxs) {
-                Text("Threat Analytics")
+                Text(L10n.Cerberus.Attacks.threatAnalytics)
                     .font(AXTypography.title2).fontWeight(.bold)
                     .foregroundStyle(Color.axTextPrimary)
                 threatHeroSubtitle
@@ -171,7 +178,7 @@ struct CerberusAttacksView: View {
 
     private var threatHeroSubtitle: some View {
         HStack(spacing: AXSpacing.sm) {
-            Text("\(viewModel.attackTypes.count) vectors detected")
+            Text(L10n.Cerberus.Attacks.vectorsDetected(viewModel.attackTypes.count))
                 .font(AXTypography.caption)
                 .foregroundStyle(Color.axTextTertiary)
             if totalAttackCount > 0 {
@@ -184,10 +191,10 @@ struct CerberusAttacksView: View {
 
     private var threatSummaryStats: some View {
         HStack(spacing: AXSpacing.xxl) {
-            threatMiniStat(value: viewModel.formatNumber(totalAttackCount), label: "Attacks", color: .axError)
-            threatMiniStat(value: "\(viewModel.topAttackers.count)", label: "Sources", color: .axWarning)
-            threatMiniStat(value: "\(viewModel.attackTypes.count)", label: "Vectors", color: .axAccentPurple)
-            threatMiniStat(value: "\(viewModel.blockLog.count)", label: "Blocks", color: .axAccentBlue)
+            threatMiniStat(value: viewModel.formatNumber(totalAttackCount), label: L10n.Cerberus.Attacks.attacks, color: .axError)
+            threatMiniStat(value: "\(viewModel.topAttackers.count)", label: L10n.Cerberus.Attacks.sources, color: .axWarning)
+            threatMiniStat(value: "\(viewModel.attackTypes.count)", label: L10n.Cerberus.Attacks.vectors, color: .axAccentPurple)
+            threatMiniStat(value: "\(viewModel.blockLog.count)", label: L10n.Cerberus.Attacks.blocks, color: .axAccentBlue)
         }
     }
 
@@ -205,7 +212,7 @@ struct CerberusAttacksView: View {
             VStack(alignment: .leading, spacing: AXSpacing.md) {
                 attackVectorsHeader
                 if viewModel.attackTypes.isEmpty {
-                    emptyState(icon: "shield.slash", text: "No attack data available")
+                    emptyState(icon: "shield.slash", text: L10n.Cerberus.Attacks.noAttackData)
                 } else {
                     attackTypeBars
                 }
@@ -216,7 +223,7 @@ struct CerberusAttacksView: View {
     private var attackVectorsHeader: some View {
         HStack {
             Image(systemName: "waveform.badge.exclamationmark").foregroundStyle(Color.axError)
-            Text("Attack Vectors").font(AXTypography.headline).foregroundStyle(Color.axTextPrimary)
+            Text(L10n.Cerberus.Attacks.attackVectors).font(AXTypography.headline).foregroundStyle(Color.axTextPrimary)
             Spacer()
             if !viewModel.attackTypes.isEmpty {
                 AXBadge(text: "\(viewModel.attackTypes.count) types", color: .axError, style: .soft)
@@ -277,11 +284,11 @@ struct CerberusAttacksView: View {
             VStack(alignment: .leading, spacing: AXSpacing.md) {
                 HStack {
                     Image(systemName: "chart.pie.fill").foregroundStyle(Color.axAccentPurple)
-                    Text("Distribution").font(AXTypography.headline).foregroundStyle(Color.axTextPrimary)
+                    Text(L10n.Cerberus.Attacks.distribution).font(AXTypography.headline).foregroundStyle(Color.axTextPrimary)
                     Spacer()
                 }
                 if viewModel.attackTypes.isEmpty {
-                    emptyState(icon: "chart.pie", text: "No data")
+                    emptyState(icon: "chart.pie", text: L10n.Cerberus.Attacks.noDistData)
                 } else {
                     attackPieChart
                 }
@@ -323,7 +330,7 @@ struct CerberusAttacksView: View {
             VStack(alignment: .leading, spacing: AXSpacing.md) {
                 topAttackersHeader
                 if viewModel.topAttackers.isEmpty {
-                    emptyState(icon: "person.slash", text: "No attackers detected")
+                    emptyState(icon: "person.slash", text: L10n.Cerberus.Attacks.noAttackers)
                 } else {
                     attackersList
                 }
@@ -334,7 +341,7 @@ struct CerberusAttacksView: View {
     private var topAttackersHeader: some View {
         HStack {
             Image(systemName: "person.fill.xmark").foregroundStyle(Color.axError)
-            Text("Top Attackers").font(AXTypography.headline).foregroundStyle(Color.axTextPrimary)
+            Text(L10n.Cerberus.Attacks.topAttackers).font(AXTypography.headline).foregroundStyle(Color.axTextPrimary)
             Spacer()
             if !viewModel.topAttackers.isEmpty {
                 AXBadge(text: "\(viewModel.topAttackers.count) IPs", color: .axError, style: .soft)
@@ -397,7 +404,7 @@ struct CerberusAttacksView: View {
             VStack(alignment: .leading, spacing: AXSpacing.md) {
                 topURIsHeader
                 if viewModel.topURIs.isEmpty {
-                    emptyState(icon: "link", text: "No URI data")
+                    emptyState(icon: "link", text: L10n.Cerberus.Attacks.noURIData)
                 } else {
                     urisList
                 }
@@ -408,7 +415,7 @@ struct CerberusAttacksView: View {
     private var topURIsHeader: some View {
         HStack {
             Image(systemName: "link.badge.plus").foregroundStyle(Color.axWarning)
-            Text("Targeted URIs").font(AXTypography.headline).foregroundStyle(Color.axTextPrimary)
+            Text(L10n.Cerberus.Attacks.targetedURIs).font(AXTypography.headline).foregroundStyle(Color.axTextPrimary)
             Spacer()
             if !viewModel.topURIs.isEmpty {
                 AXBadge(text: "\(viewModel.topURIs.count) paths", color: .axWarning, style: .soft)
@@ -459,7 +466,7 @@ struct CerberusAttacksView: View {
             VStack(alignment: .leading, spacing: AXSpacing.md) {
                 countriesHeader
                 if viewModel.countries.isEmpty {
-                    emptyState(icon: "globe", text: "No country data")
+                    emptyState(icon: "globe", text: L10n.Cerberus.Attacks.noCountryData)
                 } else {
                     countriesGrid
                 }
@@ -470,7 +477,7 @@ struct CerberusAttacksView: View {
     private var countriesHeader: some View {
         HStack {
             Image(systemName: "map.fill").foregroundStyle(Color.axAccentPurple)
-            Text("Attack Origins").font(AXTypography.headline).foregroundStyle(Color.axTextPrimary)
+            Text(L10n.Cerberus.Attacks.attackOrigins).font(AXTypography.headline).foregroundStyle(Color.axTextPrimary)
             Spacer()
             if !viewModel.countries.isEmpty {
                 AXBadge(text: "\(viewModel.countries.count) countries", color: .axAccentPurple, style: .soft)
@@ -539,7 +546,7 @@ struct CerberusAttacksView: View {
 
     private var blockLogFilterBar: some View {
         HStack(spacing: AXSpacing.md) {
-            AXTextField(placeholder: "Filter by IP, rule, path...", text: $blockLogFilter, icon: "magnifyingglass")
+            AXTextField(placeholder: L10n.Cerberus.Attacks.filterPlaceholder, text: $blockLogFilter, icon: "magnifyingglass")
             blockLogRefreshButton
         }
     }
@@ -563,10 +570,10 @@ struct CerberusAttacksView: View {
         let highCount = blocks.filter { $0.severity.lowercased() == "high" }.count
         let uniqueIPs = Set(blocks.map(\.ip)).count
         return HStack(spacing: AXSpacing.md) {
-            blockLogStatCard(label: "Total Blocks", value: "\(blocks.count)", icon: "hand.raised.fill", color: .axError)
-            blockLogStatCard(label: "Critical", value: "\(critCount)", icon: "exclamationmark.octagon.fill", color: .axError)
-            blockLogStatCard(label: "High", value: "\(highCount)", icon: "exclamationmark.triangle.fill", color: .axWarning)
-            blockLogStatCard(label: "Unique IPs", value: "\(uniqueIPs)", icon: "person.2.fill", color: .axAccentPurple)
+            blockLogStatCard(label: L10n.Cerberus.Attacks.totalBlocks, value: "\(blocks.count)", icon: "hand.raised.fill", color: .axError)
+            blockLogStatCard(label: L10n.Cerberus.Attacks.critical, value: "\(critCount)", icon: "exclamationmark.octagon.fill", color: .axError)
+            blockLogStatCard(label: L10n.Cerberus.Attacks.high, value: "\(highCount)", icon: "exclamationmark.triangle.fill", color: .axWarning)
+            blockLogStatCard(label: L10n.Cerberus.Attacks.uniqueIPs, value: "\(uniqueIPs)", icon: "person.2.fill", color: .axAccentPurple)
         }
     }
 
@@ -594,7 +601,7 @@ struct CerberusAttacksView: View {
             VStack(alignment: .leading, spacing: AXSpacing.xs) {
                 blockLogTableHeader
                 if filteredBlockLog.isEmpty {
-                    emptyState(icon: "shield.checkered", text: "No block log entries")
+                    emptyState(icon: "shield.checkered", text: L10n.Cerberus.Attacks.noBlockLog)
                 } else {
                     blockLogRows
                 }
@@ -604,13 +611,13 @@ struct CerberusAttacksView: View {
 
     private var blockLogTableHeader: some View {
         HStack(spacing: AXSpacing.sm) {
-            Text("Time").font(AXTypography.monoXs).foregroundStyle(Color.axTextMuted).frame(width: 70)
-            Text("IP").font(AXTypography.monoXs).foregroundStyle(Color.axTextMuted).frame(width: 120, alignment: .leading)
-            Text("Country").font(AXTypography.monoXs).foregroundStyle(Color.axTextMuted).frame(width: 40)
-            Text("Method").font(AXTypography.monoXs).foregroundStyle(Color.axTextMuted).frame(width: 50)
+            Text(L10n.Cerberus.Attacks.colTime).font(AXTypography.monoXs).foregroundStyle(Color.axTextMuted).frame(width: 70)
+            Text(L10n.Cerberus.Attacks.colIP).font(AXTypography.monoXs).foregroundStyle(Color.axTextMuted).frame(width: 120, alignment: .leading)
+            Text(L10n.Cerberus.Attacks.colCountry).font(AXTypography.monoXs).foregroundStyle(Color.axTextMuted).frame(width: 40)
+            Text(L10n.Cerberus.Attacks.colMethod).font(AXTypography.monoXs).foregroundStyle(Color.axTextMuted).frame(width: 50)
             Text(L10n.Field.path).font(AXTypography.monoXs).foregroundStyle(Color.axTextMuted).frame(maxWidth: .infinity, alignment: .leading)
-            Text("Rule").font(AXTypography.monoXs).foregroundStyle(Color.axTextMuted).frame(width: 120, alignment: .leading)
-            Text("Severity").font(AXTypography.monoXs).foregroundStyle(Color.axTextMuted).frame(width: 65)
+            Text(L10n.Cerberus.Attacks.colRule).font(AXTypography.monoXs).foregroundStyle(Color.axTextMuted).frame(width: 120, alignment: .leading)
+            Text(L10n.Cerberus.Attacks.colSeverity).font(AXTypography.monoXs).foregroundStyle(Color.axTextMuted).frame(width: 65)
         }
         .padding(.horizontal, AXSpacing.sm)
         .padding(.vertical, AXSpacing.xs)
@@ -697,11 +704,11 @@ struct CerberusAttacksView: View {
     private func attackerSheetBody(_ attacker: AttackerInfo) -> some View {
         ScrollView {
             VStack(spacing: AXSpacing.xxs) {
-                attackerField(label: "IP Address", value: attacker.ip, icon: "network", color: .axAccentBlue)
-                attackerField(label: "Total Attacks", value: viewModel.formatNumber(attacker.attacks), icon: "exclamationmark.triangle.fill", color: .axError)
-                attackerField(label: "Last Seen", value: attacker.lastSeen, icon: "clock.fill", color: .axWarning)
-                attackerField(label: "Country", value: "\(flagEmoji(for: attacker.countryCode)) \(attacker.country)", icon: "globe", color: .axAccentBlue)
-                attackerField(label: "Country Code", value: attacker.countryCode.uppercased(), icon: "mappin.circle.fill", color: .axAccentPurple)
+                attackerField(label: L10n.Cerberus.Attacks.ipAddress, value: attacker.ip, icon: "network", color: .axAccentBlue)
+                attackerField(label: L10n.Cerberus.Attacks.totalAttacks, value: viewModel.formatNumber(attacker.attacks), icon: "exclamationmark.triangle.fill", color: .axError)
+                attackerField(label: L10n.Cerberus.Attacks.lastSeen, value: attacker.lastSeen, icon: "clock.fill", color: .axWarning)
+                attackerField(label: L10n.Cerberus.Attacks.country, value: "\(flagEmoji(for: attacker.countryCode)) \(attacker.country)", icon: "globe", color: .axAccentBlue)
+                attackerField(label: L10n.Cerberus.Attacks.countryCode, value: attacker.countryCode.uppercased(), icon: "mappin.circle.fill", color: .axAccentPurple)
             }
             .padding(AXSpacing.lg)
         }
@@ -744,7 +751,7 @@ struct CerberusAttacksView: View {
             .buttonStyle(.plain)
 
             AXPrimaryButton(
-                title: "Block IP",
+                title: L10n.Cerberus.Attacks.blockIP,
                 icon: "hand.raised.fill",
                 action: { Task { await viewModel.blockIP(attacker.ip); selectedAttacker = nil } },
                 isLoading: viewModel.ipOperationInProgress,

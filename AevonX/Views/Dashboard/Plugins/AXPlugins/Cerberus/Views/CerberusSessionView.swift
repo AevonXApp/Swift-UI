@@ -68,12 +68,12 @@ private extension CerberusSessionView {
 
     func heroTitleBlock(_ status: WAFSessionStatus) -> some View {
         VStack(alignment: .leading, spacing: AXSpacing.xxs) {
-            Text("Session Tracking")
+            Text(L10n.Cerberus.Sessions.title)
                 .font(AXTypography.title3)
                 .foregroundStyle(Color.axTextPrimary)
             Text(status.enabled
-                 ? "Actively monitoring user sessions"
-                 : "Session tracking is disabled")
+                 ? L10n.Cerberus.Sessions.activeMonitoring
+                 : L10n.Cerberus.Sessions.disabled)
                 .font(AXTypography.caption)
                 .foregroundStyle(Color.axTextSecondary)
             heroBadge(enabled: status.enabled)
@@ -125,25 +125,25 @@ private extension CerberusSessionView {
             spacing: AXSpacing.md
         ) {
             statCard(
-                label: "Active Sessions",
+                label: L10n.Cerberus.Sessions.activeSessions,
                 value: "\(status.activeSessions ?? 0)",
                 icon: "person.crop.circle.fill",
                 color: .axAccentBlue
             )
             statCard(
-                label: "Total Tracked",
+                label: L10n.Cerberus.Sessions.totalTracked,
                 value: "\(status.totalTracked ?? 0)",
                 icon: "person.2.fill",
                 color: .axAccentGreen
             )
             statCard(
-                label: "ATO Detections",
+                label: L10n.Cerberus.Sessions.atoDetections,
                 value: "\(status.atoDetections ?? 0)",
                 icon: "exclamationmark.shield.fill",
                 color: .axError
             )
             statCard(
-                label: "Rate Limited",
+                label: L10n.Cerberus.Sessions.rateLimited,
                 value: "\(status.rateLimited ?? 0)",
                 icon: "speedometer",
                 color: .axWarning
@@ -197,19 +197,19 @@ private extension CerberusSessionView {
                 Divider().background(Color.axDivider)
                 securityRow(
                     icon: "key.fill",
-                    title: "Session Cookie",
+                    title: L10n.Cerberus.Sessions.sessionCookie,
                     detail: "cerberus_sid",
                     color: .axAccentBlue
                 )
                 securityRow(
                     icon: "gauge.with.needle.fill",
-                    title: "Rate Limit",
-                    detail: "\(status.rateLimited ?? 0) enforced",
+                    title: L10n.Cerberus.Sessions.rateLimit,
+                    detail: "\(status.rateLimited ?? 0) \(L10n.Cerberus.Sessions.enforced)",
                     color: .axWarning
                 )
                 securityRow(
                     icon: "person.badge.shield.checkmark.fill",
-                    title: "ATO Detection",
+                    title: L10n.Cerberus.Sessions.atoDetection,
                     detail: atoStatusText(status),
                     color: atoStatusColor(status)
                 )
@@ -223,7 +223,7 @@ private extension CerberusSessionView {
             Image(systemName: "lock.shield.fill")
                 .font(.system(size: 14, weight: .semibold))
                 .foregroundStyle(Color.axAccentPurple)
-            Text("Session Security")
+            Text(L10n.Cerberus.Sessions.sessionSecurity)
                 .font(AXTypography.headline)
                 .foregroundStyle(Color.axTextPrimary)
         }
@@ -262,7 +262,7 @@ private extension CerberusSessionView {
     func atoStatusText(_ status: WAFSessionStatus) -> String {
         let count = status.atoDetections ?? 0
         if !status.enabled { return L10n.Status.disabled }
-        return count > 0 ? "\(count) threat\(count == 1 ? "" : "s") detected" : "No threats"
+        return count > 0 ? L10n.Cerberus.Sessions.threatsDetected(count) : L10n.Cerberus.Sessions.noThreats
     }
 
     func atoStatusColor(_ status: WAFSessionStatus) -> Color {
@@ -279,8 +279,8 @@ private extension CerberusSessionView {
     var emptyState: some View {
         AXEmptyState(
             icon: "person.2.slash",
-            title: "Session Tracking Disabled",
-            description: "Enable session tracking in your WAF configuration to monitor user sessions, detect account takeover attempts, and enforce per-session rate limits.",
+            title: L10n.Cerberus.Sessions.disabledTitle,
+            description: L10n.Cerberus.Sessions.disabledDesc,
             accentColor: .axAccentPurple
         )
     }

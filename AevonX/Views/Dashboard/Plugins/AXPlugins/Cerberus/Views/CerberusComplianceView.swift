@@ -72,7 +72,7 @@ private extension CerberusComplianceView {
                 .fontWeight(.semibold)
                 .foregroundStyle(Color.axTextPrimary)
 
-            Text("Compliance Score")
+            Text(L10n.Cerberus.Compliance.complianceScore)
                 .font(AXTypography.caption)
                 .foregroundStyle(Color.axTextTertiary)
 
@@ -82,9 +82,9 @@ private extension CerberusComplianceView {
 
     func heroPills(_ report: WAFComplianceReport) -> some View {
         HStack(spacing: AXSpacing.sm) {
-            AXBadge(text: "\(report.passed) Passed", color: .axAccentGreen, style: .soft)
-            AXBadge(text: "\(report.failed) Failed", color: .axError, style: .soft)
-            AXBadge(text: "\(report.warnings) Warnings", color: .axWarning, style: .soft)
+            AXBadge(text: "\(report.passed) \(L10n.Cerberus.Compliance.passed)", color: .axAccentGreen, style: .soft)
+            AXBadge(text: "\(report.failed) \(L10n.Cerberus.Compliance.failed)", color: .axError, style: .soft)
+            AXBadge(text: "\(report.warnings) \(L10n.Cerberus.Compliance.warnings)", color: .axWarning, style: .soft)
         }
     }
 
@@ -110,19 +110,19 @@ private extension CerberusComplianceView {
     func summaryStatsRow(_ report: WAFComplianceReport) -> some View {
         HStack(spacing: AXSpacing.md) {
             statCard(
-                label: "Passed",
+                label: L10n.Cerberus.Compliance.passed,
                 value: "\(report.passed)",
                 icon: "checkmark.circle.fill",
                 color: .axAccentGreen
             )
             statCard(
-                label: "Failed",
+                label: L10n.Cerberus.Compliance.failed,
                 value: "\(report.failed)",
                 icon: "xmark.circle.fill",
                 color: .axError
             )
             statCard(
-                label: "Warnings",
+                label: L10n.Cerberus.Compliance.warnings,
                 value: "\(report.warnings)",
                 icon: "exclamationmark.triangle.fill",
                 color: .axWarning
@@ -164,7 +164,7 @@ private extension CerberusComplianceView {
 
     func sectionHeader(_ report: WAFComplianceReport) -> some View {
         HStack {
-            Text("Compliance Checks")
+            Text(L10n.Cerberus.Compliance.checks)
                 .font(AXTypography.headline)
                 .foregroundStyle(Color.axTextPrimary)
             Spacer()
@@ -234,9 +234,9 @@ private extension CerberusComplianceView {
     var emptyState: some View {
         AXEmptyState(
             icon: "shield.checkered",
-            title: "No Compliance Report",
-            description: "Connect to a server and run an audit to generate your compliance report.",
-            actionLabel: "Generate Report"
+            title: L10n.Cerberus.Compliance.noReport,
+            description: L10n.Cerberus.Compliance.noReportDesc,
+            actionLabel: L10n.Cerberus.Compliance.generateReport
         ) {
             Task { await viewModel.loadComplianceReport() }
         }

@@ -79,12 +79,12 @@ private extension CerberusAlertsView {
                     .foregroundStyle(heroAccentColor)
             }
             VStack(alignment: .leading, spacing: AXSpacing.xxxs) {
-                Text("Security Alerts")
+                Text(L10n.Cerberus.Alerts.title)
                     .font(AXTypography.title2)
                     .fontWeight(.bold)
                     .foregroundStyle(Color.axTextPrimary)
                 HStack(spacing: AXSpacing.sm) {
-                    Text("Real-time threat event stream")
+                    Text(L10n.Cerberus.Alerts.subtitle)
                         .font(AXTypography.caption)
                         .foregroundStyle(Color.axTextTertiary)
                     if !viewModel.recentAlerts.isEmpty {
@@ -102,15 +102,15 @@ private extension CerberusAlertsView {
         HStack(spacing: AXSpacing.xxl) {
             heroMiniStat(
                 value: "\(countBySeverity("critical"))",
-                label: "Critical", color: .axError
+                label: L10n.Cerberus.Alerts.critical, color: .axError
             )
             heroMiniStat(
                 value: "\(countBySeverity("high"))",
-                label: "High", color: .axWarning
+                label: L10n.Cerberus.Alerts.high, color: .axWarning
             )
             heroMiniStat(
                 value: "\(countBySeverity("medium") + countBySeverity("low"))",
-                label: "Other", color: .axAccentBlue
+                label: L10n.Cerberus.Alerts.other, color: .axAccentBlue
             )
             refreshBtn
         }
@@ -151,22 +151,22 @@ private extension CerberusAlertsView {
         HStack(spacing: AXSpacing.md) {
             severityStatCard(
                 icon: "bell.badge", value: "\(viewModel.recentAlerts.count)",
-                label: "Total Alerts", color: .axAccentBlue
+                label: L10n.Cerberus.Alerts.totalAlerts, color: .axAccentBlue
             )
             severityStatCard(
                 icon: "exclamationmark.octagon.fill",
                 value: "\(countBySeverity("critical"))",
-                label: "Critical", color: .axError
+                label: L10n.Cerberus.Alerts.critical, color: .axError
             )
             severityStatCard(
                 icon: "exclamationmark.triangle.fill",
                 value: "\(countBySeverity("high"))",
-                label: "High", color: .axWarning
+                label: L10n.Cerberus.Alerts.high, color: .axWarning
             )
             severityStatCard(
                 icon: "info.circle.fill",
                 value: "\(countBySeverity("medium") + countBySeverity("low"))",
-                label: "Medium / Low", color: .axAccentGreen
+                label: L10n.Cerberus.Alerts.mediumLow, color: .axAccentGreen
             )
         }
     }
@@ -260,7 +260,7 @@ private extension CerberusAlertsView {
         HStack {
             Image(systemName: "bell.badge")
                 .foregroundStyle(Color.axAccentBlue)
-            Text("Security Events")
+            Text(L10n.Cerberus.Alerts.securityEvents)
                 .font(AXTypography.headline)
                 .foregroundStyle(Color.axTextPrimary)
             Spacer()
@@ -280,10 +280,10 @@ private extension CerberusAlertsView {
                         .font(.system(size: 28))
                         .foregroundStyle(Color.axAccentGreen)
                 }
-                Text("All Clear")
+                Text(L10n.Cerberus.Alerts.allClear)
                     .font(AXTypography.headline)
                     .foregroundStyle(Color.axTextPrimary)
-                Text("No security events match your filter. Alerts appear when the WAF detects threats.")
+                Text(L10n.Cerberus.Alerts.noEventsDesc)
                     .font(AXTypography.caption)
                     .foregroundStyle(Color.axTextMuted)
                     .multilineTextAlignment(.center)
@@ -376,7 +376,7 @@ private extension CerberusAlertsView {
 
             // Message card
             VStack(alignment: .leading, spacing: AXSpacing.sm) {
-                Text("Message")
+                Text(L10n.Cerberus.Alerts.message)
                     .font(AXTypography.caption)
                     .fontWeight(.semibold)
                     .foregroundStyle(Color.axTextTertiary)
@@ -394,9 +394,9 @@ private extension CerberusAlertsView {
             // Details
             ScrollView {
                 VStack(spacing: AXSpacing.xxs) {
-                    alertDetailField(label: "Type", value: alert.type, icon: "tag.fill", color: accent)
-                    alertDetailField(label: "Severity", value: alert.severity.capitalized, icon: "exclamationmark.triangle.fill", color: accent)
-                    alertDetailField(label: "Timestamp", value: alert.timestamp, icon: "clock.fill", color: .axAccentBlue)
+                    alertDetailField(label: L10n.Cerberus.Alerts.type, value: alert.type, icon: "tag.fill", color: accent)
+                    alertDetailField(label: L10n.Cerberus.Alerts.severity, value: alert.severity.capitalized, icon: "exclamationmark.triangle.fill", color: accent)
+                    alertDetailField(label: L10n.Cerberus.Alerts.timestamp, value: alert.timestamp, icon: "clock.fill", color: .axAccentBlue)
                     if let details = alert.details {
                         ForEach(details.sorted(by: { $0.key < $1.key }), id: \.key) { key, value in
                             alertDetailField(label: key.capitalized, value: value, icon: "info.circle.fill", color: .axAccentPurple)

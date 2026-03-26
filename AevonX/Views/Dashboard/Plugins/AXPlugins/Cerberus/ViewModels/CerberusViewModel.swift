@@ -42,6 +42,23 @@ enum CerberusTab: String, CaseIterable {
         }
     }
 
+    var label: String {
+        switch self {
+        case .dashboard:    return L10n.Cerberus.Tab.dashboard
+        case .attacks:      return L10n.Cerberus.Tab.attacks
+        case .traffic:      return L10n.Cerberus.Tab.traffic
+        case .domains:      return L10n.Cerberus.Tab.domains
+        case .ipManagement: return L10n.Cerberus.Tab.ipGuard
+        case .modules:      return L10n.Cerberus.Tab.modules
+        case .honeypot:     return L10n.Cerberus.Tab.honeypot
+        case .alerts:       return L10n.Cerberus.Tab.alerts
+        case .threatFeed:   return L10n.Cerberus.Tab.threatIntel
+        case .compliance:   return L10n.Cerberus.Tab.compliance
+        case .sessions:     return L10n.Cerberus.Tab.sessions
+        case .customRules:  return L10n.Cerberus.Tab.rules
+        }
+    }
+
     var color: Color {
         switch self {
         case .dashboard:    return .axAccentBlue
@@ -293,10 +310,10 @@ class CerberusViewModel: ObservableObject {
         ipOperationInProgress = true
         do {
             try await cerberus.blockIP(ip, on: serverId)
-            GlobalToastManager.shared.showSuccess("Blocked \(ip)")
+            GlobalToastManager.shared.showSuccess(L10n.Cerberus.Toast.blocked(ip))
             await loadIPLists()
         } catch {
-            GlobalToastManager.shared.showError("Failed to block \(ip): \(error.localizedDescription)")
+            GlobalToastManager.shared.showError(L10n.Cerberus.Toast.failedToBlock(ip, error.localizedDescription))
         }
         ipOperationInProgress = false
     }
@@ -305,10 +322,10 @@ class CerberusViewModel: ObservableObject {
         ipOperationInProgress = true
         do {
             try await cerberus.unblockIP(ip, on: serverId)
-            GlobalToastManager.shared.showSuccess("Unblocked \(ip)")
+            GlobalToastManager.shared.showSuccess(L10n.Cerberus.Toast.unblocked(ip))
             await loadIPLists()
         } catch {
-            GlobalToastManager.shared.showError("Failed to unblock \(ip): \(error.localizedDescription)")
+            GlobalToastManager.shared.showError(L10n.Cerberus.Toast.failedToUnblock(ip, error.localizedDescription))
         }
         ipOperationInProgress = false
     }
@@ -317,10 +334,10 @@ class CerberusViewModel: ObservableObject {
         ipOperationInProgress = true
         do {
             try await cerberus.allowIP(ip, on: serverId)
-            GlobalToastManager.shared.showSuccess("Allowed \(ip)")
+            GlobalToastManager.shared.showSuccess(L10n.Cerberus.Toast.allowed(ip))
             await loadIPLists()
         } catch {
-            GlobalToastManager.shared.showError("Failed to allow \(ip): \(error.localizedDescription)")
+            GlobalToastManager.shared.showError(L10n.Cerberus.Toast.failedToAllow(ip, error.localizedDescription))
         }
         ipOperationInProgress = false
     }
@@ -329,10 +346,10 @@ class CerberusViewModel: ObservableObject {
         ipOperationInProgress = true
         do {
             try await cerberus.removeAllowedIP(ip, on: serverId)
-            GlobalToastManager.shared.showSuccess("Removed \(ip) from allowlist")
+            GlobalToastManager.shared.showSuccess(L10n.Cerberus.Toast.removedFromAllowlist(ip))
             await loadIPLists()
         } catch {
-            GlobalToastManager.shared.showError("Failed to remove \(ip): \(error.localizedDescription)")
+            GlobalToastManager.shared.showError(L10n.Cerberus.Toast.failedToRemove(ip, error.localizedDescription))
         }
         ipOperationInProgress = false
     }
@@ -351,10 +368,10 @@ class CerberusViewModel: ObservableObject {
         geoIPOperationInProgress = true
         do {
             try await cerberus.blockCountry(code, on: serverId)
-            GlobalToastManager.shared.showSuccess("Blocked \(code)")
+            GlobalToastManager.shared.showSuccess(L10n.Cerberus.Toast.blocked(code))
             await loadGeoIP()
         } catch {
-            GlobalToastManager.shared.showError("Failed to block \(code): \(error.localizedDescription)")
+            GlobalToastManager.shared.showError(L10n.Cerberus.Toast.failedToBlock(code, error.localizedDescription))
         }
         geoIPOperationInProgress = false
     }
@@ -363,10 +380,10 @@ class CerberusViewModel: ObservableObject {
         geoIPOperationInProgress = true
         do {
             try await cerberus.unblockCountry(code, on: serverId)
-            GlobalToastManager.shared.showSuccess("Unblocked \(code)")
+            GlobalToastManager.shared.showSuccess(L10n.Cerberus.Toast.unblocked(code))
             await loadGeoIP()
         } catch {
-            GlobalToastManager.shared.showError("Failed to unblock \(code): \(error.localizedDescription)")
+            GlobalToastManager.shared.showError(L10n.Cerberus.Toast.failedToUnblock(code, error.localizedDescription))
         }
         geoIPOperationInProgress = false
     }
@@ -411,10 +428,10 @@ class CerberusViewModel: ObservableObject {
         domainOperationInProgress = true
         do {
             try await cerberus.addDomain(domain, on: serverId)
-            GlobalToastManager.shared.showSuccess("Added \(domain)")
+            GlobalToastManager.shared.showSuccess(L10n.Cerberus.Toast.domainAdded(domain))
             await loadDomains()
         } catch {
-            GlobalToastManager.shared.showError("Failed to add \(domain): \(error.localizedDescription)")
+            GlobalToastManager.shared.showError(L10n.Cerberus.Toast.domainAddFailed(domain, error.localizedDescription))
         }
         domainOperationInProgress = false
     }
@@ -423,10 +440,10 @@ class CerberusViewModel: ObservableObject {
         domainOperationInProgress = true
         do {
             try await cerberus.removeDomain(domain, on: serverId)
-            GlobalToastManager.shared.showSuccess("Removed \(domain)")
+            GlobalToastManager.shared.showSuccess(L10n.Cerberus.Toast.domainRemoved(domain))
             await loadDomains()
         } catch {
-            GlobalToastManager.shared.showError("Failed to remove \(domain): \(error.localizedDescription)")
+            GlobalToastManager.shared.showError(L10n.Cerberus.Toast.domainRemoveFailed(domain, error.localizedDescription))
         }
         domainOperationInProgress = false
     }
@@ -441,7 +458,7 @@ class CerberusViewModel: ObservableObject {
             }
             await loadDomains()
         } catch {
-            GlobalToastManager.shared.showError("Failed: \(error.localizedDescription)")
+            GlobalToastManager.shared.showError(L10n.Cerberus.Toast.failed(error.localizedDescription))
         }
         domainOperationInProgress = false
     }
@@ -451,13 +468,13 @@ class CerberusViewModel: ObservableObject {
         do {
             let result = try await cerberus.syncDomains(on: serverId)
             if result.synced > 0 {
-                GlobalToastManager.shared.showSuccess("Synced \(result.synced) new domain(s)")
+                GlobalToastManager.shared.showSuccess(L10n.Cerberus.Toast.syncedDomains(result.synced))
             } else {
-                GlobalToastManager.shared.showSuccess("All domains up to date")
+                GlobalToastManager.shared.showSuccess(L10n.Cerberus.Toast.allDomainsUpToDate)
             }
             await loadDomains()
         } catch {
-            GlobalToastManager.shared.showError("Sync failed: \(error.localizedDescription)")
+            GlobalToastManager.shared.showError(L10n.Cerberus.Toast.syncFailed(error.localizedDescription))
         }
         domainOperationInProgress = false
     }
@@ -585,9 +602,9 @@ class CerberusViewModel: ObservableObject {
         configOperationInProgress = true
         do {
             try await cerberus.configSet(key: key, value: enabled ? "true" : "false", on: serverId)
-            GlobalToastManager.shared.showSuccess(enabled ? "Module enabled" : "Module disabled")
+            GlobalToastManager.shared.showSuccess(enabled ? L10n.Cerberus.Toast.moduleEnabled : L10n.Cerberus.Toast.moduleDisabled)
         } catch {
-            GlobalToastManager.shared.showError("Failed: \(error.localizedDescription)")
+            GlobalToastManager.shared.showError(L10n.Cerberus.Toast.failed(error.localizedDescription))
         }
         configOperationInProgress = false
     }
@@ -656,9 +673,9 @@ class CerberusViewModel: ObservableObject {
         do {
             _ = try await cerberus.serviceStart(on: serverId)
             serviceStatus = try? await cerberus.getServiceStatus(on: serverId)
-            GlobalToastManager.shared.showSuccess("WAF service started")
+            GlobalToastManager.shared.showSuccess(L10n.Cerberus.Toast.wafStarted)
         } catch {
-            GlobalToastManager.shared.showError("Start failed: \(error.localizedDescription)")
+            GlobalToastManager.shared.showError(L10n.Cerberus.Toast.startFailed(error.localizedDescription))
         }
         serviceOperationInProgress = false
     }
@@ -669,9 +686,9 @@ class CerberusViewModel: ObservableObject {
         do {
             _ = try await cerberus.serviceStop(on: serverId)
             serviceStatus = try? await cerberus.getServiceStatus(on: serverId)
-            GlobalToastManager.shared.showSuccess("WAF service stopped")
+            GlobalToastManager.shared.showSuccess(L10n.Cerberus.Toast.wafStopped)
         } catch {
-            GlobalToastManager.shared.showError("Stop failed: \(error.localizedDescription)")
+            GlobalToastManager.shared.showError(L10n.Cerberus.Toast.stopFailed(error.localizedDescription))
         }
         serviceOperationInProgress = false
     }
@@ -682,9 +699,9 @@ class CerberusViewModel: ObservableObject {
         do {
             _ = try await cerberus.serviceRestart(on: serverId)
             serviceStatus = try? await cerberus.getServiceStatus(on: serverId)
-            GlobalToastManager.shared.showSuccess("WAF service restarted")
+            GlobalToastManager.shared.showSuccess(L10n.Cerberus.Toast.wafRestarted)
         } catch {
-            GlobalToastManager.shared.showError("Restart failed: \(error.localizedDescription)")
+            GlobalToastManager.shared.showError(L10n.Cerberus.Toast.restartFailed(error.localizedDescription))
         }
         serviceOperationInProgress = false
     }
@@ -694,9 +711,9 @@ class CerberusViewModel: ObservableObject {
         serviceOperationInProgress = true
         do {
             _ = try await cerberus.serviceReload(on: serverId)
-            GlobalToastManager.shared.showSuccess("WAF config reloaded")
+            GlobalToastManager.shared.showSuccess(L10n.Cerberus.Toast.wafReloaded)
         } catch {
-            GlobalToastManager.shared.showError("Reload failed: \(error.localizedDescription)")
+            GlobalToastManager.shared.showError(L10n.Cerberus.Toast.reloadFailed(error.localizedDescription))
         }
         serviceOperationInProgress = false
     }
@@ -713,9 +730,9 @@ class CerberusViewModel: ObservableObject {
             }
         }
         if failed {
-            GlobalToastManager.shared.showError("\(label) config save failed")
+            GlobalToastManager.shared.showError(L10n.Cerberus.Toast.configSaveFailed(label))
         } else {
-            GlobalToastManager.shared.showSuccess("\(label) config saved")
+            GlobalToastManager.shared.showSuccess(L10n.Cerberus.Toast.configSaved(label))
         }
         configOperationInProgress = false
     }
@@ -728,7 +745,7 @@ class CerberusViewModel: ObservableObject {
         do {
             threatFeedStatus = try await cerberus.getThreatFeedStatus(on: serverId)
         } catch {
-            GlobalToastManager.shared.showError("Threat feed: \(error.localizedDescription)")
+            GlobalToastManager.shared.showError(L10n.Cerberus.Toast.errorPrefix("Threat feed", error.localizedDescription))
         }
         threatFeedLoading = false
     }
@@ -738,9 +755,9 @@ class CerberusViewModel: ObservableObject {
         threatFeedLoading = true
         do {
             threatFeedStatus = try await cerberus.updateThreatFeed(on: serverId)
-            GlobalToastManager.shared.showSuccess("Threat feeds updated")
+            GlobalToastManager.shared.showSuccess(L10n.Cerberus.Toast.threatFeedsUpdated)
         } catch {
-            GlobalToastManager.shared.showError("Threat feed update: \(error.localizedDescription)")
+            GlobalToastManager.shared.showError(L10n.Cerberus.Toast.errorPrefix("Threat feed update", error.localizedDescription))
         }
         threatFeedLoading = false
     }
@@ -753,7 +770,7 @@ class CerberusViewModel: ObservableObject {
         do {
             complianceReport = try await cerberus.getComplianceReport(on: serverId)
         } catch {
-            GlobalToastManager.shared.showError("Compliance: \(error.localizedDescription)")
+            GlobalToastManager.shared.showError(L10n.Cerberus.Toast.errorPrefix("Compliance", error.localizedDescription))
         }
         complianceLoading = false
     }
@@ -765,7 +782,7 @@ class CerberusViewModel: ObservableObject {
         do {
             vPatches = try await cerberus.listVPatches(on: serverId)
         } catch {
-            GlobalToastManager.shared.showError("VPatches: \(error.localizedDescription)")
+            GlobalToastManager.shared.showError(L10n.Cerberus.Toast.errorPrefix("VPatches", error.localizedDescription))
         }
     }
 
@@ -774,9 +791,9 @@ class CerberusViewModel: ObservableObject {
         do {
             try await cerberus.removeVPatch(id, on: serverId)
             await loadVPatches()
-            GlobalToastManager.shared.showSuccess("Virtual patch removed")
+            GlobalToastManager.shared.showSuccess(L10n.Cerberus.Toast.virtualPatchRemoved)
         } catch {
-            GlobalToastManager.shared.showError("Remove vpatch: \(error.localizedDescription)")
+            GlobalToastManager.shared.showError(L10n.Cerberus.Toast.errorPrefix("Remove vpatch", error.localizedDescription))
         }
     }
 
@@ -787,7 +804,7 @@ class CerberusViewModel: ObservableObject {
         do {
             configBackups = try await cerberus.listConfigBackups(on: serverId)
         } catch {
-            GlobalToastManager.shared.showError("Backups: \(error.localizedDescription)")
+            GlobalToastManager.shared.showError(L10n.Cerberus.Toast.errorPrefix("Backups", error.localizedDescription))
         }
     }
 
@@ -796,9 +813,9 @@ class CerberusViewModel: ObservableObject {
         do {
             _ = try await cerberus.configBackup(on: serverId)
             await loadConfigBackups()
-            GlobalToastManager.shared.showSuccess("Config backup created")
+            GlobalToastManager.shared.showSuccess(L10n.Cerberus.Toast.configBackupCreated)
         } catch {
-            GlobalToastManager.shared.showError("Backup: \(error.localizedDescription)")
+            GlobalToastManager.shared.showError(L10n.Cerberus.Toast.errorPrefix("Backup", error.localizedDescription))
         }
     }
 
@@ -809,7 +826,7 @@ class CerberusViewModel: ObservableObject {
         do {
             anomalyStatus = try await cerberus.getAnomalyStatus(on: serverId)
         } catch {
-            GlobalToastManager.shared.showError("Anomaly: \(error.localizedDescription)")
+            GlobalToastManager.shared.showError(L10n.Cerberus.Toast.errorPrefix("Anomaly", error.localizedDescription))
         }
         anomalyLoading = false
     }
@@ -821,7 +838,7 @@ class CerberusViewModel: ObservableObject {
         do {
             sessionStatus = try await cerberus.getSessionStatus(on: serverId)
         } catch {
-            GlobalToastManager.shared.showError("Session: \(error.localizedDescription)")
+            GlobalToastManager.shared.showError(L10n.Cerberus.Toast.errorPrefix("Session", error.localizedDescription))
         }
         sessionLoading = false
     }
@@ -833,7 +850,7 @@ class CerberusViewModel: ObservableObject {
         do {
             customRules = try await cerberus.listRules(on: serverId)
         } catch {
-            GlobalToastManager.shared.showError("Rules: \(error.localizedDescription)")
+            GlobalToastManager.shared.showError(L10n.Cerberus.Toast.errorPrefix("Rules", error.localizedDescription))
         }
         rulesLoading = false
     }
@@ -842,9 +859,9 @@ class CerberusViewModel: ObservableObject {
         do {
             try await cerberus.addRule(id: id, expression: expression, on: serverId)
             await loadCustomRules()
-            GlobalToastManager.shared.showSuccess("Rule added")
+            GlobalToastManager.shared.showSuccess(L10n.Cerberus.Toast.ruleAdded)
         } catch {
-            GlobalToastManager.shared.showError("Add rule: \(error.localizedDescription)")
+            GlobalToastManager.shared.showError(L10n.Cerberus.Toast.errorPrefix("Add rule", error.localizedDescription))
         }
     }
 
@@ -852,9 +869,9 @@ class CerberusViewModel: ObservableObject {
         do {
             try await cerberus.removeRule(id: id, on: serverId)
             await loadCustomRules()
-            GlobalToastManager.shared.showSuccess("Rule removed")
+            GlobalToastManager.shared.showSuccess(L10n.Cerberus.Toast.ruleRemoved)
         } catch {
-            GlobalToastManager.shared.showError("Remove rule: \(error.localizedDescription)")
+            GlobalToastManager.shared.showError(L10n.Cerberus.Toast.errorPrefix("Remove rule", error.localizedDescription))
         }
     }
 }

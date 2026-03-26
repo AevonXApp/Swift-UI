@@ -68,7 +68,7 @@ struct AXPluginGateView<Content: View>: View {
                 .font(AXTypography.title2)
                 .foregroundStyle(Color.axTextPrimary)
 
-            Text(gate.pluginInfo?.description ?? "This plugin is not installed on this server.")
+            Text(gate.pluginInfo?.description ?? L10n.Cerberus.Gate.notInstalled)
                 .font(AXTypography.body)
                 .foregroundStyle(Color.axTextSecondary)
                 .multilineTextAlignment(.center)
@@ -99,11 +99,11 @@ struct AXPluginGateView<Content: View>: View {
     private var pricingBadge: some View {
         if let pricing = gate.pluginInfo?.pricing {
             if pricing.isFree {
-                AXBadge(text: "Free", color: .axSuccess, style: .soft)
+                AXBadge(text: L10n.Cerberus.Gate.free, color: .axSuccess, style: .soft)
             } else if pricing.isPaid {
-                AXBadge(text: pricing.price ?? "Paid", color: .axAccentBlue, style: .soft)
+                AXBadge(text: pricing.price ?? L10n.Cerberus.Gate.paid, color: .axAccentBlue, style: .soft)
             } else if pricing.isSubscribers {
-                AXBadge(text: "Pro", color: .axWarning, style: .soft)
+                AXBadge(text: L10n.Cerberus.Gate.pro, color: .axWarning, style: .soft)
             }
         }
     }
@@ -116,11 +116,11 @@ struct AXPluginGateView<Content: View>: View {
             // Paid / Subscribers and NOT purchased → link to purchase
             VStack(spacing: AXSpacing.sm) {
                 AXPrimaryButton(
-                    title: "Get Plugin",
+                    title: L10n.Cerberus.Gate.getPlugin,
                     icon: "cart",
                     action: { gate.openPurchasePage() }
                 )
-                Text("Opens in browser")
+                Text(L10n.Cerberus.Gate.opensInBrowser)
                     .font(AXTypography.caption)
                     .foregroundStyle(Color.axTextMuted)
             }
@@ -128,7 +128,7 @@ struct AXPluginGateView<Content: View>: View {
             // Free → direct install
             VStack(spacing: AXSpacing.sm) {
                 AXPrimaryButton(
-                    title: "Install Plugin",
+                    title: L10n.Cerberus.Gate.installPlugin,
                     icon: "arrow.down.circle",
                     action: {
                         Task { await gate.install(slug: slug, serverId: serverId) }
@@ -181,11 +181,11 @@ struct AXPluginGateView<Content: View>: View {
 
             VStack(spacing: AXSpacing.sm) {
                 AXPrimaryButton(
-                    title: "Get License",
+                    title: L10n.Cerberus.Gate.getLicense,
                     icon: "cart",
                     action: { gate.openPurchasePage() }
                 )
-                Text("Opens in browser")
+                Text(L10n.Cerberus.Gate.opensInBrowser)
                     .font(AXTypography.caption)
                     .foregroundStyle(Color.axTextMuted)
             }
@@ -206,7 +206,7 @@ struct AXPluginGateView<Content: View>: View {
                 .font(.system(size: 36))
                 .foregroundStyle(Color.axWarning)
 
-            Text("Failed to check plugin status")
+            Text(L10n.Cerberus.Gate.checkFailed)
                 .font(AXTypography.headline)
                 .foregroundStyle(Color.axTextPrimary)
 
@@ -279,7 +279,7 @@ class AXPluginGateViewModel: ObservableObject {
                         module: "PluginGate"
                     )
                     await fetchPluginInfo(slug: slug)
-                    let message = licenseResult.userMessage ?? "A valid license is required to use this plugin."
+                    let message = licenseResult.userMessage ?? L10n.Cerberus.Gate.licenseRequired
                     state = .licenseRequired(message)
                 }
                 return
@@ -289,7 +289,7 @@ class AXPluginGateViewModel: ObservableObject {
             await fetchPluginInfo(slug: slug)
             state = .notInstalled
         } catch {
-            state = .error("Unable to check plugin status. Please try again.")
+            state = .error(L10n.Cerberus.Gate.checkFailedDesc)
         }
     }
 
@@ -348,7 +348,7 @@ class AXPluginGateViewModel: ObservableObject {
             // If we don't have info, try to fetch it first
             await fetchPluginInfo(slug: slug)
             guard let plugin = pluginInfo else {
-                GlobalToastManager.shared.showError("Plugin info not available")
+                GlobalToastManager.shared.showError(L10n.Cerberus.Gate.pluginInfoNA)
                 return
             }
             await performInstall(plugin: plugin, serverId: serverId)
@@ -359,7 +359,7 @@ class AXPluginGateViewModel: ObservableObject {
 
     private func performInstall(plugin: Plugin, serverId: String) async {
         isInstalling = true
-        installStatus = "Verifying license..."
+        installStatus = L10n.Cerberus.Gate.verifyingLicense
 
         let log = AevonXCoreBridge.CoreLogger.shared
         let startTime = CFAbsoluteTimeGetCurrent()
@@ -379,7 +379,7 @@ class AXPluginGateViewModel: ObservableObject {
             }
 
             // ── Step 2: Install via secure path (blind relay or legacy) ──
-            installStatus = "Preparing secure install..."
+            installStatus = L10n.Cerberus.Gate.preparingInstall
             let token = await AevonXCoreBridge.AuthService.shared.getToken() ?? ""
             let targetVersion = plugin.activeVersion
 
@@ -413,14 +413,14 @@ class AXPluginGateViewModel: ObservableObject {
             }
 
             // Step 3: Reload hooks
-            installStatus = "Finalizing..."
+            installStatus = L10n.Cerberus.Gate.finalizing
             log.info("[PluginGate] Reloading hooks...", module: "PluginGate")
             await AevonXCoreBridge.HookLoader.shared.load(serverId: serverId, force: true)
 
             let totalDuration = CFAbsoluteTimeGetCurrent() - startTime
             log.info("[PluginGate] ✅ \(plugin.slug) installed in \(String(format: "%.1f", totalDuration))s", module: "PluginGate")
 
-            GlobalToastManager.shared.showSuccess("\(plugin.name) installed successfully")
+            GlobalToastManager.shared.showSuccess(L10n.Cerberus.Gate.installedSuccessfully(plugin.name))
             state = .installed
 
         } catch let error as PluginInstallError {
@@ -431,7 +431,7 @@ class AXPluginGateViewModel: ObservableObject {
         } catch {
             let totalDuration = CFAbsoluteTimeGetCurrent() - startTime
             log.error("[PluginGate] ✖ FAILED after \(String(format: "%.1f", totalDuration))s: \(error.localizedDescription)", module: "PluginGate")
-            GlobalToastManager.shared.showError("Installation failed. Please try again later.")
+            GlobalToastManager.shared.showError(L10n.Cerberus.Gate.installFailed)
             installStatus = nil
         }
 

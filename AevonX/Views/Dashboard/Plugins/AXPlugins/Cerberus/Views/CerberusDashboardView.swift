@@ -118,7 +118,7 @@ struct CerberusDashboardView: View {
                         .font(AXTypography.title2)
                         .fontWeight(.bold)
                         .foregroundStyle(Color.axTextPrimary)
-                    Text("AXCerberus · Layer 7 WAF")
+                    Text(L10n.Cerberus.Dashboard.heroSubtitle)
                         .font(AXTypography.caption)
                         .foregroundStyle(Color.axTextTertiary)
                 }
@@ -135,10 +135,10 @@ struct CerberusDashboardView: View {
                 enablePulseAnimation: viewModel.serviceStatus?.isActive ?? false
             )
             if viewModel.ddosStatus?.underAttack == true {
-                AXBadge(text: "UNDER ATTACK", color: .axError, style: .soft)
+                AXBadge(text: L10n.Cerberus.Dashboard.underAttack, color: .axError, style: .soft)
             }
             if (viewModel.overview?.blockedRequests ?? 0) > 0 {
-                AXBadge(text: "\(viewModel.formatNumber(viewModel.overview?.blockedRequests ?? 0)) blocked", color: .axWarning, style: .soft)
+                AXBadge(text: L10n.Cerberus.Dashboard.blockedCount(viewModel.formatNumber(viewModel.overview?.blockedRequests ?? 0)), color: .axWarning, style: .soft)
             }
         }
     }
@@ -185,13 +185,13 @@ struct CerberusDashboardView: View {
                             .font(AXTypography.monoMd)
                             .fontWeight(.bold)
                             .foregroundStyle(Color.axTextPrimary)
-                        Text("blocked")
+                        Text(L10n.Cerberus.Dashboard.blocked)
                             .font(AXTypography.caption2)
                             .foregroundStyle(Color.axTextMuted)
                     }
                 )
             }
-            Text("Protection Rate")
+            Text(L10n.Cerberus.Dashboard.protectionRate)
                 .font(AXTypography.caption)
                 .foregroundStyle(Color.axTextSecondary)
         }
@@ -199,9 +199,9 @@ struct CerberusDashboardView: View {
 
     private var heroMetricsRight: some View {
         VStack(alignment: .trailing, spacing: AXSpacing.lg) {
-            heroMetric(label: "Total Requests", value: viewModel.formatNumber(viewModel.overview?.totalRequests ?? 0), color: .axAccentBlue)
-            heroMetric(label: "Requests / sec", value: String(format: "%.1f", viewModel.overview?.qps ?? 0.0), color: .axAccentGreen)
-            heroMetric(label: "Uptime", value: viewModel.formatUptime(viewModel.overview?.uptimeSeconds ?? 0), color: .axAccentPurple)
+            heroMetric(label: L10n.Cerberus.Dashboard.totalRequests, value: viewModel.formatNumber(viewModel.overview?.totalRequests ?? 0), color: .axAccentBlue)
+            heroMetric(label: L10n.Cerberus.Dashboard.requestsPerSec, value: String(format: "%.1f", viewModel.overview?.qps ?? 0.0), color: .axAccentGreen)
+            heroMetric(label: L10n.Cerberus.Dashboard.uptime, value: viewModel.formatUptime(viewModel.overview?.uptimeSeconds ?? 0), color: .axAccentPurple)
         }
     }
 
@@ -221,22 +221,22 @@ struct CerberusDashboardView: View {
 
     private var primaryStatsGrid: some View {
         HStack(spacing: AXSpacing.md) {
-            primaryStatCard(title: "Total Requests",
+            primaryStatCard(title: L10n.Cerberus.Dashboard.totalRequests,
                             value: viewModel.formatNumber(viewModel.overview?.totalRequests ?? 0),
                             icon: "arrow.up.arrow.down", color: .axAccentBlue,
-                            subtitle: "all traffic")
-            primaryStatCard(title: "Blocked",
+                            subtitle: L10n.Cerberus.Dashboard.allTraffic)
+            primaryStatCard(title: L10n.Cerberus.Dashboard.statBlocked,
                             value: viewModel.formatNumber(viewModel.overview?.blockedRequests ?? 0),
                             icon: "hand.raised.fill", color: .axError,
                             subtitle: String(format: "%.1f%%", viewModel.overview?.protectionRate ?? 0.0))
-            primaryStatCard(title: "Allowed",
+            primaryStatCard(title: L10n.Cerberus.Dashboard.statAllowed,
                             value: viewModel.formatNumber(viewModel.overview?.allowedRequests ?? 0),
                             icon: "checkmark.shield.fill", color: .axAccentGreen,
-                            subtitle: "passed through")
-            primaryStatCard(title: "QPS",
+                            subtitle: L10n.Cerberus.Dashboard.passedThrough)
+            primaryStatCard(title: L10n.Cerberus.Dashboard.statQPS,
                             value: String(format: "%.1f", viewModel.overview?.qps ?? 0.0),
                             icon: "gauge.with.dots.needle.33percent", color: .axAccentPurple,
-                            subtitle: "queries/sec")
+                            subtitle: L10n.Cerberus.Dashboard.queriesSec)
         }
     }
 
@@ -286,7 +286,7 @@ struct CerberusDashboardView: View {
     private var timelineHeader: some View {
         HStack {
             gradientIconBox(icon: "chart.bar.fill", color: .axAccentBlue, size: 26)
-            Text("24-Hour Traffic")
+            Text(L10n.Cerberus.Dashboard.hourTraffic)
                 .font(AXTypography.headline)
                 .foregroundStyle(Color.axTextPrimary)
             Spacer()
@@ -379,8 +379,8 @@ struct CerberusDashboardView: View {
 
     private var timelineLegend: some View {
         HStack(spacing: AXSpacing.lg) {
-            chartLegendDot(color: .axAccentGreen, label: "Allowed")
-            chartLegendDot(color: .axError, label: "Blocked")
+            chartLegendDot(color: .axAccentGreen, label: L10n.Cerberus.Dashboard.legendAllowed)
+            chartLegendDot(color: .axError, label: L10n.Cerberus.Dashboard.legendBlocked)
             Spacer()
             timelinePeakLabel
         }
@@ -393,7 +393,7 @@ struct CerberusDashboardView: View {
                 Image(systemName: "arrow.up.right")
                     .font(.system(size: 9))
                     .foregroundStyle(Color.axWarning)
-                Text("Peak: \(peak.hour):00")
+                Text(L10n.Cerberus.Dashboard.peakHour(peak.hour))
                     .font(AXTypography.monoXs)
                     .foregroundStyle(Color.axTextMuted)
             }
@@ -410,7 +410,7 @@ struct CerberusDashboardView: View {
     private var emptyChartPlaceholder: some View {
         VStack(spacing: AXSpacing.sm) {
             Image(systemName: "chart.bar").font(AXTypography.title3).foregroundStyle(Color.axTextMuted)
-            Text("No timeline data").font(AXTypography.caption).foregroundStyle(Color.axTextMuted)
+            Text(L10n.Cerberus.Dashboard.noTimelineData).font(AXTypography.caption).foregroundStyle(Color.axTextMuted)
         }
         .frame(maxWidth: .infinity).frame(height: 200)
     }
@@ -423,7 +423,7 @@ struct CerberusDashboardView: View {
                 countriesHeader
                 if viewModel.countries.isEmpty {
                     Spacer()
-                    AXEmptyState(icon: "globe", title: "No Data", description: "No attack origins recorded yet.")
+                    AXEmptyState(icon: "globe", title: L10n.Cerberus.Dashboard.noData, description: L10n.Cerberus.Dashboard.noAttackOrigins)
                     Spacer()
                 } else {
                     countriesListContent
@@ -435,7 +435,7 @@ struct CerberusDashboardView: View {
     private var countriesHeader: some View {
         HStack {
             gradientIconBox(icon: "globe.americas.fill", color: .axError, size: 26)
-            Text("Attack Origins")
+            Text(L10n.Cerberus.Dashboard.attackOrigins)
                 .font(AXTypography.headline)
                 .foregroundStyle(Color.axTextPrimary)
             Spacer()
@@ -497,14 +497,14 @@ struct CerberusDashboardView: View {
 
     private var liveIndicatorsRow: some View {
         HStack(spacing: AXSpacing.md) {
-            liveIndicatorCard(label: "Bytes In", value: viewModel.formatBytes(viewModel.overview?.bytesIn ?? 0),
-                              icon: "arrow.down.circle.fill", color: .axAccentBlue, sub: "inbound")
-            liveIndicatorCard(label: "Bytes Out", value: viewModel.formatBytes(viewModel.overview?.bytesOut ?? 0),
-                              icon: "arrow.up.circle.fill", color: .axAccentGreen, sub: "outbound")
-            liveIndicatorCard(label: "Bot Requests", value: viewModel.formatNumber(viewModel.overview?.botRequests ?? 0),
+            liveIndicatorCard(label: L10n.Cerberus.Dashboard.bytesIn, value: viewModel.formatBytes(viewModel.overview?.bytesIn ?? 0),
+                              icon: "arrow.down.circle.fill", color: .axAccentBlue, sub: L10n.Cerberus.Dashboard.inbound)
+            liveIndicatorCard(label: L10n.Cerberus.Dashboard.bytesOut, value: viewModel.formatBytes(viewModel.overview?.bytesOut ?? 0),
+                              icon: "arrow.up.circle.fill", color: .axAccentGreen, sub: L10n.Cerberus.Dashboard.outbound)
+            liveIndicatorCard(label: L10n.Cerberus.Dashboard.botRequests, value: viewModel.formatNumber(viewModel.overview?.botRequests ?? 0),
                               icon: "cpu.fill", color: .axWarning, sub: botPercentLabel)
-            liveIndicatorCard(label: "Uptime", value: viewModel.formatUptime(viewModel.overview?.uptimeSeconds ?? 0),
-                              icon: "clock.fill", color: .axAccentPurple, sub: "continuous")
+            liveIndicatorCard(label: L10n.Cerberus.Dashboard.uptime, value: viewModel.formatUptime(viewModel.overview?.uptimeSeconds ?? 0),
+                              icon: "clock.fill", color: .axAccentPurple, sub: L10n.Cerberus.Dashboard.continuous)
         }
     }
 
@@ -576,19 +576,19 @@ struct CerberusDashboardView: View {
 
     private var ddosShieldTitleRow: some View {
         HStack(spacing: AXSpacing.sm) {
-            Text("DDoS Shield").font(AXTypography.headline).fontWeight(.semibold).foregroundStyle(Color.axTextPrimary)
-            AXBadge(text: "Level \(viewModel.ddosStatus?.level ?? 0): \(viewModel.ddosStatus?.levelName ?? "None")", color: ddosColor, style: .soft)
+            Text(L10n.Cerberus.Dashboard.ddosShield).font(AXTypography.headline).fontWeight(.semibold).foregroundStyle(Color.axTextPrimary)
+            AXBadge(text: L10n.Cerberus.Dashboard.levelName(viewModel.ddosStatus?.level ?? 0, viewModel.ddosStatus?.levelName ?? "None"), color: ddosColor, style: .soft)
             if viewModel.ddosStatus?.underAttack == true {
-                AXBadge(text: "UNDER ATTACK", color: .axError, style: .soft)
+                AXBadge(text: L10n.Cerberus.Dashboard.underAttack, color: .axError, style: .soft)
             }
         }
     }
 
     private var ddosShieldMetricsRow: some View {
         HStack(spacing: AXSpacing.xxl) {
-            ddosMetric(label: "Current QPS", value: String(format: "%.1f", viewModel.ddosStatus?.currentQps ?? 0.0))
-            ddosMetric(label: "Baseline QPS", value: String(format: "%.1f", viewModel.ddosStatus?.baselineQps ?? 0.0))
-            ddosMetric(label: "Spike Ratio", value: ddosSpikeRatio)
+            ddosMetric(label: L10n.Cerberus.Dashboard.currentQPS, value: String(format: "%.1f", viewModel.ddosStatus?.currentQps ?? 0.0))
+            ddosMetric(label: L10n.Cerberus.Dashboard.baselineQPS, value: String(format: "%.1f", viewModel.ddosStatus?.baselineQps ?? 0.0))
+            ddosMetric(label: L10n.Cerberus.Dashboard.spikeRatio, value: ddosSpikeRatio)
         }
     }
 
@@ -599,7 +599,7 @@ struct CerberusDashboardView: View {
                 VStack(spacing: 0) {
                     Text("\(viewModel.ddosStatus?.level ?? 0)")
                         .font(AXTypography.title3).fontWeight(.bold).foregroundStyle(ddosColor)
-                    Text("LVL").font(AXTypography.caption2).foregroundStyle(Color.axTextMuted)
+                    Text(L10n.Cerberus.Dashboard.lvl).font(AXTypography.caption2).foregroundStyle(Color.axTextMuted)
                 }
             )
     }
@@ -639,26 +639,26 @@ struct CerberusDashboardView: View {
     private var moduleActivityHeader: some View {
         HStack {
             gradientIconBox(icon: "square.grid.3x3.fill", color: .axAccentBlue, size: 26)
-            Text("Module Activity")
+            Text(L10n.Cerberus.Dashboard.moduleActivity)
                 .font(AXTypography.headline)
                 .foregroundStyle(Color.axTextPrimary)
             Spacer()
-            Text("today").font(AXTypography.monoXs).foregroundStyle(Color.axTextMuted)
+            Text(L10n.Cerberus.Dashboard.today).font(AXTypography.monoXs).foregroundStyle(Color.axTextMuted)
         }
     }
 
     private var moduleActivityCells: some View {
         HStack(spacing: 0) {
-            moduleCell(icon: "ant.fill", label: "Honeypot",
+            moduleCell(icon: "ant.fill", label: L10n.Cerberus.Dashboard.honeypotLabel,
                        value: "\(viewModel.overview?.honeypotHitsToday ?? 0)", color: .axWarning,
                        showBorder: true)
-            moduleCell(icon: "key.fill", label: "Credential",
+            moduleCell(icon: "key.fill", label: L10n.Cerberus.Dashboard.credentialLabel,
                        value: "\(viewModel.overview?.credentialAttacksToday ?? 0)", color: .axError,
                        showBorder: true)
-            moduleCell(icon: "doc.text.magnifyingglass", label: "DLP",
+            moduleCell(icon: "doc.text.magnifyingglass", label: L10n.Cerberus.Dashboard.dlpLabel,
                        value: "\(viewModel.overview?.dlpEventsToday ?? 0)", color: .axAccentPurple,
                        showBorder: true)
-            moduleCell(icon: "bell.badge.fill", label: "Alerts",
+            moduleCell(icon: "bell.badge.fill", label: L10n.Cerberus.Dashboard.alertsLabel,
                        value: "\(viewModel.recentAlerts.count)", color: .axAccentBlue,
                        showBorder: false)
         }
@@ -702,7 +702,7 @@ struct CerberusDashboardView: View {
     private var recentBlocksHeader: some View {
         HStack {
             gradientIconBox(icon: "hand.raised.fill", color: .axError, size: 26)
-            Text("Recent Blocks")
+            Text(L10n.Cerberus.Dashboard.recentBlocks)
                 .font(AXTypography.headline)
                 .foregroundStyle(Color.axTextPrimary)
             Spacer()
@@ -758,7 +758,7 @@ struct CerberusDashboardView: View {
             Spacer()
             VStack(spacing: AXSpacing.sm) {
                 Image(systemName: "shield.checkered").font(AXTypography.title2).foregroundStyle(Color.axTextMuted)
-                Text("No recent blocks").font(AXTypography.caption).foregroundStyle(Color.axTextMuted)
+                Text(L10n.Cerberus.Dashboard.noRecentBlocks).font(AXTypography.caption).foregroundStyle(Color.axTextMuted)
             }
             .padding(.vertical, AXSpacing.xxl)
             Spacer()
@@ -815,10 +815,10 @@ struct CerberusDashboardView: View {
 
     private var threatLabel: String {
         switch threatLevel {
-        case 0: return "Protected"
-        case 1: return "Monitoring"
-        case 2: return "Alert"
-        default: return "Under Attack"
+        case 0: return L10n.Cerberus.Dashboard.protected
+        case 1: return L10n.Cerberus.Dashboard.monitoring
+        case 2: return L10n.Cerberus.Dashboard.alert
+        default: return L10n.Cerberus.Dashboard.underAttackLabel
         }
     }
 
