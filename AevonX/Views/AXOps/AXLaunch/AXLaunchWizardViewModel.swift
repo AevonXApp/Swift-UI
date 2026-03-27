@@ -3,14 +3,15 @@
 //  AevonX
 //
 //  ViewModel for the AXLaunch deployment wizard.
+//  New flow: Source → Server → Domain & Path → Database → Review & Launch
 //
 
 import SwiftUI
 import Combine
+import UniformTypeIdentifiers
 import AevonXCoreBridge
 
 /// Identifiable key-value pair for env variable editing.
-/// Using a stable UUID prevents ForEach index-mismatch crashes on deletion.
 struct EnvEntry: Identifiable {
     let id = UUID()
     var key: String
@@ -24,26 +25,24 @@ class AXLaunchWizardViewModel: ObservableObject {
 
     enum Step: Int, CaseIterable {
         case source = 0
-        case detect = 1
-        case configure = 2
-        case domain = 3
-        case database = 4
-        case review = 5
-        case progress = 6
+        case server = 1
+        case domainPath = 2
+        case database = 3
+        case review = 4
+        case progress = 5
 
         var title: String {
             switch self {
             case .source: return L10n.AXLaunch.stepSelectSource
-            case .detect: return L10n.AXLaunch.stepDetect
-            case .configure: return L10n.AXLaunch.stepConfigure
-            case .domain: return L10n.AXLaunch.stepDomain
+            case .server: return L10n.AXLaunch.stepServer
+            case .domainPath: return L10n.AXLaunch.stepDomainPath
             case .database: return L10n.AXLaunch.stepDatabase
             case .review: return L10n.AXLaunch.stepReview
             case .progress: return L10n.AXLaunch.stepProgress
             }
         }
 
-        static let wizardSteps: [Step] = [.source, .detect, .configure, .domain, .database, .review]
+        static let wizardSteps: [Step] = [.source, .server, .domainPath, .database, .review]
     }
 
     // MARK: - Database Mode
@@ -58,37 +57,57 @@ class AXLaunchWizardViewModel: ObservableObject {
         case newDomain, existingDomain, skip
     }
 
+    // MARK: - Source Type
+
+    enum SourceType: String {
+        case folder, compressed
+    }
+
+    // MARK: - Connection Stage
+
+    enum ConnectionStage: String {
+        case idle, connecting, authenticating, detecting, connected, failed
+    }
+
     // MARK: - Published State
 
     @Published var currentStep: Step = .source
-    @Published var server: Server
     @Published var isUpdate = false
 
     // Step 1 — Source
+    @Published var sourceType: SourceType = .folder
     @Published var localPath: String = ""
     @Published var localFolderName: String = ""
+    @Published var compressedFilePath: String = ""
+    @Published var compressedFileName: String = ""
 
-    // Step 2 — Detection
+    // Step 2 — Server
+    @Published var selectedServer: Server?
+    @Published var availableServers: [Server] = []
+    @Published var connectionStage: ConnectionStage = .idle
+    @Published var connectionError: String?
+    @Published var isConnecting = false
     @Published var isDetecting = false
     @Published var projectInfo: AXProjectInfo?
     @Published var detectionError: String?
     @Published var manualFramework: String?
     @Published var ignoreList: [String] = []
 
-    // Step 3 — Configure
-    @Published var remotePath: String = "/var/www/"
-    @Published var remoteAppName: String = ""
-    @Published var envValues: [EnvEntry] = []
-    @Published var postSteps = AXPostStepConfig()
-
-    // Step 4 — Domain
+    // Step 3 — Domain & Path
     @Published var domainMode: DomainMode = .newDomain
     @Published var domainName: String = ""
+    @Published var existingDomains: [String] = []
+    @Published var isLoadingDomains = false
     @Published var webServer: String = "nginx"
     @Published var useSSL = true
     @Published var forceHTTPS = true
+    @Published var remotePath: String = "/var/www/"
+    @Published var remoteAppName: String = ""
+    @Published var serverDirectories: [RemoteFileItem] = []
+    @Published var currentBrowsePath: String = "/var/www"
+    @Published var isBrowsingServer = false
 
-    // Step 5 — Database
+    // Step 4 — Database
     @Published var dbMode: DBMode = .autoCreate
     @Published var dbEngine: String = "mysql"
     @Published var dbName: String = ""
@@ -99,8 +118,12 @@ class AXLaunchWizardViewModel: ObservableObject {
     @Published var dbTestResult: AXDBTestResult?
     @Published var isTestingDB = false
     @Published var existingDatabases: [String] = []
+    @Published var installedDBEngines: [String] = []
+    @Published var isDetectingEngines = false
 
-    // Step 6 — Review
+    // Step 5 — Review & Launch
+    @Published var envValues: [EnvEntry] = []
+    @Published var postSteps = AXPostStepConfig()
     @Published var saveConfig = false
 
     // Progress
@@ -122,11 +145,14 @@ class AXLaunchWizardViewModel: ObservableObject {
 
     private let service = AXLaunchService.shared
     private var pollingTask: Task<Void, Never>?
+    weak var serverListViewModel: ServerListViewModel?
 
     // MARK: - Init
 
-    init(server: Server, localPath: String? = nil) {
-        self.server = server
+    init(servers: [Server] = [], selectedServer: Server? = nil, localPath: String? = nil, serverListViewModel: ServerListViewModel? = nil) {
+        self.availableServers = servers
+        self.selectedServer = selectedServer
+        self.serverListViewModel = serverListViewModel
         if let path = localPath {
             self.localPath = path
             self.localFolderName = URL(fileURLWithPath: path).lastPathComponent
@@ -137,13 +163,26 @@ class AXLaunchWizardViewModel: ObservableObject {
         pollingTask?.cancel()
     }
 
-    // MARK: - Navigation
+    // MARK: - Computed
 
+    var server: Server { selectedServer ?? Server.placeholder(name: "—") }
+    /// The Bridge/Core server ID string used for SSH operations.
+    var serverID: String { selectedServer?.coreID ?? "" }
     var isFirstStep: Bool { currentStep == .source }
     var isLastWizardStep: Bool { currentStep == .review }
     var isProgressStep: Bool { currentStep == .progress }
-    var wizardStepIndex: Int { min(currentStep.rawValue, 5) }
-    var totalWizardSteps: Int { 6 }
+    var wizardStepIndex: Int { min(currentStep.rawValue, 4) }
+    var totalWizardSteps: Int { 5 }
+
+    var fullRemotePath: String {
+        if remoteAppName.isEmpty {
+            return remotePath.hasSuffix("/") ? String(remotePath.dropLast()) : remotePath
+        }
+        let base = remotePath.hasSuffix("/") ? remotePath : remotePath + "/"
+        return base + remoteAppName
+    }
+
+    // MARK: - Navigation
 
     func nextStep() {
         guard let next = Step(rawValue: currentStep.rawValue + 1), next != .progress else { return }
@@ -157,13 +196,19 @@ class AXLaunchWizardViewModel: ObservableObject {
 
     var isCurrentStepValid: Bool {
         switch currentStep {
-        case .source: return !localPath.isEmpty
-        case .detect: return projectInfo != nil || manualFramework != nil
-        case .configure: return !remoteAppName.isEmpty
-        case .domain: return domainMode == .skip || !domainName.isEmpty
-        case .database: return true
-        case .review: return true
-        case .progress: return true
+        case .source:
+            return sourceType == .folder ? !localPath.isEmpty : !compressedFilePath.isEmpty
+        case .server:
+            return selectedServer != nil && connectionStage == .connected && (projectInfo != nil || manualFramework != nil)
+        case .domainPath:
+            let hasPath = !remoteAppName.isEmpty || (domainMode == .existingDomain && !remotePath.isEmpty)
+            return hasPath && (domainMode == .skip || !domainName.isEmpty)
+        case .database:
+            return true
+        case .review:
+            return true
+        case .progress:
+            return true
         }
     }
 
@@ -180,6 +225,31 @@ class AXLaunchWizardViewModel: ObservableObject {
         setLocalPath(url.path)
     }
 
+    func selectFile() {
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = true
+        panel.canChooseDirectories = false
+        panel.allowsMultipleSelection = false
+        panel.allowedContentTypes = [
+            .init(filenameExtension: "zip")!,
+            .init(filenameExtension: "tar")!,
+            .init(filenameExtension: "gz")!,
+            .init(filenameExtension: "tgz")!,
+            .init(filenameExtension: "bz2")!,
+            .init(filenameExtension: "xz")!,
+            .init(filenameExtension: "rar")!,
+            .init(filenameExtension: "7z")!,
+        ].compactMap { $0 }
+
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        compressedFilePath = url.path
+        compressedFileName = url.lastPathComponent
+        // Derive app name from archive filename
+        let stem = url.deletingPathExtension().lastPathComponent
+            .replacingOccurrences(of: ".tar", with: "")
+        remoteAppName = stem.lowercased().replacingOccurrences(of: " ", with: "-")
+    }
+
     func setLocalPath(_ path: String) {
         localPath = path
         localFolderName = URL(fileURLWithPath: path).lastPathComponent
@@ -188,7 +258,92 @@ class AXLaunchWizardViewModel: ObservableObject {
             .replacingOccurrences(of: " ", with: "-")
     }
 
-    // MARK: - Step 2: Detection
+    // MARK: - Step 2: Server Connection
+
+    func connectToServer() async {
+        guard let server = selectedServer else { return }
+        connectionStage = .connecting
+        connectionError = nil
+        isConnecting = true
+
+        // 1. Check if already connected
+        let alreadyConnected = SSHBridge.shared.isConnected(serverID: serverID)
+
+        if alreadyConnected {
+            // Already have an active SSH session — skip connection
+            connectionStage = .detecting
+            if sourceType == .folder && !localPath.isEmpty {
+                await detectProject()
+            }
+            connectionStage = .connected
+            isConnecting = false
+            return
+        }
+
+        // 2. Not connected — decrypt credentials and establish SSH
+        connectionStage = .authenticating
+
+        guard let serverListVM = serverListViewModel,
+              let accessible = serverListVM.servers.first(where: { $0.id == serverID }) else {
+            connectionStage = .failed
+            connectionError = L10n.AXLaunch.errorConnectionFailed
+            isConnecting = false
+            return
+        }
+
+        do {
+            let payload = EncryptedServerPayload(
+                encryptedData: accessible.server.encryptedPayload,
+                nonce: accessible.server.payloadNonce,
+                authTag: accessible.server.payloadAuthTag,
+                metadata: accessible.server.encryptionMetadata
+            )
+
+            let serverData = try await ServerEncryptionService.shared.decryptServer(
+                EncryptedServerData.self,
+                from: payload
+            )
+
+            // Trust stored host key (TOFU)
+            let hostPort = "\(server.host):\(server.port)"
+            if let storedFP = UserDefaults.standard.string(forKey: "hostkey:\(hostPort)") {
+                SSHBridge.shared.trustHostKey(hostPort: hostPort, fingerprint: storedFP)
+            }
+
+            let connectResult = await SSHBridge.shared.connectAsync(
+                serverID: serverID,
+                host: server.host,
+                port: Int32(server.port),
+                username: serverData.connectionDetails.username,
+                password: serverData.authentication.password ?? "",
+                privateKey: serverData.authentication.privateKey ?? "",
+                passphrase: serverData.authentication.keyPassphrase ?? ""
+            )
+
+            // Parse result
+            guard let data = connectResult.data(using: .utf8),
+                  let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                  json["success"] as? Bool == true else {
+                connectionStage = .failed
+                connectionError = L10n.AXLaunch.errorConnectionFailed
+                isConnecting = false
+                return
+            }
+
+            // 3. Connected — detect project
+            connectionStage = .detecting
+            if sourceType == .folder && !localPath.isEmpty {
+                await detectProject()
+            }
+
+            connectionStage = .connected
+        } catch {
+            connectionStage = .failed
+            connectionError = error.localizedDescription
+        }
+
+        isConnecting = false
+    }
 
     func detectProject() async {
         guard !localPath.isEmpty else { return }
@@ -219,10 +374,174 @@ class AXLaunchWizardViewModel: ObservableObject {
         dbPassword = generateRandomPassword()
     }
 
-    // MARK: - Step 3: Env
+    // MARK: - Step 3: Domain & Path
+
+    /// Domain → document root map (populated when loading existing domains).
+    var domainRoots: [String: String] = [:]
+
+    func loadExistingDomains() async {
+        guard selectedServer != nil else { return }
+        isLoadingDomains = true
+        existingDomains = []
+        domainRoots = [:]
+
+        // Parse nginx/apache site configs to get domain=root pairs.
+        // The awk must:
+        //  - Match `server_name` directive (nginx) only when the value contains a dot
+        //  - Match `root` directive only at the start of line (ignoring fastcgi_param lines)
+        //  - Filter out placeholders: _, localhost, www.example.com, variables ($...)
+        let raw = await SSHBridge.shared.executeAsync(
+            serverID: serverID,
+            command: #"""
+            for f in /etc/nginx/sites-enabled/*; do
+              [ -f "$f" ] && awk '
+                /^\s*server_name\s/ {
+                  for (i=2; i<=NF; i++) {
+                    v=$i; gsub(/;/,"",v)
+                    if (v ~ /^[a-zA-Z0-9].*\..*[a-zA-Z]$/ && v !~ /^www\.example\./ && v != "localhost")
+                      name=v
+                  }
+                }
+                /^\s*root\s/ {
+                  v=$2; gsub(/;/,"",v)
+                  if (v ~ /^\// && v !~ /\$/)
+                    root=v
+                }
+                END { if (name && root) print name"="root }
+              ' "$f" 2>/dev/null
+            done
+            for f in /etc/apache2/sites-enabled/*; do
+              [ -f "$f" ] && awk '
+                /^\s*ServerName\s/ {
+                  v=$2; gsub(/;/,"",v)
+                  if (v ~ /^[a-zA-Z0-9].*\..*[a-zA-Z]$/ && v !~ /^www\.example\./ && v != "localhost")
+                    name=v
+                }
+                /^\s*DocumentRoot\s/ {
+                  v=$2; gsub(/"/,"",v)
+                  if (v ~ /^\// && v !~ /\$/)
+                    root=v
+                }
+                END { if (name && root) print name"="root }
+              ' "$f" 2>/dev/null
+            done
+            """#
+        )
+
+        var domains: [String] = []
+        for line in raw.components(separatedBy: .newlines) {
+            let trimmed = line.trimmingCharacters(in: .whitespaces)
+            guard !trimmed.isEmpty else { continue }
+            let parts = trimmed.components(separatedBy: "=")
+            guard parts.count >= 2 else { continue }
+            let domain = parts[0]
+            let root = parts.dropFirst().joined(separator: "=") // root path may contain =
+            // Extra safety: skip anything that looks like a variable or keyword
+            let bogus: Set<String> = ["_", "default", "localhost", "server_name",
+                                       "www.example.com", "SCRIPT_FILENAME", "root"]
+            if !bogus.contains(domain), domain.contains("."), !domain.hasPrefix("$") {
+                domains.append(domain)
+                domainRoots[domain] = root
+            }
+        }
+
+        existingDomains = Array(Set(domains)).sorted()
+        isLoadingDomains = false
+    }
+
+    /// Called when user selects an existing domain — auto-fills remote path from its document root.
+    func selectExistingDomain(_ domain: String) {
+        domainName = domain
+        if let root = domainRoots[domain] {
+            remotePath = root.hasSuffix("/") ? root : root + "/"
+            remoteAppName = ""
+        }
+    }
+
+    func browseServerPath(_ path: String) async {
+        guard selectedServer != nil else { return }
+        isBrowsingServer = true
+        currentBrowsePath = path
+
+        do {
+            serverDirectories = try await SFTPService.shared.listDirectory(
+                path: path, serverId: serverID, showHidden: false
+            ).filter { $0.isDirectory }
+        } catch {
+            serverDirectories = []
+        }
+        isBrowsingServer = false
+    }
+
+    func selectRemotePath(_ path: String) {
+        remotePath = path.hasSuffix("/") ? path : path + "/"
+    }
+
+    // MARK: - Step 4: Database
+
+    func detectInstalledDBEngines() async {
+        guard selectedServer != nil else { return }
+        isDetectingEngines = true
+        installedDBEngines = []
+
+        let raw = await SSHBridge.shared.executeAsync(
+            serverID: serverID,
+            command: """
+            (command -v mysql >/dev/null 2>&1 && echo mysql) ; \
+            (command -v psql >/dev/null 2>&1 && echo postgres) ; \
+            (command -v mongod >/dev/null 2>&1 && echo mongodb) ; \
+            (command -v redis-cli >/dev/null 2>&1 && echo redis)
+            """
+        )
+
+        installedDBEngines = raw.components(separatedBy: .newlines)
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .filter { !$0.isEmpty }
+
+        // Auto-select first installed engine
+        if let first = installedDBEngines.first, !installedDBEngines.isEmpty {
+            if dbEngine.isEmpty || !installedDBEngines.contains(dbEngine) {
+                dbEngine = first
+            }
+        }
+
+        isDetectingEngines = false
+    }
+
+    func testDBConnection() async {
+        isTestingDB = true
+        dbTestResult = nil
+        guard selectedServer != nil else { return }
+        let config = AXDatabaseConfig(
+            mode: dbMode.rawValue,
+            engine: dbEngine,
+            host: dbHost.isEmpty ? nil : dbHost,
+            port: Int(dbPort),
+            dbName: dbName,
+            dbUsername: dbUsername,
+            dbPassword: dbPassword,
+            autoGenCreds: dbMode == .autoCreate
+        )
+        let result = await service.testDBConnection(serverID: serverID, config: config)
+        dbTestResult = result
+        isTestingDB = false
+    }
+
+    func loadExistingDatabases() async {
+        guard selectedServer != nil else { return }
+        existingDatabases = await service.listDatabases(serverID: serverID, engine: dbEngine)
+    }
+
+    func regenerateDBPassword() {
+        dbPassword = generateRandomPassword()
+    }
+
+    // MARK: - Step 5: Env Vars
 
     func loadEnvExample() {
-        let envPath = URL(fileURLWithPath: localPath)
+        let basePath = sourceType == .folder ? localPath : ""
+        guard !basePath.isEmpty else { return }
+        let envPath = URL(fileURLWithPath: basePath)
             .appendingPathComponent(projectInfo?.envSamplePath ?? ".env.example")
         guard let content = try? String(contentsOf: envPath, encoding: .utf8) else { return }
         envValues = content
@@ -244,44 +563,17 @@ class AXLaunchWizardViewModel: ObservableObject {
         envValues.removeAll { $0.id == id }
     }
 
-    // MARK: - Step 5: Database
-
-    func testDBConnection() async {
-        isTestingDB = true
-        dbTestResult = nil
-        let config = AXDatabaseConfig(
-            mode: dbMode.rawValue,
-            engine: dbEngine,
-            host: dbHost.isEmpty ? nil : dbHost,
-            port: Int(dbPort),
-            dbName: dbName,
-            dbUsername: dbUsername,
-            dbPassword: dbPassword,
-            autoGenCreds: dbMode == .autoCreate
-        )
-        let result = await service.testDBConnection(serverID: server.id.uuidString, config: config)
-        dbTestResult = result
-        isTestingDB = false
-    }
-
-    func loadExistingDatabases() async {
-        existingDatabases = await service.listDatabases(serverID: server.id.uuidString, engine: dbEngine)
-    }
-
-    func regenerateDBPassword() {
-        dbPassword = generateRandomPassword()
-    }
-
     // MARK: - Build Config
 
     func buildConfig() -> AXLaunchConfig {
         let framework = manualFramework ?? projectInfo?.type ?? "unknown"
-        let fullRemotePath = remotePath + remoteAppName
         let envDict: [String: String]? = envValues.isEmpty ? nil :
             Dictionary(uniqueKeysWithValues: envValues.filter { !$0.key.isEmpty }.map { ($0.key, $0.value) })
 
+        let sourcePath = sourceType == .folder ? localPath : compressedFilePath
+
         return AXLaunchConfig(
-            localPath: localPath,
+            localPath: sourcePath,
             remotePath: fullRemotePath,
             framework: framework,
             domainName: domainMode == .skip ? nil : domainName,
@@ -293,7 +585,7 @@ class AXLaunchWizardViewModel: ObservableObject {
             envValues: envDict,
             postSteps: postSteps,
             useDocker: framework == "docker",
-            transferMode: "auto",
+            transferMode: sourceType == .compressed ? "compressed" : "auto",
             saveConfig: saveConfig
         )
     }
@@ -330,6 +622,7 @@ class AXLaunchWizardViewModel: ObservableObject {
     // MARK: - Launch
 
     func startLaunch() async {
+        guard selectedServer != nil else { return }
         isLaunching = true
         launchComplete = false
         launchFailed = false
@@ -340,14 +633,17 @@ class AXLaunchWizardViewModel: ObservableObject {
 
         do {
             let config = buildConfig()
+            print("[AXLaunch] Starting launch — serverID: \(serverID), framework: \(config.framework), localPath: \(config.localPath), remotePath: \(config.remotePath)")
             let id = if isUpdate {
-                try await service.startUpdate(serverID: server.id.uuidString, config: config)
+                try await service.startUpdate(serverID: serverID, config: config)
             } else {
-                try await service.startLaunch(serverID: server.id.uuidString, config: config)
+                try await service.startLaunch(serverID: serverID, config: config)
             }
+            print("[AXLaunch] Launch started — launchID: \(id)")
             launchID = id
             startPolling(id: id)
         } catch {
+            print("[AXLaunch] Launch FAILED — error: \(error)")
             launchFailed = true
             launchError = error.localizedDescription
             isLaunching = false
@@ -364,12 +660,12 @@ class AXLaunchWizardViewModel: ObservableObject {
     // MARK: - Update (Diff)
 
     func computeDiff() async {
+        guard selectedServer != nil else { return }
         isComputingDiff = true
         diff = nil
         do {
-            let fullRemotePath = remotePath + remoteAppName
             diff = try await service.computeDiff(
-                serverID: server.id.uuidString,
+                serverID: serverID,
                 localPath: localPath,
                 remotePath: fullRemotePath
             )
@@ -389,6 +685,7 @@ class AXLaunchWizardViewModel: ObservableObject {
             while !Task.isCancelled {
                 guard let self else { return }
                 let progress = await self.service.getProgress(launchID: id)
+                print("[AXLaunch] Poll — status: \(progress.status), step: \(progress.stepName), percent: \(progress.percent), log: \(progress.log)")
                 self.launchProgress = progress
 
                 let logsResult = await self.service.getLogs(launchID: id, fromIndex: logIndex)
@@ -397,7 +694,7 @@ class AXLaunchWizardViewModel: ObservableObject {
                     logIndex = logsResult.total
                 }
 
-                if progress.status == "completed" {
+                if progress.status == "success" {
                     self.launchComplete = true
                     self.isLaunching = false
                     break

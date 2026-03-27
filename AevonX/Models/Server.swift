@@ -43,6 +43,8 @@ enum ServerType: String, CaseIterable {
 /// Real server model - data comes from Core after decryption
 struct Server: Identifiable, Hashable {
     var id: UUID = UUID()
+    /// Original Core/Bridge ID string used for SSH operations.
+    var coreID: String = ""
     var name: String
     var host: String
     var port: Int
@@ -53,7 +55,7 @@ struct Server: Identifiable, Hashable {
     var lastConnected: Date?
     var os: String?
     var location: String?
-    
+
     // Customization
     var iconName: String
     var customColor: String
@@ -67,6 +69,7 @@ struct Server: Identifiable, Hashable {
     /// Creates a Server from decrypted Core data
     init(
         id: UUID? = nil,
+        coreID: String = "",
         name: String,
         host: String,
         port: Int,
@@ -85,6 +88,7 @@ struct Server: Identifiable, Hashable {
         uptime: String? = nil
     ) {
         self.id = id ?? UUID()
+        self.coreID = coreID.isEmpty ? (id ?? UUID()).uuidString : coreID
         self.name = name
         self.host = host
         self.port = port

@@ -64,56 +64,91 @@ struct RemoteFleetHeader: View {
 
             // Launch Button
             if viewModel.isAuthenticated, let onLaunch {
-                Button(action: onLaunch) {
-                    HStack(spacing: AXSpacing.sm) {
-                        Image(systemName: "paperplane.fill")
-                            .font(.system(size: 12))
-                        Text(L10n.AXLaunch.fleetButton)
-                    }
-                    .font(AXTypography.subheadline)
-                    .fontWeight(.medium)
-                    .foregroundColor(.axAccentBlue)
-                    .padding(.horizontal, AXSpacing.md)
-                    .padding(.vertical, AXSpacing.sm)
-                    .background(Color.axAccentBlue.opacity(0.1))
-                    .cornerRadius(AXCornerRadius.md)
-                }
-                .buttonStyle(PlainButtonStyle())
+                AXFleetLaunchButton(action: onLaunch)
             }
 
             // Add Server Button — hidden if not logged in, shows paywall if locked
             if viewModel.isAuthenticated {
-                Button(action: {
-                    if viewModel.canAddServer {
-                        showAddServer = true
-                    } else {
-                        showPaywall = true
-                    }
-                }) {
-                    HStack(spacing: AXSpacing.sm) {
-                        Image(systemName: viewModel.canAddServer ? "plus.circle.fill" : "lock.fill")
-                            .font(.system(size: 14))
-                        Text(viewModel.canAddServer ? L10n.Fleet.addServer : L10n.Button.upgrade)
-                    }
-                    .font(AXTypography.subheadline)
-                    .fontWeight(.semibold)
-                    .foregroundColor(.white)
-                    .padding(.horizontal, AXSpacing.lg)
-                    .padding(.vertical, AXSpacing.md)
-                    .background(
-                        LinearGradient(
-                            colors: viewModel.canAddServer
-                                ? [Color.axAccentBlue, Color.axAccentBlue.opacity(0.8)]
-                                : [Color.orange, Color.orange.opacity(0.8)],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                    .cornerRadius(AXCornerRadius.md)
-                    .shadow(color: (viewModel.canAddServer ? Color.axAccentBlue : Color.orange).opacity(0.3), radius: 8, y: 4)
-                }
-                .buttonStyle(PlainButtonStyle())
+                AXFleetAddServerButton(
+                    canAdd: viewModel.canAddServer,
+                    onAdd: { showAddServer = true },
+                    onUpgrade: { showPaywall = true }
+                )
             }
         }
+    }
+}
+
+// MARK: - Launch Button
+
+private struct AXFleetLaunchButton: View {
+    let action: () -> Void
+    @State private var isHovered = false
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: AXSpacing.sm) {
+                Image(systemName: "paperplane.fill")
+                    .font(.system(size: 12))
+                Text(L10n.AXLaunch.fleetButton)
+            }
+            .font(AXTypography.subheadline)
+            .fontWeight(.semibold)
+            .foregroundColor(.white)
+            .padding(.horizontal, AXSpacing.lg)
+            .padding(.vertical, AXSpacing.md)
+            .background(
+                LinearGradient(
+                    colors: [Color.axAccentGreen, Color.axAccentGreen.opacity(0.8)],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+            )
+            .cornerRadius(AXCornerRadius.md)
+            .shadow(color: Color.axAccentGreen.opacity(isHovered ? 0.5 : 0.3), radius: isHovered ? 12 : 8, y: 4)
+            .scaleEffect(isHovered ? 1.03 : 1.0)
+            .animation(.easeInOut(duration: 0.15), value: isHovered)
+        }
+        .buttonStyle(PlainButtonStyle())
+        .onHover { isHovered = $0 }
+    }
+}
+
+// MARK: - Add Server Button
+
+private struct AXFleetAddServerButton: View {
+    let canAdd: Bool
+    let onAdd: () -> Void
+    let onUpgrade: () -> Void
+    @State private var isHovered = false
+
+    var body: some View {
+        Button(action: { canAdd ? onAdd() : onUpgrade() }) {
+            HStack(spacing: AXSpacing.sm) {
+                Image(systemName: canAdd ? "plus.circle.fill" : "lock.fill")
+                    .font(.system(size: 14))
+                Text(canAdd ? L10n.Fleet.addServer : L10n.Button.upgrade)
+            }
+            .font(AXTypography.subheadline)
+            .fontWeight(.semibold)
+            .foregroundColor(.white)
+            .padding(.horizontal, AXSpacing.lg)
+            .padding(.vertical, AXSpacing.md)
+            .background(
+                LinearGradient(
+                    colors: canAdd
+                        ? [Color.axAccentBlue, Color.axAccentBlue.opacity(0.8)]
+                        : [Color.orange, Color.orange.opacity(0.8)],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+            )
+            .cornerRadius(AXCornerRadius.md)
+            .shadow(color: (canAdd ? Color.axAccentBlue : Color.orange).opacity(isHovered ? 0.5 : 0.3), radius: isHovered ? 12 : 8, y: 4)
+            .scaleEffect(isHovered ? 1.03 : 1.0)
+            .animation(.easeInOut(duration: 0.15), value: isHovered)
+        }
+        .buttonStyle(PlainButtonStyle())
+        .onHover { isHovered = $0 }
     }
 }

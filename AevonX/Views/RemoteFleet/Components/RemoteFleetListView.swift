@@ -49,6 +49,7 @@ struct RemoteFleetListView: View {
     
     private func navigateToServer(_ server: ServerViewModel) async {
         let fullServer = Server(
+            coreID: server.id,
             name: server.name,
             host: server.host,
             port: server.port,

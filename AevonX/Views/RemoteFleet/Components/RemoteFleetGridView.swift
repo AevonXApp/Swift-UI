@@ -47,6 +47,7 @@ struct RemoteFleetGridView: View {
         
         // Create full Server model from decrypted info
         let fullServer = Server(
+            coreID: server.id,
             name: server.name,
             host: server.host,
             port: server.port,

@@ -3,6 +3,7 @@
 //  AevonX
 //
 //  Sheet container for the AXLaunch deployment wizard.
+//  New flow: Source → Server → Domain & Path → Database → Review & Launch
 //
 
 import SwiftUI
@@ -13,8 +14,10 @@ struct AXLaunchWizardView: View {
     @StateObject private var viewModel: AXLaunchWizardViewModel
     @State private var showContent = false
 
-    init(server: Server, localPath: String? = nil) {
-        _viewModel = StateObject(wrappedValue: AXLaunchWizardViewModel(server: server, localPath: localPath))
+    init(servers: [Server], selectedServer: Server? = nil, localPath: String? = nil, serverListViewModel: ServerListViewModel? = nil) {
+        _viewModel = StateObject(wrappedValue: AXLaunchWizardViewModel(
+            servers: servers, selectedServer: selectedServer, localPath: localPath, serverListViewModel: serverListViewModel
+        ))
     }
 
     var body: some View {
@@ -28,13 +31,10 @@ struct AXLaunchWizardView: View {
                 }
             }
         }
-        .frame(minWidth: 600, minHeight: 560)
+        .frame(minWidth: 620, minHeight: 580)
         .preferredColorScheme(ThemeEngine.shared.colorScheme)
         .onAppear {
             withAnimation { showContent = true }
-            if !viewModel.localPath.isEmpty {
-                Task { await viewModel.detectProject() }
-            }
         }
         .alert("Error", isPresented: $viewModel.showError) {
             Button("OK", role: .cancel) {}
@@ -74,9 +74,11 @@ private extension AXLaunchWizardView {
                     Text(viewModel.isUpdate ? L10n.AXLaunch.update : L10n.AXLaunch.title)
                         .font(.system(size: 20, weight: .bold, design: .rounded))
                         .foregroundColor(.axTextPrimary)
-                    Text(viewModel.server.name)
-                        .font(AXTypography.subheadline)
-                        .foregroundColor(.axTextSecondary)
+                    if let server = viewModel.selectedServer {
+                        Text(server.name)
+                            .font(AXTypography.subheadline)
+                            .foregroundColor(.axTextSecondary)
+                    }
                 }
                 Spacer()
                 if !viewModel.isProgressStep || viewModel.launchComplete || viewModel.launchFailed {
@@ -126,20 +128,17 @@ private extension AXLaunchWizardView {
             case .source:
                 AXLaunchStep1Source(viewModel: viewModel)
                     .transition(stepTransition)
-            case .detect:
-                AXLaunchStep2Detect(viewModel: viewModel)
+            case .server:
+                AXLaunchStep2Server(viewModel: viewModel)
                     .transition(stepTransition)
-            case .configure:
-                AXLaunchStep3Configure(viewModel: viewModel)
-                    .transition(stepTransition)
-            case .domain:
-                AXLaunchStep4Domain(viewModel: viewModel)
+            case .domainPath:
+                AXLaunchStep3DomainPath(viewModel: viewModel)
                     .transition(stepTransition)
             case .database:
-                AXLaunchStep5Database(viewModel: viewModel)
+                AXLaunchStep4Database(viewModel: viewModel)
                     .transition(stepTransition)
             case .review:
-                AXLaunchStep6Review(viewModel: viewModel)
+                AXLaunchStep5ReviewLaunch(viewModel: viewModel)
                     .transition(stepTransition)
             case .progress:
                 AXLaunchStepProgress(viewModel: viewModel)
@@ -172,26 +171,45 @@ private extension AXLaunchWizardView {
             Spacer()
 
             if viewModel.isLastWizardStep {
-                AXPrimaryButton(
-                    title: viewModel.isUpdate ? L10n.AXLaunch.updateNow : L10n.AXLaunch.launchNow,
-                    icon: "paperplane.fill",
-                    action: { Task { await viewModel.startLaunch() } },
-                    isDisabled: !viewModel.isCurrentStepValid
-                )
+                launchButton
             } else {
                 AXPrimaryButton(
                     title: L10n.Button.continue,
                     icon: "chevron.right",
                     action: {
                         withAnimation { viewModel.nextStep() }
-                        if viewModel.currentStep == .detect && viewModel.projectInfo == nil {
-                            Task { await viewModel.detectProject() }
-                        }
                     },
                     isDisabled: !viewModel.isCurrentStepValid
                 )
             }
         }
         .padding(AXSpacing.xl)
+    }
+
+    var launchButton: some View {
+        Button {
+            Task { await viewModel.startLaunch() }
+        } label: {
+            HStack(spacing: AXSpacing.sm) {
+                Image(systemName: "paperplane.fill")
+                    .font(.system(size: 13))
+                Text(viewModel.isUpdate ? L10n.AXLaunch.updateNow : L10n.AXLaunch.launchNow)
+                    .font(.system(size: 14, weight: .semibold))
+            }
+            .foregroundColor(.white)
+            .padding(.horizontal, AXSpacing.xl)
+            .padding(.vertical, AXSpacing.md)
+            .background(
+                LinearGradient(
+                    colors: [Color.axAccentBlue, Color.axAccentBlue.opacity(0.8)],
+                    startPoint: .leading, endPoint: .trailing
+                )
+            )
+            .cornerRadius(AXCornerRadius.lg)
+            .shadow(color: Color.axAccentBlue.opacity(0.3), radius: 8, y: 4)
+        }
+        .buttonStyle(.plain)
+        .disabled(!viewModel.isCurrentStepValid)
+        .opacity(viewModel.isCurrentStepValid ? 1 : 0.5)
     }
 }

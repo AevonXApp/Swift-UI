@@ -17,6 +17,7 @@
 
 import SwiftUI
 import AppKit
+import ObjectiveC
 import AevonXCoreBridge
 
 // MARK: - Code Editor View (SwiftUI)
@@ -25,6 +26,8 @@ struct CodeEditorView: View {
     @Binding var text: String
     let language: FileLanguage
     let isReadOnly: Bool
+    /// Called when the user presses ⌘S inside the editor.
+    var onSave: (() -> Void)?
 
     private var lineCount: Int {
         max(1, text.components(separatedBy: "\n").count)
@@ -61,7 +64,7 @@ struct CodeEditorView: View {
                         // SyntaxBridge sits behind the editor; its NSView
                         // introspects the hierarchy to find our NSTextView
                         .background(
-                            SyntaxBridge(text: text, language: language)
+                            SyntaxBridge(text: text, language: language, onSave: onSave)
                         )
                 }
             }
@@ -93,10 +96,12 @@ private struct LineGutterView: View {
 // MARK: - Syntax Highlighting Bridge
 
 /// Zero-size NSViewRepresentable that finds the TextEditor's NSTextView
-/// via view-hierarchy traversal and applies syntax-colored attributes.
+/// via view-hierarchy traversal, applies syntax-colored attributes,
+/// and swizzles `keyDown:` on the NSTextView's class to intercept ⌘S.
 private struct SyntaxBridge: NSViewRepresentable {
     let text:     String
     let language: FileLanguage
+    var onSave:   (() -> Void)?
 
     func makeCoordinator() -> Coordinator { Coordinator() }
 
@@ -104,15 +109,21 @@ private struct SyntaxBridge: NSViewRepresentable {
         let v = HunterView()
         v.onFound = { [weak c = context.coordinator] tv in
             c?.textView = tv
+            CmdSSwizzler.swizzleOnce(cls: type(of: tv))
         }
         return v
     }
 
     func updateNSView(_ nsView: HunterView, context: Context) {
-        // Retry finding the textView on every update (in case hierarchy
-        // wasn't ready during makeNSView).
+        // Keep the save action reference on the HunterView
+        nsView.onSave = onSave
+        // Retry finding the textView on every update
         if context.coordinator.textView == nil {
             nsView.hunt()
+        }
+        // Store save closure on the NSTextView via associated object
+        if let tv = context.coordinator.textView {
+            CmdSSwizzler.setAction(on: tv, action: onSave)
         }
         guard let tv = context.coordinator.textView,
               let storage = tv.textStorage else { return }
@@ -127,6 +138,7 @@ private struct SyntaxBridge: NSViewRepresentable {
     // MARK: HunterView — traverses hierarchy to find NSTextView
     final class HunterView: NSView {
         var onFound: ((NSTextView) -> Void)?
+        var onSave: (() -> Void)?
 
         override func viewDidMoveToWindow() {
             super.viewDidMoveToWindow()
@@ -156,6 +168,63 @@ private struct SyntaxBridge: NSViewRepresentable {
             }
             return nil
         }
+    }
+}
+
+// MARK: - ⌘S via Method Swizzle on keyDown:
+
+/// File-level associated-object key (stable pointer).
+private var axSaveActionKey: UInt8 = 0
+
+/// Box to wrap a Swift closure as an ObjC associated object.
+private final class AXSaveBox: NSObject {
+    let action: () -> Void
+    init(_ action: @escaping () -> Void) { self.action = action }
+}
+
+/// Swizzles `keyDown:` on the NSTextView's actual class (whatever Apple
+/// private subclass it is) to intercept ⌘S.  The bonk sound proves that
+/// `keyDown:` IS reached, so this is the correct interception point.
+private enum CmdSSwizzler {
+    private static var swizzledClasses = Set<String>()
+    /// Original IMP stored per class name.
+    private static var origIMPs: [String: IMP] = [:]
+
+    static func setAction(on textView: NSTextView, action: (() -> Void)?) {
+        objc_setAssociatedObject(
+            textView, &axSaveActionKey,
+            action.map { AXSaveBox($0) },
+            .OBJC_ASSOCIATION_RETAIN_NONATOMIC
+        )
+    }
+
+    static func swizzleOnce(cls: AnyClass) {
+        let className = String(cString: class_getName(cls))
+        guard !swizzledClasses.contains(className) else { return }
+        swizzledClasses.insert(className)
+
+        let sel = #selector(NSResponder.keyDown(with:))
+        guard let original = class_getInstanceMethod(cls, sel) else { return }
+        let origIMP = method_getImplementation(original)
+        origIMPs[className] = origIMP
+
+        let block: @convention(block) (NSObject, NSEvent) -> Void = { obj, event in
+            // Check for ⌘S (command only, no shift/option/control)
+            let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
+            if flags == .command, event.charactersIgnoringModifiers == "s" {
+                if let box = objc_getAssociatedObject(obj, &axSaveActionKey) as? AXSaveBox {
+                    box.action()
+                    return // consumed — no bonk
+                }
+            }
+            // Call original keyDown:
+            if let imp = origIMPs[className] {
+                typealias Fn = @convention(c) (NSObject, Selector, NSEvent) -> Void
+                unsafeBitCast(imp, to: Fn.self)(obj, sel, event)
+            }
+        }
+
+        method_setImplementation(original, imp_implementationWithBlock(block))
     }
 }
 

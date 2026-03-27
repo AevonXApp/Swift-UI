@@ -28,7 +28,12 @@ struct AXLaunchStepProgress: View {
                 Text(headerTitle)
                     .font(.system(size: 18, weight: .semibold, design: .rounded))
                     .foregroundColor(headerColor)
-                if !viewModel.launchProgress.stepName.isEmpty {
+                if viewModel.launchFailed, let error = viewModel.launchError, !error.isEmpty {
+                    Text(error)
+                        .font(AXTypography.caption)
+                        .foregroundColor(.axError)
+                        .lineLimit(3)
+                } else if !viewModel.launchProgress.stepName.isEmpty {
                     Text(viewModel.launchProgress.stepName)
                         .font(AXTypography.caption)
                         .foregroundColor(.axTextSecondary)
@@ -175,6 +180,20 @@ struct AXLaunchStepProgress: View {
 
     private var footerButtons: some View {
         HStack {
+            if viewModel.launchFailed {
+                AXPrimaryButton(
+                    title: L10n.Button.back,
+                    icon: "chevron.left",
+                    action: {
+                        withAnimation(.spring(response: 0.35)) {
+                            viewModel.currentStep = .review
+                            viewModel.launchFailed = false
+                            viewModel.launchError = nil
+                        }
+                    },
+                    style: .secondary
+                )
+            }
             Spacer()
             if viewModel.isLaunching {
                 AXPrimaryButton(

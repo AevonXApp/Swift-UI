@@ -13,20 +13,37 @@
 
 // Steps
 "axlaunch.step.selectSource" = "Select Project";
-"axlaunch.step.detect" = "Project Detected";
-"axlaunch.step.configure" = "Configuration";
+"axlaunch.step.server" = "Select Server";
+"axlaunch.step.domainPath" = "Domain & Path";
 "axlaunch.step.domain" = "Domain";
 "axlaunch.step.database" = "Database";
-"axlaunch.step.review" = "Review";
+"axlaunch.step.review" = "Review & Launch";
 "axlaunch.step.progress" = "Launching";
 
 // Step 1 — Source
+"axlaunch.sourceFolder" = "Project Folder";
+"axlaunch.sourceCompressed" = "Compressed File";
 "axlaunch.dragDrop" = "Drag & drop your project folder here";
+"axlaunch.dragDropFile" = "Drag & drop your compressed file here";
 "axlaunch.chooseFolder" = "Choose Folder";
+"axlaunch.chooseFile" = "Choose File";
 "axlaunch.or" = "or";
 "axlaunch.recentProjects" = "Recent:";
+"axlaunch.supportedFormats" = "Supports: .zip, .tar.gz, .tgz, .bz2, .xz, .rar, .7z";
 
-// Step 2 — Detection
+// Step 2 — Server
+"axlaunch.selectServer" = "Select a server";
+"axlaunch.noServers" = "No servers available";
+"axlaunch.connectServer" = "Connect & Detect";
+"axlaunch.connected" = "Connected";
+"axlaunch.connectionFailed" = "Connection failed";
+"axlaunch.retry" = "Retry";
+"axlaunch.stage.connecting" = "Connecting";
+"axlaunch.stage.connectingDetail" = "Establishing SSH connection...";
+"axlaunch.stage.authenticating" = "Authenticating";
+"axlaunch.stage.authenticatingDetail" = "Verifying credentials...";
+"axlaunch.stage.detecting" = "Detecting project";
+"axlaunch.stage.detectingDetail" = "Analyzing project structure...";
 "axlaunch.match" = "match";
 "axlaunch.notCorrect" = "Not correct?";
 "axlaunch.selectManually" = "Select manually";
@@ -34,29 +51,21 @@
 "axlaunch.filesToTransfer" = "files";
 "axlaunch.toTransfer" = "to transfer";
 
-// Step 3 — Configure
-"axlaunch.remotePath" = "Remote Path";
-"axlaunch.envVars" = "Environment Variables";
-"axlaunch.loadEnvExample" = "Load .env.example";
-"axlaunch.addVariable" = "Add Variable";
-"axlaunch.postSteps" = "Post-Launch Steps";
-"axlaunch.loadDefaults" = "Load defaults";
-"axlaunch.step.installDeps" = "Install dependencies";
-"axlaunch.step.runMigrations" = "Run database migrations";
-"axlaunch.step.runSeeders" = "Run seeders";
-"axlaunch.step.runBuild" = "Build assets";
-"axlaunch.step.clearCaches" = "Clear & rebuild caches";
-"axlaunch.step.restartService" = "Restart service";
-
-// Step 4 — Domain
+// Step 3 — Domain & Path
 "axlaunch.addNewDomain" = "Add new domain";
 "axlaunch.useExistingDomain" = "Use existing domain";
 "axlaunch.skipDomain" = "Skip domain setup";
 "axlaunch.webServer" = "Web Server";
 "axlaunch.enableSSL" = "Enable SSL (Let's Encrypt)";
 "axlaunch.forceHTTPS" = "Force HTTPS redirect";
+"axlaunch.remotePath" = "Remote Path";
+"axlaunch.fullPath" = "Full path";
+"axlaunch.selectRemotePath" = "Select Remote Path";
+"axlaunch.selectThisPath" = "Select This Path";
+"axlaunch.loadingDomains" = "Loading domains...";
+"axlaunch.noDomainsFound" = "No existing domains found";
 
-// Step 5 — Database
+// Step 4 — Database
 "axlaunch.db.autoCreate" = "Auto Create";
 "axlaunch.db.autoCreateDesc" = "AXLaunch handles everything";
 "axlaunch.db.manual" = "Manual Setup";
@@ -74,8 +83,10 @@
 "axlaunch.db.testConnection" = "Test Connection";
 "axlaunch.db.regenerate" = "Regenerate";
 "axlaunch.db.selectDatabase" = "Select Database";
+"axlaunch.db.detectingEngines" = "Detecting installed engines...";
+"axlaunch.db.detectedEngines" = "Installed:";
 
-// Step 6 — Review
+// Step 5 — Review & Launch
 "axlaunch.review.server" = "Server";
 "axlaunch.review.framework" = "Framework";
 "axlaunch.review.path" = "Path";
@@ -83,6 +94,22 @@
 "axlaunch.review.database" = "Database";
 "axlaunch.review.transfer" = "Transfer";
 "axlaunch.review.steps" = "Steps";
+
+// Env Vars
+"axlaunch.envVars" = "Environment Variables";
+"axlaunch.loadEnvExample" = "Load .env.example";
+"axlaunch.addVariable" = "Add Variable";
+"axlaunch.noEnvVars" = "No environment variables configured";
+
+// Post-Launch Steps
+"axlaunch.postSteps" = "Post-Launch Steps";
+"axlaunch.loadDefaults" = "Load defaults";
+"axlaunch.step.installDeps" = "Install dependencies";
+"axlaunch.step.runMigrations" = "Run database migrations";
+"axlaunch.step.runSeeders" = "Run seeders";
+"axlaunch.step.runBuild" = "Build assets";
+"axlaunch.step.clearCaches" = "Clear & rebuild caches";
+"axlaunch.step.restartService" = "Restart service";
 
 // Diff / Update
 "axlaunch.diff.modified" = "Modified";
@@ -111,3 +138,4 @@
 "axlaunch.error.noFolder" = "Please select a project folder";
 "axlaunch.error.detectionFailed" = "Could not detect project type";
 "axlaunch.error.alreadyActive" = "A launch is already active on this server";
+"axlaunch.error.connectionFailed" = "Could not connect to server";

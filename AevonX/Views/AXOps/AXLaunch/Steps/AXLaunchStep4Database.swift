@@ -1,26 +1,72 @@
 //
-//  AXLaunchStep5Database.swift
+//  AXLaunchStep4Database.swift
 //  AevonX
 //
-//  Step 5: Database mode selection and configuration.
+//  Step 4: Database — auto-detect installed engines, existing DBs, SecureField.
 //
 
 import SwiftUI
 import AevonXCoreBridge
 
-struct AXLaunchStep5Database: View {
+struct AXLaunchStep4Database: View {
     @ObservedObject var viewModel: AXLaunchWizardViewModel
 
     var body: some View {
         ScrollView {
             VStack(spacing: AXSpacing.lg) {
                 AXLaunchStepHeader(
-                    stepIndex: 5, totalSteps: viewModel.totalWizardSteps,
+                    stepIndex: 4, totalSteps: viewModel.totalWizardSteps,
                     title: L10n.AXLaunch.stepDatabase
                 )
+                installedEnginesInfo
                 modeSelector
                 modeDetail
             }
+        }
+        .onAppear {
+            if viewModel.installedDBEngines.isEmpty {
+                Task { await viewModel.detectInstalledDBEngines() }
+            }
+        }
+    }
+
+    // MARK: - Installed Engines
+
+    @ViewBuilder
+    private var installedEnginesInfo: some View {
+        if viewModel.isDetectingEngines {
+            HStack(spacing: AXSpacing.sm) {
+                ProgressView().scaleEffect(0.7)
+                Text(L10n.AXLaunch.DB.detectingEngines)
+                    .font(AXTypography.caption)
+                    .foregroundColor(.axTextMuted)
+            }
+            .padding(AXSpacing.md)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color.axSurface)
+            .cornerRadius(AXCornerRadius.md)
+        } else if !viewModel.installedDBEngines.isEmpty {
+            HStack(spacing: AXSpacing.sm) {
+                Image(systemName: "checkmark.seal.fill")
+                    .foregroundColor(.axSuccess)
+                    .font(.system(size: 14))
+                Text(L10n.AXLaunch.DB.detectedEngines)
+                    .font(AXTypography.caption)
+                    .foregroundColor(.axTextMuted)
+                ForEach(viewModel.installedDBEngines, id: \.self) { engine in
+                    Text(engine.capitalized)
+                        .font(AXTypography.caption.weight(.medium))
+                        .foregroundColor(.axAccentBlue)
+                        .padding(.horizontal, AXSpacing.sm)
+                        .padding(.vertical, AXSpacing.xxxs)
+                        .background(Color.axAccentBlue.opacity(0.1))
+                        .cornerRadius(AXCornerRadius.sm)
+                }
+                Spacer()
+            }
+            .padding(AXSpacing.md)
+            .background(Color.axSuccess.opacity(0.06))
+            .cornerRadius(AXCornerRadius.md)
         }
     }
 
@@ -126,25 +172,7 @@ struct AXLaunchStep5Database: View {
             testConnectionButton
 
             if !viewModel.existingDatabases.isEmpty {
-                VStack(alignment: .leading, spacing: AXSpacing.xs) {
-                    Text(L10n.AXLaunch.DB.selectDatabase)
-                        .font(AXTypography.caption)
-                        .foregroundColor(.axTextMuted)
-                    ForEach(viewModel.existingDatabases, id: \.self) { db in
-                        Button {
-                            viewModel.dbName = db
-                        } label: {
-                            HStack {
-                                Image(systemName: viewModel.dbName == db ? "checkmark.circle.fill" : "circle")
-                                    .foregroundColor(viewModel.dbName == db ? .axAccentBlue : .axTextMuted)
-                                Text(db)
-                                    .font(.system(size: 13, design: .monospaced))
-                                    .foregroundColor(.axTextPrimary)
-                            }
-                        }
-                        .buttonStyle(.plain)
-                    }
-                }
+                existingDBList
             }
         }
         .padding(AXSpacing.lg)
@@ -153,7 +181,29 @@ struct AXLaunchStep5Database: View {
         .onAppear { Task { await viewModel.loadExistingDatabases() } }
     }
 
-    // MARK: - Shared
+    private var existingDBList: some View {
+        VStack(alignment: .leading, spacing: AXSpacing.xs) {
+            Text(L10n.AXLaunch.DB.selectDatabase)
+                .font(AXTypography.caption)
+                .foregroundColor(.axTextMuted)
+            ForEach(viewModel.existingDatabases, id: \.self) { db in
+                Button { viewModel.dbName = db } label: {
+                    HStack(spacing: AXSpacing.sm) {
+                        Image(systemName: viewModel.dbName == db ? "checkmark.circle.fill" : "circle")
+                            .foregroundColor(viewModel.dbName == db ? .axAccentBlue : .axTextMuted)
+                        Text(db)
+                            .font(.system(size: 13, design: .monospaced))
+                            .foregroundColor(.axTextPrimary)
+                        Spacer()
+                    }
+                    .padding(.vertical, AXSpacing.xxxs)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+    }
+
+    // MARK: - Shared Components
 
     private var enginePicker: some View {
         VStack(alignment: .leading, spacing: AXSpacing.xs) {
@@ -169,18 +219,26 @@ struct AXLaunchStep5Database: View {
 
     private func engineButton(_ value: String, _ label: String) -> some View {
         let isSelected = viewModel.dbEngine == value
+        let isInstalled = viewModel.installedDBEngines.contains(value)
         return Button { viewModel.dbEngine = value } label: {
-            Text(label)
-                .font(AXTypography.caption.weight(.medium))
-                .foregroundColor(isSelected ? .axBackground : .axTextPrimary)
-                .padding(.horizontal, AXSpacing.lg)
-                .padding(.vertical, AXSpacing.xs)
-                .background(isSelected ? Color.axAccentBlue : Color.axSurface)
-                .cornerRadius(AXCornerRadius.sm)
-                .overlay(
-                    RoundedRectangle(cornerRadius: AXCornerRadius.sm)
-                        .stroke(isSelected ? Color.axAccentBlue : Color.axBorder, lineWidth: 1)
-                )
+            HStack(spacing: AXSpacing.xs) {
+                Text(label)
+                    .font(AXTypography.caption.weight(.medium))
+                if isInstalled {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 10))
+                        .foregroundColor(.axSuccess)
+                }
+            }
+            .foregroundColor(isSelected ? .axBackground : .axTextPrimary)
+            .padding(.horizontal, AXSpacing.lg)
+            .padding(.vertical, AXSpacing.xs)
+            .background(isSelected ? Color.axAccentBlue : Color.axSurface)
+            .cornerRadius(AXCornerRadius.sm)
+            .overlay(
+                RoundedRectangle(cornerRadius: AXCornerRadius.sm)
+                    .stroke(isSelected ? Color.axAccentBlue : Color.axBorder, lineWidth: 1)
+            )
         }
         .buttonStyle(.plain)
     }

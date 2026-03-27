@@ -164,16 +164,13 @@ struct RemoteFleetView: View {
                 .presentationDetents([.medium, .large])
         }
         .sheet(isPresented: $showLaunchWizard) {
-            if let server = launchTargetServer {
-                AXLaunchWizardView(server: server, localPath: launchLocalPath)
-                    .frame(minWidth: 600, minHeight: 560)
-            } else if let first = filteredServers.first {
-                AXLaunchWizardView(
-                    server: serverViewModelToServer(first),
-                    localPath: launchLocalPath
-                )
-                .frame(minWidth: 600, minHeight: 560)
-            }
+            AXLaunchWizardView(
+                servers: filteredServers.map { serverViewModelToServer($0) },
+                selectedServer: launchTargetServer,
+                localPath: launchLocalPath,
+                serverListViewModel: viewModel
+            )
+            .frame(minWidth: 620, minHeight: 580)
         }
         .onDrop(of: [.fileURL], isTargeted: $isDraggingFolder) { providers in
             handleFolderDrop(providers)
@@ -262,6 +259,7 @@ struct RemoteFleetView: View {
     private func serverViewModelToServer(_ server: ServerViewModel) -> Server {
         Server(
             id: UUID(uuidString: server.id) ?? UUID(),
+            coreID: server.id,
             name: server.name,
             host: server.host,
             port: server.port,

@@ -218,12 +218,12 @@ struct FilesView: View {
         VStack(spacing: 0) {
             FileInlineEditorHeader(viewModel: viewModel)
             Divider().background(Color.axBorder)
-            
+
             // Find & Replace bar
             if viewModel.showFindReplace {
                 FindReplaceBar(viewModel: viewModel)
             }
-            
+
             // CRITICAL: frame + clipped prevent NSScrollView from expanding beyond parent
             ZStack {
                 if viewModel.isLoadingFile {
@@ -240,12 +240,12 @@ struct FilesView: View {
                     CodeEditorView(
                         text: $viewModel.editorContent,
                         language: viewModel.editorFile?.language ?? .plainText,
-                        isReadOnly: false
+                        isReadOnly: false,
+                        onSave: { [weak viewModel] in
+                            guard let vm = viewModel, vm.isEditorDirty else { return }
+                            vm.saveFile()
+                        }
                     )
-                    // KEY FIX: .id forces SwiftUI to destroy + recreate the
-                    // NSViewRepresentable for each new file. makeNSView is then
-                    // called with a properly-sized frame, so text is never
-                    // laid out in a zero-width container.
                     .id(viewModel.editorFile?.path ?? "")
                 }
             }
@@ -281,3 +281,4 @@ struct FilesView: View {
         }
     }
 }
+

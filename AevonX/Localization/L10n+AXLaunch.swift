@@ -20,20 +20,37 @@ extension L10n {
 
         // Steps
         static let stepSelectSource = s("axlaunch.step.selectSource", "Select Project")
-        static let stepDetect = s("axlaunch.step.detect", "Project Detected")
-        static let stepConfigure = s("axlaunch.step.configure", "Configuration")
+        static let stepServer = s("axlaunch.step.server", "Select Server")
+        static let stepDomainPath = s("axlaunch.step.domainPath", "Domain & Path")
         static let stepDomain = s("axlaunch.step.domain", "Domain")
         static let stepDatabase = s("axlaunch.step.database", "Database")
-        static let stepReview = s("axlaunch.step.review", "Review")
+        static let stepReview = s("axlaunch.step.review", "Review & Launch")
         static let stepProgress = s("axlaunch.step.progress", "Launching")
 
         // Step 1 — Source
+        static let sourceFolder = s("axlaunch.sourceFolder", "Project Folder")
+        static let sourceCompressed = s("axlaunch.sourceCompressed", "Compressed File")
         static let dragDrop = s("axlaunch.dragDrop", "Drag & drop your project folder here")
+        static let dragDropFile = s("axlaunch.dragDropFile", "Drag & drop your compressed file here")
         static let chooseFolder = s("axlaunch.chooseFolder", "Choose Folder")
+        static let chooseFile = s("axlaunch.chooseFile", "Choose File")
         static let or = s("axlaunch.or", "or")
         static let recentProjects = s("axlaunch.recentProjects", "Recent:")
+        static let supportedFormats = s("axlaunch.supportedFormats", "Supports: .zip, .tar.gz, .tgz, .bz2, .xz, .rar, .7z")
 
-        // Step 2 — Detection
+        // Step 2 — Server
+        static let selectServer = s("axlaunch.selectServer", "Select a server")
+        static let noServers = s("axlaunch.noServers", "No servers available")
+        static let connectServer = s("axlaunch.connectServer", "Connect & Detect")
+        static let connected = s("axlaunch.connected", "Connected")
+        static let connectionFailed = s("axlaunch.connectionFailed", "Connection failed")
+        static let retry = s("axlaunch.retry", "Retry")
+        static let stageConnecting = s("axlaunch.stage.connecting", "Connecting")
+        static let stageConnectingDetail = s("axlaunch.stage.connectingDetail", "Establishing SSH connection...")
+        static let stageAuthenticating = s("axlaunch.stage.authenticating", "Authenticating")
+        static let stageAuthenticatingDetail = s("axlaunch.stage.authenticatingDetail", "Verifying credentials...")
+        static let stageDetecting = s("axlaunch.stage.detecting", "Detecting project")
+        static let stageDetectingDetail = s("axlaunch.stage.detectingDetail", "Analyzing project structure...")
         static let match = s("axlaunch.match", "match")
         static let notCorrect = s("axlaunch.notCorrect", "Not correct?")
         static let selectManually = s("axlaunch.selectManually", "Select manually")
@@ -41,29 +58,21 @@ extension L10n {
         static let filesToTransfer = s("axlaunch.filesToTransfer", "files")
         static let toTransfer = s("axlaunch.toTransfer", "to transfer")
 
-        // Step 3 — Configure
-        static let remotePath = s("axlaunch.remotePath", "Remote Path")
-        static let envVars = s("axlaunch.envVars", "Environment Variables")
-        static let loadEnvExample = s("axlaunch.loadEnvExample", "Load .env.example")
-        static let addVariable = s("axlaunch.addVariable", "Add Variable")
-        static let postSteps = s("axlaunch.postSteps", "Post-Launch Steps")
-        static let loadDefaults = s("axlaunch.loadDefaults", "Load defaults")
-        static let stepInstallDeps = s("axlaunch.step.installDeps", "Install dependencies")
-        static let stepRunMigrations = s("axlaunch.step.runMigrations", "Run database migrations")
-        static let stepRunSeeders = s("axlaunch.step.runSeeders", "Run seeders")
-        static let stepRunBuild = s("axlaunch.step.runBuild", "Build assets")
-        static let stepClearCaches = s("axlaunch.step.clearCaches", "Clear & rebuild caches")
-        static let stepRestartService = s("axlaunch.step.restartService", "Restart service")
-
-        // Step 4 — Domain
+        // Step 3 — Domain & Path
         static let addNewDomain = s("axlaunch.addNewDomain", "Add new domain")
         static let useExistingDomain = s("axlaunch.useExistingDomain", "Use existing domain")
         static let skipDomain = s("axlaunch.skipDomain", "Skip domain setup")
         static let webServer = s("axlaunch.webServer", "Web Server")
         static let enableSSL = s("axlaunch.enableSSL", "Enable SSL (Let's Encrypt)")
         static let forceHTTPS = s("axlaunch.forceHTTPS", "Force HTTPS redirect")
+        static let remotePath = s("axlaunch.remotePath", "Remote Path")
+        static let fullPath = s("axlaunch.fullPath", "Full path")
+        static let selectRemotePath = s("axlaunch.selectRemotePath", "Select Remote Path")
+        static let selectThisPath = s("axlaunch.selectThisPath", "Select This Path")
+        static let loadingDomains = s("axlaunch.loadingDomains", "Loading domains...")
+        static let noDomainsFound = s("axlaunch.noDomainsFound", "No existing domains found")
 
-        // Step 5 — Database
+        // Step 4 — Database
         enum DB {
             private static func s(_ k: StaticString, _ v: String.LocalizationValue) -> String { String(localized: k, defaultValue: v, table: AXLaunch.table) }
 
@@ -84,9 +93,11 @@ extension L10n {
             static let testConnection = s("axlaunch.db.testConnection", "Test Connection")
             static let regenerate = s("axlaunch.db.regenerate", "Regenerate")
             static let selectDatabase = s("axlaunch.db.selectDatabase", "Select Database")
+            static let detectingEngines = s("axlaunch.db.detectingEngines", "Detecting installed engines...")
+            static let detectedEngines = s("axlaunch.db.detectedEngines", "Installed:")
         }
 
-        // Step 6 — Review
+        // Step 5 — Review & Launch
         enum Review {
             private static func s(_ k: StaticString, _ v: String.LocalizationValue) -> String { String(localized: k, defaultValue: v, table: AXLaunch.table) }
 
@@ -98,6 +109,22 @@ extension L10n {
             static let transfer = s("axlaunch.review.transfer", "Transfer")
             static let steps = s("axlaunch.review.steps", "Steps")
         }
+
+        // Env Vars (in Review step)
+        static let envVars = s("axlaunch.envVars", "Environment Variables")
+        static let loadEnvExample = s("axlaunch.loadEnvExample", "Load .env.example")
+        static let addVariable = s("axlaunch.addVariable", "Add Variable")
+        static let noEnvVars = s("axlaunch.noEnvVars", "No environment variables configured")
+
+        // Post-Steps (in Review step)
+        static let postSteps = s("axlaunch.postSteps", "Post-Launch Steps")
+        static let loadDefaults = s("axlaunch.loadDefaults", "Load defaults")
+        static let stepInstallDeps = s("axlaunch.step.installDeps", "Install dependencies")
+        static let stepRunMigrations = s("axlaunch.step.runMigrations", "Run database migrations")
+        static let stepRunSeeders = s("axlaunch.step.runSeeders", "Run seeders")
+        static let stepRunBuild = s("axlaunch.step.runBuild", "Build assets")
+        static let stepClearCaches = s("axlaunch.step.clearCaches", "Clear & rebuild caches")
+        static let stepRestartService = s("axlaunch.step.restartService", "Restart service")
 
         // Diff / Update
         enum Diff {
@@ -130,6 +157,7 @@ extension L10n {
         static let errorNoFolder = s("axlaunch.error.noFolder", "Please select a project folder")
         static let errorDetectionFailed = s("axlaunch.error.detectionFailed", "Could not detect project type")
         static let errorAlreadyActive = s("axlaunch.error.alreadyActive", "A launch is already active on this server")
+        static let errorConnectionFailed = s("axlaunch.error.connectionFailed", "Could not connect to server")
 
         // Dynamic strings
         static func stepOf(_ current: Int, _ total: Int) -> String {
