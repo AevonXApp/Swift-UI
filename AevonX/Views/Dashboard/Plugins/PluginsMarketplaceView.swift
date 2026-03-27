@@ -493,6 +493,22 @@ struct PluginCard: View {
             }
         }
         .onHover { isHovered = $0 }
+        .overlay {
+            if showUninstallConfirmation {
+                AXDeleteConfirmation(
+                    title: "Uninstall Plugin",
+                    itemName: plugin.name,
+                    icon: "puzzlepiece",
+                    warning: "This will remove the plugin from your server.",
+                    confirmLabel: "Uninstall",
+                    onConfirm: {
+                        showUninstallConfirmation = false
+                        onUninstall()
+                    },
+                    onCancel: { showUninstallConfirmation = false }
+                )
+            }
+        }
     }
 
     // MARK: - Sub-views
@@ -544,22 +560,6 @@ struct PluginCard: View {
         )
         .shadow(color: accentColor.opacity(isHovered ? 0.25 : 0.05), radius: isHovered ? 12 : 6)
         .animation(.easeOut(duration: 0.2), value: isHovered)
-        .overlay {
-            if showUninstallConfirmation {
-                AXDeleteConfirmation(
-                    title: "Uninstall Plugin",
-                    itemName: plugin.name,
-                    icon: "puzzlepiece",
-                    warning: "This will remove the plugin from your server.",
-                    confirmLabel: "Uninstall",
-                    onConfirm: {
-                        showUninstallConfirmation = false
-                        onUninstall()
-                    },
-                    onCancel: { showUninstallConfirmation = false }
-                )
-            }
-        }
     }
 
     private func installBadge(icon: String, label: String, color: Color) -> some View {

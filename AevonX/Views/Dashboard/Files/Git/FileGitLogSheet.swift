@@ -93,9 +93,7 @@ struct FileGitLogSheet: View {
 
             Button {
                 Task {
-                    _ = try? await GitService.shared.checkoutCommit(hash: commit.id, documentRoot: viewModel.currentPath, serverId: viewModel.serverId)
-                    await viewModel.loadGitInfo()
-                    await viewModel.loadGitLog()
+                    await viewModel.gitCheckoutCommit(commit.id)
                 }
             } label: {
                 Text(L10n.FileGit.Log.checkout)

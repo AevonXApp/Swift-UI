@@ -89,6 +89,7 @@ extension L10n {
             static let remove = s("git.remotes.remove", "Remove")
             static let name = s("git.remotes.name", "Remote Name")
             static let url = s("git.remotes.url", "Remote URL")
+            static let empty = s("git.remotes.empty", "No remotes configured")
         }
 
         // More Menu
@@ -127,6 +128,17 @@ extension L10n {
             static let committing = s("git.op.committing", "Committing...")
             static let switching = s("git.op.switching", "Switching branch...")
             static let merging = s("git.op.merging", "Merging...")
+            static let deleting = s("git.op.deleting", "Deleting branch...")
+            static let stashing = s("git.op.stashing", "Stashing...")
+            static let poppingStash = s("git.op.poppingStash", "Popping stash...")
+            static let droppingStash = s("git.op.droppingStash", "Dropping stash...")
+            static let checkingOutTag = s("git.op.checkingOutTag", "Checking out tag...")
+            static let addingRemote = s("git.op.addingRemote", "Adding remote...")
+            static let removingRemote = s("git.op.removingRemote", "Removing remote...")
+            static let resetting = s("git.op.resetting", "Resetting...")
+            static let discarding = s("git.op.discarding", "Discarding changes...")
+            static let disconnecting = s("git.op.disconnecting", "Disconnecting...")
+            static let checkingOut = s("git.op.checkingOut", "Checking out commit...")
         }
     }
 }

@@ -92,7 +92,7 @@ struct FileGitRemotesSheet: View {
     @ViewBuilder
     private var listSection: some View {
         if viewModel.gitRemotes.isEmpty {
-            Text("No remotes configured")
+            Text(L10n.FileGit.Remotes.empty)
                 .font(AXTypography.subheadline)
                 .foregroundColor(.axTextMuted)
         } else {

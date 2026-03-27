@@ -123,7 +123,7 @@ extension FileManagerViewModel {
     }
 
     func gitDeleteBranch(_ name: String) async {
-        await runGitOp("Deleting branch...") {
+        await runGitOp(L10n.FileGit.Op.deleting) {
             _ = try await GitService.shared.deleteBranch(name: name, documentRoot: self.currentPath, serverId: self.serverId)
         }
     }
@@ -138,7 +138,7 @@ extension FileManagerViewModel {
     // MARK: - Stash
 
     func gitStashSave() async {
-        await runGitOp("Stashing...") {
+        await runGitOp(L10n.FileGit.Op.stashing) {
             _ = try await GitService.shared.stashSave(message: self.gitStashMessage, documentRoot: self.currentPath, serverId: self.serverId)
         }
         gitStashMessage = ""
@@ -146,14 +146,14 @@ extension FileManagerViewModel {
     }
 
     func gitStashPop() async {
-        await runGitOp("Popping stash...") {
+        await runGitOp(L10n.FileGit.Op.poppingStash) {
             _ = try await GitService.shared.stashPop(documentRoot: self.currentPath, serverId: self.serverId)
         }
         await loadFiles()
     }
 
     func gitStashDrop(_ index: String) async {
-        await runGitOp("Dropping stash...") {
+        await runGitOp(L10n.FileGit.Op.droppingStash) {
             _ = try await GitService.shared.stashDrop(index: index, documentRoot: self.currentPath, serverId: self.serverId)
         }
     }
@@ -161,9 +161,19 @@ extension FileManagerViewModel {
     // MARK: - Tags
 
     func gitCheckoutTag(_ name: String) async {
-        await runGitOp("Checking out tag...") {
+        await runGitOp(L10n.FileGit.Op.checkingOutTag) {
             _ = try await GitService.shared.checkoutTag(name: name, documentRoot: self.currentPath, serverId: self.serverId)
         }
+        await loadFiles()
+    }
+
+    // MARK: - Checkout Commit
+
+    func gitCheckoutCommit(_ hash: String) async {
+        await runGitOp(L10n.FileGit.Op.checkingOut) {
+            _ = try await GitService.shared.checkoutCommit(hash: hash, documentRoot: self.currentPath, serverId: self.serverId)
+        }
+        await loadGitLog()
         await loadFiles()
     }
 
@@ -174,7 +184,7 @@ extension FileManagerViewModel {
         let url = gitNewRemoteURL.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !name.isEmpty, !url.isEmpty else { return }
 
-        await runGitOp("Adding remote...") {
+        await runGitOp(L10n.FileGit.Op.addingRemote) {
             _ = try await GitService.shared.addRemote(name: name, url: url, documentRoot: self.currentPath, serverId: self.serverId)
         }
         gitNewRemoteName = ""
@@ -182,7 +192,7 @@ extension FileManagerViewModel {
     }
 
     func gitRemoveRemote(_ name: String) async {
-        await runGitOp("Removing remote...") {
+        await runGitOp(L10n.FileGit.Op.removingRemote) {
             _ = try await GitService.shared.removeRemote(name: name, documentRoot: self.currentPath, serverId: self.serverId)
         }
     }
@@ -190,21 +200,21 @@ extension FileManagerViewModel {
     // MARK: - Danger Zone
 
     func gitResetHard() async {
-        await runGitOp("Resetting...") {
+        await runGitOp(L10n.FileGit.Op.resetting) {
             _ = try await GitService.shared.resetHard(ref: "HEAD", documentRoot: self.currentPath, serverId: self.serverId)
         }
         await loadFiles()
     }
 
     func gitDiscardAll() async {
-        await runGitOp("Discarding changes...") {
+        await runGitOp(L10n.FileGit.Op.discarding) {
             _ = try await GitService.shared.discardAll(documentRoot: self.currentPath, serverId: self.serverId)
         }
         await loadFiles()
     }
 
     func gitDisconnect() async {
-        await runGitOp("Disconnecting...") {
+        await runGitOp(L10n.FileGit.Op.disconnecting) {
             _ = try await GitService.shared.disconnectGit(documentRoot: self.currentPath, serverId: self.serverId)
         }
         isGitRepo = false

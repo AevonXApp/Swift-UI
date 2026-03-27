@@ -119,11 +119,30 @@ class ChronoViewModel: ObservableObject {
     let serverId: String
     private var apiToken: String = ""
     private var liveLogTask: Task<Void, Never>?
+    private var tokenLoaded = false
 
     // MARK: - Init
 
     init(serverId: String) {
         self.serverId = serverId
+    }
+
+    // MARK: - Token
+
+    /// Reads the API token from the server's config.avx file via SSH.
+    /// Must be called before any API requests.
+    func loadAPIToken() async {
+        guard !tokenLoaded else { return }
+        let raw = await sshExec(
+            "python3 -c \"import json; cfg=json.load(open('/etc/aevonx/plugins/axchrono/config.avx')); " +
+            "[print(f['value']) for s in cfg.get('config_schema',[]) for f in s.get('fields',[]) if f['key']=='stats_api_token']\" 2>/dev/null " +
+            "|| grep -o '\"stats_api_token\"[^}]*' /etc/aevonx/plugins/axchrono/config.avx | grep -o '\"value\"[^,}]*' | sed 's/.*\"\\([^\"]*\\)\"/\\1/'"
+        )
+        let token = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !token.isEmpty {
+            apiToken = token
+        }
+        tokenLoaded = true
     }
 
     // MARK: - Dashboard
@@ -183,6 +202,7 @@ class ChronoViewModel: ObservableObject {
     // MARK: - Live Log
 
     func watchLiveLog(deployId: String) async {
+        await loadAPIToken()
         isLiveStreaming = true
         liveLogLines = []
         showLiveLog = true
@@ -354,6 +374,7 @@ class ChronoViewModel: ObservableObject {
     }
 
     private func fetchAPI<T: Decodable>(_ path: String, as type: T.Type) async -> T? {
+        await loadAPIToken()
         let raw = await sshExec("curl -s -H 'X-AXChrono-Token: \(apiToken)' http://127.0.0.1:9444\(path)")
         guard let data = raw.data(using: .utf8) else { return nil }
         let response = try? JSONDecoder().decode(ChronoAPIResponse<T>.self, from: data)
@@ -362,6 +383,7 @@ class ChronoViewModel: ObservableObject {
     }
 
     private func postAPI(_ path: String, body: [String: Any]) async -> Bool {
+        await loadAPIToken()
         let jsonData = (try? JSONSerialization.data(withJSONObject: body)) ?? Data()
         let jsonStr = String(data: jsonData, encoding: .utf8) ?? "{}"
         let escaped = jsonStr.replacingOccurrences(of: "'", with: "'\\''")
@@ -372,6 +394,7 @@ class ChronoViewModel: ObservableObject {
     }
 
     private func deleteAPI(_ path: String) async -> Bool {
+        await loadAPIToken()
         let raw = await sshExec("curl -s -X DELETE -H 'X-AXChrono-Token: \(apiToken)' http://127.0.0.1:9444\(path)")
         guard let data = raw.data(using: .utf8),
               let resp = try? JSONDecoder().decode(ChronoAPIResponse<Bool>.self, from: data) else { return false }

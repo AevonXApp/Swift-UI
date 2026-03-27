@@ -59,6 +59,7 @@
 "git.remotes.remove" = "Remove";
 "git.remotes.name" = "Remote Name";
 "git.remotes.url" = "Remote URL";
+"git.remotes.empty" = "No remotes configured";
 
 /* More Menu */
 "git.more.stash" = "Stash";
@@ -93,3 +94,14 @@
 "git.op.committing" = "Committing...";
 "git.op.switching" = "Switching branch...";
 "git.op.merging" = "Merging...";
+"git.op.deleting" = "Deleting branch...";
+"git.op.stashing" = "Stashing...";
+"git.op.poppingStash" = "Popping stash...";
+"git.op.droppingStash" = "Dropping stash...";
+"git.op.checkingOutTag" = "Checking out tag...";
+"git.op.addingRemote" = "Adding remote...";
+"git.op.removingRemote" = "Removing remote...";
+"git.op.resetting" = "Resetting...";
+"git.op.discarding" = "Discarding changes...";
+"git.op.disconnecting" = "Disconnecting...";
+"git.op.checkingOut" = "Checking out commit...";

@@ -39,6 +39,7 @@ private struct ChronoContentView: View {
         }
         .background(Color.axBackground)
         .task {
+            await viewModel.loadAPIToken()
             await viewModel.checkService()
             await viewModel.loadDashboard()
         }
