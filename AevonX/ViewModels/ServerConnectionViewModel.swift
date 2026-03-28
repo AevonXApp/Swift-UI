@@ -278,8 +278,8 @@ public class ServerConnectionViewModel: ObservableObject {
     
     // MARK: - Published Properties - Terminal Sessions
     
-    /// Managed terminal sessions for this server
-    @Published var terminalSessions: [TerminalViewModel] = []
+    /// Managed terminal sessions for this server (block-based redesign)
+    @Published var terminalSessions: [AXTerminalViewModel] = []
     
     /// Currently active terminal index
     @Published var activeTerminalIndex: Int = 0
@@ -658,7 +658,7 @@ public class ServerConnectionViewModel: ObservableObject {
     
     /// Creates a new terminal session
     func createTerminalSession() {
-        let newSession = TerminalViewModel(serverId: serverId)
+        let newSession = AXTerminalViewModel(serverId: serverId)
 
         terminalSessions.append(newSession)
 

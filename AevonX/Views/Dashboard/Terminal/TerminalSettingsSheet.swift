@@ -11,7 +11,7 @@ import AevonXCoreBridge
 // MARK: - Terminal Settings Sheet
 
 struct TerminalSettingsSheet: View {
-    @ObservedObject var viewModel: TerminalViewModel
+    @ObservedObject var viewModel: AXTerminalViewModel
     @ObservedObject var preferences: TerminalPreferences
     @Environment(\.dismiss) private var dismiss
     

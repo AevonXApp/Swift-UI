@@ -23,3 +23,35 @@
 
 /* Add snippet */
 "terminal.addSnippet" = "Add Snippet";
+
+/* History */
+"terminal.history" = "History";
+
+/* Connection states */
+"terminal.connected" = "Connected";
+"terminal.disconnected" = "Disconnected";
+"terminal.connecting" = "Connecting...";
+"terminal.reconnecting" = "Reconnecting...";
+
+/* Interactive mode */
+"terminal.interactiveMode" = "Interactive Mode";
+
+/* Search */
+"terminal.search" = "Search";
+"terminal.noResults" = "No results";
+
+/* Block actions */
+"terminal.copyCommand" = "Copy Command";
+"terminal.copyOutput" = "Copy Output";
+"terminal.copyAll" = "Copy All";
+"terminal.bookmark" = "Bookmark";
+"terminal.collapse" = "Collapse";
+"terminal.expand" = "Expand";
+"terminal.rerun" = "Re-run Command";
+"terminal.clearBlock" = "Clear Block";
+"terminal.searchInBlock" = "Search in Block";
+"terminal.editAndRerun" = "Edit & Re-run";
+
+/* Settings & session */
+"terminal.settings" = "Settings";
+"terminal.session" = "Session";

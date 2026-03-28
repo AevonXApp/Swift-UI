@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		F86F50BD2F5CB08900DA237A /* AevonXCoreBridge in Frameworks */ = {isa = PBXBuildFile; productRef = F86F50BC2F5CB08900DA237A /* AevonXCoreBridge */; };
+		F88569852F7876C300438BBB /* SwiftTerm in Frameworks */ = {isa = PBXBuildFile; productRef = F88569842F7876C300438BBB /* SwiftTerm */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -40,6 +41,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				F88569852F7876C300438BBB /* SwiftTerm in Frameworks */,
 				F86F50BD2F5CB08900DA237A /* AevonXCoreBridge in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -94,6 +96,7 @@
 			name = AevonX;
 			packageProductDependencies = (
 				F86F50BC2F5CB08900DA237A /* AevonXCoreBridge */,
+				F88569842F7876C300438BBB /* SwiftTerm */,
 			);
 			productName = AevonX;
 			productReference = F865D40A2F2C555300A29BB5 /* AevonX.app */;
@@ -125,6 +128,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				F86F50BB2F5CB08900DA237A /* XCLocalSwiftPackageReference "../core-go" */,
+				F88569832F7876C300438BBB /* XCRemoteSwiftPackageReference "SwiftTerm" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = F865D40B2F2C555300A29BB5 /* Products */;
@@ -397,10 +401,26 @@
 		};
 /* End XCLocalSwiftPackageReference section */
 
+/* Begin XCRemoteSwiftPackageReference section */
+		F88569832F7876C300438BBB /* XCRemoteSwiftPackageReference "SwiftTerm" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/migueldeicaza/SwiftTerm";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.5.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
 /* Begin XCSwiftPackageProductDependency section */
 		F86F50BC2F5CB08900DA237A /* AevonXCoreBridge */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = AevonXCoreBridge;
+		};
+		F88569842F7876C300438BBB /* SwiftTerm */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = F88569832F7876C300438BBB /* XCRemoteSwiftPackageReference "SwiftTerm" */;
+			productName = SwiftTerm;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

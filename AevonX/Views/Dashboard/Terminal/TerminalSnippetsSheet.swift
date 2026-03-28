@@ -54,7 +54,7 @@ class CustomSnippetsManager: ObservableObject {
 // MARK: - Terminal Snippets Sheet
 
 struct TerminalSnippetsSheet: View {
-    @ObservedObject var viewModel: TerminalViewModel
+    @ObservedObject var viewModel: AXTerminalViewModel
     @StateObject private var snippetsManager = CustomSnippetsManager.shared
     @State private var searchText: String = ""
     @Environment(\.dismiss) private var dismiss
