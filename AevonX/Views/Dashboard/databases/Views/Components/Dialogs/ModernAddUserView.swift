@@ -152,7 +152,9 @@ struct ModernAddUserView: View {
     }
     
     private func generatePassword() -> String {
-        let chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+"
-        return String((0..<16).map { _ in chars.randomElement()! })
+        // Use only safe characters that won't break shell interpolation or SQL quoting.
+        // Excludes: & ! $ ' " ` ( ) which cause shell metacharacter or SQL injection issues.
+        let chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#%^_+-="
+        return String((0..<20).map { _ in chars.randomElement()! })
     }
 }

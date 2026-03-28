@@ -229,8 +229,8 @@ public enum DatabaseCommand {
             return "mysql -e 'SHOW DATABASES;' 2>/dev/null || echo 'MySQL not available'"
             
         case .listPostgreSQL:
-            // List PostgreSQL databases
-            return "psql -l 2>/dev/null || echo 'PostgreSQL not available'"
+            // List PostgreSQL databases (must connect as postgres user, not OS root)
+            return "sudo -u postgres psql -l 2>/dev/null || echo 'PostgreSQL not available'"
             
         case .listRedis:
             // Get Redis info
@@ -241,8 +241,8 @@ public enum DatabaseCommand {
             return "mysql -e 'SHOW PROCESSLIST;' 2>/dev/null || echo 'MySQL not available'"
             
         case .postgresConnections:
-            // Show PostgreSQL connections
-            return "psql -c 'SELECT count(*) FROM pg_stat_activity;' 2>/dev/null || echo 'PostgreSQL not available'"
+            // Show PostgreSQL connections (must connect as postgres user, not OS root)
+            return "sudo -u postgres psql -c 'SELECT count(*) FROM pg_stat_activity;' 2>/dev/null || echo 'PostgreSQL not available'"
             
         case .mysqlDatabaseSizes:
             // Get MySQL database sizes
@@ -258,10 +258,10 @@ public enum DatabaseCommand {
             return "mysql -e 'SELECT User, Host FROM mysql.user;' 2>/dev/null || echo 'MySQL not available'"
             
         case .postgresDatabaseSizes:
-            // Get PostgreSQL database sizes
+            // Get PostgreSQL database sizes (must connect as postgres user, not OS root)
             return """
-            psql -c "SELECT datname AS database, 
-            pg_size_pretty(pg_database_size(datname)) AS size 
+            sudo -u postgres psql -c "SELECT datname AS database,
+            pg_size_pretty(pg_database_size(datname)) AS size
             FROM pg_database WHERE datistemplate = false;" 2>/dev/null || echo 'PostgreSQL not available'
             """
             

@@ -140,7 +140,9 @@ public final class AddDatabaseViewModel: ObservableObject {
     // MARK: - Password Generation
 
     public func generatePassword() {
-        let chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*"
+        // Use only safe characters that won't break shell interpolation or SQL quoting.
+        // Excludes: & ! $ ' " ` ( ) which cause shell metacharacter or SQL injection issues.
+        let chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#%^_+-="
         password = String((0..<20).map { _ in chars.randomElement()! })
         passwordError = nil
     }
