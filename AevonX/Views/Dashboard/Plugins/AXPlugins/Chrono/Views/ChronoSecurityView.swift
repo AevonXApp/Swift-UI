@@ -27,6 +27,7 @@ struct ChronoSecurityView: View {
             }
             .padding(AXSpacing.xl)
         }
+        .task { await viewModel.loadProjects() }
     }
 
     // MARK: - Header

@@ -37,6 +37,22 @@ struct ChronoDaemonStatus: Codable {
         case failedThisWeek = "failed_this_week"
         case secretsDetected = "secrets_detected"
     }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        version = try c.decodeIfPresent(String.self, forKey: .version) ?? "0.0.0"
+        uptimeSeconds = try c.decodeIfPresent(Int.self, forKey: .uptimeSeconds) ?? 0
+        activeDeploys = try c.decodeIfPresent(Int.self, forKey: .activeDeploys) ?? 0
+        queuedDeploys = try c.decodeIfPresent(Int.self, forKey: .queuedDeploys) ?? 0
+        trackedProjects = try c.decodeIfPresent(Int.self, forKey: .trackedProjects) ?? 0
+        totalDeploys = try c.decodeIfPresent(Int.self, forKey: .totalDeploys) ?? 0
+        totalRollbacks = try c.decodeIfPresent(Int.self, forKey: .totalRollbacks) ?? 0
+        cacheSizeMB = try c.decodeIfPresent(Int.self, forKey: .cacheSizeMB) ?? 0
+        snapshotCount = try c.decodeIfPresent(Int.self, forKey: .snapshotCount) ?? 0
+        healthStatus = try c.decodeIfPresent(String.self, forKey: .healthStatus) ?? "unknown"
+        failedThisWeek = try c.decodeIfPresent(Int.self, forKey: .failedThisWeek) ?? 0
+        secretsDetected = try c.decodeIfPresent(Int.self, forKey: .secretsDetected) ?? 0
+    }
 }
 
 // MARK: - Project
@@ -66,7 +82,25 @@ struct ChronoProject: Codable, Identifiable {
         case healthStatus = "health_status"
         case autoDeploy = "auto_deploy"
         case pendingCommits = "pending_commits"
-        case watchMode = "watch_mode"
+        case watchMode = "mode"
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(String.self, forKey: .id)
+        name = try c.decodeIfPresent(String.self, forKey: .name) ?? ""
+        path = try c.decodeIfPresent(String.self, forKey: .path) ?? ""
+        repoURL = try c.decodeIfPresent(String.self, forKey: .repoURL) ?? ""
+        branch = try c.decodeIfPresent(String.self, forKey: .branch) ?? "main"
+        framework = try c.decodeIfPresent(String.self, forKey: .framework) ?? ""
+        lastCommit = try c.decodeIfPresent(String.self, forKey: .lastCommit) ?? ""
+        lastDeploy = try c.decodeIfPresent(String.self, forKey: .lastDeploy)
+        lastDeployStatus = try c.decodeIfPresent(String.self, forKey: .lastDeployStatus) ?? "unknown"
+        healthStatus = try c.decodeIfPresent(String.self, forKey: .healthStatus) ?? "unknown"
+        autoDeploy = try c.decodeIfPresent(Bool.self, forKey: .autoDeploy) ?? false
+        enabled = try c.decodeIfPresent(Bool.self, forKey: .enabled) ?? true
+        pendingCommits = try c.decodeIfPresent(Int.self, forKey: .pendingCommits) ?? 0
+        watchMode = try c.decodeIfPresent(String.self, forKey: .watchMode) ?? "poll"
     }
 }
 
@@ -96,6 +130,22 @@ struct ChronoDeploy: Codable, Identifiable {
         case finishedAt = "finished_at"
         case filesChanged = "files_changed"
     }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(String.self, forKey: .id)
+        projectId = try c.decodeIfPresent(String.self, forKey: .projectId) ?? ""
+        projectName = try c.decodeIfPresent(String.self, forKey: .projectName) ?? ""
+        commit = try c.decodeIfPresent(String.self, forKey: .commit) ?? ""
+        prevCommit = try c.decodeIfPresent(String.self, forKey: .prevCommit) ?? ""
+        status = try c.decodeIfPresent(String.self, forKey: .status) ?? "unknown"
+        durationMS = try c.decodeIfPresent(Int.self, forKey: .durationMS) ?? 0
+        startedAt = try c.decodeIfPresent(String.self, forKey: .startedAt) ?? ""
+        finishedAt = try c.decodeIfPresent(String.self, forKey: .finishedAt)
+        trigger = try c.decodeIfPresent(String.self, forKey: .trigger) ?? ""
+        filesChanged = try c.decodeIfPresent(Int.self, forKey: .filesChanged) ?? 0
+        steps = try c.decodeIfPresent([ChronoDeployStep].self, forKey: .steps) ?? []
+    }
 }
 
 struct ChronoDeployStep: Codable, Identifiable {
@@ -108,6 +158,14 @@ struct ChronoDeployStep: Codable, Identifiable {
     private enum CodingKeys: String, CodingKey {
         case name, status, message
         case durationMS = "duration_ms"
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        name = try c.decodeIfPresent(String.self, forKey: .name) ?? ""
+        status = try c.decodeIfPresent(String.self, forKey: .status) ?? "unknown"
+        durationMS = try c.decodeIfPresent(Int.self, forKey: .durationMS) ?? 0
+        message = try c.decodeIfPresent(String.self, forKey: .message)
     }
 }
 
@@ -129,6 +187,17 @@ struct ChronoSnapshot: Codable, Identifiable {
         case createdAt = "created_at"
         case sizeBytes = "size_bytes"
         case fileCount = "file_count"
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(String.self, forKey: .id)
+        projectID = try c.decodeIfPresent(String.self, forKey: .projectID) ?? ""
+        commitHash = try c.decodeIfPresent(String.self, forKey: .commitHash) ?? ""
+        createdAt = try c.decodeIfPresent(String.self, forKey: .createdAt) ?? ""
+        sizeBytes = try c.decodeIfPresent(Int64.self, forKey: .sizeBytes) ?? 0
+        fileCount = try c.decodeIfPresent(Int.self, forKey: .fileCount) ?? 0
+        type = try c.decodeIfPresent(String.self, forKey: .type) ?? "full"
     }
 }
 
@@ -162,6 +231,22 @@ struct ChronoHologram: Codable {
         case filesAdded = "files_added"
         case filesDeleted = "files_deleted"
     }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        filesChanged = try c.decodeIfPresent(Int.self, forKey: .filesChanged) ?? 0
+        filesModified = try c.decodeIfPresent(Int.self, forKey: .filesModified) ?? 0
+        filesAdded = try c.decodeIfPresent(Int.self, forKey: .filesAdded) ?? 0
+        filesDeleted = try c.decodeIfPresent(Int.self, forKey: .filesDeleted) ?? 0
+        dependencyChanges = try c.decodeIfPresent([String].self, forKey: .dependencyChanges) ?? []
+        migrationsPending = try c.decodeIfPresent([String].self, forKey: .migrationsPending) ?? []
+        buildSteps = try c.decodeIfPresent([String].self, forKey: .buildSteps) ?? []
+        estimatedDurationSec = try c.decodeIfPresent(Int.self, forKey: .estimatedDurationSec) ?? 0
+        riskLevel = try c.decodeIfPresent(String.self, forKey: .riskLevel) ?? "low"
+        secretsDetected = try c.decodeIfPresent(Int.self, forKey: .secretsDetected) ?? 0
+        vulnsDetected = try c.decodeIfPresent(Int.self, forKey: .vulnsDetected) ?? 0
+        estimatedDowntimeSec = try c.decodeIfPresent(Int.self, forKey: .estimatedDowntimeSec) ?? 0
+    }
 }
 
 // MARK: - Approval
@@ -183,6 +268,18 @@ struct ChronoApproval: Codable, Identifiable {
         case requestedAt = "requested_at"
         case expiresAt = "expires_at"
     }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(String.self, forKey: .id)
+        type = try c.decodeIfPresent(String.self, forKey: .type) ?? ""
+        projectId = try c.decodeIfPresent(String.self, forKey: .projectId) ?? ""
+        projectName = try c.decodeIfPresent(String.self, forKey: .projectName) ?? ""
+        reason = try c.decodeIfPresent(String.self, forKey: .reason) ?? ""
+        requestedAt = try c.decodeIfPresent(String.self, forKey: .requestedAt) ?? ""
+        expiresAt = try c.decodeIfPresent(String.self, forKey: .expiresAt) ?? ""
+        details = try c.decodeIfPresent([String: String].self, forKey: .details)
+    }
 }
 
 struct ChronoApprovalHistory: Codable, Identifiable {
@@ -196,6 +293,15 @@ struct ChronoApprovalHistory: Codable, Identifiable {
         case id, type, action
         case projectName = "project_name"
         case actionAt = "action_at"
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(String.self, forKey: .id)
+        type = try c.decodeIfPresent(String.self, forKey: .type) ?? ""
+        projectName = try c.decodeIfPresent(String.self, forKey: .projectName) ?? ""
+        action = try c.decodeIfPresent(String.self, forKey: .action) ?? ""
+        actionAt = try c.decodeIfPresent(String.self, forKey: .actionAt) ?? ""
     }
 }
 
@@ -212,10 +318,24 @@ struct ChronoTimelineEntry: Codable, Identifiable {
     let commitHash: String?
 
     private enum CodingKeys: String, CodingKey {
-        case id, event, status, message, timestamp
+        case id, status, timestamp
         case projectId = "project_id"
         case projectName = "project_name"
-        case commitHash = "commit_hash"
+        case event = "type"
+        case message
+        case commitHash = "commit"
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(String.self, forKey: .id)
+        projectId = try c.decodeIfPresent(String.self, forKey: .projectId) ?? ""
+        projectName = try c.decodeIfPresent(String.self, forKey: .projectName) ?? ""
+        event = try c.decodeIfPresent(String.self, forKey: .event) ?? ""
+        status = try c.decodeIfPresent(String.self, forKey: .status) ?? ""
+        message = try c.decodeIfPresent(String.self, forKey: .message) ?? ""
+        timestamp = try c.decodeIfPresent(String.self, forKey: .timestamp) ?? ""
+        commitHash = try c.decodeIfPresent(String.self, forKey: .commitHash)
     }
 }
 
@@ -237,6 +357,17 @@ struct ChronoSecurityResults: Codable {
         case driftFiles = "drift_files"
         case permissionIssues = "permission_issues"
         case driftedFiles = "drifted_files"
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        secretsFound = try c.decodeIfPresent(Int.self, forKey: .secretsFound) ?? 0
+        vulnsFound = try c.decodeIfPresent(Int.self, forKey: .vulnsFound) ?? 0
+        driftFiles = try c.decodeIfPresent(Int.self, forKey: .driftFiles) ?? 0
+        permissionIssues = try c.decodeIfPresent(Int.self, forKey: .permissionIssues) ?? 0
+        secrets = try c.decodeIfPresent([ChronoSecretFinding].self, forKey: .secrets) ?? []
+        vulns = try c.decodeIfPresent([ChronoVulnFinding].self, forKey: .vulns) ?? []
+        driftedFiles = try c.decodeIfPresent([String].self, forKey: .driftedFiles) ?? []
     }
 }
 
@@ -276,6 +407,17 @@ struct ChronoWatcherInfo: Codable, Identifiable {
         case lastCheck = "last_check"
         case pendingCommits = "pending_commits"
     }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        projectId = try c.decodeIfPresent(String.self, forKey: .projectId) ?? ""
+        projectName = try c.decodeIfPresent(String.self, forKey: .projectName) ?? ""
+        branch = try c.decodeIfPresent(String.self, forKey: .branch) ?? ""
+        mode = try c.decodeIfPresent(String.self, forKey: .mode) ?? "poll"
+        pollInterval = try c.decodeIfPresent(Int.self, forKey: .pollInterval) ?? 60
+        lastCheck = try c.decodeIfPresent(String.self, forKey: .lastCheck)
+        pendingCommits = try c.decodeIfPresent(Int.self, forKey: .pendingCommits) ?? 0
+    }
 }
 
 // MARK: - Alert
@@ -291,6 +433,16 @@ struct ChronoAlert: Codable, Identifiable {
     private enum CodingKeys: String, CodingKey {
         case id, type, message, timestamp, severity
         case projectName = "project_name"
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(String.self, forKey: .id)
+        type = try c.decodeIfPresent(String.self, forKey: .type) ?? ""
+        projectName = try c.decodeIfPresent(String.self, forKey: .projectName) ?? ""
+        message = try c.decodeIfPresent(String.self, forKey: .message) ?? ""
+        timestamp = try c.decodeIfPresent(String.self, forKey: .timestamp) ?? ""
+        severity = try c.decodeIfPresent(String.self, forKey: .severity) ?? "info"
     }
 }
 
@@ -314,6 +466,18 @@ struct ChronoWebhookStatus: Codable {
         case bitbucketSecret = "bitbucket_secret"
         case genericSecret = "generic_secret"
         case recentDeliveries = "recent_deliveries"
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        active = try c.decodeIfPresent(Bool.self, forKey: .active) ?? false
+        port = try c.decodeIfPresent(Int.self, forKey: .port) ?? 0
+        webhookURL = try c.decodeIfPresent(String.self, forKey: .webhookURL) ?? ""
+        githubSecret = try c.decodeIfPresent(String.self, forKey: .githubSecret) ?? ""
+        gitlabSecret = try c.decodeIfPresent(String.self, forKey: .gitlabSecret) ?? ""
+        bitbucketSecret = try c.decodeIfPresent(String.self, forKey: .bitbucketSecret) ?? ""
+        genericSecret = try c.decodeIfPresent(String.self, forKey: .genericSecret) ?? ""
+        recentDeliveries = try c.decodeIfPresent([ChronoWebhookDelivery].self, forKey: .recentDeliveries) ?? []
     }
 }
 
@@ -358,6 +522,47 @@ struct ChronoConfig: Codable {
         case approvalMode = "approval_mode"
         case webhookListenPort = "webhook_listen_port"
     }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        gitpulseMode = try c.decodeIfPresent(String.self, forKey: .gitpulseMode) ?? "poll"
+        gitpulsePollInterval = try c.decodeIfPresent(Int.self, forKey: .gitpulsePollInterval) ?? 60
+        gitpulseAdaptivePolling = try c.decodeIfPresent(Bool.self, forKey: .gitpulseAdaptivePolling) ?? true
+        zeroflipEnabled = try c.decodeIfPresent(Bool.self, forKey: .zeroflipEnabled) ?? true
+        zeroflipMaxReleases = try c.decodeIfPresent(Int.self, forKey: .zeroflipMaxReleases) ?? 5
+        sentinelEnabled = try c.decodeIfPresent(Bool.self, forKey: .sentinelEnabled) ?? true
+        sentinelAutoRollback = try c.decodeIfPresent(Bool.self, forKey: .sentinelAutoRollback) ?? true
+        vaultscanEnabled = try c.decodeIfPresent(Bool.self, forKey: .vaultscanEnabled) ?? true
+        vaultscanMode = try c.decodeIfPresent(String.self, forKey: .vaultscanMode) ?? "block"
+        threatradarEnabled = try c.decodeIfPresent(Bool.self, forKey: .threatradarEnabled) ?? true
+        selfhealEnabled = try c.decodeIfPresent(Bool.self, forKey: .selfhealEnabled) ?? false
+        approvalMode = try c.decodeIfPresent(String.self, forKey: .approvalMode) ?? "smart"
+        webhookListenPort = try c.decodeIfPresent(Int.self, forKey: .webhookListenPort) ?? 9445
+    }
+
+    init(
+        gitpulseMode: String = "poll", gitpulsePollInterval: Int = 60,
+        gitpulseAdaptivePolling: Bool = true, zeroflipEnabled: Bool = true,
+        zeroflipMaxReleases: Int = 5, sentinelEnabled: Bool = true,
+        sentinelAutoRollback: Bool = true, vaultscanEnabled: Bool = true,
+        vaultscanMode: String = "block", threatradarEnabled: Bool = true,
+        selfhealEnabled: Bool = false, approvalMode: String = "smart",
+        webhookListenPort: Int = 9445
+    ) {
+        self.gitpulseMode = gitpulseMode
+        self.gitpulsePollInterval = gitpulsePollInterval
+        self.gitpulseAdaptivePolling = gitpulseAdaptivePolling
+        self.zeroflipEnabled = zeroflipEnabled
+        self.zeroflipMaxReleases = zeroflipMaxReleases
+        self.sentinelEnabled = sentinelEnabled
+        self.sentinelAutoRollback = sentinelAutoRollback
+        self.vaultscanEnabled = vaultscanEnabled
+        self.vaultscanMode = vaultscanMode
+        self.threatradarEnabled = threatradarEnabled
+        self.selfhealEnabled = selfhealEnabled
+        self.approvalMode = approvalMode
+        self.webhookListenPort = webhookListenPort
+    }
 }
 
 // MARK: - API Response Wrapper
@@ -389,6 +594,19 @@ struct ChronoHealthProbe: Codable, Identifiable {
         case lastCheck = "last_check"
         case uptimePercent = "uptime_percent"
         case consecutiveFailures = "consecutive_failures"
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(String.self, forKey: .id)
+        projectId = try c.decodeIfPresent(String.self, forKey: .projectId) ?? ""
+        projectName = try c.decodeIfPresent(String.self, forKey: .projectName) ?? ""
+        url = try c.decodeIfPresent(String.self, forKey: .url) ?? ""
+        status = try c.decodeIfPresent(String.self, forKey: .status) ?? "unknown"
+        responseTimeMS = try c.decodeIfPresent(Int.self, forKey: .responseTimeMS) ?? 0
+        lastCheck = try c.decodeIfPresent(String.self, forKey: .lastCheck) ?? ""
+        uptimePercent = try c.decodeIfPresent(Double.self, forKey: .uptimePercent) ?? 0.0
+        consecutiveFailures = try c.decodeIfPresent(Int.self, forKey: .consecutiveFailures) ?? 0
     }
 }
 

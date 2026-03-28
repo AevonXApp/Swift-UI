@@ -48,6 +48,7 @@ extension L10n {
             static let title = s("chrono.projects.title", "Tracked Projects")
             static let add = s("chrono.projects.add", "Add Project")
             static let empty = s("chrono.projects.empty", "No projects tracked yet")
+            static let name = s("chrono.projects.name", "Project Name")
             static let path = s("chrono.projects.path", "Project Path")
             static let repoURL = s("chrono.projects.repoURL", "Git Remote URL")
             static let branch = s("chrono.projects.branch", "Branch to Track")
@@ -205,20 +206,69 @@ extension L10n {
             private static func s(_ k: StaticString, _ v: String.LocalizationValue) -> String { String(localized: k, defaultValue: v, table: Chrono.table) }
 
             static let title = s("chrono.settings.title", "AXChrono Settings")
+
+            // GitPulse
             static let gitpulse = s("chrono.settings.gitpulse", "GitPulse Watcher")
-            static let pollInterval = s("chrono.settings.pollInterval", "Poll Interval (seconds)")
+            static let gitpulseDesc = s("chrono.settings.gitpulse.desc", "Monitors Git repositories for new commits and triggers deployments")
+            static let pollInterval = s("chrono.settings.pollInterval", "Poll Interval")
+            static let pollIntervalDesc = s("chrono.settings.pollInterval.desc", "How often to check for new commits (seconds)")
             static let adaptivePolling = s("chrono.settings.adaptivePolling", "Adaptive Polling")
+            static let adaptivePollingDesc = s("chrono.settings.adaptivePolling.desc", "Automatically adjust poll frequency based on repository activity")
+            static let watchMode = s("chrono.settings.watchMode", "Watch Mode")
+            static let watchModeDesc = s("chrono.settings.watchMode.desc", "How GitPulse detects new commits")
+
+            // ZeroFlip
             static let zeroflip = s("chrono.settings.zeroflip", "ZeroFlip Deployment")
+            static let zeroflipDesc = s("chrono.settings.zeroflip.desc", "Zero-downtime deployment with instant rollback capability")
+            static let zeroflipEnabled = s("chrono.settings.zeroflipEnabled", "Enable ZeroFlip")
+            static let zeroflipEnabledDesc = s("chrono.settings.zeroflipEnabled.desc", "Use blue-green deployment strategy for zero-downtime releases")
             static let maxReleases = s("chrono.settings.maxReleases", "Max Release Versions")
+            static let maxReleasesDesc = s("chrono.settings.maxReleases.desc", "Number of previous releases to keep for instant rollback")
+
+            // Sentinel
             static let sentinel = s("chrono.settings.sentinel", "SentinelHealth")
+            static let sentinelDesc = s("chrono.settings.sentinel.desc", "Continuous health monitoring and automatic failure recovery")
+            static let sentinelEnabled = s("chrono.settings.sentinelEnabled", "Enable SentinelHealth")
+            static let sentinelEnabledDesc = s("chrono.settings.sentinelEnabled.desc", "Monitor service health after deployments")
             static let autoRollback = s("chrono.settings.autoRollback", "Auto Rollback on Failure")
-            static let vaultScanMode = s("chrono.settings.vaultScanMode", "VaultScan Mode")
+            static let autoRollbackDesc = s("chrono.settings.autoRollback.desc", "Automatically rollback if health checks fail after deployment")
+
+            // VaultScan
+            static let vaultScan = s("chrono.settings.vaultScan", "VaultScan & Security")
+            static let vaultScanDesc = s("chrono.settings.vaultScan.desc", "Scan deployments for secrets, vulnerabilities, and drift")
+            static let vaultScanEnabled = s("chrono.settings.vaultScanEnabled", "Enable VaultScan")
+            static let vaultScanEnabledDesc = s("chrono.settings.vaultScanEnabled.desc", "Scan code for exposed secrets and credentials before deployment")
+            static let vaultScanMode = s("chrono.settings.vaultScanMode", "Scan Mode")
+            static let vaultScanModeDesc = s("chrono.settings.vaultScanMode.desc", "Passive: warn only. Active: block deployment. Aggressive: deep scan")
+            static let threatRadar = s("chrono.settings.threatRadar", "ThreatRadar")
+            static let threatRadarDesc = s("chrono.settings.threatRadar.desc", "Monitor dependencies for known vulnerabilities")
             static let selfHeal = s("chrono.settings.selfHeal", "SelfHeal Auto-Recovery")
+            static let selfHealDesc = s("chrono.settings.selfHeal.desc", "Automatically recover services that crash or become unresponsive")
+
+            // Approval
+            static let approval = s("chrono.settings.approval", "Approval Workflow")
+            static let approvalDesc = s("chrono.settings.approval.desc", "Control how deployments and critical operations are approved")
             static let approvalMode = s("chrono.settings.approvalMode", "Approval Mode")
+            static let approvalModeDesc = s("chrono.settings.approvalMode.desc", "Auto: no approval needed. Manual: always require. Smart: risk-based")
             static let approvalAuto = s("chrono.settings.approvalMode.auto", "Auto")
             static let approvalManual = s("chrono.settings.approvalMode.manual", "Manual")
             static let approvalSmart = s("chrono.settings.approvalMode.smart", "Smart")
+
+            // Webhook
+            static let webhook = s("chrono.settings.webhook", "Webhook Configuration")
+            static let webhookDesc = s("chrono.settings.webhook.desc", "Receive push notifications from Git providers for instant deployments")
+            static let webhookPort = s("chrono.settings.webhookPort", "Listen Port")
+            static let webhookPortDesc = s("chrono.settings.webhookPort.desc", "Port for incoming webhook requests")
+
+            // Feedback
+            static let saved = s("chrono.settings.saved", "Settings saved")
+            static let saveFailed = s("chrono.settings.saveFailed", "Failed to save settings")
         }
+
+        // Errors
+        static let errorNoResponse = s("chrono.error.noResponse", "No response from daemon")
+        static let errorParseFailed = s("chrono.error.parseFailed", "Failed to parse response")
+        static let errorApiNotListening = s("chrono.error.apiNotListening", "Daemon running but API not listening on port 9444 — check daemon logs")
 
         // Service
         static let serviceStart = s("chrono.service.start", "Start AXChrono")

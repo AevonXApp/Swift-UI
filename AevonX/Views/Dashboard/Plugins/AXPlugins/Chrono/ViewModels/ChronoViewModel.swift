@@ -151,6 +151,24 @@ class ChronoViewModel: ObservableObject {
         isLoading = true
         errorMessage = nil
 
+        // Quick connectivity check first — curl with connect timeout
+        let probe = await sshExec("curl -s -o /dev/null -w '%{http_code}' --connect-timeout 3 http://127.0.0.1:9444/api/v1/status 2>/dev/null || echo 'CONNFAIL'")
+        let probeResult = probe.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        if probeResult == "CONNFAIL" || probeResult.isEmpty {
+            // API server not reachable — gather diagnostics
+            let diag = await sshExec("ss -tlnp 2>/dev/null | grep 9444 || echo 'PORT_NOT_OPEN'")
+            let portInfo = diag.trimmingCharacters(in: .whitespacesAndNewlines)
+
+            if portInfo.contains("PORT_NOT_OPEN") {
+                errorMessage = L10n.Chrono.errorApiNotListening
+            } else {
+                errorMessage = L10n.Chrono.errorNoResponse
+            }
+            isLoading = false
+            return
+        }
+
         async let statusResult = fetchAPI("/api/v1/status", as: ChronoDaemonStatus.self)
         async let deploysResult = fetchAPI("/api/v1/deploys?limit=5", as: [ChronoDeploy].self)
         async let alertsResult = fetchAPI("/api/v1/alerts", as: [ChronoAlert].self)
@@ -169,13 +187,17 @@ class ChronoViewModel: ObservableObject {
         projects = await fetchAPI("/api/v1/projects", as: [ChronoProject].self) ?? []
     }
 
-    func addProject(path: String, repoURL: String, branch: String, autoDeploy: Bool, healthURL: String) async {
-        let body: [String: Any] = [
-            "path": path, "repo_url": repoURL, "branch": branch,
+    @discardableResult
+    func addProject(name: String, path: String, repoURL: String, branch: String, autoDeploy: Bool, healthURL: String, gitUsername: String = "", gitToken: String = "") async -> Bool {
+        var body: [String: Any] = [
+            "name": name, "path": path, "repo_url": repoURL, "branch": branch,
             "auto_deploy": autoDeploy, "health_url": healthURL
         ]
-        _ = await postAPI("/api/v1/projects", body: body)
-        await loadProjects()
+        if !gitUsername.isEmpty { body["git_username"] = gitUsername }
+        if !gitToken.isEmpty { body["git_token"] = gitToken }
+        let success = await postAPI("/api/v1/projects", body: body)
+        if success { await loadProjects() }
+        return success
     }
 
     func removeProject(id: String) async {
@@ -302,13 +324,16 @@ class ChronoViewModel: ObservableObject {
         webhookStatus = await fetchAPI("/api/v1/webhooks/status", as: ChronoWebhookStatus.self)
     }
 
-    func saveConfig(_ cfg: ChronoConfig) async {
+    @discardableResult
+    func saveConfig(_ cfg: ChronoConfig) async -> Bool {
         settingsSaving = true
+        var success = false
         if let data = try? JSONEncoder().encode(cfg),
            let dict = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
-            _ = await postAPI("/api/v1/config", body: dict)
+            success = await postAPI("/api/v1/config", body: dict)
         }
         settingsSaving = false
+        return success
     }
 
     // MARK: - Service Control
@@ -375,11 +400,33 @@ class ChronoViewModel: ObservableObject {
 
     private func fetchAPI<T: Decodable>(_ path: String, as type: T.Type) async -> T? {
         await loadAPIToken()
-        let raw = await sshExec("curl -s -H 'X-AXChrono-Token: \(apiToken)' http://127.0.0.1:9444\(path)")
-        guard let data = raw.data(using: .utf8) else { return nil }
-        let response = try? JSONDecoder().decode(ChronoAPIResponse<T>.self, from: data)
-        if let err = response?.error { errorMessage = err }
-        return response?.data
+        let raw = await sshExec("curl -s --connect-timeout 5 -H 'X-AXChrono-Token: \(apiToken)' http://127.0.0.1:9444\(path)")
+        guard let data = raw.data(using: .utf8), !raw.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            if errorMessage == nil { errorMessage = L10n.Chrono.errorNoResponse }
+            return nil
+        }
+
+        // Try decoding with the standard API wrapper
+        if let response = try? JSONDecoder().decode(ChronoAPIResponse<T>.self, from: data) {
+            if let err = response.error {
+                errorMessage = err
+            }
+            return response.data
+        }
+
+        // Fallback: try decoding T directly (in case middleware is not deployed yet)
+        if let directResult = try? JSONDecoder().decode(T.self, from: data) {
+            return directResult
+        }
+
+        // Try to extract an error message from the response
+        if let errResp = try? JSONDecoder().decode([String: String].self, from: data),
+           let errMsg = errResp["error"] {
+            errorMessage = errMsg
+        } else {
+            errorMessage = L10n.Chrono.errorParseFailed
+        }
+        return nil
     }
 
     private func postAPI(_ path: String, body: [String: Any]) async -> Bool {
@@ -388,16 +435,33 @@ class ChronoViewModel: ObservableObject {
         let jsonStr = String(data: jsonData, encoding: .utf8) ?? "{}"
         let escaped = jsonStr.replacingOccurrences(of: "'", with: "'\\''")
         let raw = await sshExec("curl -s -X POST -H 'X-AXChrono-Token: \(apiToken)' -H 'Content-Type: application/json' -d '\(escaped)' http://127.0.0.1:9444\(path)")
-        guard let data = raw.data(using: .utf8),
-              let resp = try? JSONDecoder().decode(ChronoAPIResponse<Bool>.self, from: data) else { return false }
-        return resp.success
+        guard let data = raw.data(using: .utf8) else { return false }
+
+        // The wrapper returns {"success": bool, "data": ..., "error": ...}
+        struct WrappedBool: Decodable {
+            let success: Bool
+            let error: String?
+        }
+        if let resp = try? JSONDecoder().decode(WrappedBool.self, from: data) {
+            if let err = resp.error { errorMessage = err }
+            return resp.success
+        }
+        return false
     }
 
     private func deleteAPI(_ path: String) async -> Bool {
         await loadAPIToken()
         let raw = await sshExec("curl -s -X DELETE -H 'X-AXChrono-Token: \(apiToken)' http://127.0.0.1:9444\(path)")
-        guard let data = raw.data(using: .utf8),
-              let resp = try? JSONDecoder().decode(ChronoAPIResponse<Bool>.self, from: data) else { return false }
-        return resp.success
+        guard let data = raw.data(using: .utf8) else { return false }
+
+        struct WrappedBool: Decodable {
+            let success: Bool
+            let error: String?
+        }
+        if let resp = try? JSONDecoder().decode(WrappedBool.self, from: data) {
+            if let err = resp.error { errorMessage = err }
+            return resp.success
+        }
+        return false
     }
 }

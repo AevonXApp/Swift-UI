@@ -59,6 +59,7 @@ public final class WebsiteDetailViewModel: ObservableObject {
     @Published public var isUpdatingPort = false
 
     private var statsTimer: AnyCancellable?
+    private var sslCancellables = Set<AnyCancellable>()
 
     // MARK: - Services
 
@@ -84,6 +85,15 @@ public final class WebsiteDetailViewModel: ObservableObject {
         self.urlRewriteVM = URLRewriteViewModel(website: website, serverId: serverId)
         self.sslManagementVM = SSLManagementViewModel(website: website, serverId: serverId)
         self.trafficAnalyticsVM = TrafficAnalyticsViewModel(website: website, serverId: serverId)
+
+        // Sync website.sslInfo whenever the SSL sub-VM updates certificate details
+        // (fixes stale SSLOverviewCard and "HTTP" badge after SSL operations)
+        sslManagementVM.$certificateDetails
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] cert in
+                self?.syncSSLInfo(from: cert)
+            }
+            .store(in: &sslCancellables)
     }
     
     deinit {
@@ -173,19 +183,26 @@ public final class WebsiteDetailViewModel: ObservableObject {
             group.addTask { await self.sslManagementVM.load() }
             group.addTask { await self.trafficAnalyticsVM.load() }
         }
-        
-        // Update website model with SSL status from the loaded cert details
-        if let cert = sslManagementVM.certificateDetails {
-            website.sslEnabled = cert.isValid
+        // website.sslInfo is synced automatically via Combine subscription on sslManagementVM.$certificateDetails
+    }
+
+    /// Syncs website.sslInfo from the SSL sub-VM's certificate details.
+    /// Called automatically via Combine whenever certificateDetails changes.
+    private func syncSSLInfo(from cert: SSLCertificateDetails?) {
+        if let cert {
+            website.sslEnabled = true
             website.sslInfo = SSLInfo(
-                provider: cert.isLetsEncrypt ? .letsEncrypt : .other,
+                provider: SSLInfo.detectProvider(from: cert.issuer),
                 status: cert.isValid ? .active : (cert.isExpired ? .expired : .unknown),
                 issuer: cert.issuer,
                 validFrom: cert.validFrom,
                 validUntil: cert.validUntil,
-                autoRenew: cert.autoRenew,
+                autoRenew: cert.isLetsEncrypt,
                 domains: cert.sanDomains
             )
+        } else {
+            website.sslEnabled = false
+            website.sslInfo = nil
         }
     }
 

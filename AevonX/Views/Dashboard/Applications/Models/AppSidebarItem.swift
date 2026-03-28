@@ -31,6 +31,7 @@ enum NginxSidebarItem: String, CaseIterable, Identifiable {
 
     // Security
     case security      = "Security"
+    case ssl           = "SSL / TLS"
 
     // Analytics
     case analytics     = "Log Analytics"
@@ -52,7 +53,7 @@ enum NginxSidebarItem: String, CaseIterable, Identifiable {
         case .overview, .performance:                         return .status
         case .config, .versions, .modules, .optimization,
              .sites, .snapshots:                             return .management
-        case .security:                                       return .security
+        case .security, .ssl:                                 return .security
         case .analytics:                                      return .analytics
         case .cache, .benchmark, .proxy:                      return .advanced
         case .workers, .logs, .doctor:                        return .monitoring
@@ -70,6 +71,7 @@ enum NginxSidebarItem: String, CaseIterable, Identifiable {
         case .sites:        return "globe"
         case .snapshots:    return "clock.arrow.2.circlepath"
         case .security:     return "shield.lefthalf.filled"
+        case .ssl:          return "lock.shield.fill"
         case .analytics:    return "chart.xyaxis.line"
         case .cache:        return "memorychip"
         case .benchmark:    return "gauge.with.dots.needle.100percent"
@@ -91,6 +93,7 @@ enum NginxSidebarItem: String, CaseIterable, Identifiable {
         case .sites:        return .cyan
         case .snapshots:    return .indigo
         case .security:     return .red
+        case .ssl:          return .green
         case .analytics:    return .teal
         case .cache:        return Color(red: 0.3, green: 0.8, blue: 0.6)
         case .benchmark:    return .yellow
@@ -111,7 +114,8 @@ enum NginxSidebarItem: String, CaseIterable, Identifiable {
         case .optimization: return "Performance tuning & directives"
         case .sites:        return "Enable/disable server blocks"
         case .snapshots:    return "Config backups & diff viewer"
-        case .security:     return "Headers, SSL, rate limiting"
+        case .security:     return "Headers, rate limiting"
+        case .ssl:          return "SSL certificates & HTTPS"
         case .analytics:    return "Top IPs, URLs, status codes"
         case .cache:        return "FastCGI/proxy cache & purge"
         case .benchmark:    return "Built-in performance tester"
@@ -126,7 +130,7 @@ enum NginxSidebarItem: String, CaseIterable, Identifiable {
         [
             (.status,     [.overview, .performance]),
             (.management, [.config, .versions, .modules, .optimization, .sites, .snapshots]),
-            (.security,   [.security]),
+            (.security,   [.security, .ssl]),
             (.analytics,  [.analytics]),
             (.advanced,   [.cache, .benchmark, .proxy]),
             (.monitoring, [.workers, .logs, .doctor]),

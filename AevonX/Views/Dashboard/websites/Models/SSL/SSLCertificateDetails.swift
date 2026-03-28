@@ -134,13 +134,34 @@ public struct SSLCertificateDetails: Codable, Sendable, Identifiable {
         protocols.contains("TLSv1.3") || protocols.contains("TLSv1.2")
     }
 
-    /// Security grade based on key size and protocols
+    /// Whether this uses ECDSA (key sizes are much smaller than RSA but equally secure)
+    public var isECDSA: Bool {
+        signatureAlgorithm.lowercased().contains("ecdsa") ||
+        signatureAlgorithm.lowercased().contains("ec") ||
+        (keySize > 0 && keySize <= 521) // ECDSA keys are 256, 384, or 521 bits
+    }
+
+    /// Security grade based on key size, algorithm, and protocols.
+    /// When protocols are unknown (empty), grade is based on key strength alone
+    /// without the TLS 1.3 bonus — avoids inflating grade when data is incomplete.
     public var securityGrade: String {
-        if keySize >= 4096 && protocols.contains("TLSv1.3") {
+        // ECDSA 256-bit ≈ RSA 3072-bit, ECDSA 384-bit ≈ RSA 7680-bit
+        let effectiveStrength: Int
+        if isECDSA {
+            effectiveStrength = keySize >= 384 ? 7680 : keySize >= 256 ? 3072 : 2048
+        } else {
+            effectiveStrength = keySize
+        }
+
+        let hasProtocolInfo = !protocols.isEmpty
+
+        if effectiveStrength >= 3072 && hasProtocolInfo && protocols.contains("TLSv1.3") {
             return "A+"
-        } else if keySize >= 2048 && supportsModernTLS {
+        } else if effectiveStrength >= 3072 {
             return "A"
-        } else if keySize >= 2048 {
+        } else if effectiveStrength >= 2048 && (!hasProtocolInfo || supportsModernTLS) {
+            return "A"
+        } else if effectiveStrength >= 2048 {
             return "B"
         } else {
             return "C"

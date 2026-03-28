@@ -10,9 +10,11 @@ import SwiftUI
 import AevonXCoreBridge
 
 private struct SSHSessionItem: Identifiable {
-    let id: Int; let user: String; let ip: String; let since: String
-    init(_ i: Int, _ s: (user: String, ip: String, since: String)) {
+    let id: Int; let user: String; let ip: String; let since: String; let pid: String; let tty: String; let isCurrentDevice: Bool
+    init(_ i: Int, _ s: (user: String, ip: String, since: String, pid: String, tty: String), currentIP: String) {
         self.id = i; self.user = s.user; self.ip = s.ip; self.since = s.since
+        self.pid = s.pid; self.tty = s.tty
+        self.isCurrentDevice = !currentIP.isEmpty && s.ip == currentIP
     }
 }
 #if os(macOS)
@@ -62,8 +64,14 @@ struct SSHSubTab: View {
     @State private var keyToRemoveIndex: Int? = nil
 
     // Phase 2: Session Monitor
-    @State private var sessions: [(user: String, ip: String, since: String)] = []
+    @State private var sessions: [(user: String, ip: String, since: String, pid: String, tty: String)] = []
     @State private var isLoadingSessions = false
+    @State private var currentSessionIP = ""
+    @State private var sessionToKill: SSHSessionItem? = nil
+    @State private var isSavingPort = false
+    @State private var showPortSavedToast = false
+    @State private var showPortChangeWarning = false
+    @State private var pendingPort = ""
 
     private let securityManager = SecurityManager.shared
 
@@ -364,27 +372,51 @@ struct SSHSubTab: View {
                             }
 
                         Button(action: {
-                            Task {
-                                let _ = await securityManager.setSSHPort(port: sshPort, serverId: serverId)
-                            }
+                            pendingPort = sshPort
+                            showPortChangeWarning = true
                         }) {
-                            Text(L10n.Button.save)
-                                .font(AXTypography.headline)
-                                .foregroundColor(.white)
-                                .padding(.horizontal, AXSpacing.lg)
-                                .padding(.vertical, AXSpacing.sm)
-                                .background(
-                                    RoundedRectangle(cornerRadius: AXCornerRadius.md)
-                                        .fill(Color.axAccentGreen)
-                                )
+                            HStack(spacing: AXSpacing.xs) {
+                                if isSavingPort {
+                                    ProgressView().scaleEffect(0.7)
+                                }
+                                Text(L10n.Button.save)
+                                    .font(AXTypography.headline)
+                            }
+                            .foregroundColor(.white)
+                            .padding(.horizontal, AXSpacing.lg)
+                            .padding(.vertical, AXSpacing.sm)
+                            .background(
+                                RoundedRectangle(cornerRadius: AXCornerRadius.md)
+                                    .fill(isSavingPort ? Color.axTextMuted : Color.axAccentGreen)
+                            )
                         }
                         .buttonStyle(PlainButtonStyle())
+                        .disabled(isSavingPort)
 
-                        Text("Default port is 22. Changing it requires updating client configs.")
-                            .font(AXTypography.caption)
-                            .foregroundColor(.axTextMuted)
+                        if showPortSavedToast {
+                            HStack(spacing: AXSpacing.xs) {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .foregroundColor(.axSuccess)
+                                Text("Port updated — SSH restarting...")
+                                    .font(AXTypography.caption)
+                                    .foregroundColor(.axSuccess)
+                            }
+                            .transition(.opacity)
+                        } else {
+                            Text("Default port is 22. Changing it will restart SSH and may disconnect you.")
+                                .font(AXTypography.caption)
+                                .foregroundColor(.axTextMuted)
+                        }
                     }
                 }
+            }
+            .alert("Change SSH Port?", isPresented: $showPortChangeWarning) {
+                Button("Cancel", role: .cancel) {}
+                Button("Change Port", role: .destructive) {
+                    Task { await applySSHPort() }
+                }
+            } message: {
+                Text("Changing SSH port to \(pendingPort) will restart the SSH service. Your current connection may be interrupted. Make sure you can connect on the new port before changing.")
             }
 
             // Root Login
@@ -861,7 +893,8 @@ struct SSHSubTab: View {
     // MARK: - Sessions Content (Phase 2)
 
     private var sessionsContent: some View {
-        AXDataTable(
+        let sessionItems = sessions.enumerated().map { SSHSessionItem($0.offset, $0.element, currentIP: currentSessionIP) }
+        return AXDataTable(
             title: "Active SSH Sessions",
             icon: "person.3.fill",
             accentColor: sessions.isEmpty ? .axSuccess : .axAccentBlue,
@@ -870,27 +903,35 @@ struct SSHSubTab: View {
                 AXDataColumn(title: "User", width: 120),
                 AXDataColumn(title: "IP Address", width: nil),
                 AXDataColumn(title: "Since", width: 140),
-                AXDataColumn(title: "Action", width: 100, alignment: .center),
+                AXDataColumn(title: "PID", width: 80),
+                AXDataColumn(title: "Action", width: 120, alignment: .center),
             ],
-            items: sessions.enumerated().map { SSHSessionItem($0.offset, $0.element) },
+            items: sessionItems,
             isLoading: isLoadingSessions,
             emptyIcon: "person.crop.circle.badge.xmark",
             emptyTitle: "No active SSH sessions"
         ) { item, _ in
             HStack(spacing: 0) {
                 HStack(spacing: AXSpacing.sm) {
-                    Image(systemName: "person.circle.fill")
+                    Image(systemName: item.isCurrentDevice ? "laptopcomputer" : "person.circle.fill")
                         .font(.system(size: 14))
-                        .foregroundColor(.axAccentBlue)
-                    Text(item.user)
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(.axTextPrimary)
+                        .foregroundColor(item.isCurrentDevice ? .axAccentGreen : .axAccentBlue)
+                    VStack(alignment: .leading, spacing: 0) {
+                        Text(item.user)
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(.axTextPrimary)
+                        if item.isCurrentDevice {
+                            Text("This device")
+                                .font(.system(size: 9, weight: .semibold))
+                                .foregroundColor(.axAccentGreen)
+                        }
+                    }
                 }
                 .frame(width: 120, alignment: .leading)
 
                 Text(settings.maskServerInfo && settings.maskInDashboard && settings.maskIPAddresses ? PrivacyMask.ip(item.ip) : item.ip)
                     .font(.system(size: 12, design: .monospaced))
-                    .foregroundColor(.axTextSecondary)
+                    .foregroundColor(item.isCurrentDevice ? .axAccentGreen : .axTextSecondary)
                     .frame(maxWidth: .infinity, alignment: .leading)
 
                 Text(item.since)
@@ -898,13 +939,23 @@ struct SSHSubTab: View {
                     .foregroundColor(.axTextMuted)
                     .frame(width: 140, alignment: .leading)
 
-                AXActionButton(label: "Kill", icon: "xmark.circle", style: .destructive, size: .small) {
-                    Task {
-                        let _ = await securityManager.killSession(user: item.user, serverId: serverId)
-                        await loadSessions()
+                Text(item.pid)
+                    .font(.system(size: 11, design: .monospaced))
+                    .foregroundColor(.axTextMuted)
+                    .frame(width: 80, alignment: .leading)
+
+                Group {
+                    if item.isCurrentDevice {
+                        Text("Current")
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundColor(.axAccentGreen)
+                    } else {
+                        AXActionButton(label: "Kill", icon: "xmark.circle", style: .destructive, size: .small) {
+                            sessionToKill = item
+                        }
                     }
                 }
-                .frame(width: 100, alignment: .center)
+                .frame(width: 120, alignment: .center)
             }
         } trailingContent: {
             AXRefreshButton(isLoading: isLoadingSessions) {
@@ -912,13 +963,48 @@ struct SSHSubTab: View {
             }
         }
         .task { await loadSessions() }
+        .alert("Kill Session?", isPresented: Binding(
+            get: { sessionToKill != nil },
+            set: { if !$0 { sessionToKill = nil } }
+        )) {
+            Button("Cancel", role: .cancel) { sessionToKill = nil }
+            Button("Kill Session", role: .destructive) {
+                guard let session = sessionToKill else { return }
+                sessionToKill = nil
+                Task {
+                    let _ = await securityManager.killSessionByPID(pid: session.pid, serverId: serverId)
+                    await loadSessions()
+                }
+            }
+        } message: {
+            if let s = sessionToKill {
+                Text("Terminate SSH session for user '\(s.user)' from \(s.ip) (PID: \(s.pid))? This will disconnect that session immediately.")
+            }
+        }
     }
 
     private func loadSessions() async {
         isLoadingSessions = true
         defer { Task { @MainActor in isLoadingSessions = false } }
-        let results = await securityManager.activeSessions(serverId: serverId)
-        await MainActor.run { sessions = results }
+        async let sessionsResult = securityManager.activeSessions(serverId: serverId)
+        async let ipResult = securityManager.currentSessionIP(serverId: serverId)
+        let results = await sessionsResult
+        let ip = await ipResult
+        await MainActor.run {
+            sessions = results
+            currentSessionIP = ip
+        }
+    }
+
+    private func applySSHPort() async {
+        isSavingPort = true
+        let success = await securityManager.setSSHPort(port: pendingPort, serverId: serverId)
+        isSavingPort = false
+        if success {
+            withAnimation { showPortSavedToast = true }
+            try? await Task.sleep(for: .seconds(4))
+            withAnimation { showPortSavedToast = false }
+        }
     }
 
     // MARK: - Helpers

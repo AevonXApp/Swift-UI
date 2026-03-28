@@ -175,7 +175,9 @@ struct ModernWebsitesTab: View {
                     websiteForDetail = website
                 },
                 onSSL: { website in
-                    initialDetailTab = 4
+                    // SSL/TLS is in the security category — find its index dynamically
+                    let items = ModernSidebarItem.items(for: website.runtime)
+                    initialDetailTab = items.firstIndex(of: .sslTls) ?? 5
                     websiteForDetail = website
                 },
                 onClone: { website in

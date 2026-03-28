@@ -38,6 +38,7 @@
 "chrono.projects.title" = "Tracked Projects";
 "chrono.projects.add" = "Add Project";
 "chrono.projects.empty" = "No projects tracked yet";
+"chrono.projects.name" = "Project Name";
 "chrono.projects.path" = "Project Path";
 "chrono.projects.repoURL" = "Git Remote URL";
 "chrono.projects.branch" = "Branch to Track";
@@ -156,18 +157,48 @@
 // Settings
 "chrono.settings.title" = "AXChrono Settings";
 "chrono.settings.gitpulse" = "GitPulse Watcher";
-"chrono.settings.pollInterval" = "Poll Interval (seconds)";
+"chrono.settings.gitpulse.desc" = "Monitors Git repositories for new commits and triggers deployments";
+"chrono.settings.pollInterval" = "Poll Interval";
+"chrono.settings.pollInterval.desc" = "How often to check for new commits (seconds)";
 "chrono.settings.adaptivePolling" = "Adaptive Polling";
+"chrono.settings.adaptivePolling.desc" = "Automatically adjust poll frequency based on repository activity";
+"chrono.settings.watchMode" = "Watch Mode";
+"chrono.settings.watchMode.desc" = "How GitPulse detects new commits";
 "chrono.settings.zeroflip" = "ZeroFlip Deployment";
+"chrono.settings.zeroflip.desc" = "Zero-downtime deployment with instant rollback capability";
+"chrono.settings.zeroflipEnabled" = "Enable ZeroFlip";
+"chrono.settings.zeroflipEnabled.desc" = "Use blue-green deployment strategy for zero-downtime releases";
 "chrono.settings.maxReleases" = "Max Release Versions";
+"chrono.settings.maxReleases.desc" = "Number of previous releases to keep for instant rollback";
 "chrono.settings.sentinel" = "SentinelHealth";
+"chrono.settings.sentinel.desc" = "Continuous health monitoring and automatic failure recovery";
+"chrono.settings.sentinelEnabled" = "Enable SentinelHealth";
+"chrono.settings.sentinelEnabled.desc" = "Monitor service health after deployments";
 "chrono.settings.autoRollback" = "Auto Rollback on Failure";
-"chrono.settings.vaultScanMode" = "VaultScan Mode";
+"chrono.settings.autoRollback.desc" = "Automatically rollback if health checks fail after deployment";
+"chrono.settings.vaultScan" = "VaultScan & Security";
+"chrono.settings.vaultScan.desc" = "Scan deployments for secrets, vulnerabilities, and drift";
+"chrono.settings.vaultScanEnabled" = "Enable VaultScan";
+"chrono.settings.vaultScanEnabled.desc" = "Scan code for exposed secrets and credentials before deployment";
+"chrono.settings.vaultScanMode" = "Scan Mode";
+"chrono.settings.vaultScanMode.desc" = "Passive: warn only. Active: block deployment. Aggressive: deep scan";
+"chrono.settings.threatRadar" = "ThreatRadar";
+"chrono.settings.threatRadar.desc" = "Monitor dependencies for known vulnerabilities";
 "chrono.settings.selfHeal" = "SelfHeal Auto-Recovery";
+"chrono.settings.selfHeal.desc" = "Automatically recover services that crash or become unresponsive";
+"chrono.settings.approval" = "Approval Workflow";
+"chrono.settings.approval.desc" = "Control how deployments and critical operations are approved";
 "chrono.settings.approvalMode" = "Approval Mode";
+"chrono.settings.approvalMode.desc" = "Auto: no approval needed. Manual: always require. Smart: risk-based";
 "chrono.settings.approvalMode.auto" = "Auto";
 "chrono.settings.approvalMode.manual" = "Manual";
 "chrono.settings.approvalMode.smart" = "Smart";
+"chrono.settings.webhook" = "Webhook Configuration";
+"chrono.settings.webhook.desc" = "Receive push notifications from Git providers for instant deployments";
+"chrono.settings.webhookPort" = "Listen Port";
+"chrono.settings.webhookPort.desc" = "Port for incoming webhook requests";
+"chrono.settings.saved" = "Settings saved";
+"chrono.settings.saveFailed" = "Failed to save settings";
 
 // Service
 "chrono.service.start" = "Start AXChrono";
@@ -180,3 +211,6 @@
 // Errors
 "chrono.error.connectionFailed" = "Could not connect to AXChrono daemon";
 "chrono.error.apiError" = "API request failed";
+"chrono.error.noResponse" = "No response from daemon";
+"chrono.error.parseFailed" = "Failed to parse response";
+"chrono.error.apiNotListening" = "Daemon running but API not listening on port 9444 — check daemon logs";

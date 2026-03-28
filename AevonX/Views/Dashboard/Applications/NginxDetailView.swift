@@ -100,7 +100,7 @@ struct NginxDetailView: View {
             if !modulesLoaded { await loadModules() }
         case .workers:
             if !workersLoaded { await loadWorkers() }
-        case .logs, .optimization, .security,
+        case .logs, .optimization, .security, .ssl,
              .performance, .sites, .snapshots, .analytics,
              .cache, .benchmark, .proxy, .doctor:
             break // Self-managed sections
@@ -410,7 +410,7 @@ struct NginxDetailView: View {
         case .workers:
             workersLoaded = false
             await loadWorkers()
-        case .logs, .optimization, .security,
+        case .logs, .optimization, .security, .ssl,
              .performance, .sites, .snapshots, .analytics,
              .cache, .benchmark, .proxy, .doctor:
             break
@@ -448,6 +448,8 @@ struct NginxDetailView: View {
             NginxOptimizationSection(serverId: serverId)
         case .security:
             NginxSecuritySection(serverId: serverId)
+        case .ssl:
+            NginxSSLSection(serverId: serverId)
         case .performance:
             NginxPerformanceScoreSection(serverId: serverId)
         case .sites:

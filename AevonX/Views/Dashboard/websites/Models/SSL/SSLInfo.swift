@@ -21,7 +21,7 @@ public struct SSLInfo: Codable, Hashable {
     public var certificateType: CertificateType
 
     public init(
-        provider: SSLProvider = .letsEncrypt,
+        provider: SSLProvider = .other,
         status: SSLStatus = .pending,
         issuer: String? = nil,
         validFrom: Date? = nil,
@@ -57,6 +57,23 @@ public struct SSLInfo: Codable, Hashable {
     public var isExpired: Bool {
         guard let validUntil = validUntil else { return false }
         return Date() > validUntil
+    }
+
+    /// Detect SSL provider from issuer string
+    public static func detectProvider(from issuer: String) -> SSLProvider {
+        let lower = issuer.lowercased()
+        if lower.contains("let's encrypt") || lower.contains("letsencrypt") {
+            return .letsEncrypt
+        } else if lower.contains("cloudflare") {
+            return .cloudflare
+        } else if lower.contains("digicert") || lower.contains("comodo") || lower.contains("sectigo") ||
+                    lower.contains("geotrust") || lower.contains("globalsign") || lower.contains("godaddy") ||
+                    lower.contains("rapidssl") || lower.contains("thawte") || lower.contains("entrust") ||
+                    lower.contains("buypass") || lower.contains("certum") || lower.contains("ssl.com") {
+            return .other
+        } else {
+            return .customCertificate
+        }
     }
 }
 

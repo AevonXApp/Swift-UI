@@ -303,18 +303,47 @@ private extension ChronoContentView {
 private extension ChronoContentView {
 
     var contentArea: some View {
-        Group {
-            switch viewModel.selectedTab {
-            case .dashboard:  ChronoDashboardView(viewModel: viewModel)
-            case .projects:   ChronoProjectsView(viewModel: viewModel)
-            case .deploys:    ChronoDeployHistoryView(viewModel: viewModel)
-            case .timeline:   ChronoTimelineView(viewModel: viewModel)
-            case .security:   ChronoSecurityView(viewModel: viewModel)
-            case .approvals:  ChronoApprovalsView(viewModel: viewModel)
-            case .hologram:   ChronoHologramView(viewModel: viewModel)
-            case .settings:   ChronoSettingsView(viewModel: viewModel)
+        VStack(spacing: 0) {
+            errorBanner
+            Group {
+                switch viewModel.selectedTab {
+                case .dashboard:  ChronoDashboardView(viewModel: viewModel)
+                case .projects:   ChronoProjectsView(viewModel: viewModel)
+                case .deploys:    ChronoDeployHistoryView(viewModel: viewModel)
+                case .timeline:   ChronoTimelineView(viewModel: viewModel)
+                case .security:   ChronoSecurityView(viewModel: viewModel)
+                case .approvals:  ChronoApprovalsView(viewModel: viewModel)
+                case .hologram:   ChronoHologramView(viewModel: viewModel)
+                case .settings:   ChronoSettingsView(viewModel: viewModel)
+                }
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    @ViewBuilder
+    var errorBanner: some View {
+        if let error = viewModel.errorMessage {
+            HStack(spacing: AXSpacing.sm) {
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .foregroundColor(.axWarning)
+                    .font(.system(size: 12))
+                Text(error)
+                    .font(AXTypography.caption)
+                    .foregroundColor(.axTextSecondary)
+                Spacer()
+                Button {
+                    viewModel.errorMessage = nil
+                } label: {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 9, weight: .semibold))
+                        .foregroundColor(.axTextMuted)
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(.horizontal, AXSpacing.lg)
+            .padding(.vertical, AXSpacing.sm)
+            .background(Color.axWarning.opacity(0.08))
+        }
     }
 }

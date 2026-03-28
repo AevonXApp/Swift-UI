@@ -29,6 +29,7 @@ struct ChronoHologramView: View {
             }
             .padding(AXSpacing.xl)
         }
+        .task { await viewModel.loadProjects() }
     }
 
     // MARK: - Header

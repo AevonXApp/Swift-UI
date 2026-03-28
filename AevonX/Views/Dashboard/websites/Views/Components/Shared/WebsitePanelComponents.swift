@@ -48,6 +48,26 @@ struct InfoGrid: View {
 struct SSLOverviewCard: View {
     let ssl: SSLInfo
 
+    private var statusColor: Color {
+        switch ssl.status {
+        case .active: return .axSuccess
+        case .expired: return .axError
+        case .pending: return .axWarning
+        default: return .axTextMuted
+        }
+    }
+
+    private var expiryText: String? {
+        guard let days = ssl.daysUntilExpiry else { return nil }
+        if days > 365 {
+            return "\(days / 365)y \((days % 365) / 30)m"
+        } else if days > 30 {
+            return "\(days / 30) months"
+        } else {
+            return "\(days) days"
+        }
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: AXSpacing.md) {
             HStack {
@@ -62,13 +82,26 @@ struct SSLOverviewCard: View {
 
                 Spacer()
 
+                if let expiry = expiryText {
+                    VStack(alignment: .center, spacing: 4) {
+                        Text("Expires")
+                            .font(AXTypography.footnote)
+                            .foregroundColor(.axTextSecondary)
+                        Text(expiry)
+                            .font(AXTypography.headline)
+                            .foregroundColor(ssl.isExpiringSoon ? .axWarning : ssl.isExpired ? .axError : .axTextPrimary)
+                    }
+                }
+
+                Spacer()
+
                 VStack(alignment: .trailing, spacing: 4) {
                     Text("Status")
                         .font(AXTypography.footnote)
                         .foregroundColor(.axTextSecondary)
                     Text(ssl.status.rawValue.capitalized)
                         .font(AXTypography.headline)
-                        .foregroundColor(ssl.status == .active ? .axSuccess : .axWarning)
+                        .foregroundColor(statusColor)
                 }
             }
 
