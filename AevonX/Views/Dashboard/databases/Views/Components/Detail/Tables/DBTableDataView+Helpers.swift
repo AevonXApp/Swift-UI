@@ -32,8 +32,8 @@ extension DBTableDataView {
             .buttonStyle(.plain)
             .frame(width: checkW, height: 30)
 
-            // Row number
-            Text("\(index + 1)")
+            // Row number (global, not page-local)
+            Text("\(viewModel.currentPage * viewModel.pageSize + index + 1)")
                 .font(AXTypography.monoXs)
                 .foregroundColor(.axTextMuted.opacity(0.5))
                 .frame(width: numW, height: 30)
@@ -50,7 +50,7 @@ extension DBTableDataView {
                         NSPasteboard.general.clearContents()
                         NSPasteboard.general.setString(value, forType: .string)
                         copiedCell = "\(index)-\(colIdx)"
-                        GlobalToastManager.shared.showSuccess("Copied: \(value.prefix(30))")
+                        GlobalToastManager.shared.showSuccess(L10n.Database.copiedPrefix(String(value.prefix(30))))
                         DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
                             if copiedCell == "\(index)-\(colIdx)" { copiedCell = nil }
                         }
@@ -59,38 +59,44 @@ extension DBTableDataView {
 
             // Row actions — AXActionMenu
             AXActionMenu(sections: [
-                AXMenuSection("Actions", items: [
-                    AXMenuItem("Edit Row", icon: "pencil", color: .axAccentBlue) {
+                AXMenuSection(L10n.Database.actions, items: [
+                    AXMenuItem(L10n.Database.editRow, icon: "pencil", color: .axAccentBlue) {
                         viewModel.startEditingRow(index)
                     },
                 ]),
-                AXMenuSection("Copy", items: [
-                    AXMenuItem("Copy Row Values", icon: "doc.on.doc", color: .cyan) {
+                AXMenuSection(L10n.Button.copy, items: [
+                    AXMenuItem(L10n.Database.copyRowValues, icon: "doc.on.doc", color: .cyan) {
                         let values = row.joined(separator: "\t")
                         NSPasteboard.general.clearContents()
                         NSPasteboard.general.setString(values, forType: .string)
-                        GlobalToastManager.shared.showSuccess("Row values copied")
+                        GlobalToastManager.shared.showSuccess(L10n.Database.rowValuesCopied)
                     },
-                    AXMenuItem("Copy as INSERT", icon: "chevron.left.forwardslash.chevron.right", color: .mint) {
+                    AXMenuItem(L10n.Database.copyAsINSERT, icon: "chevron.left.forwardslash.chevron.right", color: .mint) {
                         let insert = generateInsertStatement(columns: columns, row: row)
                         NSPasteboard.general.clearContents()
                         NSPasteboard.general.setString(insert, forType: .string)
-                        GlobalToastManager.shared.showSuccess("INSERT statement copied")
+                        GlobalToastManager.shared.showSuccess(L10n.Database.insertCopied)
                     },
-                    AXMenuItem("Copy as UPDATE", icon: "arrow.triangle.2.circlepath", color: .orange) {
+                    AXMenuItem(L10n.Database.copyAsUPDATE, icon: "arrow.triangle.2.circlepath", color: .orange) {
                         let update = generateUpdateStatement(columns: columns, row: row)
                         NSPasteboard.general.clearContents()
                         NSPasteboard.general.setString(update, forType: .string)
-                        GlobalToastManager.shared.showSuccess("UPDATE statement copied")
+                        GlobalToastManager.shared.showSuccess(L10n.Database.updateCopied)
                     },
                 ]),
-                AXMenuSection("Management", items: [
-                    AXMenuItem("Duplicate Row", icon: "plus.square.on.square", color: .purple) {
+                AXMenuSection(L10n.Database.maintenance, items: [
+                    AXMenuItem(L10n.Database.duplicateRowAction, icon: "plus.square.on.square", color: .purple) {
+                        // Pre-populate add row form with this row's values
+                        var vals: [String: String] = [:]
+                        for (i, colName) in columns.enumerated() {
+                            if i < row.count { vals[colName] = row[i] }
+                        }
+                        viewModel.duplicateRowValues = vals
                         viewModel.showAddRow = true
                     },
                 ]),
                 AXMenuSection(items: [
-                    AXMenuItem("Delete Row", icon: "trash", isDestructive: true) {
+                    AXMenuItem(L10n.Database.deleteRowAction, icon: "trash", isDestructive: true) {
                         if AppSettingsManager.shared.shouldConfirm(for: SettingsKey.confirmDeleteDBRow) {
                             viewModel.activeAlert = .confirmDeleteRow(index)
                         } else {
@@ -117,7 +123,7 @@ extension DBTableDataView {
 
     func cellView(value: String, columnName: String) -> some View {
         Group {
-            if value == "NULL" || value.isEmpty {
+            if value == "NULL" {
                 Text("NULL")
                     .font(AXTypography.monoXs).fontWeight(.medium)
                     .foregroundColor(.axTextMuted.opacity(0.5))
@@ -126,6 +132,13 @@ extension DBTableDataView {
                     .padding(.vertical, 1)
                     .background(Color.axSurface.opacity(0.5))
                     .cornerRadius(AXCornerRadius.xs)
+            } else if value.isEmpty {
+                Text("(\(L10n.Database.emptyValue.lowercased()))")
+                    .font(AXTypography.monoXs).fontWeight(.medium)
+                    .foregroundColor(.axTextMuted.opacity(0.35))
+                    .italic()
+                    .padding(.horizontal, 4)
+                    .padding(.vertical, 1)
             } else if isJSONValue(value) {
                 // JSON cell — clickable to open viewer
                 HStack(spacing: AXSpacing.xxs) {
@@ -158,8 +171,8 @@ extension DBTableDataView {
                         NSWorkspace.shared.open(url)
                     }
                 }
-            } else if value == "true" || value == "false" || value == "1" || value == "0" {
-                // Boolean display
+            } else if value == "true" || value == "false" || ((value == "1" || value == "0") && isBooleanColumn(columnName)) {
+                // Boolean display — only show icons for actual boolean/bit columns
                 let isTrue = value == "true" || value == "1"
                 HStack(spacing: AXSpacing.xxs) {
                     Image(systemName: isTrue ? "checkmark.circle.fill" : "xmark.circle")
@@ -199,7 +212,7 @@ extension DBTableDataView {
                 let offset = viewModel.currentPage * viewModel.pageSize
                 let end = offset + result.rows.count
                 let total = Int(viewModel.selectedTable?.rowCount ?? Int64(end))
-                Text("Showing \(offset + 1)-\(end) of \(total) rows")
+                Text(L10n.Database.showingRows(offset + 1, end, total))
                     .font(AXTypography.caption)
                     .foregroundColor(.axTextMuted)
             }
@@ -228,7 +241,7 @@ extension DBTableDataView {
 
                 // Page display with jump-to-page
                 HStack(spacing: AXSpacing.xxs) {
-                    Text("Page")
+                    Text(L10n.Database.pageLabel)
                         .font(AXTypography.caption)
                         .foregroundColor(.axTextMuted)
                     TextField("", text: $jumpToPageText)
@@ -247,7 +260,7 @@ extension DBTableDataView {
                                 jumpToPageText = "\(viewModel.currentPage + 1)"
                             }
                         }
-                    Text("of \(viewModel.totalPages)")
+                    Text(L10n.Database.ofTotalPages(viewModel.totalPages))
                         .font(AXTypography.caption)
                         .foregroundColor(.axTextMuted)
                 }
@@ -343,6 +356,13 @@ extension DBTableDataView {
 
     // MARK: - Value Detection Helpers
 
+    func isBooleanColumn(_ columnName: String) -> Bool {
+        guard let structure = viewModel.tableStructure else { return false }
+        guard let col = structure.columns.first(where: { $0.name == columnName }) else { return false }
+        let t = col.type.lowercased()
+        return t.contains("bool") || t.contains("bit") || t == "tinyint(1)"
+    }
+
     func isJSONValue(_ value: String) -> Bool {
         let trimmed = value.trimmingCharacters(in: .whitespaces)
         return (trimmed.hasPrefix("{") && trimmed.hasSuffix("}")) ||
@@ -392,7 +412,7 @@ extension DBTableDataView {
     var jsonViewerSheet: some View {
         VStack(spacing: 0) {
             HStack {
-                Text("JSON Viewer")
+                Text(L10n.Database.jsonViewer)
                     .font(AXTypography.headline).fontWeight(.bold)
                     .foregroundColor(.axTextPrimary)
                 Spacer()
@@ -400,7 +420,7 @@ extension DBTableDataView {
                     if let content = jsonViewerContent {
                         NSPasteboard.general.clearContents()
                         NSPasteboard.general.setString(content, forType: .string)
-                        GlobalToastManager.shared.showSuccess("JSON copied")
+                        GlobalToastManager.shared.showSuccess(L10n.Database.jsonCopied)
                     }
                 } label: {
                     Image(systemName: "doc.on.doc")

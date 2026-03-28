@@ -18,7 +18,7 @@ extension DBOverviewSection {
                 Image(systemName: "server.rack")
                     .font(AXTypography.caption)
                     .foregroundColor(.teal)
-                Text("SERVER INFO")
+                Text(L10n.Database.serverInfoLabel)
                     .font(AXTypography.caption2).fontWeight(.heavy)
                     .foregroundColor(.axTextMuted)
                     .tracking(0.5)
@@ -33,7 +33,7 @@ extension DBOverviewSection {
                     info += "Tables: \(viewModel.tables.count)\n"
                     info += "Connections: \(viewModel.database.connections)"
                     NSPasteboard.general.setString(info, forType: .string)
-                    GlobalToastManager.shared.showSuccess("Server info copied")
+                    GlobalToastManager.shared.showSuccess(L10n.Database.serverInfoCopied)
                 } label: {
                     HStack(spacing: AXSpacing.xxs) {
                         Image(systemName: "doc.on.doc")
@@ -47,14 +47,14 @@ extension DBOverviewSection {
             }
 
             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: AXSpacing.sm) {
-                serverInfoRow(label: "Engine", value: viewModel.database.type.displayName, icon: "gearshape")
-                serverInfoRow(label: "Version", value: viewModel.database.version ?? "N/A", icon: "tag")
-                serverInfoRow(label: "Charset", value: viewModel.database.characterSet ?? "UTF-8", icon: "character")
-                serverInfoRow(label: "Collation", value: viewModel.database.collation ?? "N/A", icon: "text.justify")
-                serverInfoRow(label: "Data Size", value: AXFormatter.formatBytes(viewModel.tables.reduce(0) { $0 + $1.dataSize }), icon: "doc")
-                serverInfoRow(label: "Index Size", value: AXFormatter.formatBytes(viewModel.tables.reduce(0) { $0 + $1.indexSize }), icon: "list.number")
-                serverInfoRow(label: "Total Rows", value: "\(viewModel.tables.reduce(0) { $0 + Int($1.rowCount) })", icon: "number")
-                serverInfoRow(label: "Tables", value: "\(viewModel.tables.count)", icon: "tablecells")
+                serverInfoRow(label: L10n.Engine.engine, value: viewModel.database.type.displayName, icon: "gearshape")
+                serverInfoRow(label: L10n.Engine.version, value: viewModel.database.version ?? "N/A", icon: "tag")
+                serverInfoRow(label: L10n.Database.charset, value: viewModel.database.characterSet ?? "UTF-8", icon: "character")
+                serverInfoRow(label: L10n.Database.collation, value: viewModel.database.collation ?? "N/A", icon: "text.justify")
+                serverInfoRow(label: L10n.Database.dataSize, value: AXFormatter.formatBytes(viewModel.tables.reduce(0) { $0 + $1.dataSize }), icon: "doc")
+                serverInfoRow(label: L10n.Database.indexSize, value: AXFormatter.formatBytes(viewModel.tables.reduce(0) { $0 + $1.indexSize }), icon: "list.number")
+                serverInfoRow(label: L10n.Database.totalRows, value: "\(viewModel.tables.reduce(0) { $0 + Int($1.rowCount) })", icon: "number")
+                serverInfoRow(label: L10n.Database.tables, value: "\(viewModel.tables.count)", icon: "tablecells")
 
             }
         }
@@ -101,7 +101,7 @@ extension DBOverviewSection {
                 Image(systemName: "network")
                     .font(AXTypography.caption)
                     .foregroundColor(.indigo)
-                Text("CONNECTION")
+                Text(L10n.Database.connectionLabel)
                     .font(AXTypography.caption2).fontWeight(.heavy)
                     .foregroundColor(.axTextMuted)
                     .tracking(0.5)
@@ -121,12 +121,12 @@ extension DBOverviewSection {
                 connectionField(label: L10n.Field.host, value: "localhost", icon: "desktopcomputer")
                 connectionField(label: L10n.Field.port, value: portForEngine(), icon: "number")
                 connectionField(label: L10n.Field.username, value: "root", icon: "person")
-                connectionField(label: "Database", value: viewModel.database.name, icon: "cylinder")
+                connectionField(label: L10n.Database.database, value: viewModel.database.name, icon: "cylinder")
             }
 
             // Connection string
             VStack(alignment: .leading, spacing: AXSpacing.xs) {
-                Text("Connection String")
+                Text(L10n.Database.connectionString)
                     .font(AXTypography.caption2)
                     .foregroundColor(.axTextMuted)
                 HStack {
@@ -138,7 +138,7 @@ extension DBOverviewSection {
                     Button {
                         NSPasteboard.general.clearContents()
                         NSPasteboard.general.setString(connectionString(), forType: .string)
-                        GlobalToastManager.shared.showSuccess("Connection string copied")
+                        GlobalToastManager.shared.showSuccess(L10n.Database.connectionStringCopied)
                     } label: {
                         Image(systemName: "doc.on.doc")
                             .font(AXTypography.caption2)
@@ -222,18 +222,18 @@ extension DBOverviewSection {
                 Image(systemName: "chart.bar.fill")
                     .font(AXTypography.caption)
                     .foregroundColor(.orange)
-                Text("TABLE SIZE BREAKDOWN")
+                Text(L10n.Database.tableSizeBreakdown)
                     .font(AXTypography.caption2).fontWeight(.heavy)
                     .foregroundColor(.axTextMuted)
                     .tracking(0.5)
                 Spacer()
-                Text("\(viewModel.tables.count) tables")
+                Text(L10n.Database.tableCount(viewModel.tables.count))
                     .font(AXTypography.caption2)
                     .foregroundColor(.axTextMuted)
             }
 
             if viewModel.tables.isEmpty {
-                Text("No tables to analyze")
+                Text(L10n.Database.noTablesToAnalyze)
                     .font(AXTypography.footnote)
                     .foregroundColor(.axTextMuted)
                     .frame(maxWidth: .infinity)
@@ -287,7 +287,7 @@ extension DBOverviewSection {
                     }
 
                     if sortedTables.count > 8 {
-                        Text("+ \(sortedTables.count - 8) more tables")
+                        Text(L10n.Database.moreTablesCount(sortedTables.count - 8))
                             .font(AXTypography.caption2)
                             .foregroundColor(.axTextMuted)
                             .padding(.top, AXSpacing.xxs)
@@ -317,7 +317,7 @@ extension DBOverviewSection {
                     Image(systemName: "tablecells")
                         .font(AXTypography.subheadline)
                         .foregroundColor(.axAccentBlue)
-                    Text("Tables")
+                    Text(L10n.Database.tables)
                         .font(AXTypography.headline)
                         .foregroundColor(.axTextPrimary)
 
@@ -342,7 +342,7 @@ extension DBOverviewSection {
                     HStack(spacing: AXSpacing.xxs) {
                         Image(systemName: "plus")
                             .font(AXTypography.caption2)
-                        Text("New Table")
+                        Text(L10n.Database.newTable)
                             .font(AXTypography.caption)
                             .fontWeight(.semibold)
                     }
@@ -385,13 +385,13 @@ extension DBOverviewSection {
         HStack(spacing: 0) {
             Text(L10n.Field.name)
                 .frame(maxWidth: .infinity, alignment: .leading)
-            Text("Engine")
+            Text(L10n.Engine.engine)
                 .frame(width: 70, alignment: .center)
-            Text("Rows")
+            Text(L10n.Database.rows)
                 .frame(width: 70, alignment: .trailing)
-            Text("Data")
+            Text(L10n.Database.data)
                 .frame(width: 70, alignment: .trailing)
-            Text("Index")
+            Text(L10n.Database.index)
                 .frame(width: 70, alignment: .trailing)
         }
         .font(AXTypography.caption2)
@@ -442,49 +442,49 @@ extension DBOverviewSection {
 
                     // Table row actions — AXActionMenu
                     AXActionMenu(sections: [
-                        AXMenuSection("Info", items: [
-                            AXMenuItem("Copy Table Name", icon: "doc.on.doc", color: .axAccentBlue) {
+                        AXMenuSection(L10n.Database.menuInfo, items: [
+                            AXMenuItem(L10n.Database.copyTableName, icon: "doc.on.doc", color: .axAccentBlue) {
                                 NSPasteboard.general.clearContents()
                                 NSPasteboard.general.setString(table.name, forType: .string)
-                                GlobalToastManager.shared.showSuccess("Table name copied")
+                                GlobalToastManager.shared.showSuccess(L10n.Database.tableNameCopied)
                             },
-                            AXMenuItem("Copy SELECT Query", icon: "chevron.left.forwardslash.chevron.right", color: .cyan) {
+                            AXMenuItem(L10n.Database.copySelectQuery, icon: "chevron.left.forwardslash.chevron.right", color: .cyan) {
                                 let selectSQL = "SELECT * FROM `\(table.name)` LIMIT 100"
                                 NSPasteboard.general.clearContents()
                                 NSPasteboard.general.setString(selectSQL, forType: .string)
-                                GlobalToastManager.shared.showSuccess("SELECT query copied")
+                                GlobalToastManager.shared.showSuccess(L10n.Database.selectQueryCopied)
                             },
                         ]),
-                        AXMenuSection("Navigate", items: [
-                            AXMenuItem("Browse Data", icon: "tablecells", color: .mint) {
+                        AXMenuSection(L10n.Database.navigate, items: [
+                            AXMenuItem(L10n.Database.browseData, icon: "tablecells", color: .mint) {
                                 viewModel.selectedTable = table
                                 viewModel.currentSection = .tables
                             },
-                            AXMenuItem("Count Rows", icon: "number", color: .indigo) {
+                            AXMenuItem(L10n.Database.countRows, icon: "number", color: .indigo) {
                                 viewModel.queryText = "SELECT COUNT(*) as total FROM `\(table.name)`"
                                 viewModel.currentSection = .queryConsole
                                 Task { await viewModel.executeQuery() }
                             },
-                            AXMenuItem("Describe Table", icon: "info.circle", color: .axAccentGreen) {
+                            AXMenuItem(L10n.Database.describeTable, icon: "info.circle", color: .axAccentGreen) {
                                 viewModel.queryText = "DESCRIBE `\(table.name)`"
                                 viewModel.currentSection = .queryConsole
                                 Task { await viewModel.executeQuery() }
                             },
                         ]),
-                        AXMenuSection("Maintenance", items: [
-                            AXMenuItem("Optimize Table", icon: "wand.and.stars", color: .orange) {
+                        AXMenuSection(L10n.Database.maintenance, items: [
+                            AXMenuItem(L10n.Database.optimizeTable, icon: "wand.and.stars", color: .orange) {
                                 viewModel.queryText = "OPTIMIZE TABLE `\(table.name)`"
                                 viewModel.currentSection = .queryConsole
                                 Task { await viewModel.executeQuery() }
                             },
-                            AXMenuItem("Check Table", icon: "checkmark.shield", color: .axSuccess) {
+                            AXMenuItem(L10n.Database.checkTable, icon: "checkmark.shield", color: .axSuccess) {
                                 viewModel.queryText = "CHECK TABLE `\(table.name)`"
                                 viewModel.currentSection = .queryConsole
                                 Task { await viewModel.executeQuery() }
                             },
                         ]),
                         AXMenuSection(items: [
-                            AXMenuItem("Drop Table", icon: "trash", isDestructive: true) {
+                            AXMenuItem(L10n.Database.dropTable, icon: "trash", isDestructive: true) {
                                 viewModel.selectedTable = table
                                 viewModel.confirmDropTable(table.name)
                             },
@@ -505,7 +505,7 @@ extension DBOverviewSection {
             Image(systemName: "tray")
                 .font(AXTypography.largeTitle)
                 .foregroundColor(.axTextMuted)
-            Text("No tables yet")
+            Text(L10n.Database.noTablesYet)
                 .font(AXTypography.subheadline)
                 .foregroundColor(.axTextMuted)
             Button {
@@ -515,7 +515,7 @@ extension DBOverviewSection {
                 HStack(spacing: AXSpacing.xs) {
                     Image(systemName: "plus.circle.fill")
                         .font(AXTypography.caption)
-                    Text("Create First Table")
+                    Text(L10n.Database.createFirstTable)
                         .font(AXTypography.caption)
                         .fontWeight(.semibold)
                 }

@@ -148,7 +148,10 @@ struct ModernAddUserView: View {
     }
     
     private var isFormValid: Bool {
-        !username.isEmpty && !password.isEmpty && !host.isEmpty
+        let validUsername = !username.isEmpty && username.range(of: #"^[a-zA-Z0-9_][a-zA-Z0-9_\-.]*$"#, options: .regularExpression) != nil
+        let validPassword = password.count >= 8
+        let validHost = !host.isEmpty
+        return validUsername && validPassword && validHost
     }
     
     private func generatePassword() -> String {

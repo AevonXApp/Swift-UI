@@ -21,7 +21,7 @@ struct DBTableStructureView: View {
                         Image(systemName: "list.bullet.rectangle")
                             .font(AXTypography.subheadline)
                             .foregroundColor(.axAccentBlue)
-                        Text("Columns")
+                        Text(L10n.Database.columnsLabel)
                             .font(AXTypography.headline)
                             .foregroundColor(.axTextPrimary)
 
@@ -44,13 +44,13 @@ struct DBTableStructureView: View {
                             let ddl = generateDDL(structure)
                             NSPasteboard.general.clearContents()
                             NSPasteboard.general.setString(ddl, forType: .string)
-                            GlobalToastManager.shared.showSuccess("DDL copied to clipboard")
+                            GlobalToastManager.shared.showSuccess(L10n.Database.ddlCopied)
                         }
                     } label: {
                         HStack(spacing: AXSpacing.xxs) {
                             Image(systemName: "doc.text")
                                 .font(AXTypography.caption2)
-                            Text("Copy DDL")
+                            Text(L10n.Database.copyDDL)
                                 .font(AXTypography.caption)
                                 .fontWeight(.semibold)
                         }
@@ -70,7 +70,7 @@ struct DBTableStructureView: View {
                         HStack(spacing: AXSpacing.xxs) {
                             Image(systemName: "plus")
                                 .font(AXTypography.caption2)
-                            Text("Add Column")
+                            Text(L10n.Database.addColumn)
                                 .font(AXTypography.caption)
                                 .fontWeight(.semibold)
                         }
@@ -125,13 +125,13 @@ struct DBTableStructureView: View {
             Text(L10n.Field.name)
                 .frame(width: 160, alignment: .leading)
                 .padding(.horizontal, AXSpacing.sm)
-            Text("Type")
+            Text(L10n.Database.typeHeader)
                 .frame(width: 110, alignment: .leading)
                 .padding(.horizontal, AXSpacing.sm)
-            Text("Default")
+            Text(L10n.Database.defaultColHeader)
                 .frame(width: 90, alignment: .leading)
                 .padding(.horizontal, AXSpacing.sm)
-            Text("Constraints")
+            Text(L10n.Database.constraintsHeader)
                 .padding(.horizontal, AXSpacing.sm)
             Spacer()
             Text("")
@@ -214,21 +214,21 @@ struct DBTableStructureView: View {
 
             // Column actions — AXActionMenu
             AXActionMenu(sections: [
-                AXMenuSection("Copy", items: [
-                    AXMenuItem("Copy Column Name", icon: "doc.on.doc", color: .axAccentBlue) {
+                AXMenuSection(L10n.Button.copy, items: [
+                    AXMenuItem(L10n.Database.copyColumnName, icon: "doc.on.doc", color: .axAccentBlue) {
                         NSPasteboard.general.clearContents()
                         NSPasteboard.general.setString(col.name, forType: .string)
-                        GlobalToastManager.shared.showSuccess("Column name copied")
+                        GlobalToastManager.shared.showSuccess(L10n.Database.columnNameCopied)
                     },
-                    AXMenuItem("Copy Column DDL", icon: "chevron.left.forwardslash.chevron.right", color: .mint) {
+                    AXMenuItem(L10n.Database.copyColumnDDL, icon: "chevron.left.forwardslash.chevron.right", color: .mint) {
                         let ddl = columnDDL(col)
                         NSPasteboard.general.clearContents()
                         NSPasteboard.general.setString(ddl, forType: .string)
-                        GlobalToastManager.shared.showSuccess("Column DDL copied")
+                        GlobalToastManager.shared.showSuccess(L10n.Database.columnDDLCopied)
                     },
                 ]),
                 AXMenuSection(items: [
-                    AXMenuItem("Drop Column", icon: "trash", isDestructive: true) {
+                    AXMenuItem(L10n.Database.dropColumn, icon: "trash", isDestructive: true) {
                         viewModel.activeAlert = .confirmDropColumn(col.name)
                     },
                 ]),

@@ -102,7 +102,8 @@ extension DatabaseType {
     public var defaultPort: Int {
         switch self {
         case .mysql, .mariadb: return 3306
-        case .postgresql, .cockroachdb: return 5432
+        case .postgresql: return 5432
+        case .cockroachdb: return 26257
         case .redis: return 6379
         case .mongodb: return 27017
         case .sqlite: return 0 // File-based, no port
@@ -121,12 +122,13 @@ extension DatabaseType {
         }
     }
     
-    /// Whether the database supports multiple databases/schemas
+    /// Whether the database supports multiple databases/schemas/keyspaces/indices
     public var supportsMultipleDatabases: Bool {
         switch self {
-        case .mysql, .postgresql, .mariadb, .cockroachdb, .mongodb, .redis, .sqlite:
+        case .mysql, .postgresql, .mariadb, .cockroachdb, .mongodb, .redis, .sqlite,
+             .cassandra, .elasticsearch:
             return true
-        case .cassandra, .elasticsearch, .unknown:
+        case .unknown:
             return false
         @unknown default:
             return false

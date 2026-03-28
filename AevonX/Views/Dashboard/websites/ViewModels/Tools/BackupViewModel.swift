@@ -48,11 +48,32 @@ class BackupViewModel: ObservableObject {
                 case "database": backupType = .databaseOnly
                 default: backupType = .full
                 }
+
+                // Parse size from size_bytes
+                let sizeBytes = (entry["size_bytes"] as? Int64) ?? (entry["size_bytes"] as? Int).map(Int64.init) ?? 0
+                let sizeStr = sizeBytes > 0 ? AXFormatter.formatBytes(sizeBytes) : "Unknown"
+
+                // Parse date string from Go (e.g. "Mar 28 15:00")
+                let dateStr = entry["date"] as? String ?? ""
+                let date: Date
+                if !dateStr.isEmpty {
+                    let df = DateFormatter()
+                    df.dateFormat = "MMM d HH:mm"
+                    df.locale = Locale(identifier: "en_US_POSIX")
+                    // ls doesn't include year — assume current year
+                    let currentYear = Calendar.current.component(.year, from: Date())
+                    date = df.date(from: dateStr).map { parsed in
+                        Calendar.current.date(bySetting: .year, value: currentYear, of: parsed) ?? parsed
+                    } ?? Date()
+                } else {
+                    date = Date()
+                }
+
                 return SiteBackupInfo(
                     filename: filename,
                     type: backupType,
-                    date: Date(),
-                    size: entry["size"] as? String ?? "Unknown",
+                    date: date,
+                    size: sizeStr,
                     path: filename,
                     includesDatabase: typeStr == "full" || typeStr == "database"
                 )
@@ -93,7 +114,8 @@ class BackupViewModel: ObservableObject {
         let safeDir = ShellSanitizer.escapePath(serverPaths.backupDir)
         let safeDomain = ShellSanitizer.sanitizeIdentifier(domain)
         let safeDays = max(1, olderThanDays)
-        let cmd = "find \(safeDir) -name '\(safeDomain)_*' -mtime +\(safeDays) -delete 2>/dev/null; echo 'done'"
+        // Backup files are in {backupDir}/{domain}/ named files_*.tar.gz and db_*.sql.gz
+        let cmd = "find \(safeDir)/\(safeDomain) \\( -name '*.tar.gz' -o -name '*.sql.gz' \\) -mtime +\(safeDays) -delete 2>/dev/null; echo 'done'"
         _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
         GlobalToastManager.shared.showSuccess("Old backups deleted")
         await loadBackups()

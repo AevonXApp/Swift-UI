@@ -54,12 +54,12 @@ class PerformanceTuningViewModel: ObservableObject {
         var cpuCores = 1
         var procs = "auto"
         var conns = 1024
-        for line in workerLines {
+        for (idx, line) in workerLines.enumerated() {
             if line.hasPrefix("cpu:") {
                 cpuCores = Int(line.replacingOccurrences(of: "cpu:", with: "")) ?? 1
-            } else if !line.isEmpty && procs == "auto" && workerLines.firstIndex(of: line) == 1 {
+            } else if idx == 1 && !line.isEmpty {
                 procs = line
-            } else if !line.isEmpty && workerLines.firstIndex(of: line) == 2 {
+            } else if idx == 2 && !line.isEmpty {
                 conns = Int(line) ?? 1024
             }
         }
@@ -71,7 +71,7 @@ class PerformanceTuningViewModel: ObservableObject {
         let configPath = resolveConfigPath()
         let cmd = bridge.applyPerfSettingCmdRouted(engine: engine, configPath: configPath, directive: name, value: value)
         _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
-        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.reloadEngineCmd(engine: engine, serverID: serverId))
+        // Note: Go ApplyPerformanceSettingCmd already includes nginx -t && reload
         if let idx = directives.firstIndex(where: { $0.name == name }) {
             directives[idx] = DirectiveItem(name: name, value: value, isSet: true)
         }
@@ -85,7 +85,7 @@ class PerformanceTuningViewModel: ObservableObject {
         for cmd in cmds {
             _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
         }
-        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.reloadEngineCmd(engine: engine, serverID: serverId))
+        // Note: Each Go ApplyPerformanceSettingCmd already includes nginx -t && reload
         GlobalToastManager.shared.showSuccess("\(selectedPreset.capitalized) preset applied")
         await loadSettings()
     }
@@ -95,7 +95,7 @@ class PerformanceTuningViewModel: ObservableObject {
         let value = enable ? "on" : "off"
         let cmd = bridge.applyPerfSettingCmdRouted(engine: engine, configPath: configPath, directive: "gzip", value: value)
         _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
-        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.reloadEngineCmd(engine: engine, serverID: serverId))
+        // Note: Go ApplyPerformanceSettingCmd already includes nginx -t && reload
         GlobalToastManager.shared.showSuccess(enable ? "Gzip enabled" : "Gzip disabled")
         await loadSettings()
     }

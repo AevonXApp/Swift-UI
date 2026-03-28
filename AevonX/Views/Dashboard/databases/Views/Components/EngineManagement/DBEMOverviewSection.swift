@@ -16,7 +16,7 @@ struct DBEMOverviewSection: View {
             VStack(spacing: AXSpacing.xl) {
                 // Page Title
                 HStack {
-                    Text("Overview")
+                    Text(L10n.Engine.overview)
                         .font(AXTypography.title)
                         .fontWeight(.bold)
                         .foregroundColor(.axTextPrimary)
@@ -35,12 +35,12 @@ struct DBEMOverviewSection: View {
                 }
 
                 if viewModel.isLoading {
-                    AXLoadingState(message: "Loading engine data...")
+                    AXLoadingState(message: L10n.Engine.loadingEngineData)
                         .frame(minHeight: 300)
                 } else if let error = viewModel.errorMessage {
                     AXPlaceholder(
                         icon: "exclamationmark.triangle.fill",
-                        title: "Error",
+                        title: L10n.Status.error,
                         subtitle: error,
                         iconColor: .axError
                     )
@@ -63,7 +63,7 @@ struct DBEMOverviewSection: View {
                     AXGlassCard(accentColor: .axAccentBlue) {
                         VStack(alignment: .leading, spacing: AXSpacing.lg) {
                             HStack {
-                                Text("Danger Zone")
+                                Text(L10n.Engine.dangerZone)
                                     .font(AXTypography.headline)
                                     .foregroundColor(.axError)
                                 
@@ -76,7 +76,7 @@ struct DBEMOverviewSection: View {
                             Divider()
                             
                             VStack(alignment: .leading, spacing: AXSpacing.md) {
-                                Text("Uninstalling the engine will remove all binaries and may result in partial or total data loss if backups are not maintained.")
+                                Text(L10n.Engine.uninstallWarning)
                                     .font(AXTypography.subheadline)
                                     .foregroundColor(.axTextSecondary)
                                 
@@ -85,7 +85,7 @@ struct DBEMOverviewSection: View {
                                 } label: {
                                     HStack {
                                         Image(systemName: "trash")
-                                        Text("Uninstall \(viewModel.databaseType.displayName)")
+                                        Text(L10n.Engine.uninstallEngine(viewModel.databaseType.displayName))
                                     }
                                     .font(AXTypography.subheadline)
                                     .fontWeight(.bold)
@@ -117,19 +117,19 @@ struct EngineInfoCard: View {
     var body: some View {
         AXGlassCard(accentColor: .axAccentBlue) {
             VStack(alignment: .leading, spacing: AXSpacing.lg) {
-                Text("Engine Information")
+                Text(L10n.Engine.engineInformation)
                     .font(AXTypography.headline)
                     .foregroundColor(.axTextPrimary)
 
                 Divider()
 
-                DBEMInfoRow(label: "Type", value: viewModel.databaseType.displayName)
-                DBEMInfoRow(label: "Version", value: viewModel.formattedVersion)
-                DBEMInfoRow(label: "Install Path", value: viewModel.formattedInstallPath)
-                DBEMInfoRow(label: "Status", value: viewModel.engineInfo?.status.rawValue.capitalized ?? "Unknown")
-                DBEMInfoRow(label: "Service", value: viewModel.isRunning ? L10n.Status.running : L10n.Status.stopped)
-                DBEMInfoRow(label: "Boot", value: viewModel.isBootEnabled ? L10n.Status.enabled : L10n.Status.disabled)
-                DBEMInfoRow(label: "Config File", value: viewModel.configFilePath)
+                DBEMInfoRow(label: L10n.Engine.labelType, value: viewModel.databaseType.displayName)
+                DBEMInfoRow(label: L10n.Engine.labelVersion, value: viewModel.formattedVersion)
+                DBEMInfoRow(label: L10n.Engine.labelInstallPath, value: viewModel.formattedInstallPath)
+                DBEMInfoRow(label: L10n.Engine.labelStatus, value: viewModel.engineInfo?.status.rawValue.capitalized ?? L10n.Status.unknown)
+                DBEMInfoRow(label: L10n.Engine.labelService, value: viewModel.isRunning ? L10n.Status.running : L10n.Status.stopped)
+                DBEMInfoRow(label: L10n.Engine.labelBoot, value: viewModel.isBootEnabled ? L10n.Status.enabled : L10n.Status.disabled)
+                DBEMInfoRow(label: L10n.Engine.labelConfigFile, value: viewModel.configFilePath)
             }
             .padding(AXSpacing.lg)
         }
@@ -148,21 +148,21 @@ struct MetricsGrid: View {
         ], spacing: AXSpacing.lg) {
             AXStatCard(
                 icon: "clock",
-                label: "Uptime",
+                label: L10n.Engine.metricUptime,
                 value: AXFormatter.formatUptime(metrics.uptime),
                 color: themeColor
             )
 
             AXStatCard(
                 icon: "link",
-                label: "Connections",
+                label: L10n.Engine.metricConnections,
                 value: "\(metrics.connections)/\(metrics.maxConnections)",
                 color: .axAccentGreen
             )
 
             AXStatCard(
                 icon: "memorychip",
-                label: "Memory",
+                label: L10n.Engine.metricMemory,
                 value: AXFormatter.formatSizeMB(metrics.memoryUsage),
                 color: .axWarning
             )
@@ -178,17 +178,17 @@ struct PerformanceCard: View {
     var body: some View {
         AXGlassCard(accentColor: themeColor) {
             VStack(alignment: .leading, spacing: AXSpacing.lg) {
-                Text("Performance Statistics")
+                Text(L10n.Engine.performanceStatistics)
                     .font(AXTypography.headline)
                     .foregroundColor(.axTextPrimary)
 
                 Divider()
 
                 HStack(spacing: AXSpacing.xl) {
-                    StatColumn(label: "Total Queries", value: "\(stats.totalQueries)")
-                    StatColumn(label: "Avg Query Time", value: String(format: "%.2f ms", stats.avgQueryTime))
-                    StatColumn(label: "Max Query Time", value: String(format: "%.2f ms", stats.maxQueryTime))
-                    StatColumn(label: "Cache Hit", value: String(format: "%.1f%%", stats.indexUsage * 100))
+                    StatColumn(label: L10n.Engine.metricTotalQueries, value: "\(stats.totalQueries)")
+                    StatColumn(label: L10n.Engine.metricAvgQueryTime, value: String(format: "%.2f ms", stats.avgQueryTime))
+                    StatColumn(label: L10n.Engine.metricMaxQueryTime, value: String(format: "%.2f ms", stats.maxQueryTime))
+                    StatColumn(label: L10n.Engine.metricCacheHit, value: String(format: "%.1f%%", stats.indexUsage * 100))
                 }
             }
             .padding(AXSpacing.lg)

@@ -182,6 +182,23 @@ class AXLaunchWizardViewModel: ObservableObject {
         return base + remoteAppName
     }
 
+    // MARK: - Validation Helpers
+
+    private func isValidDomainName(_ domain: String) -> Bool {
+        guard !domain.isEmpty else { return false }
+        let pattern = #"^([a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$"#
+        return domain.range(of: pattern, options: .regularExpression) != nil
+    }
+
+    var isValidRemoteAppName: Bool {
+        guard !remoteAppName.isEmpty else { return true } // empty is allowed (optional)
+        let forbidden = CharacterSet(charactersIn: ";&|`$(){}[]!#~'\"\\<>?*\n\r\t ")
+        guard remoteAppName.rangeOfCharacter(from: forbidden) == nil else { return false }
+        guard !remoteAppName.contains("..") else { return false }
+        guard !remoteAppName.hasPrefix("/") && !remoteAppName.hasPrefix("-") else { return false }
+        return true
+    }
+
     // MARK: - Navigation
 
     func nextStep() {
@@ -202,9 +219,15 @@ class AXLaunchWizardViewModel: ObservableObject {
             return selectedServer != nil && connectionStage == .connected && (projectInfo != nil || manualFramework != nil)
         case .domainPath:
             let hasPath = !remoteAppName.isEmpty || (domainMode == .existingDomain && !remotePath.isEmpty)
-            return hasPath && (domainMode == .skip || !domainName.isEmpty)
+            let validDomain = domainMode == .skip || isValidDomainName(domainName)
+            return hasPath && validDomain && isValidRemoteAppName
         case .database:
-            return true
+            switch dbMode {
+            case .autoCreate, .manual:
+                return !dbName.isEmpty && !dbUsername.isEmpty && !dbPassword.isEmpty
+            case .existing, .none:
+                return true
+            }
         case .review:
             return true
         case .progress:
@@ -509,9 +532,10 @@ class AXLaunchWizardViewModel: ObservableObject {
     }
 
     func testDBConnection() async {
-        isTestingDB = true
         dbTestResult = nil
         guard selectedServer != nil else { return }
+        isTestingDB = true
+        defer { isTestingDB = false }
         let config = AXDatabaseConfig(
             mode: dbMode.rawValue,
             engine: dbEngine,
@@ -524,7 +548,6 @@ class AXLaunchWizardViewModel: ObservableObject {
         )
         let result = await service.testDBConnection(serverID: serverID, config: config)
         dbTestResult = result
-        isTestingDB = false
     }
 
     func loadExistingDatabases() async {
@@ -568,7 +591,7 @@ class AXLaunchWizardViewModel: ObservableObject {
     func buildConfig() -> AXLaunchConfig {
         let framework = manualFramework ?? projectInfo?.type ?? "unknown"
         let envDict: [String: String]? = envValues.isEmpty ? nil :
-            Dictionary(uniqueKeysWithValues: envValues.filter { !$0.key.isEmpty }.map { ($0.key, $0.value) })
+            Dictionary(envValues.filter { !$0.key.isEmpty }.map { ($0.key, $0.value) }, uniquingKeysWith: { _, latest in latest })
 
         let sourcePath = sourceType == .folder ? localPath : compressedFilePath
 
@@ -585,7 +608,7 @@ class AXLaunchWizardViewModel: ObservableObject {
             envValues: envDict,
             postSteps: postSteps,
             useDocker: framework == "docker",
-            transferMode: sourceType == .compressed ? "compressed" : "auto",
+            transferMode: sourceType == .compressed ? "tar" : "auto",
             saveConfig: saveConfig
         )
     }

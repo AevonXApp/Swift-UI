@@ -19,7 +19,16 @@ struct DBCreateIndexView: View {
     @State private var indexType = "BTREE"
     @State private var isCreating = false
 
-    private let indexTypes = ["BTREE", "HASH", "FULLTEXT", "SPATIAL"]
+    private var indexTypes: [String] {
+        switch viewModel.database.type {
+        case .postgresql, .cockroachdb:
+            return ["BTREE", "HASH", "GIN", "GiST", "BRIN"]
+        case .sqlite:
+            return ["BTREE"]
+        default:
+            return ["BTREE", "HASH", "FULLTEXT", "SPATIAL"]
+        }
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -34,7 +43,7 @@ struct DBCreateIndexView: View {
                             .font(AXTypography.subheadline)
                             .foregroundColor(.axAccentGreen)
                     }
-                    Text("Create Index")
+                    Text(L10n.Database.createIndex)
                         .font(AXTypography.headline).fontWeight(.bold)
                         .foregroundColor(.axTextPrimary)
                 }
@@ -66,7 +75,7 @@ struct DBCreateIndexView: View {
                 VStack(alignment: .leading, spacing: AXSpacing.lg) {
                     // Index Name
                     VStack(alignment: .leading, spacing: AXSpacing.xs) {
-                        Text("Index Name")
+                        Text(L10n.Database.indexName)
                             .font(AXTypography.footnote).fontWeight(.semibold)
                             .foregroundColor(.axTextSecondary)
                         TextField("idx_\(viewModel.selectedTable?.name ?? "table")_...", text: $indexName)
@@ -85,7 +94,7 @@ struct DBCreateIndexView: View {
 
                     // Index Type
                     VStack(alignment: .leading, spacing: AXSpacing.xs) {
-                        Text("Index Type")
+                        Text(L10n.Database.indexType)
                             .font(AXTypography.footnote).fontWeight(.semibold)
                             .foregroundColor(.axTextSecondary)
                         HStack(spacing: AXSpacing.sm) {
@@ -113,10 +122,10 @@ struct DBCreateIndexView: View {
                     // Unique toggle
                     HStack {
                         VStack(alignment: .leading, spacing: AXSpacing.xxxs) {
-                            Text("Unique Index")
+                            Text(L10n.Database.uniqueIndex)
                                 .font(AXTypography.footnote).fontWeight(.semibold)
                                 .foregroundColor(.axTextSecondary)
-                            Text("Enforce unique values across selected columns")
+                            Text(L10n.Database.uniqueIndexDesc)
                                 .font(AXTypography.caption2)
                                 .foregroundColor(.axTextMuted)
                         }
@@ -129,11 +138,11 @@ struct DBCreateIndexView: View {
                     // Column Selection
                     VStack(alignment: .leading, spacing: AXSpacing.xs) {
                         HStack {
-                            Text("Columns")
+                            Text(L10n.Database.columnsLabel)
                                 .font(AXTypography.footnote).fontWeight(.semibold)
                                 .foregroundColor(.axTextSecondary)
                             Spacer()
-                            Text("\(selectedColumns.count) selected")
+                            Text(L10n.Database.selectedCount(selectedColumns.count))
                                 .font(AXTypography.caption2)
                                 .foregroundColor(selectedColumns.isEmpty ? .axError : .axSuccess)
                         }
@@ -203,14 +212,14 @@ struct DBCreateIndexView: View {
                     if !selectedColumns.isEmpty {
                         VStack(alignment: .leading, spacing: AXSpacing.xs) {
                             HStack {
-                                Text("SQL Preview")
+                                Text(L10n.Database.sqlPreview)
                                     .font(AXTypography.footnote).fontWeight(.semibold)
                                     .foregroundColor(.axTextSecondary)
                                 Spacer()
                                 Button {
                                     NSPasteboard.general.clearContents()
                                     NSPasteboard.general.setString(generateSQL(), forType: .string)
-                                    GlobalToastManager.shared.showSuccess("SQL copied")
+                                    GlobalToastManager.shared.showSuccess(L10n.Database.sqlCopied)
                                 } label: {
                                     Image(systemName: "doc.on.doc")
                                         .font(AXTypography.caption2)
@@ -271,7 +280,7 @@ struct DBCreateIndexView: View {
                                 .scaleEffect(0.5)
                                 .frame(width: 14, height: 14)
                         }
-                        Text(isCreating ? "Creating..." : "Create Index")
+                        Text(isCreating ? L10n.Database.creating : L10n.Database.createIndex)
                             .font(AXTypography.subheadline).fontWeight(.bold)
                     }
                     .foregroundColor(.white)
@@ -300,8 +309,18 @@ struct DBCreateIndexView: View {
     private func generateSQL() -> String {
         let tableName = viewModel.selectedTable?.name ?? "table"
         let uq = isUnique ? "UNIQUE " : ""
-        let cols = selectedColumns.sorted().map { "`\($0)`" }.joined(separator: ", ")
-        let using = indexType != "BTREE" ? " USING \(indexType)" : ""
-        return "CREATE \(uq)INDEX `\(indexName)` ON `\(tableName)` (\(cols))\(using);"
+        switch viewModel.database.type {
+        case .postgresql, .cockroachdb:
+            let cols = selectedColumns.sorted().map { "\"\($0)\"" }.joined(separator: ", ")
+            let using = indexType != "BTREE" ? " USING \(indexType.lowercased())" : ""
+            return "CREATE \(uq)INDEX \"\(indexName)\" ON \"\(tableName)\"\(using) (\(cols));"
+        case .sqlite:
+            let cols = selectedColumns.sorted().map { "\"\($0)\"" }.joined(separator: ", ")
+            return "CREATE \(uq)INDEX \"\(indexName)\" ON \"\(tableName)\" (\(cols));"
+        default:
+            let cols = selectedColumns.sorted().map { "`\($0)`" }.joined(separator: ", ")
+            let using = indexType != "BTREE" ? " USING \(indexType)" : ""
+            return "CREATE \(uq)INDEX `\(indexName)` ON `\(tableName)` (\(cols))\(using);"
+        }
     }
 }

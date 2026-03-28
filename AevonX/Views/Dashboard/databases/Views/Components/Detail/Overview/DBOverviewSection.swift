@@ -112,14 +112,14 @@ struct DBOverviewSection: View {
             // Quick connect info
             VStack(alignment: .trailing, spacing: AXSpacing.xs) {
                 HStack(spacing: AXSpacing.xs) {
-                    Text("Port 3306")
+                    Text(L10n.Database.portLabel(defaultPort))
                         .font(AXTypography.monoXs).fontWeight(.medium)
                         .foregroundColor(.axTextMuted)
                 }
                 Text(AXFormatter.formatSizeMB(viewModel.database.size))
                     .font(AXTypography.title2).fontWeight(.bold)
                     .foregroundColor(.axTextPrimary)
-                Text("Total Size")
+                Text(L10n.Database.totalSize)
                     .font(AXTypography.caption)
                     .foregroundColor(.axTextMuted)
             }
@@ -155,28 +155,28 @@ struct DBOverviewSection: View {
         LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: AXSpacing.md), count: 4), spacing: AXSpacing.md) {
             AXStatCard(
                 icon: "cylinder",
-                label: "Engine",
+                label: L10n.Engine.engine,
                 value: viewModel.database.type.displayName,
                 color: .axAccentBlue,
                 style: .glass
             )
             AXStatCard(
                 icon: "internaldrive",
-                label: "Size",
+                label: L10n.Database.size,
                 value: AXFormatter.formatSizeMB(viewModel.database.size),
                 color: .axAccentGreen,
                 style: .glass
             )
             AXStatCard(
                 icon: "tablecells",
-                label: "Tables",
+                label: L10n.Database.tables,
                 value: "\(viewModel.tables.count)",
                 color: .axWarning,
                 style: .glass
             )
             AXStatCard(
                 icon: "bolt.horizontal",
-                label: "Connections",
+                label: L10n.Database.connections,
                 value: "\(viewModel.database.connections)",
                 color: .axInfo,
                 style: .glass
@@ -193,19 +193,19 @@ struct DBOverviewSection: View {
         LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: AXSpacing.md), count: 4), spacing: AXSpacing.md) {
             miniStatCard(
                 icon: "arrow.up.arrow.down",
-                label: "Total Rows",
+                label: L10n.Database.totalRows,
                 value: "\(viewModel.tables.reduce(0) { $0 + Int($1.rowCount) })",
                 color: .purple
             )
             miniStatCard(
                 icon: "key.fill",
-                label: "Indexed",
+                label: L10n.Database.indexed,
                 value: "\(viewModel.tables.filter { $0.engine != nil }.count)",
                 color: .mint
             )
             miniStatCard(
                 icon: "clock",
-                label: "Avg Row Size",
+                label: L10n.Database.avgRowSize,
                 value: viewModel.tables.isEmpty ? "—" : AXFormatter.formatBytes(
                     viewModel.tables.reduce(0) { $0 + $1.dataSize } / Int64(max(viewModel.tables.count, 1))
                 ),
@@ -213,7 +213,7 @@ struct DBOverviewSection: View {
             )
             miniStatCard(
                 icon: "chart.bar.fill",
-                label: "Index Size",
+                label: L10n.Database.indexSize,
                 value: AXFormatter.formatBytes(viewModel.tables.reduce(0) { $0 + $1.indexSize }),
                 color: .indigo
             )
@@ -262,17 +262,17 @@ struct DBOverviewSection: View {
                 Image(systemName: "terminal.fill")
                     .font(AXTypography.caption)
                     .foregroundColor(.purple)
-                Text("QUICK SQL")
+                Text(L10n.Database.quickSQL)
                     .font(AXTypography.caption2).fontWeight(.heavy)
                     .foregroundColor(.axTextMuted)
                     .tracking(0.5)
                 Spacer()
-                Text("⌘+Enter to execute")
+                Text(L10n.Database.cmdEnterToExecute)
                     .font(AXTypography.caption2)
                     .foregroundColor(.axTextMuted.opacity(0.5))
             }
             HStack(spacing: AXSpacing.sm) {
-                TextField("Type SQL query...", text: $quickSQL)
+                TextField(L10n.Database.typeSQLQuery, text: $quickSQL)
                     .font(AXTypography.monoMd)
                     .foregroundColor(.axTextPrimary)
                     .textFieldStyle(.plain)
@@ -363,7 +363,7 @@ struct DBOverviewSection: View {
                 Image(systemName: "bolt.fill")
                     .font(AXTypography.caption)
                     .foregroundColor(.axAccentBlue)
-                Text("QUICK ACTIONS")
+                Text(L10n.Database.quickActions)
                     .font(AXTypography.caption2)
                     .fontWeight(.bold)
                     .foregroundColor(.axTextMuted)
@@ -375,13 +375,13 @@ struct DBOverviewSection: View {
                     viewModel.currentSection = .tables
                     viewModel.showCreateTable = true
                 }
-                quickActionButton(icon: "terminal", title: "Run Query", color: .axAccentGreen) {
+                quickActionButton(icon: "terminal", title: L10n.Database.runQuery, color: .axAccentGreen) {
                     viewModel.currentSection = .queryConsole
                 }
                 quickActionButton(icon: "arrow.down.doc", title: L10n.Database.createBackup, color: .axWarning) {
                     viewModel.currentSection = .backup
                 }
-                quickActionButton(icon: "tablecells.badge.ellipsis", title: "Browse Data", color: .axInfo) {
+                quickActionButton(icon: "tablecells.badge.ellipsis", title: L10n.Database.browseData, color: .axInfo) {
                     if let firstTable = viewModel.tables.first {
                         viewModel.selectedTable = firstTable
                         viewModel.currentSection = .tables
@@ -390,7 +390,7 @@ struct DBOverviewSection: View {
                 quickActionButton(icon: "arrow.up.doc", title: L10n.Database.importSQL, color: .purple) {
                     viewModel.currentSection = .importSQL
                 }
-                quickActionButton(icon: "clock", title: "Activity Log", color: .axTextSecondary) {
+                quickActionButton(icon: "clock", title: L10n.Database.activityLog, color: .axTextSecondary) {
                     viewModel.currentSection = .activityLog
                 }
             }
@@ -445,6 +445,19 @@ struct DBOverviewSection: View {
         .buttonStyle(.plain)
     }
 
+
+    private var defaultPort: String {
+        switch viewModel.database.type {
+        case .mysql, .mariadb: return "3306"
+        case .postgresql: return "5432"
+        case .redis: return "6379"
+        case .mongodb: return "27017"
+        case .cassandra: return "9042"
+        case .cockroachdb: return "26257"
+        case .elasticsearch: return "9200"
+        default: return "3306"
+        }
+    }
 
     // Server info, connection details, table size breakdown,
     // tables card → DBOverviewSection+Cards.swift

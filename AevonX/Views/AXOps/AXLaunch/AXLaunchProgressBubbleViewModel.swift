@@ -45,7 +45,7 @@ class AXLaunchProgressBubbleViewModel: ObservableObject {
                 let p = await self.service.getProgress(launchID: id)
                 self.progress = p
 
-                if p.status == "completed" {
+                if p.status == "success" {
                     self.isComplete = true
                     try? await Task.sleep(for: .seconds(3))
                     self.dismiss()

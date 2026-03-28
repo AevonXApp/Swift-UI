@@ -40,21 +40,33 @@ class MonitoringViewModel: ObservableObject {
     }
 
     func runHealthCheck() async {
+        // Health check command outputs: "200 0.543" (http_code space time_total)
         let cmd = bridge.healthCheckCmd(domain: domain)
         let result = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
-        let parsedJSON = bridge.parseHealthCheck(output: result)
+        let trimmed = result.trimmingCharacters(in: .whitespacesAndNewlines)
+        let parts = trimmed.split(separator: " ", maxSplits: 1)
 
-        if let data = parsedJSON.data(using: String.Encoding.utf8),
-           let resp = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-           resp["success"] as? Bool == true,
-           let hc = resp["data"] as? [String: Any] {
+        if parts.count >= 2,
+           let httpCode = Int(parts[0]),
+           let responseTime = Double(parts[1]) {
+            let isUp = httpCode >= 200 && httpCode < 500
             healthCheck = SiteHealthCheck(
                 timestamp: Date(),
-                httpStatus: hc["http_status"] as? Int,
-                responseTime: hc["response_time"] as? Double,
-                sslDaysRemaining: hc["ssl_days_remaining"] as? Int,
-                dnsResolved: hc["dns_resolved"] as? Bool ?? false,
-                isUp: hc["is_up"] as? Bool ?? false
+                httpStatus: httpCode,
+                responseTime: responseTime,
+                sslDaysRemaining: nil,
+                dnsResolved: isUp,
+                isUp: isUp
+            )
+        } else if parts.count == 1, let httpCode = Int(parts[0]) {
+            let isUp = httpCode >= 200 && httpCode < 500
+            healthCheck = SiteHealthCheck(
+                timestamp: Date(),
+                httpStatus: httpCode,
+                responseTime: nil,
+                sslDaysRemaining: nil,
+                dnsResolved: isUp,
+                isUp: isUp
             )
         } else {
             healthCheck = SiteHealthCheck(timestamp: Date(), httpStatus: nil, responseTime: nil, sslDaysRemaining: nil, dnsResolved: false, isUp: false)
@@ -62,55 +74,70 @@ class MonitoringViewModel: ObservableObject {
     }
 
     private func loadTraffic() async {
+        // Go AnalyzeTrafficCmd outputs sections like:
+        // === TOP_URLS ===
+        //   15 /index.html
+        // === TOP_IPS ===
+        //   20 1.2.3.4
+        // === STATUS_CODES ===
+        //   40 200
         let logPath = "\(serverPaths.logDir)/\(domain).access.log"
         let cmd = bridge.analyzeTrafficCmd(domain: domain, logPath: logPath)
         let result = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
-        let parsedJSON = bridge.parseTrafficAnalysis(output: result)
 
-        if let data = parsedJSON.data(using: String.Encoding.utf8),
-           let resp = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-           resp["success"] as? Bool == true,
-           let analytics = resp["data"] as? [String: Any] {
+        let sections = parseTrafficSections(result)
 
-            // Top URLs
-            if let urls = analytics["top_urls"] as? [[String: Any]] {
-                let totalReqs = urls.reduce(0) { $0 + ($1["count"] as? Int ?? 0) }
-                topURLs = urls.compactMap { (dict: [String: Any]) -> TopURLEntry? in
-                    guard let url = dict["value"] as? String, let count = dict["count"] as? Int else { return nil }
-                    return TopURLEntry(url: url, count: count, percentage: totalReqs > 0 ? Double(count) / Double(totalReqs) * 100 : 0)
-                }
+        // Top URLs
+        if let urlLines = sections["TOP_URLS"] {
+            let entries = parseCountValueLines(urlLines)
+            let total = entries.reduce(0) { $0 + $1.0 }
+            topURLs = entries.map { count, value in
+                TopURLEntry(url: value, count: count, percentage: total > 0 ? Double(count) / Double(total) * 100 : 0)
             }
+        }
 
-            // Top IPs
-            if let ips = analytics["top_ips"] as? [[String: Any]] {
-                topIPs = ips.compactMap { (dict: [String: Any]) -> TopIPEntry? in
-                    guard let ip = dict["value"] as? String, let count = dict["count"] as? Int else { return nil }
-                    return TopIPEntry(ip: ip, count: count, country: nil)
-                }
+        // Top IPs
+        if let ipLines = sections["TOP_IPS"] {
+            let entries = parseCountValueLines(ipLines)
+            topIPs = entries.map { count, value in
+                TopIPEntry(ip: value, count: count, country: nil)
             }
+        }
 
-            // Status codes
-            if let codes = analytics["status_codes"] as? [[String: Any]] {
-                let totalStatus = codes.reduce(0) { $0 + ($1["count"] as? Int ?? 0) }
-                statusCodes = codes.compactMap { (dict: [String: Any]) -> StatusCodeEntry? in
-                    guard let codeStr = dict["value"] as? String, let count = dict["count"] as? Int else { return nil }
-                    let code = Int(codeStr) ?? 0
-                    return StatusCodeEntry(code: code, count: count, percentage: totalStatus > 0 ? Double(count) / Double(totalStatus) * 100 : 0)
-                }
+        // Status codes
+        if let codeLines = sections["STATUS_CODES"] {
+            let entries = parseCountValueLines(codeLines)
+            let total = entries.reduce(0) { $0 + $1.0 }
+            statusCodes = entries.map { count, value in
+                StatusCodeEntry(code: Int(value) ?? 0, count: count, percentage: total > 0 ? Double(count) / Double(total) * 100 : 0)
             }
+        }
+    }
 
-            // Bot traffic
-            if let bots = analytics["bot_traffic"] as? [[String: Any]] {
-                botTraffic = bots.compactMap { (dict: [String: Any]) -> BotTrafficEntry? in
-                    guard let bot = dict["value"] as? String, let count = dict["count"] as? Int else { return nil }
-                    return BotTrafficEntry(botName: bot, requestCount: count, percentage: 0, isKnownGood: bot.lowercased().contains("google") || bot.lowercased().contains("bing"))
-                }
+    /// Parse sectioned output: "=== SECTION ===" followed by "  count value" lines.
+    private func parseTrafficSections(_ output: String) -> [String: [String]] {
+        var sections: [String: [String]] = [:]
+        var currentSection: String?
+        for line in output.split(separator: "\n", omittingEmptySubsequences: false) {
+            let trimmed = line.trimmingCharacters(in: .whitespaces)
+            if trimmed.hasPrefix("===") && trimmed.hasSuffix("===") {
+                let name = trimmed.replacingOccurrences(of: "=", with: "").trimmingCharacters(in: .whitespaces)
+                currentSection = name
+                sections[name] = []
+            } else if let section = currentSection, !trimmed.isEmpty {
+                sections[section, default: []].append(trimmed)
             }
+        }
+        return sections
+    }
 
-            // Bandwidth
-            if let totalBytes = analytics["total_bandwidth_bytes"] as? Int64 {
-                bandwidth = SiteBandwidthData(totalBytes: totalBytes, period: "Total")
-            }
+    /// Parse "  count value" lines from uniq -c output.
+    private func parseCountValueLines(_ lines: [String]) -> [(Int, String)] {
+        lines.compactMap { line in
+            let trimmed = line.trimmingCharacters(in: .whitespaces)
+            let parts = trimmed.split(separator: " ", maxSplits: 1)
+            guard parts.count == 2, let count = Int(parts[0]) else { return nil }
+            return (count, String(parts[1]))
         }
     }
 

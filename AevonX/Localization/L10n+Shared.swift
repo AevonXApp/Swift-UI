@@ -104,6 +104,7 @@ extension L10n {
         static let enabled = s("status.enabled", "Enabled")
         static let disabled = s("status.disabled", "Disabled")
         static let unknown = s("status.unknown", "Unknown")
+        static let error = s("status.error", "Error")
         static let failed = s("status.failed", "Failed")
 
         static func percentage(_ value: Int) -> String {

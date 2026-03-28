@@ -42,10 +42,10 @@ extension DBSQLConsoleSection {
                         .foregroundColor(.axTextMuted.opacity(0.3))
                 }
                 VStack(spacing: AXSpacing.xxs) {
-                    Text("Press ⌘+Enter to execute")
+                    Text(L10n.Database.pressToExecute)
                         .font(AXTypography.subheadline)
                         .foregroundColor(.axTextMuted)
-                    Text("Use quick actions or type your own SQL")
+                    Text(L10n.Database.useQuickActions)
                         .font(AXTypography.caption)
                         .foregroundColor(.axTextMuted.opacity(0.5))
                 }
@@ -71,7 +71,7 @@ extension DBSQLConsoleSection {
                 }
 
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Query Error")
+                    Text(L10n.Database.queryError)
                         .font(AXTypography.callout).fontWeight(.bold)
                         .foregroundColor(.axError)
 
@@ -91,7 +91,7 @@ extension DBSQLConsoleSection {
                 Button {
                     NSPasteboard.general.clearContents()
                     NSPasteboard.general.setString(error, forType: .string)
-                    GlobalToastManager.shared.showSuccess("Error copied")
+                    GlobalToastManager.shared.showSuccess(L10n.Database.errorCopied)
                 } label: {
                     Image(systemName: "doc.on.doc")
                         .font(AXTypography.caption)
@@ -134,7 +134,7 @@ extension DBSQLConsoleSection {
                 Image(systemName: "lightbulb.fill")
                     .font(AXTypography.caption2)
                     .foregroundColor(.axWarning)
-                Text("Check your SQL syntax, table names, and column references")
+                Text(L10n.Database.checkSQLHint)
                     .font(AXTypography.caption)
                     .foregroundColor(.axTextMuted)
             }
@@ -157,13 +157,13 @@ extension DBSQLConsoleSection {
                     Image(systemName: "checkmark.circle.fill")
                         .font(AXTypography.subheadline)
                         .foregroundColor(.axSuccess)
-                    Text("\(result.rows.count) rows")
+                    Text(L10n.Database.rowCountDisplay(result.rows.count))
                         .font(AXTypography.footnote).fontWeight(.bold)
                         .foregroundColor(.axTextSecondary)
                     Text("×")
                         .font(AXTypography.caption)
                         .foregroundColor(.axTextMuted)
-                    Text("\(result.columns.count) columns")
+                    Text(L10n.Database.columnCountDisplay(result.columns.count))
                         .font(AXTypography.footnote)
                         .foregroundColor(.axTextMuted)
                 }
@@ -172,11 +172,11 @@ extension DBSQLConsoleSection {
                     Image(systemName: "checkmark.circle.fill")
                         .font(AXTypography.subheadline)
                         .foregroundColor(.axSuccess)
-                    Text("Query executed successfully")
+                    Text(L10n.Database.querySuccess)
                         .font(AXTypography.footnote).fontWeight(.bold)
                         .foregroundColor(.axSuccess)
                     if result.affectedRows > 0 {
-                        Text("· \(result.affectedRows) rows affected")
+                        Text("· \(L10n.Database.rowsAffected(result.affectedRows))")
                             .font(AXTypography.caption)
                             .foregroundColor(.axTextMuted)
                     }
@@ -201,32 +201,32 @@ extension DBSQLConsoleSection {
             // Copy results
             if result.isSelect && !result.rows.isEmpty {
                 AXActionMenu(sections: [
-                    AXMenuSection("Data", items: [
-                        AXMenuItem("Copy as TSV", icon: "tablecells", color: .axAccentBlue) {
+                    AXMenuSection(L10n.Database.data, items: [
+                        AXMenuItem(L10n.Database.copyAsTSV, icon: "tablecells", color: .axAccentBlue) {
                             let csv = formatAsCSV(result)
                             NSPasteboard.general.clearContents()
                             NSPasteboard.general.setString(csv, forType: .string)
-                            GlobalToastManager.shared.showSuccess("Copied \(result.rows.count) rows as TSV")
+                            GlobalToastManager.shared.showSuccess(L10n.Database.copiedRowsAsTSV(result.rows.count))
                         },
-                        AXMenuItem("Copy as JSON", icon: "curlybraces", color: .orange) {
+                        AXMenuItem(L10n.Database.copyAsJSON, icon: "curlybraces", color: .orange) {
                             let json = formatAsJSON(result)
                             NSPasteboard.general.clearContents()
                             NSPasteboard.general.setString(json, forType: .string)
-                            GlobalToastManager.shared.showSuccess("Copied \(result.rows.count) rows as JSON")
+                            GlobalToastManager.shared.showSuccess(L10n.Database.copiedRowsAsJSON(result.rows.count))
                         },
                     ]),
                     AXMenuSection("SQL", items: [
-                        AXMenuItem("Copy as INSERT", icon: "chevron.left.forwardslash.chevron.right", color: .mint) {
+                        AXMenuItem(L10n.Database.copyAsINSERT, icon: "chevron.left.forwardslash.chevron.right", color: .mint) {
                             let sql = formatAsInsert(result)
                             NSPasteboard.general.clearContents()
                             NSPasteboard.general.setString(sql, forType: .string)
-                            GlobalToastManager.shared.showSuccess("Copied \(result.rows.count) rows as INSERT")
+                            GlobalToastManager.shared.showSuccess(L10n.Database.copiedRowsAsINSERT(result.rows.count))
                         },
-                        AXMenuItem("Copy as Markdown", icon: "text.document", color: .purple) {
+                        AXMenuItem(L10n.Database.copyAsMarkdown, icon: "text.document", color: .purple) {
                             let md = formatAsMarkdown(result)
                             NSPasteboard.general.clearContents()
                             NSPasteboard.general.setString(md, forType: .string)
-                            GlobalToastManager.shared.showSuccess("Copied as Markdown table")
+                            GlobalToastManager.shared.showSuccess(L10n.Database.copiedAsMarkdownTable)
                         },
                     ]),
                 ], triggerIcon: "square.and.arrow.up", triggerSize: 22)
@@ -301,21 +301,21 @@ extension DBSQLConsoleSection {
                                 HStack {
                                     Spacer()
                                     AXActionMenu(sections: [
-                                        AXMenuSection("Copy", items: {
+                                        AXMenuSection(L10n.Button.copy, items: {
                                             var items: [AXMenuItem] = [
-                                                AXMenuItem("Copy Row", icon: "doc.on.doc", color: .axAccentBlue) {
+                                                AXMenuItem(L10n.Database.copyRow, icon: "doc.on.doc", color: .axAccentBlue) {
                                                     let vals = row.joined(separator: "\t")
                                                     NSPasteboard.general.clearContents()
                                                     NSPasteboard.general.setString(vals, forType: .string)
-                                                    GlobalToastManager.shared.showSuccess("Row copied")
+                                                    GlobalToastManager.shared.showSuccess(L10n.Database.rowCopied)
                                                 },
                                             ]
                                             if !result.columns.isEmpty {
-                                                items.append(AXMenuItem("Copy as INSERT", icon: "chevron.left.forwardslash.chevron.right", color: .mint) {
+                                                items.append(AXMenuItem(L10n.Database.copyAsINSERT, icon: "chevron.left.forwardslash.chevron.right", color: .mint) {
                                                     let insert = generateInsertFromResult(columns: result.columns, row: row)
                                                     NSPasteboard.general.clearContents()
                                                     NSPasteboard.general.setString(insert, forType: .string)
-                                                    GlobalToastManager.shared.showSuccess("INSERT statement copied")
+                                                    GlobalToastManager.shared.showSuccess(L10n.Database.insertCopied)
                                                 })
                                             }
                                             return items
@@ -361,7 +361,7 @@ extension DBSQLConsoleSection {
             NSPasteboard.general.clearContents()
             NSPasteboard.general.setString(value, forType: .string)
             copiedResultCell = cellId
-            GlobalToastManager.shared.showSuccess("Copied: \(String(value.prefix(30)))")
+            GlobalToastManager.shared.showSuccess(L10n.Database.copiedPrefix(String(value.prefix(30))))
             DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
                 if copiedResultCell == cellId { copiedResultCell = nil }
             }

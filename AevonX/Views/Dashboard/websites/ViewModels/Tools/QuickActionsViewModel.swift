@@ -35,6 +35,14 @@ class QuickActionsViewModel: ObservableObject {
         self.engine = engine
     }
 
+    func checkMaintenanceState() async {
+        let result = await SSHBridge.shared.executeAsync(
+            serverID: serverId,
+            command: "[ -f \(docRoot.replacingOccurrences(of: "'", with: "'\\''"))/maintenance.html ] && echo 'ON' || echo 'OFF'"
+        )
+        maintenanceMode = result.trimmingCharacters(in: .whitespacesAndNewlines) == "ON"
+    }
+
     func restartRuntime() async {
         isRunning = true; runningAction = "Restarting runtime..."
         defer { isRunning = false; runningAction = "" }

@@ -20,7 +20,8 @@ public actor DatabaseBackupService {
     public func createBackup(database: String, type: DatabaseType, serverId: String) async throws {
         let cmd = bridge.createBackupCmd(engine: type.rawValue, database: database)
         let result = await ssh.executeAsync(serverID: serverId, command: cmd)
-        if !result.contains("OK") && result.lowercased().contains("error") {
+        let lower = result.lowercased()
+        if lower.contains("error") || lower.contains("failed") || lower.contains("denied") {
             throw DatabaseServiceError.operationFailed("Backup creation failed: \(result)")
         }
     }
@@ -32,9 +33,20 @@ public actor DatabaseBackupService {
     }
 
     public func restoreBackup(backupPath: String, database: String, type: DatabaseType, serverId: String) async throws {
+        guard ShellSanitizer.isValidPath(backupPath) else {
+            throw DatabaseServiceError.operationFailed("Invalid backup path")
+        }
+        // Pre-verify backup file exists
+        let checkCmd = "test -f \(ShellSanitizer.escapePath(backupPath)) && echo 'EXISTS' || echo 'NOT_FOUND'"
+        let checkResult = await ssh.executeAsync(serverID: serverId, command: checkCmd)
+        guard checkResult.contains("EXISTS") else {
+            throw DatabaseServiceError.operationFailed("Backup file not found: \(backupPath)")
+        }
+
         let cmd = bridge.restoreBackupCmd(engine: type.rawValue, backupPath: backupPath, database: database)
         let result = await ssh.executeAsync(serverID: serverId, command: cmd)
-        if result.lowercased().contains("error") {
+        let lower = result.lowercased()
+        if lower.contains("error") || lower.contains("failed") || lower.contains("denied") {
             throw DatabaseServiceError.operationFailed("Restore failed: \(result)")
         }
     }
@@ -59,15 +71,19 @@ public actor DatabaseBackupService {
         return backups
     }
 
-    /// Download backup content from server
+    /// Download backup content from server (base64-encoded by Go adapter, decoded here)
     public func downloadBackup(backupPath: String, type: DatabaseType, serverId: String) async throws -> Data {
         guard ShellSanitizer.isValidPath(backupPath) else {
             throw DatabaseServiceError.operationFailed("Invalid backup path")
         }
-        let cmd = "cat \(ShellSanitizer.escapePath(backupPath))"
+        let cmd = bridge.downloadBackupCmd(engine: type.rawValue, backupPath: backupPath)
         let result = await ssh.executeAsync(serverID: serverId, command: cmd)
-        guard let data = result.data(using: .utf8), !data.isEmpty else {
+        let cleaned = result.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !cleaned.isEmpty else {
             throw DatabaseServiceError.operationFailed("Failed to download backup")
+        }
+        guard let data = Data(base64Encoded: cleaned, options: .ignoreUnknownCharacters) else {
+            throw DatabaseServiceError.operationFailed("Failed to decode backup data")
         }
         return data
     }

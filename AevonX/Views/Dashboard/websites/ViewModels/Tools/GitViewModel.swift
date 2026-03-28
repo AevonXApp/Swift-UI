@@ -181,12 +181,6 @@ final class GitViewModel: ObservableObject {
             )
             
             if hasChanges {
-                // Stage all changes first
-                let _ = try await GitService.shared.stageAll(
-                    documentRoot: documentRoot,
-                    serverId: serverId
-                )
-                
                 // Check subscription
                 let plan = await AevonXCoreBridge.SubscriptionManager.shared.currentPlan()
                 isProPlan = (plan != "free")
@@ -247,6 +241,11 @@ final class GitViewModel: ObservableObject {
         }
         
         await runOperation("Committing & Pushing") {
+            // Stage all changes before commit
+            let _ = try await GitService.shared.stageAll(
+                documentRoot: self.documentRoot,
+                serverId: self.serverId
+            )
             // Commit
             let _ = try await GitService.shared.commitAll(
                 message: msg,

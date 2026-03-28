@@ -67,3 +67,20 @@
 
 /* Select current */
 "website.selectCurrent" = "Select Current";
+
+/* ── Operations ── */
+
+/* Website deleted successfully */
+"website.deletedSuccessfully" = "Website deleted successfully";
+
+/* Failed to delete website */
+"website.deleteFailed" = "Failed to delete website";
+
+/* PHP-FPM restarted */
+"website.phpFpmRestarted" = "PHP-FPM restarted";
+
+/* PM2 restarted */
+"website.pm2Restarted" = "PM2 restarted";
+
+/* Restart failed */
+"website.restartFailed" = "Restart failed";

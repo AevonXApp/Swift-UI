@@ -42,25 +42,25 @@ struct DBBackupSection: View {
         LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: AXSpacing.md), count: 4), spacing: AXSpacing.md) {
             backupStatCard(
                 icon: "doc.zipper",
-                label: "Total Backups",
+                label: L10n.Database.totalBackups,
                 value: "\(viewModel.backups.count)",
                 color: .axAccentBlue
             )
             backupStatCard(
                 icon: "internaldrive",
-                label: "Total Size",
+                label: L10n.Database.totalSize,
                 value: viewModel.backups.isEmpty ? "—" : viewModel.backups.reduce("") { _, b in b.size },
                 color: .axAccentGreen
             )
             backupStatCard(
                 icon: "clock",
-                label: "Latest",
-                value: viewModel.backups.first?.date?.formatted(date: .abbreviated, time: .omitted) ?? "Never",
+                label: L10n.Database.latest,
+                value: viewModel.backups.first?.date?.formatted(date: .abbreviated, time: .omitted) ?? L10n.Database.never,
                 color: .axWarning
             )
             backupStatCard(
                 icon: "calendar",
-                label: "DB Size",
+                label: L10n.Database.dbSize,
                 value: AXFormatter.formatSizeMB(viewModel.database.size),
                 color: .purple
             )
@@ -108,7 +108,7 @@ struct DBBackupSection: View {
             Image(systemName: "externaldrive.badge.timemachine")
                 .font(AXTypography.title3)
                 .foregroundColor(.axAccentBlue)
-            Text("Backup & Import")
+            Text(L10n.Database.backupAndImport)
                 .font(AXTypography.title2)
                 .fontWeight(.bold)
                 .foregroundColor(.axTextPrimary)
@@ -124,8 +124,8 @@ struct DBBackupSection: View {
                 icon: "arrow.down.doc.fill",
                 iconColor: .axAccentBlue,
                 title: L10n.Database.createBackup,
-                subtitle: "Export '\(viewModel.database.name)' to a SQL dump file",
-                buttonTitle: viewModel.isCreatingBackup ? "Creating..." : L10n.Database.createBackup,
+                subtitle: L10n.Database.exportBackupSubtitle(viewModel.database.name),
+                buttonTitle: viewModel.isCreatingBackup ? L10n.Database.creating : L10n.Database.createBackup,
                 buttonColor: .axAccentBlue,
                 isLoading: viewModel.isCreatingBackup,
                 isDisabled: viewModel.isCreatingBackup
@@ -138,7 +138,7 @@ struct DBBackupSection: View {
                 icon: "square.and.arrow.down.fill",
                 iconColor: .axAccentGreen,
                 title: L10n.Database.importSQL,
-                subtitle: "Import .sql file or paste SQL content",
+                subtitle: L10n.Database.importSqlSubtitle,
                 buttonTitle: L10n.Database.importSQL,
                 buttonColor: .axAccentGreen,
                 isLoading: false,
@@ -152,8 +152,8 @@ struct DBBackupSection: View {
                 icon: "arrow.uturn.backward.circle.fill",
                 iconColor: .axWarning,
                 title: L10n.Database.restore,
-                subtitle: "Restore database from a previous backup file",
-                buttonTitle: viewModel.backups.isEmpty ? "No Backups" : L10n.Database.restore,
+                subtitle: L10n.Database.restoreSubtitle,
+                buttonTitle: viewModel.backups.isEmpty ? L10n.Database.noBackups : L10n.Database.restore,
                 buttonColor: .axWarning,
                 isLoading: false,
                 isDisabled: viewModel.backups.isEmpty
@@ -246,7 +246,7 @@ struct DBBackupSection: View {
                     Image(systemName: "clock.arrow.2.circlepath")
                         .font(AXTypography.subheadline)
                         .foregroundColor(.axAccentBlue)
-                    Text("Recent Backups")
+                    Text(L10n.Database.recentBackups)
                         .font(AXTypography.headline)
                         .foregroundColor(.axTextPrimary)
 
@@ -282,10 +282,10 @@ struct DBBackupSection: View {
                     Image(systemName: "tray")
                         .font(AXTypography.largeTitle)
                         .foregroundColor(.axTextMuted.opacity(0.4))
-                    Text("No backups found")
+                    Text(L10n.Database.noBackupsFound)
                         .font(AXTypography.subheadline)
                         .foregroundColor(.axTextMuted)
-                    Text("Create your first backup to get started")
+                    Text(L10n.Database.createFirstBackup)
                         .font(AXTypography.caption)
                         .foregroundColor(.axTextMuted.opacity(0.6))
                 }
@@ -327,7 +327,7 @@ struct DBBackupSection: View {
                     .font(AXTypography.subheadline)
                     .foregroundColor(.axTextPrimary)
                     .lineLimit(1)
-                Text(backup.date?.formatted(date: .abbreviated, time: .shortened) ?? "Unknown date")
+                Text(backup.date?.formatted(date: .abbreviated, time: .shortened) ?? L10n.Database.unknownDate)
                     .font(AXTypography.caption2)
                     .foregroundColor(.axTextMuted)
             }
@@ -359,18 +359,18 @@ struct DBBackupSection: View {
 
                 // Backup actions — AXActionMenu
                 AXActionMenu(sections: [
-                    AXMenuSection("Actions", items: [
-                        AXMenuItem("Download", icon: "arrow.down.circle", color: .axAccentBlue) {
+                    AXMenuSection(L10n.Database.actions, items: [
+                        AXMenuItem(L10n.Database.download, icon: "arrow.down.circle", color: .axAccentBlue) {
                             Task { await viewModel.downloadBackup(backup.id) }
                         },
-                        AXMenuItem("Copy Path", icon: "doc.on.doc", color: .cyan) {
+                        AXMenuItem(L10n.Database.copyPath, icon: "doc.on.doc", color: .cyan) {
                             NSPasteboard.general.clearContents()
                             NSPasteboard.general.setString(backup.id, forType: .string)
-                            GlobalToastManager.shared.showSuccess("Backup path copied")
+                            GlobalToastManager.shared.showSuccess(L10n.Database.backupPathCopied)
                         },
                     ]),
                     AXMenuSection(items: [
-                        AXMenuItem("Delete Backup", icon: "trash", isDestructive: true) {
+                        AXMenuItem(L10n.Database.deleteBackup, icon: "trash", isDestructive: true) {
                             viewModel.confirmDeleteBackup(backup.id)
                         },
                     ]),

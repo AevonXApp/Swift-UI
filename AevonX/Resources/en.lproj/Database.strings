@@ -169,6 +169,9 @@
 /* Table created */
 "database.tableCreated" = "Table '%@' created successfully";
 
+/* Database created */
+"database.databaseCreated" = "Database '%@' created successfully";
+
 /* Create table failed */
 "database.createTableFailed" = "Failed to create table";
 
@@ -179,6 +182,9 @@
 
 /* Delete database */
 "database.deleteDatabase" = "Delete Database";
+
+/* Delete failed */
+"database.deleteFailed" = "Failed to delete database";
 
 /* Drop table */
 "database.dropTable" = "Drop Table";
@@ -284,6 +290,321 @@
 
 /* Create database */
 "database.createDatabase" = "Create Database";
+
+/* Choose .sql file */
+"database.chooseSqlFile" = "Choose .sql File";
+
+/* Or paste SQL */
+"database.orPasteSql" = "Or paste SQL content below:";
+
+/* Importing */
+"database.importing" = "Importing...";
+
+/* ── Backup Section ── */
+
+/* Backup & Import header */
+"database.backupAndImport" = "Backup & Import";
+
+/* Total Backups stat label */
+"database.totalBackups" = "Total Backups";
+
+/* Latest stat label */
+"database.latest" = "Latest";
+
+/* Never (no backups yet) */
+"database.never" = "Never";
+
+/* DB Size stat label */
+"database.dbSize" = "DB Size";
+
+/* Creating backup in progress */
+"database.creating" = "Creating...";
+
+/* Export backup subtitle */
+"database.exportBackupSubtitle" = "Export '%@' to a SQL dump file";
+
+/* Import SQL subtitle */
+"database.importSqlSubtitle" = "Import .sql file or paste SQL content";
+
+/* Restore subtitle */
+"database.restoreSubtitle" = "Restore database from a previous backup file";
+
+/* No Backups button */
+"database.noBackups" = "No Backups";
+
+/* Recent Backups header */
+"database.recentBackups" = "Recent Backups";
+
+/* No backups found empty state */
+"database.noBackupsFound" = "No backups found";
+
+/* Create first backup hint */
+"database.createFirstBackup" = "Create your first backup to get started";
+
+/* Unknown date fallback */
+"database.unknownDate" = "Unknown date";
+
+/* Download action */
+"database.download" = "Download";
+
+/* Copy Path action */
+"database.copyPath" = "Copy Path";
+
+/* Backup path copied toast */
+"database.backupPathCopied" = "Backup path copied";
+
+/* ── Activity Log Section ── */
+
+/* Activity Log header */
+"database.activityLog" = "Activity Log";
+
+/* Entries count */
+"database.entriesCount" = "%lld entries";
+
+/* Insert filter */
+"database.filterInsert" = "Insert";
+
+/* Update filter */
+"database.filterUpdate" = "Update";
+
+/* Alter filter */
+"database.filterAlter" = "Alter";
+
+/* Query filter */
+"database.filterQuery" = "Query";
+
+/* Backup filter */
+"database.filterBackup" = "Backup";
+
+/* Log entries copied toast */
+"database.logEntriesCopied" = "%lld log entries copied";
+
+/* No matching entries */
+"database.noMatchingEntries" = "No matching entries";
+
+/* Clear Filter button */
+"database.clearFilter" = "Clear Filter";
+
+/* No Activity Yet empty state */
+"database.noActivityYet" = "No Activity Yet";
+
+/* Actions logged here hint */
+"database.actionsLoggedHere" = "Actions you perform will be logged here";
+
+/* Copy Entry action */
+"database.copyEntry" = "Copy Entry";
+
+/* Log entry copied toast */
+"database.logEntryCopied" = "Log entry copied";
+
+/* Copy Error action */
+"database.copyError" = "Copy Error";
+
+/* Error message copied toast */
+"database.errorMessageCopied" = "Error message copied";
+
+/* ── Dialog Labels & Section Headers ── */
+
+/* SQL Preview label */
+"database.sqlPreview" = "SQL Preview";
+
+/* SQL copied toast */
+"database.sqlCopied" = "SQL copied";
+
+/* TABLE NAME header */
+"database.tableNameHeader" = "TABLE NAME";
+
+/* Table name placeholder */
+"database.tableNamePlaceholder" = "e.g. users, posts, orders";
+
+/* COLUMNS header */
+"database.columnsHeader" = "COLUMNS";
+
+/* Add Column button */
+"database.addColumn" = "Add Column";
+
+/* COLUMN NAME header */
+"database.columnNameHeader" = "COLUMN NAME";
+
+/* TYPE header */
+"database.typeHeader" = "TYPE";
+
+/* LENGTH header */
+"database.lengthHeader" = "LENGTH";
+
+/* CONSTRAINTS header */
+"database.constraintsHeader" = "CONSTRAINTS";
+
+/* POSITION header */
+"database.positionHeader" = "POSITION";
+
+/* End of table picker option */
+"database.endOfTable" = "End of table";
+
+/* PREVIEW header */
+"database.previewHeader" = "PREVIEW";
+
+/* Ready status */
+"database.ready" = "Ready";
+
+/* Not Null constraint label */
+"database.notNullLabel" = "Not Null";
+
+/* Primary Key constraint label */
+"database.primaryKeyLabel" = "Primary Key";
+
+/* Auto Increment constraint label */
+"database.autoIncrementLabel" = "Auto Increment";
+
+/* Unique constraint label */
+"database.uniqueLabel" = "Unique";
+
+/* Edit Row dialog title */
+"database.editRow" = "Edit Row";
+
+/* MODIFIED badge */
+"database.modified" = "MODIFIED";
+
+/* Adding in progress */
+"database.adding" = "Adding...";
+
+/* Inserting in progress */
+"database.inserting" = "Inserting...";
+
+/* Saving in progress */
+"database.saving" = "Saving...";
+
+/* Renaming in progress */
+"database.renaming" = "Renaming...";
+
+/* Rename Table dialog title */
+"database.renameTable" = "Rename Table";
+
+/* Current Name label */
+"database.currentName" = "Current Name";
+
+/* New Name label */
+"database.newName" = "New Name";
+
+/* Table name no spaces warning */
+"database.tableNameNoSpaces" = "Table names should not contain spaces";
+
+/* Rename button */
+"database.rename" = "Rename";
+
+/* Create Index dialog title */
+"database.createIndex" = "Create Index";
+
+/* Index Name label */
+"database.indexName" = "Index Name";
+
+/* Index Type label */
+"database.indexType" = "Index Type";
+
+/* Unique Index toggle */
+"database.uniqueIndex" = "Unique Index";
+
+/* Unique Index description */
+"database.uniqueIndexDesc" = "Enforce unique values across selected columns";
+
+/* Columns label */
+"database.columnsLabel" = "Columns";
+
+/* NAVIGATION sidebar header */
+"database.navigationHeader" = "NAVIGATION";
+
+/* TABLES sidebar header */
+"database.tablesHeader" = "TABLES";
+
+/* New Backup quick action */
+"database.newBackup" = "New Backup";
+
+/* Filter tables placeholder */
+"database.filterTables" = "Filter tables...";
+
+/* Database created banner */
+"database.databaseCreatedBanner" = "Database created!";
+
+/* No Database Engines warning title */
+"database.noEngines" = "No Database Engines";
+
+/* Install engine first hint */
+"database.installEngineFirst" = "Install MySQL or PostgreSQL from the Applications tab first.";
+
+/* Database Engine section label */
+"database.databaseEngine" = "Database Engine";
+
+/* Database Name section label */
+"database.databaseNameLabel" = "Database Name";
+
+/* Encoding picker label */
+"database.encoding" = "Encoding";
+
+/* Create database user toggle */
+"database.createUser" = "Create database user";
+
+/* Host Access picker label */
+"database.hostAccess" = "Host Access";
+
+/* Security section label */
+"database.securityLabel" = "Security";
+
+/* Require SSL toggle */
+"database.requireSSL" = "Require SSL";
+
+/* Select an engine placeholder */
+"database.selectEngine" = "Select an engine";
+
+/* Any Host display */
+"database.anyHost" = "Any Host (%)";
+
+/* Something went wrong fallback */
+"database.somethingWentWrong" = "Something went wrong";
+
+/* Auto-generated placeholder */
+"database.autoGenerated" = "(auto-generated)";
+
+/* Enter value placeholder */
+"database.enterValue" = "Enter value...";
+
+/* SQL PREVIEW header */
+"database.sqlPreviewHeader" = "SQL PREVIEW";
+
+/* In database subtitle */
+"database.inDatabase" = "in %@";
+
+/* To table subtitle */
+"database.toTable" = "to %@";
+
+/* After column picker option */
+"database.afterColumnName" = "After %@";
+
+/* Columns count */
+"database.columnsCount" = "%lld columns";
+
+/* Column count (singular/plural) */
+"database.columnCount" = "%lld column(s)";
+
+/* Changed count badge */
+"database.changedCount" = "%lld changed";
+
+/* Fields modified footer */
+"database.fieldsModified" = "%lld field(s) modified";
+
+/* Selected count */
+"database.selectedCount" = "%lld selected";
+
+/* Tables footer count */
+"database.tablesFooterCount" = "%lld tables";
+
+/* Into database */
+"database.intoDatabase" = "into %@";
+
+/* Character count */
+"database.charCount" = "%lld chars";
+
+/* Line count */
+"database.lineCount" = "%lld lines";
 
 /* ── Database Alert Messages ── */
 
@@ -435,6 +756,12 @@
 /* Restart failed */
 "service.restartFailed" = "Restart failed";
 
+/* Enable on boot failed */
+"service.enableFailed" = "Enable on boot failed";
+
+/* Disable on boot failed */
+"service.disableFailed" = "Disable on boot failed";
+
 /* Install failed */
 "service.installFailed" = "Installation failed";
 
@@ -515,3 +842,592 @@
 
 /* Execute manually */
 "errorResolution.executeManually" = "Execute Manually";
+
+/* ── Engine Configuration & Versions ── */
+
+/* Configuration File */
+"engine.configurationFile" = "Configuration File";
+
+/* Security */
+"engine.security" = "Security";
+
+/* Redis Password (requirepass) */
+"engine.redisRequirepass" = "Redis Password (requirepass)";
+
+/* Enter password */
+"engine.enterPassword" = "Enter password";
+
+/* Requirepass hint */
+"engine.requirepassHint" = "Setting a password enables the 'requirepass' directive. A restart is required.";
+
+/* Versions */
+"engine.versions" = "Versions";
+
+/* Available Versions */
+"engine.availableVersions" = "Available Versions";
+
+/* Update to Latest */
+"engine.updateToLatest" = "Update to Latest";
+
+/* No versions fetched */
+"engine.noVersionsFetched" = "No versions fetched yet.";
+
+/* Fetch Available Versions */
+"engine.fetchAvailableVersions" = "Fetch Available Versions";
+
+/* Installed */
+"engine.installed" = "Installed";
+
+/* Recommended */
+"engine.recommended" = "Recommended";
+
+/* ── Engine Overview ── */
+
+/* Overview */
+"engine.overview" = "Overview";
+
+/* Loading engine data */
+"engine.loadingEngineData" = "Loading engine data...";
+
+/* Danger Zone */
+"engine.dangerZone" = "Danger Zone";
+
+/* Uninstall warning */
+"engine.uninstallWarning" = "Uninstalling the engine will remove all binaries and may result in partial or total data loss if backups are not maintained.";
+
+/* Engine Information */
+"engine.engineInformation" = "Engine Information";
+
+/* Performance Statistics */
+"engine.performanceStatistics" = "Performance Statistics";
+
+/* ── Engine Access ── */
+
+/* Access & Permissions */
+"engine.accessPermissions" = "Access & Permissions";
+
+/* Database Users */
+"engine.databaseUsers" = "Database Users";
+
+/* No users found */
+"engine.noUsersFound" = "No users found or user listing not supported for this engine.";
+
+/* ── Engine Optimization ── */
+
+/* Optimization */
+"engine.optimization" = "Optimization";
+
+/* Performance Analysis */
+"engine.performanceAnalysis" = "Performance Analysis";
+
+/* AI optimization hint */
+"engine.aiOptimizationHint" = "AI-powered optimization recommendations will appear here based on your database usage patterns.";
+
+/* Analyze Performance */
+"engine.analyzePerformance" = "Analyze Performance";
+
+/* Quick Presets */
+"engine.quickPresets" = "Quick Presets";
+
+/* Web Application preset */
+"engine.presetWebApp" = "Web Application";
+
+/* Web Application preset description */
+"engine.presetWebAppDesc" = "Optimized for web workloads with high read/write ratio";
+
+/* Data Warehouse preset */
+"engine.presetDataWarehouse" = "Data Warehouse";
+
+/* Data Warehouse preset description */
+"engine.presetDataWarehouseDesc" = "Optimized for analytics and reporting workloads";
+
+/* Development preset */
+"engine.presetDevelopment" = "Development";
+
+/* Development preset description */
+"engine.presetDevelopmentDesc" = "Balanced configuration for development environments";
+
+/* ── Engine Sidebar ── */
+
+/* Back to Databases */
+"engine.backToDatabases" = "Back to Databases";
+
+/* ── Engine Info Row Labels ── */
+
+/* Type label */
+"engine.labelType" = "Type";
+
+/* Version label */
+"engine.labelVersion" = "Version";
+
+/* Install Path label */
+"engine.labelInstallPath" = "Install Path";
+
+/* Status label */
+"engine.labelStatus" = "Status";
+
+/* Service label */
+"engine.labelService" = "Service";
+
+/* Boot label */
+"engine.labelBoot" = "Boot";
+
+/* Config File label */
+"engine.labelConfigFile" = "Config File";
+
+/* ── Engine Metrics Labels ── */
+
+/* Uptime metric */
+"engine.metricUptime" = "Uptime";
+
+/* Connections metric */
+"engine.metricConnections" = "Connections";
+
+/* Memory metric */
+"engine.metricMemory" = "Memory";
+
+/* Total Queries metric */
+"engine.metricTotalQueries" = "Total Queries";
+
+/* Avg Query Time metric */
+"engine.metricAvgQueryTime" = "Avg Query Time";
+
+/* Max Query Time metric */
+"engine.metricMaxQueryTime" = "Max Query Time";
+
+/* Cache Hit metric */
+"engine.metricCacheHit" = "Cache Hit";
+
+/* ── Engine Version Labels ── */
+
+/* LTS badge */
+"engine.lts" = "LTS";
+
+/* Fetching versions */
+"engine.fetchingVersions" = "Fetching versions...";
+
+/* No versions available */
+"engine.noVersionsAvailable" = "No versions available";
+
+/* Could not fetch version information */
+"engine.couldNotFetchVersions" = "Could not fetch version information.";
+
+/* Uninstall engine */
+"engine.uninstallEngine" = "Uninstall %@";
+
+/* Released date */
+"engine.releasedDate" = "Released %@";
+
+/* ── Database Overview Section ── */
+
+/* Connections */
+"database.connections" = "Connections";
+
+/* Total Rows */
+"database.totalRows" = "Total Rows";
+
+/* Indexed */
+"database.indexed" = "Indexed";
+
+/* Avg Row Size */
+"database.avgRowSize" = "Avg Row Size";
+
+/* Index Size */
+"database.indexSize" = "Index Size";
+
+/* Data Size */
+"database.dataSize" = "Data Size";
+
+/* Quick SQL heading */
+"database.quickSQL" = "QUICK SQL";
+
+/* Cmd+Enter hint */
+"database.cmdEnterToExecute" = "⌘+Enter to execute";
+
+/* SQL query placeholder */
+"database.typeSQLQuery" = "Type SQL query...";
+
+/* Quick Actions heading */
+"database.quickActions" = "QUICK ACTIONS";
+
+/* Run Query action */
+"database.runQuery" = "Run Query";
+
+/* Browse Data action */
+"database.browseData" = "Browse Data";
+
+/* Server Info heading */
+"database.serverInfoLabel" = "SERVER INFO";
+
+/* Server info copied toast */
+"database.serverInfoCopied" = "Server info copied";
+
+/* Charset label */
+"database.charset" = "Charset";
+
+/* Collation label */
+"database.collation" = "Collation";
+
+/* Connection heading */
+"database.connectionLabel" = "CONNECTION";
+
+/* Database label */
+"database.database" = "Database";
+
+/* Connection String label */
+"database.connectionString" = "Connection String";
+
+/* Connection string copied toast */
+"database.connectionStringCopied" = "Connection string copied";
+
+/* Table Size Breakdown heading */
+"database.tableSizeBreakdown" = "TABLE SIZE BREAKDOWN";
+
+/* No tables to analyze */
+"database.noTablesToAnalyze" = "No tables to analyze";
+
+/* New Table button */
+"database.newTable" = "New Table";
+
+/* Rows column header */
+"database.rows" = "Rows";
+
+/* Data column header */
+"database.data" = "Data";
+
+/* Index column header */
+"database.index" = "Index";
+
+/* Info menu section */
+"database.menuInfo" = "Info";
+
+/* Copy Table Name */
+"database.copyTableName" = "Copy Table Name";
+
+/* Table name copied toast */
+"database.tableNameCopied" = "Table name copied";
+
+/* Copy SELECT Query */
+"database.copySelectQuery" = "Copy SELECT Query";
+
+/* SELECT query copied toast */
+"database.selectQueryCopied" = "SELECT query copied";
+
+/* Navigate menu section */
+"database.navigate" = "Navigate";
+
+/* Count Rows action */
+"database.countRows" = "Count Rows";
+
+/* Describe Table action */
+"database.describeTable" = "Describe Table";
+
+/* Maintenance menu section */
+"database.maintenance" = "Maintenance";
+
+/* Optimize Table action */
+"database.optimizeTable" = "Optimize Table";
+
+/* Check Table action */
+"database.checkTable" = "Check Table";
+
+/* No tables yet */
+"database.noTablesYet" = "No tables yet";
+
+/* Create First Table */
+"database.createFirstTable" = "Create First Table";
+
+/* Port label */
+"database.portLabel" = "Port %@";
+
+/* Table count */
+"database.tableCount" = "%lld tables";
+
+/* More tables count */
+"database.moreTablesCount" = "+ %lld more tables";
+
+/* ── Table Browser ── */
+
+/* Search tables placeholder */
+"database.searchTables" = "Search tables...";
+
+/* No tables found */
+"database.noTablesFound" = "No tables found";
+
+/* Analyze Table action */
+"database.analyzeTable" = "Analyze Table";
+
+/* Select a Table empty state */
+"database.selectATable" = "Select a Table";
+
+/* Select table hint */
+"database.selectTableHint" = "Choose a table from the sidebar to view its structure and data";
+
+/* Open First Table button */
+"database.openFirstTable" = "Open First Table";
+
+/* Create New button */
+"database.createNew" = "Create New";
+
+/* ── Table Data ── */
+
+/* No Data empty state */
+"database.noData" = "No Data";
+
+/* Table is empty */
+"database.tableIsEmpty" = "This table is empty";
+
+/* Insert First Row */
+"database.insertFirstRow" = "Insert First Row";
+
+/* Search rows placeholder */
+"database.searchRows" = "Search rows...";
+
+/* Add Row button */
+"database.addRow" = "Add Row";
+
+/* Rows per page label */
+"database.rowsPerPage" = "Rows:";
+
+/* Sorted indicator */
+"database.sorted" = "Sorted:";
+
+/* Hide Column */
+"database.hideColumn" = "Hide Column";
+
+/* Show All Columns */
+"database.showAllColumns" = "Show All Columns";
+
+/* Copy Row Values */
+"database.copyRowValues" = "Copy Row Values";
+
+/* Row values copied toast */
+"database.rowValuesCopied" = "Row values copied";
+
+/* INSERT statement copied toast */
+"database.insertCopied" = "INSERT statement copied";
+
+/* UPDATE statement copied toast */
+"database.updateCopied" = "UPDATE statement copied";
+
+/* Row copied toast */
+"database.rowCopied" = "Row copied";
+
+/* JSON Viewer title */
+"database.jsonViewer" = "JSON Viewer";
+
+/* JSON copied toast */
+"database.jsonCopied" = "JSON copied";
+
+/* Page label */
+"database.pageLabel" = "Page";
+
+/* Empty value label */
+"database.emptyValue" = "Empty";
+
+/* Copy as CSV */
+"database.copyAsCSV" = "Copy as CSV";
+
+/* Copy as JSON */
+"database.copyAsJSON" = "Copy as JSON";
+
+/* Copy as UPDATE */
+"database.copyAsUPDATE" = "Copy as UPDATE";
+
+/* Copy as SQL INSERT */
+"database.copyAsSQLInsert" = "Copy as SQL INSERT";
+
+/* Copy as Markdown */
+"database.copyAsMarkdown" = "Copy as Markdown";
+
+/* Copy as TSV */
+"database.copyAsTSV" = "Copy as TSV";
+
+/* Copy as INSERT */
+"database.copyAsINSERT" = "Copy as INSERT";
+
+/* Copied as Markdown table toast */
+"database.copiedAsMarkdownTable" = "Copied as Markdown table";
+
+/* Delete Row action */
+"database.deleteRowAction" = "Delete Row";
+
+/* Duplicate Row action */
+"database.duplicateRowAction" = "Duplicate Row";
+
+/* Copy Row action */
+"database.copyRow" = "Copy Row";
+
+/* Row count */
+"database.rowCount" = "%lld rows";
+
+/* Column count short */
+"database.colCount" = "%lld cols";
+
+/* Delete count */
+"database.deleteCount" = "Delete %lld";
+
+/* Row count display */
+"database.rowCountDisplay" = "%lld rows";
+
+/* Column count display */
+"database.columnCountDisplay" = "%lld columns";
+
+/* Rows affected */
+"database.rowsAffected" = "%lld rows affected";
+
+/* Copied rows as CSV */
+"database.copiedRowsAsCSV" = "Copied %lld rows as CSV";
+
+/* Copied rows as JSON */
+"database.copiedRowsAsJSON" = "Copied %lld rows as JSON";
+
+/* Copied rows as SQL INSERT */
+"database.copiedRowsAsSQLInsert" = "Copied %lld rows as SQL INSERT";
+
+/* Copied rows as TSV */
+"database.copiedRowsAsTSV" = "Copied %lld rows as TSV";
+
+/* Copied rows as INSERT */
+"database.copiedRowsAsINSERT" = "Copied %lld rows as INSERT";
+
+/* Showing rows pagination */
+"database.showingRows" = "Showing %lld-%lld of %lld rows";
+
+/* Of total pages */
+"database.ofTotalPages" = "of %lld";
+
+/* Editor line info */
+"database.editorLineInfo" = "%lld lines \u00B7 %lld chars";
+
+/* Copied prefix */
+"database.copiedPrefix" = "Copied: %@";
+
+/* ── Table Structure ── */
+
+/* DDL copied toast */
+"database.ddlCopied" = "DDL copied to clipboard";
+
+/* Copy DDL button */
+"database.copyDDL" = "Copy DDL";
+
+/* Default column header */
+"database.defaultColHeader" = "Default";
+
+/* Copy Column Name */
+"database.copyColumnName" = "Copy Column Name";
+
+/* Column name copied toast */
+"database.columnNameCopied" = "Column name copied";
+
+/* Copy Column DDL */
+"database.copyColumnDDL" = "Copy Column DDL";
+
+/* Column DDL copied toast */
+"database.columnDDLCopied" = "Column DDL copied";
+
+/* ── Table Indexes ── */
+
+/* Indexes header */
+"database.indexesHeader" = "Indexes";
+
+/* No Indexes */
+"database.noIndexes" = "No Indexes";
+
+/* No indexes defined */
+"database.noIndexesDefined" = "This table has no indexes defined";
+
+/* Unique column header */
+"database.uniqueColHeader" = "Unique";
+
+/* Copy Index DDL */
+"database.copyIndexDDL" = "Copy Index DDL";
+
+/* Index DDL copied toast */
+"database.indexDDLCopied" = "Index DDL copied";
+
+/* Copy Index Name */
+"database.copyIndexName" = "Copy Index Name";
+
+/* Index name copied toast */
+"database.indexNameCopied" = "Index name copied";
+
+/* Yes label */
+"database.yesLabel" = "YES";
+
+/* No label */
+"database.noLabel" = "NO";
+
+/* Index DDLs copied */
+"database.indexDDLsCopied" = "%lld index DDLs copied";
+
+/* ── SQL Console ── */
+
+/* SQL Console title */
+"database.sqlConsole" = "SQL Console";
+
+/* Clear History */
+"database.clearHistory" = "Clear History";
+
+/* Quick action label */
+"database.quickActionLabel" = "Quick:";
+
+/* List Tables chip */
+"database.listTables" = "List Tables";
+
+/* Describe chip */
+"database.describeChip" = "Describe";
+
+/* Insert keyword label */
+"database.insertKeywordLabel" = "Insert:";
+
+/* Format action */
+"database.formatAction" = "Format";
+
+/* Format SQL hint */
+"database.formatSQLHint" = "Format & beautify SQL";
+
+/* Explain action */
+"database.explainAction" = "Explain";
+
+/* Copy query hint */
+"database.copyQueryHint" = "Copy query";
+
+/* Query copied toast */
+"database.queryCopied" = "Query copied";
+
+/* Error copied toast */
+"database.errorCopied" = "Error copied";
+
+/* Execute button */
+"database.executeAction" = "Execute";
+
+/* Running state */
+"database.runningAction" = "Running...";
+
+/* Query Error header */
+"database.queryError" = "Query Error";
+
+/* Check SQL syntax hint */
+"database.checkSQLHint" = "Check your SQL syntax, table names, and column references";
+
+/* Press to execute hint */
+"database.pressToExecute" = "Press \u2318+Enter to execute";
+
+/* Use quick actions hint */
+"database.useQuickActions" = "Use quick actions or type your own SQL";
+
+/* Query executed successfully */
+"database.querySuccess" = "Query executed successfully";
+
+/* Recent history section */
+"database.recentHistory" = "Recent";
+
+/* Config chip */
+"database.configChip" = "Config";
+
+/* Status chip */
+"database.statusChip" = "Status";
+
+/* Administration section */
+"database.administration" = "Administration";

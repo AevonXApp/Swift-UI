@@ -10,7 +10,10 @@ import AevonXCoreBridge
 
 struct GitTab: View {
     @ObservedObject var vm: GitViewModel
-    
+    @State private var showDiscardConfirm = false
+    @State private var showResetConfirm = false
+    @State private var showDisconnectConfirm = false
+
     var body: some View {
         ScrollView(showsIndicators: false) {
             VStack(spacing: AXSpacing.lg) {
@@ -26,6 +29,24 @@ struct GitTab: View {
         }
         .overlay(alignment: .bottom) { toastOverlay }
         .sheet(isPresented: $vm.showCommitSheet) { commitSheet }
+        .alert("Discard All Changes?", isPresented: $showDiscardConfirm) {
+            Button("Cancel", role: .cancel) {}
+            Button("Discard All", role: .destructive) { Task { await vm.discardAll() } }
+        } message: {
+            Text("All uncommitted changes will be permanently lost. This cannot be undone.")
+        }
+        .alert("Hard Reset to \(vm.resetRef)?", isPresented: $showResetConfirm) {
+            Button("Cancel", role: .cancel) {}
+            Button("Hard Reset", role: .destructive) { Task { await vm.resetHard() } }
+        } message: {
+            Text("This will discard all changes and reset your repository. This cannot be undone.")
+        }
+        .alert("Disconnect Git Repository?", isPresented: $showDisconnectConfirm) {
+            Button("Cancel", role: .cancel) {}
+            Button("Disconnect", role: .destructive) { Task { await vm.disconnectGit() } }
+        } message: {
+            Text("The .git directory will be permanently deleted. Your website files remain untouched, but all Git history will be lost.")
+        }
         .task { await vm.loadAll() }
     }
     
@@ -545,7 +566,7 @@ struct GitTab: View {
                     vm.showStashSheet = true
                 }
                 gitActionButton(icon: "arrow.counterclockwise", label: "Discard All", color: .axError, loading: false) {
-                    Task { await vm.discardAll() }
+                    showDiscardConfirm = true
                 }
             }
             
@@ -1103,7 +1124,7 @@ struct GitTab: View {
                                 .overlay(RoundedRectangle(cornerRadius: 4).stroke(Color.axError.opacity(0.2), lineWidth: 1))
                                 .cornerRadius(AXCornerRadius.sm)
                             
-                            Button("Hard Reset") { Task { await vm.resetHard() } }
+                            Button("Hard Reset") { showResetConfirm = true }
                                 .font(AXTypography.caption).fontWeight(.bold)
                                 .foregroundColor(.white)
                                 .padding(.horizontal, 10)
@@ -1123,7 +1144,7 @@ struct GitTab: View {
                     
                     // Disconnect Git
                     VStack(spacing: AXSpacing.sm) {
-                        Button(action: { Task { await vm.disconnectGit() } }) {
+                        Button(action: { showDisconnectConfirm = true }) {
                             HStack(spacing: 6) {
                                 Image(systemName: "xmark.circle.fill")
                                     .font(AXTypography.subheadline)

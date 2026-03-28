@@ -78,11 +78,12 @@ class HeadersViewModel: ObservableObject {
     }
 
     func applyRecommendedHeaders() async {
+        await detectPathsIfNeeded()
         let configPath = resolveConfigPath()
         let cmd = bridge.applyRecommendedHeadersCmdRouted(engine: engine, configPath: configPath)
         _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
-        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.reloadEngineCmd(engine: engine, serverID: serverId))
-        GlobalToastManager.shared.showSuccess("Security headers applied & server reloaded")
+        // Note: Go ApplyRecommendedHeadersCmd already includes nginx -t && reload
+        GlobalToastManager.shared.showSuccess("Security headers applied")
         await loadHeaders()
         await runSecurityAudit()
     }

@@ -492,7 +492,8 @@ public actor DatabaseManagementService {
             let parts = line.split(separator: "\t")
             guard let first = parts.first else { return nil }
             let name = String(first).trimmingCharacters(in: .whitespaces)
-            let size = parts.count >= 2 ? (Double(parts[1]) ?? 0) : 0
+            let sizeBytes = parts.count >= 2 ? (Double(parts[1]) ?? 0) : 0
+            let size = sizeBytes / (1024.0 * 1024.0) // Convert bytes to MB
             let tables = parts.count >= 3 ? (Int(parts[2]) ?? 0) : 0
             return CoreDatabaseInfo(name: name, size: size, tables: tables)
         }

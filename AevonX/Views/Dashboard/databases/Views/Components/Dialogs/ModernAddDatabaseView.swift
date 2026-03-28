@@ -78,10 +78,10 @@ struct ModernAddDatabaseView: View {
             }
 
             VStack(alignment: .leading, spacing: 2) {
-                Text("Create Database")
+                Text(L10n.Database.createDatabase)
                     .font(AXTypography.headline)
                     .foregroundColor(.axTextPrimary)
-                Text(viewModel.selectedType?.displayName ?? "Select an engine")
+                Text(viewModel.selectedType?.displayName ?? L10n.Database.selectEngine)
                     .font(AXTypography.caption2)
                     .foregroundColor(.axTextMuted)
             }
@@ -142,7 +142,7 @@ struct ModernAddDatabaseView: View {
             noEnginesView
         } else {
             VStack(alignment: .leading, spacing: AXSpacing.sm) {
-                sectionLabel("Database Engine", icon: "server.rack")
+                sectionLabel(L10n.Database.databaseEngine, icon: "server.rack")
 
                 HStack(spacing: AXSpacing.md) {
                     ForEach(viewModel.installedEngines) { engine in
@@ -204,11 +204,11 @@ struct ModernAddDatabaseView: View {
                 .font(AXTypography.title3)
                 .foregroundColor(.axWarning)
             VStack(alignment: .leading, spacing: 2) {
-                Text("No Database Engines")
+                Text(L10n.Database.noEngines)
                     .font(AXTypography.subheadline)
                     .fontWeight(.semibold)
                     .foregroundColor(.axTextPrimary)
-                Text("Install MySQL or PostgreSQL from the Applications tab first.")
+                Text(L10n.Database.installEngineFirst)
                     .font(AXTypography.caption)
                     .foregroundColor(.axTextMuted)
             }
@@ -227,7 +227,7 @@ struct ModernAddDatabaseView: View {
 
     var databaseNameField: some View {
         VStack(alignment: .leading, spacing: AXSpacing.sm) {
-            sectionLabel("Database Name", icon: "cylinder")
+            sectionLabel(L10n.Database.databaseNameLabel, icon: "cylinder")
 
             styledTextField(
                 placeholder: "my_database",
@@ -247,7 +247,7 @@ struct ModernAddDatabaseView: View {
     var encodingRow: some View {
         HStack(spacing: AXSpacing.lg) {
             styledPicker(
-                label: "Encoding",
+                label: L10n.Database.encoding,
                 icon: "textformat",
                 selection: $viewModel.selectedCharset,
                 options: viewModel.availableCharsets
@@ -260,7 +260,7 @@ struct ModernAddDatabaseView: View {
             }
 
             styledPicker(
-                label: "Collation",
+                label: L10n.Database.collation,
                 icon: "arrow.left.arrow.right",
                 selection: $viewModel.selectedCollation,
                 options: viewModel.availableCollations
@@ -277,7 +277,7 @@ struct ModernAddDatabaseView: View {
                     Image(systemName: "person.badge.plus")
                         .font(AXTypography.subheadline)
                         .foregroundColor(.axAccentBlue)
-                    Text("Create database user")
+                    Text(L10n.Database.createUser)
                         .font(AXTypography.subheadline)
                         .fontWeight(.semibold)
                         .foregroundColor(.axTextPrimary)
@@ -310,17 +310,17 @@ struct ModernAddDatabaseView: View {
                     // Host + SSL
                     HStack(spacing: AXSpacing.lg) {
                         styledPicker(
-                            label: "Host Access",
+                            label: L10n.Database.hostAccess,
                             icon: "network",
                             selection: $viewModel.host,
                             options: viewModel.hostOptions,
-                            displayTransform: { $0 == "%" ? "Any Host (%)" : $0 }
+                            displayTransform: { $0 == "%" ? L10n.Database.anyHost : $0 }
                         )
 
                         VStack(alignment: .leading, spacing: AXSpacing.sm) {
-                            sectionLabel("Security", icon: "lock.shield")
+                            sectionLabel(L10n.Database.securityLabel, icon: "lock.shield")
                             Toggle(isOn: $viewModel.forceSSL) {
-                                Text("Require SSL")
+                                Text(L10n.Database.requireSSL)
                                     .font(AXTypography.caption)
                                     .fontWeight(.medium)
                                     .foregroundColor(.axTextPrimary)

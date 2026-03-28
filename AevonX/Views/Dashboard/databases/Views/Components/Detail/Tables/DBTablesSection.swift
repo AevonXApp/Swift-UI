@@ -41,7 +41,7 @@ struct DBTablesSection: View {
                         Image(systemName: "magnifyingglass")
                             .font(AXTypography.footnote)
                             .foregroundColor(.axTextMuted)
-                        TextField("Search tables...", text: $viewModel.tableSearchText)
+                        TextField(L10n.Database.searchTables, text: $viewModel.tableSearchText)
                             .font(AXTypography.subheadline)
                             .foregroundColor(.axTextPrimary)
                             .textFieldStyle(.plain)
@@ -76,7 +76,7 @@ struct DBTablesSection: View {
                         Image(systemName: "tablecells")
                             .font(AXTypography.title)
                             .foregroundColor(.axTextMuted.opacity(0.3))
-                        Text("No tables found")
+                        Text(L10n.Database.noTablesFound)
                             .font(AXTypography.footnote)
                             .foregroundColor(.axTextMuted)
                         Spacer(minLength: 40)
@@ -93,26 +93,26 @@ struct DBTablesSection: View {
                         }
                         .overlay(alignment: .trailing) {
                             AXActionMenu(sections: [
-                                AXMenuSection("Info", items: [
-                                    AXMenuItem("Copy Table Name", icon: "doc.on.doc", color: .axAccentBlue) {
+                                AXMenuSection(L10n.Database.menuInfo, items: [
+                                    AXMenuItem(L10n.Database.copyTableName, icon: "doc.on.doc", color: .axAccentBlue) {
                                         NSPasteboard.general.clearContents()
                                         NSPasteboard.general.setString(table.name, forType: .string)
-                                        GlobalToastManager.shared.showSuccess("Table name copied")
+                                        GlobalToastManager.shared.showSuccess(L10n.Database.tableNameCopied)
                                     },
                                 ]),
-                                AXMenuSection("Maintenance", items: [
-                                    AXMenuItem("Optimize Table", icon: "wand.and.stars", color: .orange) {
+                                AXMenuSection(L10n.Database.maintenance, items: [
+                                    AXMenuItem(L10n.Database.optimizeTable, icon: "wand.and.stars", color: .orange) {
                                         Task { await viewModel.optimizeTable(table.name) }
                                     },
-                                    AXMenuItem("Analyze Table", icon: "magnifyingglass", color: .cyan) {
+                                    AXMenuItem(L10n.Database.analyzeTable, icon: "magnifyingglass", color: .cyan) {
                                         Task { await viewModel.analyzeTable(table.name) }
                                     },
                                 ]),
                                 AXMenuSection(items: [
-                                    AXMenuItem("Truncate Table", icon: "xmark.bin", isDestructive: true) {
+                                    AXMenuItem(L10n.Database.truncateTable, icon: "xmark.bin", isDestructive: true) {
                                         viewModel.confirmTruncateTable(table.name)
                                     },
-                                    AXMenuItem("Drop Table", icon: "trash", isDestructive: true) {
+                                    AXMenuItem(L10n.Database.dropTable, icon: "trash", isDestructive: true) {
                                         viewModel.confirmDropTable(table.name)
                                     },
                                 ]),
@@ -132,7 +132,7 @@ struct DBTablesSection: View {
                         Image(systemName: "tablecells")
                             .font(AXTypography.caption2)
                             .foregroundColor(.axTextMuted.opacity(0.5))
-                        Text("\(viewModel.tables.count) tables")
+                        Text(L10n.Database.tablesFooterCount(viewModel.tables.count))
                             .font(AXTypography.caption)
                             .foregroundColor(.axTextMuted.opacity(0.5))
                         Spacer()
@@ -160,10 +160,10 @@ struct DBTablesSection: View {
                     .foregroundColor(.axTextMuted.opacity(0.4))
             }
             VStack(spacing: AXSpacing.xs) {
-                Text("Select a Table")
+                Text(L10n.Database.selectATable)
                     .font(AXTypography.title2).fontWeight(.bold)
                     .foregroundColor(.axTextPrimary)
-                Text("Choose a table from the sidebar to view its structure and data")
+                Text(L10n.Database.selectTableHint)
                     .font(AXTypography.callout)
                     .foregroundColor(.axTextMuted)
                     .multilineTextAlignment(.center)
@@ -178,7 +178,7 @@ struct DBTablesSection: View {
                     HStack(spacing: AXSpacing.xs) {
                         Image(systemName: "tablecells")
                             .font(AXTypography.footnote)
-                        Text("Open First Table")
+                        Text(L10n.Database.openFirstTable)
                             .font(AXTypography.subheadline).fontWeight(.semibold)
                     }
                     .foregroundColor(.white)
@@ -196,7 +196,7 @@ struct DBTablesSection: View {
                     HStack(spacing: AXSpacing.xs) {
                         Image(systemName: "plus")
                             .font(AXTypography.footnote)
-                        Text("Create New")
+                        Text(L10n.Database.createNew)
                             .font(AXTypography.subheadline).fontWeight(.semibold)
                     }
                     .foregroundColor(.axAccentGreen)
@@ -239,13 +239,13 @@ struct DBTablesSection: View {
                             .foregroundColor(.axTextPrimary)
                         HStack(spacing: AXSpacing.sm) {
                             if let table = viewModel.selectedTable {
-                                Text("\(table.rowCount) rows")
+                                Text(L10n.Database.rowCount(table.rowCount))
                                     .font(AXTypography.caption)
                                     .foregroundColor(.axTextMuted)
                                 if let structure = viewModel.tableStructure {
                                     Text("·")
                                         .foregroundColor(.axTextMuted)
-                                    Text("\(structure.columns.count) cols")
+                                    Text(L10n.Database.colCount(structure.columns.count))
                                         .font(AXTypography.caption)
                                         .foregroundColor(.axTextMuted)
                                 }

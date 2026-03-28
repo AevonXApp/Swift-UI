@@ -14,7 +14,7 @@ extension DBCreateTableView {
 
     var dialogFooter: some View {
         HStack(spacing: AXSpacing.md) {
-            Text("\(columns.count) column\(columns.count == 1 ? "" : "s")")
+            Text(L10n.Database.columnCount(columns.count))
                 .font(AXTypography.caption)
                 .foregroundColor(.axTextMuted)
 
@@ -23,7 +23,7 @@ extension DBCreateTableView {
                     Circle()
                         .fill(Color.axSuccess)
                         .frame(width: 6, height: 6)
-                    Text("Ready")
+                    Text(L10n.Database.ready)
                         .font(AXTypography.caption2)
                         .foregroundColor(.axSuccess)
                 }
@@ -51,7 +51,7 @@ extension DBCreateTableView {
                     if isSubmitting {
                         ProgressView().scaleEffect(0.6).tint(.white)
                     }
-                    Text(isSubmitting ? "Creating..." : L10n.Database.createTable)
+                    Text(isSubmitting ? L10n.Database.creating : L10n.Database.createTable)
                 }
                 .font(AXTypography.subheadline)
                 .fontWeight(.bold)
@@ -101,12 +101,24 @@ extension DBCreateTableView {
     }
 
     var mysqlColumnTypes: [String] {
-        ["INT", "BIGINT", "SMALLINT", "TINYINT", "MEDIUMINT",
-         "VARCHAR", "CHAR", "TEXT", "MEDIUMTEXT", "LONGTEXT",
-         "DECIMAL", "FLOAT", "DOUBLE",
-         "DATE", "DATETIME", "TIMESTAMP", "TIME", "YEAR",
-         "BOOLEAN", "ENUM", "SET",
-         "BLOB", "MEDIUMBLOB", "LONGBLOB",
-         "JSON", "BINARY", "VARBINARY"]
+        switch viewModel.database.type {
+        case .postgresql, .cockroachdb:
+            return ["INTEGER", "BIGINT", "SMALLINT", "SERIAL", "BIGSERIAL",
+                    "VARCHAR", "CHAR", "TEXT",
+                    "NUMERIC", "REAL", "DOUBLE PRECISION",
+                    "DATE", "TIMESTAMP", "TIMESTAMPTZ", "TIME", "INTERVAL",
+                    "BOOLEAN",
+                    "BYTEA",
+                    "JSON", "JSONB", "UUID", "INET", "CIDR",
+                    "ARRAY", "HSTORE"]
+        default: // MySQL, MariaDB
+            return ["INT", "BIGINT", "SMALLINT", "TINYINT", "MEDIUMINT",
+                    "VARCHAR", "CHAR", "TEXT", "MEDIUMTEXT", "LONGTEXT",
+                    "DECIMAL", "FLOAT", "DOUBLE",
+                    "DATE", "DATETIME", "TIMESTAMP", "TIME", "YEAR",
+                    "BOOLEAN", "ENUM", "SET",
+                    "BLOB", "MEDIUMBLOB", "LONGBLOB",
+                    "JSON", "BINARY", "VARBINARY"]
+        }
     }
 }

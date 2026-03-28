@@ -46,7 +46,7 @@ struct DBImportSQLView: View {
                     .font(AXTypography.title3)
                     .fontWeight(.bold)
                     .foregroundColor(.axTextPrimary)
-                Text("into \(viewModel.database.name)")
+                Text(L10n.Database.intoDatabase(viewModel.database.name))
                     .font(AXTypography.caption)
                     .foregroundColor(.axTextMuted)
             }
@@ -78,15 +78,17 @@ struct DBImportSQLView: View {
                     panel.allowsMultipleSelection = false
                     if panel.runModal() == .OK, let url = panel.url {
                         selectedFileName = url.lastPathComponent
-                        if let data = try? String(contentsOf: url, encoding: .utf8) {
-                            sqlContent = data
+                        do {
+                            sqlContent = try String(contentsOf: url, encoding: .utf8)
+                        } catch {
+                            GlobalToastManager.shared.showError("\(L10n.Database.importFailed): \(error.localizedDescription)")
                         }
                     }
                 } label: {
                     HStack(spacing: AXSpacing.xs) {
                         Image(systemName: "doc.badge.plus")
                             .font(AXTypography.caption)
-                        Text("Choose .sql File")
+                        Text(L10n.Database.chooseSqlFile)
                             .font(AXTypography.caption)
                             .fontWeight(.semibold)
                     }
@@ -120,7 +122,7 @@ struct DBImportSQLView: View {
                 Spacer()
             }
 
-            Text("Or paste SQL content below:")
+            Text(L10n.Database.orPasteSql)
                 .font(AXTypography.caption)
                 .foregroundColor(.axTextMuted)
 
@@ -150,14 +152,14 @@ struct DBImportSQLView: View {
                     Image(systemName: "text.alignleft")
                         .font(AXTypography.caption2)
                         .foregroundColor(.axTextMuted)
-                    Text("\(sqlContent.count) chars")
+                    Text(L10n.Database.charCount(sqlContent.count))
                         .font(AXTypography.caption)
                         .foregroundColor(.axTextMuted)
                 }
 
                 if !sqlContent.isEmpty {
                     let lineCount = sqlContent.components(separatedBy: "\n").count
-                    Text("\(lineCount) lines")
+                    Text(L10n.Database.lineCount(lineCount))
                         .font(AXTypography.caption)
                         .foregroundColor(.axTextMuted)
                 }
@@ -185,7 +187,7 @@ struct DBImportSQLView: View {
                     if isSubmitting {
                         ProgressView().scaleEffect(0.6).tint(.white)
                     }
-                    Text(isSubmitting ? "Importing..." : L10n.Database.importSQL)
+                    Text(isSubmitting ? L10n.Database.importing : L10n.Database.importSQL)
                 }
                 .font(AXTypography.subheadline)
                 .fontWeight(.bold)

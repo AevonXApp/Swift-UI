@@ -17,7 +17,7 @@ struct DBEMAccessSection: View {
             VStack(spacing: AXSpacing.xl) {
                 // Page Title
                 HStack {
-                    Text("Access & Permissions")
+                    Text(L10n.Engine.accessPermissions)
                         .font(AXTypography.title)
                         .fontWeight(.bold)
                         .foregroundColor(.axTextPrimary)
@@ -41,7 +41,7 @@ struct DBEMAccessSection: View {
                 AXGlassCard(accentColor: .axAccentBlue) {
                     VStack(alignment: .leading, spacing: AXSpacing.lg) {
                         HStack {
-                            Text("Database Users")
+                            Text(L10n.Engine.databaseUsers)
                                 .font(AXTypography.headline)
                                 .foregroundColor(.axTextPrimary)
 
@@ -62,7 +62,7 @@ struct DBEMAccessSection: View {
                                 .font(AXTypography.subheadline)
                                 .foregroundColor(.axError)
                         } else if viewModel.databaseUsers.isEmpty {
-                            Text("No users found or user listing not supported for this engine.")
+                            Text(L10n.Engine.noUsersFound)
                                 .font(AXTypography.subheadline)
                                 .foregroundColor(.axTextMuted)
                         } else {

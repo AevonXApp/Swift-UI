@@ -40,6 +40,33 @@ public final class URLRewriteViewModel: ObservableObject {
         self.serverId = serverId
     }
 
+    // MARK: - Go Bridge Model
+
+    /// Matches Go's RewriteRule JSON: id, pattern, target, type, is_active
+    private struct GoRewriteRule: Decodable {
+        let id: String
+        let pattern: String?
+        let target: String
+        let type: String
+        let is_active: Bool // swiftlint:disable:this identifier_name
+
+        func toLocal(order: Int) -> URLRewriteRule {
+            let statusCode: Int
+            switch type {
+            case "301": statusCode = 301
+            case "302": statusCode = 302
+            default: statusCode = 200
+            }
+            return URLRewriteRule(
+                sourcePattern: pattern ?? "",
+                destination: target,
+                statusCode: statusCode,
+                isEnabled: is_active,
+                order: order
+            )
+        }
+    }
+
     // MARK: - Data Loading
 
     public func load() async {
@@ -59,11 +86,10 @@ public final class URLRewriteViewModel: ObservableObject {
            let resp = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
            resp["success"] as? Bool == true,
            let rulesData = resp["data"] {
-            // Guard: rulesData must be an Array or Dict for JSONSerialization
             if JSONSerialization.isValidJSONObject(rulesData),
                let rulesJSON = try? JSONSerialization.data(withJSONObject: rulesData),
-               let decoded = try? JSONDecoder().decode([URLRewriteRule].self, from: rulesJSON) {
-                rules = decoded
+               let goRules = try? JSONDecoder().decode([GoRewriteRule].self, from: rulesJSON) {
+                rules = goRules.enumerated().map { $1.toLocal(order: $0) }
             }
         }
 
@@ -77,7 +103,14 @@ public final class URLRewriteViewModel: ObservableObject {
 
         isLoading = true
 
-        let cmd = bridge.addRewriteRuleCmd(domain: website.domain, source: rule.sourcePattern, destination: rule.destination, flags: rule.flags.joined(separator: ","))
+        let ruleType: String
+        switch rule.statusCode {
+        case 301: ruleType = "301"
+        case 302: ruleType = "302"
+        default: ruleType = "rewrite"
+        }
+
+        let cmd = bridge.addRewriteRuleCmd(domain: website.domain, source: rule.sourcePattern, destination: rule.destination, flags: ruleType)
         _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
         _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.reloadEngineCmd(engine: engine, serverID: serverId ?? ""))
         await load()
@@ -88,11 +121,15 @@ public final class URLRewriteViewModel: ObservableObject {
 
     public func updateRule(_ ruleId: UUID, with newRule: URLRewriteRule) async {
         guard let serverId = serverId else { return }
+        guard let idx = rules.firstIndex(where: { $0.id == ruleId }) else {
+            toastManager.showError("Rule not found")
+            return
+        }
 
         isLoading = true
 
         // Delete old and add new
-        let deleteCmd = bridge.deleteRewriteRuleCmd(domain: website.domain, ruleIndex: rules.firstIndex(where: { $0.id == ruleId }) ?? 0)
+        let deleteCmd = bridge.deleteRewriteRuleCmd(domain: website.domain, ruleIndex: idx)
         _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: deleteCmd)
         let addCmd = bridge.addRewriteRuleCmd(domain: website.domain, source: newRule.sourcePattern, destination: newRule.destination, flags: newRule.flags.joined(separator: ","))
         _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: addCmd)
@@ -105,10 +142,13 @@ public final class URLRewriteViewModel: ObservableObject {
 
     public func deleteRule(_ ruleId: UUID) async {
         guard let serverId = serverId else { return }
+        guard let idx = rules.firstIndex(where: { $0.id == ruleId }) else {
+            toastManager.showError("Rule not found")
+            return
+        }
 
         isLoading = true
 
-        let idx = rules.firstIndex(where: { $0.id == ruleId }) ?? 0
         let cmd = bridge.deleteRewriteRuleCmd(domain: website.domain, ruleIndex: idx)
         _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
         _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.reloadEngineCmd(engine: engine, serverID: serverId ?? ""))

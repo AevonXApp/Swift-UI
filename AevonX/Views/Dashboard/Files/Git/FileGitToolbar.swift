@@ -157,72 +157,56 @@ struct FileGitToolbar: View {
     // MARK: - More Menu
 
     private var moreMenu: some View {
-        Menu {
-            Section(L10n.FileGit.More.stash) {
-                Button(L10n.FileGit.Stash.save) {
-                    viewModel.showGitStashSheet = true
-                }
-                Button(L10n.FileGit.Stash.pop) {
-                    Task { await viewModel.gitStashPop() }
-                }
-                Button(L10n.FileGit.Stash.list) {
-                    Task { await viewModel.loadGitFull() }
-                    viewModel.showGitStashSheet = true
-                }
-            }
-
-            Section(L10n.FileGit.More.tags) {
-                Button(L10n.FileGit.Tags.title) {
-                    Task { await viewModel.loadGitFull() }
-                    viewModel.showGitTagsSheet = true
-                }
-            }
-
-            Section(L10n.FileGit.More.remotes) {
-                Button(L10n.FileGit.Remotes.title) {
-                    Task { await viewModel.loadGitFull() }
-                    viewModel.showGitRemotesSheet = true
-                }
-            }
-
-            Section(L10n.FileGit.More.history) {
-                Button(L10n.FileGit.Log.title) {
-                    Task { await viewModel.loadGitLog() }
-                    viewModel.showGitLogSheet = true
-                }
-            }
-
-            Divider()
-
-            Section(L10n.FileGit.More.dangerZone) {
-                Button(L10n.FileGit.More.resetHard, role: .destructive) {
-                    viewModel.gitDangerAction = .resetHard
-                    viewModel.showGitDangerConfirm = true
-                }
-                Button(L10n.FileGit.More.discardAll, role: .destructive) {
-                    viewModel.gitDangerAction = .discardAll
-                    viewModel.showGitDangerConfirm = true
-                }
-                Button(L10n.FileGit.More.disconnect, role: .destructive) {
-                    viewModel.gitDangerAction = .disconnect
-                    viewModel.showGitDangerConfirm = true
-                }
-            }
-        } label: {
-            HStack(spacing: AXSpacing.xxxs) {
-                Image(systemName: "ellipsis")
-                    .font(.system(size: 10, weight: .semibold))
-                Text(L10n.FileGit.more)
-                    .font(.system(size: 10, weight: .medium))
-            }
-            .foregroundColor(.axTextSecondary)
-            .padding(.horizontal, AXSpacing.sm)
-            .padding(.vertical, AXSpacing.xxxs)
-            .background(Color.axSurface)
-            .cornerRadius(AXCornerRadius.sm)
-        }
-        .menuStyle(.borderlessButton)
-        .fixedSize()
+        AXActionMenu(
+            sections: [
+                AXMenuSection(L10n.FileGit.More.stash, items: [
+                    AXMenuItem(L10n.FileGit.Stash.save, icon: "tray.and.arrow.down.fill", color: .orange) {
+                        viewModel.showGitStashSheet = true
+                    },
+                    AXMenuItem(L10n.FileGit.Stash.pop, icon: "tray.and.arrow.up.fill", color: .orange) {
+                        Task { await viewModel.gitStashPop() }
+                    },
+                    AXMenuItem(L10n.FileGit.Stash.list, icon: "tray.full.fill", color: .orange) {
+                        Task { await viewModel.loadGitFull() }
+                        viewModel.showGitStashSheet = true
+                    },
+                ]),
+                AXMenuSection(L10n.FileGit.More.tags, items: [
+                    AXMenuItem(L10n.FileGit.Tags.title, icon: "tag.fill", color: .cyan) {
+                        Task { await viewModel.loadGitFull() }
+                        viewModel.showGitTagsSheet = true
+                    },
+                ]),
+                AXMenuSection(L10n.FileGit.More.remotes, items: [
+                    AXMenuItem(L10n.FileGit.Remotes.title, icon: "network", color: .axAccentPurple) {
+                        Task { await viewModel.loadGitFull() }
+                        viewModel.showGitRemotesSheet = true
+                    },
+                ]),
+                AXMenuSection(L10n.FileGit.More.history, items: [
+                    AXMenuItem(L10n.FileGit.Log.title, icon: "clock.arrow.circlepath", color: .axAccentBlue) {
+                        Task { await viewModel.loadGitLog() }
+                        viewModel.showGitLogSheet = true
+                    },
+                ]),
+                AXMenuSection(L10n.FileGit.More.dangerZone, items: [
+                    AXMenuItem(L10n.FileGit.More.resetHard, icon: "arrow.uturn.backward.circle.fill", color: .axError, isDestructive: true) {
+                        viewModel.gitDangerAction = .resetHard
+                        viewModel.showGitDangerConfirm = true
+                    },
+                    AXMenuItem(L10n.FileGit.More.discardAll, icon: "xmark.circle.fill", color: .axError, isDestructive: true) {
+                        viewModel.gitDangerAction = .discardAll
+                        viewModel.showGitDangerConfirm = true
+                    },
+                    AXMenuItem(L10n.FileGit.More.disconnect, icon: "link.badge.plus", color: .axError, isDestructive: true) {
+                        viewModel.gitDangerAction = .disconnect
+                        viewModel.showGitDangerConfirm = true
+                    },
+                ]),
+            ],
+            triggerIcon: "ellipsis",
+            triggerSize: 24
+        )
     }
 
     // MARK: - Operation Bar

@@ -22,7 +22,7 @@ struct DBTableIndexesView: View {
                         Image(systemName: "list.bullet.indent")
                             .font(AXTypography.subheadline)
                             .foregroundColor(.axAccentBlue)
-                        Text("Indexes")
+                        Text(L10n.Database.indexesHeader)
                             .font(AXTypography.headline)
                             .foregroundColor(.axTextPrimary)
 
@@ -44,7 +44,7 @@ struct DBTableIndexesView: View {
                         HStack(spacing: AXSpacing.xxs) {
                             Image(systemName: "plus")
                                 .font(AXTypography.caption2)
-                            Text("Create Index")
+                            Text(L10n.Database.createIndex)
                                 .font(AXTypography.caption)
                                 .fontWeight(.semibold)
                         }
@@ -59,14 +59,17 @@ struct DBTableIndexesView: View {
                     // Export All Indexes
                     if !viewModel.tableIndexes.isEmpty {
                         Button {
+                            let usePG = viewModel.database.type == .postgresql || viewModel.database.type == .cockroachdb
+                            let q: (String) -> String = usePG ? { "\"\($0)\"" } : { "`\($0)`" }
                             let ddl = viewModel.tableIndexes.map { idx in
                                 let uq = idx.isUnique ? "UNIQUE " : ""
-                                let cols = idx.columns.joined(separator: ", ")
+                                let cols = idx.columns.map { q($0) }.joined(separator: ", ")
                                 let tbl = viewModel.selectedTable?.name ?? "table"
-                                return "CREATE \(uq)INDEX `\(idx.name)` ON `\(tbl)` (\(cols));"                            }.joined(separator: "\n")
+                                return "CREATE \(uq)INDEX \(q(idx.name)) ON \(q(tbl)) (\(cols));"
+                            }.joined(separator: "\n")
                             NSPasteboard.general.clearContents()
                             NSPasteboard.general.setString(ddl, forType: .string)
-                            GlobalToastManager.shared.showSuccess("\(viewModel.tableIndexes.count) index DDLs copied")
+                            GlobalToastManager.shared.showSuccess(L10n.Database.indexDDLsCopied(viewModel.tableIndexes.count))
                         } label: {
                             HStack(spacing: AXSpacing.xxs) {
                                 Image(systemName: "doc.text")
@@ -96,10 +99,10 @@ struct DBTableIndexesView: View {
                         Image(systemName: "list.bullet.indent")
                             .font(AXTypography.largeTitle)
                             .foregroundColor(.axTextMuted.opacity(0.4))
-                        Text("No Indexes")
+                        Text(L10n.Database.noIndexes)
                             .font(AXTypography.headline)
                             .foregroundColor(.axTextPrimary)
-                        Text("This table has no indexes defined")
+                        Text(L10n.Database.noIndexesDefined)
                             .font(AXTypography.subheadline)
                             .foregroundColor(.axTextMuted)
                         Spacer(minLength: 60)
@@ -137,13 +140,13 @@ struct DBTableIndexesView: View {
             Text(L10n.Field.name)
                 .frame(width: 200, alignment: .leading)
                 .padding(.horizontal, AXSpacing.sm)
-            Text("Columns")
+            Text(L10n.Database.columnsLabel)
                 .frame(width: 250, alignment: .leading)
                 .padding(.horizontal, AXSpacing.sm)
-            Text("Unique")
+            Text(L10n.Database.uniqueColHeader)
                 .frame(width: 70, alignment: .center)
                 .padding(.horizontal, AXSpacing.sm)
-            Text("Type")
+            Text(L10n.Engine.type)
                 .padding(.horizontal, AXSpacing.sm)
             Spacer()
         }
@@ -189,7 +192,7 @@ struct DBTableIndexesView: View {
 
             Group {
                 if index.isUnique {
-                    Text("YES")
+                    Text(L10n.Database.yesLabel)
                         .font(AXTypography.caption2)
                         .fontWeight(.bold)
                         .foregroundColor(.axSuccess)
@@ -198,7 +201,7 @@ struct DBTableIndexesView: View {
                         .background(Color.axSuccess.opacity(0.1))
                         .cornerRadius(AXCornerRadius.sm)
                 } else {
-                    Text("NO")
+                    Text(L10n.Database.noLabel)
                         .font(AXTypography.caption2)
                         .foregroundColor(.axTextMuted)
                 }
@@ -215,24 +218,24 @@ struct DBTableIndexesView: View {
 
             // Index actions — AXActionMenu
             AXActionMenu(sections: [
-                AXMenuSection("Copy", items: [
-                    AXMenuItem("Copy Index DDL", icon: "doc.on.doc", color: .axAccentBlue) {
+                AXMenuSection(L10n.Button.copy, items: [
+                    AXMenuItem(L10n.Database.copyIndexDDL, icon: "doc.on.doc", color: .axAccentBlue) {
                         let uq = index.isUnique ? "UNIQUE " : ""
                         let cols = index.columns.joined(separator: ", ")
                         let tbl = viewModel.selectedTable?.name ?? "table"
                         let ddl = "CREATE \(uq)INDEX `\(index.name)` ON `\(tbl)` (\(cols));"
                         NSPasteboard.general.clearContents()
                         NSPasteboard.general.setString(ddl, forType: .string)
-                        GlobalToastManager.shared.showSuccess("Index DDL copied")
+                        GlobalToastManager.shared.showSuccess(L10n.Database.indexDDLCopied)
                     },
-                    AXMenuItem("Copy Index Name", icon: "textformat", color: .cyan) {
+                    AXMenuItem(L10n.Database.copyIndexName, icon: "textformat", color: .cyan) {
                         NSPasteboard.general.clearContents()
                         NSPasteboard.general.setString(index.name, forType: .string)
-                        GlobalToastManager.shared.showSuccess("Index name copied")
+                        GlobalToastManager.shared.showSuccess(L10n.Database.indexNameCopied)
                     },
                 ]),
                 AXMenuSection(items: [
-                    AXMenuItem("Drop Index", icon: "trash", isDestructive: true) {
+                    AXMenuItem(L10n.Database.dropIndex, icon: "trash", isDestructive: true) {
                         viewModel.activeAlert = .confirmDropIndex(index.name)
                     },
                 ]),

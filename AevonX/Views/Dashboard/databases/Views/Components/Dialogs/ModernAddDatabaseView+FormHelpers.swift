@@ -19,7 +19,7 @@ extension ModernAddDatabaseView {
                     Image(systemName: "checkmark.circle.fill")
                         .font(AXTypography.headline)
                         .foregroundColor(.axSuccess)
-                    Text("Database created!")
+                    Text(L10n.Database.databaseCreatedBanner)
                         .font(AXTypography.subheadline)
                         .fontWeight(.semibold)
                         .foregroundColor(.axSuccess)
@@ -42,7 +42,7 @@ extension ModernAddDatabaseView {
                         ProgressView()
                             .scaleEffect(0.6)
                             .tint(.axTextMuted)
-                        Text(viewModel.operationResult.message ?? "Creating...")
+                        Text(viewModel.operationResult.message ?? L10n.Database.creating)
                             .font(AXTypography.caption2)
                             .foregroundColor(.axTextMuted)
                     }
@@ -61,7 +61,7 @@ extension ModernAddDatabaseView {
                 .disabled(viewModel.isSubmitting)
 
                 Button(action: { Task { await viewModel.submitForm() } }) {
-                    Text(viewModel.isSubmitting ? "Creating..." : "Create Database")
+                    Text(viewModel.isSubmitting ? L10n.Database.creating : L10n.Database.createDatabase)
                         .font(AXTypography.subheadline)
                         .fontWeight(.bold)
                         .foregroundColor(.white)
@@ -117,7 +117,7 @@ extension ModernAddDatabaseView {
                         .font(AXTypography.headline)
                         .foregroundColor(.axError)
 
-                    Text(viewModel.operationResult.message ?? "Something went wrong")
+                    Text(viewModel.operationResult.message ?? L10n.Database.somethingWentWrong)
                         .font(AXTypography.caption)
                         .fontWeight(.medium)
                         .foregroundColor(.axError)

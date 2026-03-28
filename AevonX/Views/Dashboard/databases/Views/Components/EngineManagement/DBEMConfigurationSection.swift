@@ -16,7 +16,7 @@ struct DBEMConfigurationSection: View {
             VStack(spacing: AXSpacing.xl) {
                 // Page Title
                 HStack {
-                    Text("Configuration")
+                    Text(L10n.Engine.configuration)
                         .font(AXTypography.title)
                         .fontWeight(.bold)
                         .foregroundColor(.axTextPrimary)
@@ -28,7 +28,7 @@ struct DBEMConfigurationSection: View {
                 AXGlassCard(accentColor: .axAccentBlue) {
                     VStack(alignment: .leading, spacing: AXSpacing.lg) {
                         HStack {
-                            Text("Configuration File")
+                            Text(L10n.Engine.configurationFile)
                                 .font(AXTypography.headline)
                                 .foregroundColor(.axTextPrimary)
 
@@ -59,7 +59,7 @@ struct DBEMConfigurationSection: View {
                 AXGlassCard(accentColor: .axAccentBlue) {
                     VStack(alignment: .leading, spacing: AXSpacing.lg) {
                         HStack {
-                            Text("Version Management")
+                            Text(L10n.Engine.versionManagement)
                                 .font(AXTypography.headline)
                                 .foregroundColor(.axTextPrimary)
 
@@ -75,7 +75,7 @@ struct DBEMConfigurationSection: View {
 
                         Divider()
 
-                        DBEMInfoRow(label: "Current Version", value: viewModel.formattedVersion)
+                        DBEMInfoRow(label: L10n.Engine.currentVersion, value: viewModel.formattedVersion)
 
                         Button(L10n.Database.installVersion) {
                             viewModel.showInstallVersion = true
@@ -101,7 +101,7 @@ struct DBEMConfigurationSection: View {
                     AXGlassCard(accentColor: .axAccentBlue) {
                         VStack(alignment: .leading, spacing: AXSpacing.lg) {
                             HStack {
-                                Text("Security")
+                                Text(L10n.Engine.security)
                                     .font(AXTypography.headline)
                                     .foregroundColor(.axTextPrimary)
                                 
@@ -114,13 +114,13 @@ struct DBEMConfigurationSection: View {
                             Divider()
                             
                             VStack(alignment: .leading, spacing: AXSpacing.sm) {
-                                Text("Redis Password (requirepass)")
+                                Text(L10n.Engine.redisRequirepass)
                                     .font(AXTypography.caption)
                                     .fontWeight(.semibold)
                                     .foregroundColor(.axTextSecondary)
                                 
                                 HStack(spacing: AXSpacing.sm) {
-                                    SecureField("Enter password", text: $viewModel.redisPassword)
+                                    SecureField(L10n.Engine.enterPassword, text: $viewModel.redisPassword)
                                         .textFieldStyle(.plain)
                                         .font(.system(.body, design: .monospaced))
                                         .padding(AXSpacing.md)
@@ -149,7 +149,7 @@ struct DBEMConfigurationSection: View {
                                     .disabled(viewModel.isPerformingServiceAction || viewModel.redisPassword.isEmpty)
                                 }
                                 
-                                Text("Setting a password enables the 'requirepass' directive. A restart is required.")
+                                Text(L10n.Engine.requirepassHint)
                                     .font(AXTypography.caption)
                                     .foregroundColor(.axTextMuted)
                             }

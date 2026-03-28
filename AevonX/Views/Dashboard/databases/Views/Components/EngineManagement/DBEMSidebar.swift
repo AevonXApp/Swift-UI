@@ -55,7 +55,7 @@ struct DBEMSidebar: View {
                 Button(action: onBack) {
                     HStack(spacing: AXSpacing.sm) {
                         Image(systemName: "chevron.left")
-                        Text("Back to Databases")
+                        Text(L10n.Engine.backToDatabases)
                     }
                     .font(AXTypography.subheadline)
                     .foregroundColor(.axTextSecondary)
@@ -103,7 +103,7 @@ struct DBEMSidebar: View {
                     .fill(viewModel.statusColor)
                     .frame(width: 8, height: 8)
 
-                Text(viewModel.engineInfo?.status.rawValue.capitalized ?? "Unknown")
+                Text(viewModel.engineInfo?.status.rawValue.capitalized ?? L10n.Status.unknown)
                     .font(AXTypography.caption)
                     .foregroundColor(viewModel.statusColor)
 

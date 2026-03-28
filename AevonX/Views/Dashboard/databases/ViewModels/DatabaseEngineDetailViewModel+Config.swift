@@ -255,7 +255,21 @@ extension DatabaseEngineDetailViewModel {
             let presetSettings = optimizationPresetSettings(for: preset)
             var merged = currentConfig.settings
             for (key, value) in presetSettings { merged[key] = value }
-            let updated = DatabaseConfiguration(engineType: databaseType, settings: merged, rawContent: currentConfig.rawContent)
+            // Apply settings into rawContent so they actually reach the config file
+            var updatedContent = currentConfig.rawContent
+            for (key, value) in presetSettings {
+                let pattern = "^\\s*#?\\s*\(NSRegularExpression.escapedPattern(for: key))\\s*=.*$"
+                let replacement = "\(key) = \(value)"
+                if let regex = try? NSRegularExpression(pattern: pattern, options: .anchorsMatchLines) {
+                    let range = NSRange(updatedContent.startIndex..., in: updatedContent)
+                    if regex.firstMatch(in: updatedContent, range: range) != nil {
+                        updatedContent = regex.stringByReplacingMatches(in: updatedContent, range: range, withTemplate: replacement)
+                    } else {
+                        updatedContent += "\n\(replacement)"
+                    }
+                }
+            }
+            let updated = DatabaseConfiguration(engineType: databaseType, settings: merged, rawContent: updatedContent)
             try await DatabaseEngineService.shared.updateConfiguration(updated, type: databaseType, serverId: currentServerId!)
             await loadConfiguration()
         }
@@ -266,15 +280,15 @@ extension DatabaseEngineDetailViewModel {
     /// Returns config key-value pairs for a given optimization preset
     func optimizationPresetSettings(for preset: String) -> [String: String] {
         switch preset.lowercased() {
-        case "performance":
+        case "performance", "web application", "data warehouse":
             switch databaseType {
             case .mysql, .mariadb:
                 return [
                     "innodb_buffer_pool_size": "1G",
                     "innodb_log_file_size": "256M",
                     "innodb_flush_log_at_trx_commit": "2",
-                    "query_cache_type": "1",
-                    "query_cache_size": "64M"
+                    "max_connections": "200",
+                    "table_open_cache": "4000"
                 ]
             case .postgresql:
                 return [
@@ -288,7 +302,7 @@ extension DatabaseEngineDetailViewModel {
             default:
                 return [:]
             }
-        case "memory-efficient", "memory":
+        case "memory-efficient", "memory", "development":
             switch databaseType {
             case .mysql, .mariadb:
                 return [

@@ -37,6 +37,8 @@ class SiteConfigViewModel: ObservableObject {
     }
 
     func loadConfig() async {
+        // Don't overwrite user edits
+        guard !hasUnsavedChanges else { return }
         isLoading = true
         defer { isLoading = false }
         await detectPathsIfNeeded()

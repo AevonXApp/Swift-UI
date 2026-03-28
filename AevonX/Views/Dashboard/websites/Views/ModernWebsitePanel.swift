@@ -484,12 +484,16 @@ struct ModernWebsitePanel: View {
                             Task {
                                 guard let serverId = viewModel.serverId else { return }
                                 let service = SiteQuickActionsService.shared
-                                if viewModel.website.runtime == .php {
-                                    try? await service.restartPHPFPM(version: viewModel.phpVersion, serverId: serverId)
-                                    GlobalToastManager.shared.showSuccess("PHP-FPM restarted")
-                                } else if viewModel.website.runtime == .nodejs {
-                                    try? await service.restartPM2(serverId: serverId)
-                                    GlobalToastManager.shared.showSuccess("PM2 restarted")
+                                do {
+                                    if viewModel.website.runtime == .php {
+                                        try await service.restartPHPFPM(version: viewModel.phpVersion, serverId: serverId)
+                                        GlobalToastManager.shared.showSuccess(L10n.Website.phpFpmRestarted)
+                                    } else if viewModel.website.runtime == .nodejs {
+                                        try await service.restartPM2(serverId: serverId)
+                                        GlobalToastManager.shared.showSuccess(L10n.Website.pm2Restarted)
+                                    }
+                                } catch {
+                                    GlobalToastManager.shared.showError("\(L10n.Website.restartFailed): \(error.localizedDescription)")
                                 }
                             }
                         },
@@ -506,11 +510,16 @@ struct ModernWebsitePanel: View {
                         AXMenuItem("Delete Website", icon: "trash", isDestructive: true) {
                             Task {
                                 guard let serverId = viewModel.serverId else { return }
-                                try? await WebsiteLifecycleService.shared.deleteWebsite(
-                                    websiteId: viewModel.website.domain,
-                                    serverId: serverId
-                                )
-                                onBack()
+                                do {
+                                    try await WebsiteLifecycleService.shared.deleteWebsite(
+                                        websiteId: viewModel.website.domain,
+                                        serverId: serverId
+                                    )
+                                    GlobalToastManager.shared.showSuccess(L10n.Website.deletedSuccessfully)
+                                    onBack()
+                                } catch {
+                                    GlobalToastManager.shared.showError("\(L10n.Website.deleteFailed): \(error.localizedDescription)")
+                                }
                             }
                         },
                     ]),
@@ -540,11 +549,7 @@ struct ModernWebsitePanel: View {
             siteDirectoryView
         case .serverConfig:
             SiteConfigSection(
-                viewModel: SiteConfigViewModel(
-                    serverId: viewModel.serverId ?? "",
-                    domain: viewModel.website.domain,
-                    engine: viewModel.website.webServerEngine ?? "nginx"
-                )
+                viewModel: getFactory().siteConfigVM
             )
         case .gitSource:
             gitSourceView
@@ -554,28 +559,15 @@ struct ModernWebsitePanel: View {
             sslTlsView
         case .siteSecurity:
             SiteSecuritySection(
-                viewModel: SiteSecurityViewModel(
-                    serverId: viewModel.serverId ?? "",
-                    domain: viewModel.website.domain,
-                    docRoot: viewModel.website.documentRoot ?? "/var/www/\(viewModel.website.domain)",
-                    engine: viewModel.website.webServerEngine ?? "nginx"
-                )
+                viewModel: getFactory().securityVM
             )
         case .httpHeaders:
             HeadersSection(
-                viewModel: HeadersViewModel(
-                    serverId: viewModel.serverId ?? "",
-                    domain: viewModel.website.domain,
-                    engine: viewModel.website.webServerEngine ?? "nginx"
-                )
+                viewModel: getFactory().headersVM
             )
         case .cacheManager:
             CacheSection(
-                viewModel: CacheViewModel(
-                    serverId: viewModel.serverId ?? "",
-                    domain: viewModel.website.domain,
-                    engine: viewModel.website.webServerEngine ?? "nginx"
-                )
+                viewModel: getFactory().cacheVM
             )
         case .performance:
             UnifiedPerformanceSection(
@@ -586,10 +578,7 @@ struct ModernWebsitePanel: View {
             )
         case .monitoring:
             MonitoringSection(
-                viewModel: MonitoringViewModel(
-                    serverId: viewModel.serverId ?? "",
-                    domain: viewModel.website.domain
-                )
+                viewModel: getFactory().monitoringVM
             )
         case .backupRestore:
             UnifiedBackupSection(

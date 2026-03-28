@@ -103,7 +103,7 @@ struct AXLaunchHistoryRow: View {
 
     private var statusColor: Color {
         switch entry.status {
-        case "completed": return .axSuccess
+        case "success": return .axSuccess
         case "failed": return .axError
         case "cancelled": return .axWarning
         default: return .axTextMuted

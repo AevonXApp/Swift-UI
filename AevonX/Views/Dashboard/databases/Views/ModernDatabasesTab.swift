@@ -31,9 +31,22 @@ struct ModernDatabasesTab: View {
     }
     
     public var body: some View {
+        mainContent
+            .modifier(SheetsModifier(
+                viewModel: viewModel,
+                showEngineManagement: $showEngineManagement,
+                engineManagementType: $engineManagementType
+            ))
+            .overlay { deleteOverlay }
+            .task { await viewModel.loadData() }
+    }
+
+    // MARK: - Extracted Body Components
+
+    @ViewBuilder
+    private var mainContent: some View {
         Group {
             if let db = databaseForDetail {
-                // Full-page database detail view (replaces the list)
                 DatabaseDetailView(
                     database: db,
                     serverId: viewModel.serverId,
@@ -45,7 +58,6 @@ struct ModernDatabasesTab: View {
                 )
                 .transition(.move(edge: .trailing).combined(with: .opacity))
             } else {
-                // Normal databases list view
                 VStack(spacing: 0) {
                     DatabaseStatsBar(viewModel: viewModel)
                     DatabaseTabSwitcher(activeTabIndex: $viewModel.activeTabIndex, availableDatabaseTypes: viewModel.availableDatabaseTypes)
@@ -54,68 +66,29 @@ struct ModernDatabasesTab: View {
                 .transition(.move(edge: .leading).combined(with: .opacity))
             }
         }
-        .sheet(isPresented: $viewModel.showAddDatabase) {
-            ModernAddDatabaseView(
-                serverId: viewModel.serverId,
-                installationStates: viewModel.installationStates,
-                onCreated: {
-                    Task { await viewModel.loadData(forceRefresh: true) }
-                }
-            )
-        }
-        .sheet(isPresented: $viewModel.showAddUser) {
-            ModernAddUserView(accentColor: viewModel.selectedDatabaseType?.brandColor ?? .axAccentBlue) { username, password, host in
-                if let type = viewModel.selectedDatabaseType {
+    }
+
+    @ViewBuilder
+    private var deleteOverlay: some View {
+        if let db = databaseToDelete {
+            AXDeleteConfirmation(
+                title: L10n.Database.deleteDatabase,
+                itemName: db.name,
+                warning: L10n.Database.cannotBeUndone,
+                onConfirm: {
+                    let name = db.name
+                    let type = db.type
+                    databaseToDelete = nil
                     Task {
                         do {
-                            try await viewModel.createUser(username: username, password: password, host: host, databaseType: type)
+                            try await viewModel.deleteDatabase(name: name, type: type)
                         } catch {
-                            viewModel.errorMessage = error.localizedDescription
+                            GlobalToastManager.shared.showError("\(L10n.Database.deleteFailed): \(error.localizedDescription)")
                         }
                     }
-                }
-            }
-        }
-
-        .sheet(isPresented: $viewModel.showEngineDetail) {
-            if let type = viewModel.selectedDatabaseType {
-                UnifiedDatabaseDetailView(
-                    databaseType: type,
-                    serverId: viewModel.serverId ?? ""
-                )
-            }
-        }
-        .sheet(isPresented: $showEngineManagement) {
-            if let type = engineManagementType {
-                UnifiedDatabaseDetailView(
-                    databaseType: type,
-                    serverId: viewModel.serverId ?? "",
-                    onBack: {
-                        showEngineManagement = false
-                        engineManagementType = nil
-                    }
-                )
-            }
-        }
-
-        .overlay {
-            if let db = databaseToDelete {
-                AXDeleteConfirmation(
-                    title: L10n.Database.deleteDatabase,
-                    itemName: db.name,
-                    warning: L10n.Database.cannotBeUndone,
-                    onConfirm: {
-                        let name = db.name
-                        let type = db.type
-                        databaseToDelete = nil
-                        Task { try? await viewModel.deleteDatabase(name: name, type: type) }
-                    },
-                    onCancel: { databaseToDelete = nil }
-                )
-            }
-        }
-        .task {
-            await viewModel.loadData()
+                },
+                onCancel: { databaseToDelete = nil }
+            )
         }
     }
     
@@ -157,7 +130,13 @@ struct ModernDatabasesTab: View {
                         if settings.shouldConfirm(for: SettingsKey.confirmDropDBDatabase) {
                             databaseToDelete = db
                         } else {
-                            Task { try? await viewModel.deleteDatabase(name: db.name, type: db.type) }
+                            Task {
+                                do {
+                                    try await viewModel.deleteDatabase(name: db.name, type: db.type)
+                                } catch {
+                                    GlobalToastManager.shared.showError("\(L10n.Database.deleteFailed): \(error.localizedDescription)")
+                                }
+                            }
                         }
                     }
                 )
@@ -178,7 +157,13 @@ struct ModernDatabasesTab: View {
                 if settings.shouldConfirm(for: SettingsKey.confirmDropDBDatabase) {
                     databaseToDelete = db
                 } else {
-                    Task { try? await viewModel.deleteDatabase(name: db.name, type: db.type) }
+                    Task {
+                                do {
+                                    try await viewModel.deleteDatabase(name: db.name, type: db.type)
+                                } catch {
+                                    GlobalToastManager.shared.showError("\(L10n.Database.deleteFailed): \(error.localizedDescription)")
+                                }
+                            }
                 }
             }
         )
@@ -234,5 +219,77 @@ struct ModernDatabasesTab: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .padding(AXSpacing.xl)
+    }
+}
+
+// MARK: - Sheets Modifier
+
+private struct SheetsModifier: ViewModifier {
+    @ObservedObject var viewModel: DatabaseManagementViewModel
+    @Binding var showEngineManagement: Bool
+    @Binding var engineManagementType: DatabaseType?
+
+    func body(content: Content) -> some View {
+        content
+            .sheet(isPresented: $viewModel.showAddDatabase) {
+                ModernAddDatabaseView(
+                    serverId: viewModel.serverId,
+                    installationStates: viewModel.installationStates,
+                    onCreated: {
+                        Task { await viewModel.loadData(forceRefresh: true) }
+                    }
+                )
+            }
+            .sheet(isPresented: $viewModel.showAddUser) {
+                addUserSheet
+            }
+            .sheet(isPresented: $viewModel.showEngineDetail) {
+                engineDetailSheet
+            }
+            .sheet(isPresented: $showEngineManagement) {
+                engineManagementSheet
+            }
+    }
+
+    @ViewBuilder
+    private var addUserSheet: some View {
+        ModernAddUserView(accentColor: viewModel.selectedDatabaseType?.brandColor ?? .axAccentBlue) { username, password, host in
+            let type = viewModel.selectedDatabaseType
+                ?? viewModel.availableDatabaseTypes.first(where: { $0 == .mysql || $0 == .mariadb || $0 == .postgresql })
+                ?? viewModel.availableDatabaseTypes.first
+            if let type {
+                Task {
+                    do {
+                        try await viewModel.createUser(username: username, password: password, host: host, databaseType: type)
+                    } catch {
+                        viewModel.errorMessage = error.localizedDescription
+                    }
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var engineDetailSheet: some View {
+        if let type = viewModel.selectedDatabaseType {
+            UnifiedDatabaseDetailView(
+                databaseType: type,
+                serverId: viewModel.serverId ?? ""
+            )
+        }
+    }
+
+    @ViewBuilder
+    private var engineManagementSheet: some View {
+        if let type = engineManagementType {
+            UnifiedDatabaseDetailView(
+                databaseType: type,
+                serverId: viewModel.serverId ?? "",
+                onBack: {
+                    showEngineManagement = false
+                    engineManagementType = nil
+                }
+            )
+        }
     }
 }

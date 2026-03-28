@@ -16,13 +16,25 @@ struct DBAddColumnView: View {
     @State private var isSubmitting = false
 
     private var mysqlColumnTypes: [String] {
-        ["INT", "BIGINT", "SMALLINT", "TINYINT", "MEDIUMINT",
-         "VARCHAR", "CHAR", "TEXT", "MEDIUMTEXT", "LONGTEXT",
-         "DECIMAL", "FLOAT", "DOUBLE",
-         "DATE", "DATETIME", "TIMESTAMP", "TIME", "YEAR",
-         "BOOLEAN", "ENUM", "SET",
-         "BLOB", "MEDIUMBLOB", "LONGBLOB",
-         "JSON", "BINARY", "VARBINARY"]
+        switch viewModel.database.type {
+        case .postgresql, .cockroachdb:
+            return ["INTEGER", "BIGINT", "SMALLINT", "SERIAL", "BIGSERIAL",
+                    "VARCHAR", "CHAR", "TEXT",
+                    "NUMERIC", "REAL", "DOUBLE PRECISION",
+                    "DATE", "TIMESTAMP", "TIMESTAMPTZ", "TIME", "INTERVAL",
+                    "BOOLEAN",
+                    "BYTEA",
+                    "JSON", "JSONB", "UUID", "INET", "CIDR",
+                    "ARRAY", "HSTORE"]
+        default:
+            return ["INT", "BIGINT", "SMALLINT", "TINYINT", "MEDIUMINT",
+                    "VARCHAR", "CHAR", "TEXT", "MEDIUMTEXT", "LONGTEXT",
+                    "DECIMAL", "FLOAT", "DOUBLE",
+                    "DATE", "DATETIME", "TIMESTAMP", "TIME", "YEAR",
+                    "BOOLEAN", "ENUM", "SET",
+                    "BLOB", "MEDIUMBLOB", "LONGBLOB",
+                    "JSON", "BINARY", "VARBINARY"]
+        }
     }
 
     var body: some View {
@@ -52,11 +64,11 @@ struct DBAddColumnView: View {
             }
 
             VStack(alignment: .leading, spacing: AXSpacing.xxxs) {
-                Text("Add Column")
+                Text(L10n.Database.addColumn)
                     .font(AXTypography.title3)
                     .fontWeight(.bold)
                     .foregroundColor(.axTextPrimary)
-                Text("to \(viewModel.selectedTable?.name ?? "")")
+                Text(L10n.Database.toTable(viewModel.selectedTable?.name ?? ""))
                     .font(AXTypography.caption)
                     .foregroundColor(.axTextMuted)
             }
@@ -82,7 +94,7 @@ struct DBAddColumnView: View {
         ScrollView(.vertical, showsIndicators: false) {
             VStack(alignment: .leading, spacing: AXSpacing.lg) {
                 // Column Name
-                fieldGroup(label: "COLUMN NAME") {
+                fieldGroup(label: L10n.Database.columnNameHeader) {
                     TextField("column_name", text: $column.name)
                         .font(AXTypography.monoMd)
                         .foregroundColor(.axTextPrimary)
@@ -97,7 +109,7 @@ struct DBAddColumnView: View {
 
                 // Type & Length
                 HStack(spacing: AXSpacing.lg) {
-                    fieldGroup(label: "TYPE") {
+                    fieldGroup(label: L10n.Database.typeHeader) {
                         Picker("", selection: $column.type) {
                             ForEach(mysqlColumnTypes, id: \.self) { t in Text(t).tag(t) }
                         }
@@ -105,7 +117,7 @@ struct DBAddColumnView: View {
                         .frame(maxWidth: .infinity)
                     }
 
-                    fieldGroup(label: "LENGTH") {
+                    fieldGroup(label: L10n.Database.lengthHeader) {
                         TextField("255", text: Binding(
                             get: { column.length ?? "" },
                             set: { column.length = $0.isEmpty ? nil : $0 }
@@ -124,26 +136,26 @@ struct DBAddColumnView: View {
                 }
 
                 // Constraints
-                fieldGroup(label: "CONSTRAINTS") {
+                fieldGroup(label: L10n.Database.constraintsHeader) {
                     HStack(spacing: AXSpacing.lg) {
-                        constraintOption("Not Null", isOn: Binding(
+                        constraintOption(L10n.Database.notNullLabel, isOn: Binding(
                             get: { !column.isNullable },
                             set: { column.isNullable = !$0 }
                         ), color: .axTextSecondary)
 
-                        constraintOption("Primary Key", isOn: $column.isPrimaryKey, color: .axWarning)
-                        constraintOption("Auto Increment", isOn: $column.isAutoIncrement, color: .axAccentBlue)
-                        constraintOption("Unique", isOn: $column.isUnique, color: .axAccentGreen)
+                        constraintOption(L10n.Database.primaryKeyLabel, isOn: $column.isPrimaryKey, color: .axWarning)
+                        constraintOption(L10n.Database.autoIncrementLabel, isOn: $column.isAutoIncrement, color: .axAccentBlue)
+                        constraintOption(L10n.Database.uniqueLabel, isOn: $column.isUnique, color: .axAccentGreen)
                     }
                 }
 
                 // Position
-                fieldGroup(label: "POSITION") {
+                fieldGroup(label: L10n.Database.positionHeader) {
                     Picker("", selection: $afterColumn) {
-                        Text("End of table").tag("")
+                        Text(L10n.Database.endOfTable).tag("")
                         if let structure = viewModel.tableStructure {
                             ForEach(structure.columns) { col in
-                                Text("After \(col.name)").tag(col.name)
+                                Text(L10n.Database.afterColumnName(col.name)).tag(col.name)
                             }
                         }
                     }
@@ -189,7 +201,7 @@ struct DBAddColumnView: View {
 
     private var previewCard: some View {
         VStack(alignment: .leading, spacing: AXSpacing.xs) {
-            Text("PREVIEW")
+            Text(L10n.Database.previewHeader)
                 .font(AXTypography.caption2)
                 .fontWeight(.bold)
                 .foregroundColor(.axTextMuted)
@@ -257,7 +269,7 @@ struct DBAddColumnView: View {
                     Circle()
                         .fill(Color.axSuccess)
                         .frame(width: 6, height: 6)
-                    Text("Ready")
+                    Text(L10n.Database.ready)
                         .font(AXTypography.caption2)
                         .foregroundColor(.axSuccess)
                 }
@@ -285,7 +297,7 @@ struct DBAddColumnView: View {
                     if isSubmitting {
                         ProgressView().scaleEffect(0.6).tint(.white)
                     }
-                    Text(isSubmitting ? "Adding..." : "Add Column")
+                    Text(isSubmitting ? L10n.Database.adding : L10n.Database.addColumn)
                 }
                 .font(AXTypography.subheadline)
                 .fontWeight(.bold)

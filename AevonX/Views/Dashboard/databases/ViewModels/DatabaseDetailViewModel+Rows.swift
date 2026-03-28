@@ -17,7 +17,10 @@ extension DatabaseDetailViewModel {
         guard let serverId = serverId, let table = selectedTable else { return }
 
         do {
-            let nonNilValues = values.compactMapValues { $0 }
+            // Preserve NULL intent: nil → "NULL" so the Go adapter generates SQL NULL
+            let nonNilValues = values.reduce(into: [String: String]()) { result, pair in
+                result[pair.key] = pair.value ?? "NULL"
+            }
             try await DatabaseRowService.shared.insertRow(
                 database: database.name,
                 table: table.name,
@@ -40,7 +43,10 @@ extension DatabaseDetailViewModel {
         guard let serverId = serverId, let table = selectedTable else { return }
 
         do {
-            let nonNilValues = values.compactMapValues { $0 }
+            // Preserve NULL intent: nil → "NULL" so the Go adapter generates SQL NULL
+            let nonNilValues = values.reduce(into: [String: String]()) { result, pair in
+                result[pair.key] = pair.value ?? "NULL"
+            }
             try await DatabaseRowService.shared.updateRow(
                 database: database.name,
                 table: table.name,

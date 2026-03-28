@@ -397,7 +397,7 @@ public enum RewriteRuleTemplate: String, CaseIterable {
 
         case .removeTrailingSlash:
             return URLRewriteRule(
-                sourcePattern: "^(.*)/$ ",
+                sourcePattern: "^(.*)/$",
                 destination: "$1",
                 statusCode: 301,
                 flags: ["R", "L"],

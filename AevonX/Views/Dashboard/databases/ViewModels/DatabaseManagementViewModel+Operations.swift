@@ -66,8 +66,8 @@ extension DatabaseManagementViewModel {
             serverId: serverId
         )
 
-        // Reload data
-        await loadData()
+        // Reload data (force refresh to bypass cache)
+        await loadData(forceRefresh: true)
     }
 
     /// Deletes a database via Core layer
@@ -78,8 +78,8 @@ extension DatabaseManagementViewModel {
 
         try await DatabaseManagementService.shared.deleteDatabase(name: name, type: type.rawValue, serverId: serverId)
 
-        // Reload data
-        await loadData()
+        // Reload data (force refresh to bypass cache)
+        await loadData(forceRefresh: true)
     }
 
     /// Starts a database service via Core layer
@@ -184,18 +184,10 @@ extension DatabaseManagementViewModel {
         allDatabases.reduce(0) { $0 + $1.size }
     }
 
-    /// Formatted total size
+    /// Formatted total size (size is in bytes from Go adapters)
     public var formattedTotalSize: String {
-        let total = totalDatabaseSize
-        if total >= 1024 * 1024 {
-            return String(format: "%.2f TB", total / (1024 * 1024))
-        } else if total >= 1024 {
-            return String(format: "%.2f GB", total / 1024)
-        } else if total > 0 {
-            return String(format: "%.0f MB", total)
-        } else {
-            return "0 MB"
-        }
+        let total = Int64(totalDatabaseSize)
+        return total > 0 ? AXFormatter.formatBytes(total) : "0 B"
     }
 
     /// Total number of users

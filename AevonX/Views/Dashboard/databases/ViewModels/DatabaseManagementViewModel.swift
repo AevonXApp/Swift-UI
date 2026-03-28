@@ -241,7 +241,8 @@ public final class DatabaseManagementViewModel: ObservableObject {
                         tables: coreDB.tables,
                         connections: 0,
                         host: "localhost",
-                        port: state.type.defaultPort
+                        port: state.type.defaultPort,
+                        isReachable: true
                     )
                 }
 

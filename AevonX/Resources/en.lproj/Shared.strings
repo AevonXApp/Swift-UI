@@ -255,6 +255,9 @@
 /* Unknown status */
 "status.unknown" = "Unknown";
 
+/* Error status */
+"status.error" = "Error";
+
 /* Failed status */
 "status.failed" = "Failed";
 

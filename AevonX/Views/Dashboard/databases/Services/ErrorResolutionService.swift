@@ -60,7 +60,10 @@ public final class ErrorResolutionService: ObservableObject {
             let osInfo = try await DatabaseResourceService.shared.getServerOSInfo(serverId: serverId)
             let resources = try await DatabaseResourceService.shared.getServerResources(serverId: serverId)
             let installed = await DatabaseEngineService.shared.detectInstalledDatabases(serverId: serverId)
-            let installedTypes: [DatabaseType] = installed.filter { $0.isInstalled }.map { _ in databaseType }
+            let engineOrder: [DatabaseType] = [.mysql, .mariadb, .postgresql, .redis, .mongodb, .cassandra, .cockroachdb, .elasticsearch]
+            let installedTypes: [DatabaseType] = zip(engineOrder, installed)
+                .filter { $0.1.isInstalled }
+                .map { $0.0 }
 
             let serverName = "Server"
 
@@ -135,7 +138,7 @@ public enum ErrorResolutionError: LocalizedError {
         case .noActiveResolution:
             return L10n.ErrorResolution.noContext
         case .solutionFailed(let reason):
-            return L10n.ErrorResolution.solutionFailed
+            return "\(L10n.ErrorResolution.solutionFailed): \(reason)"
         }
     }
 }

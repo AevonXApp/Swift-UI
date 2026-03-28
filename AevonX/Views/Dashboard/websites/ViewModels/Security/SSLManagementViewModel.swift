@@ -495,7 +495,7 @@ public final class SSLManagementViewModel: ObservableObject {
         log.debug("[\(website.domain)] Renew result: \(output.prefix(300))", module: module)
 
         // Check renewal result
-        if output.contains("AEVON_SSL_FAILED") || output.contains("Cert not yet due for renewal") {
+        if output.contains("AEVON_SSL_FAILED") || output.contains("not yet due for renewal") {
             toastManager.showError("Certificate renewal failed — cert may not be due yet")
         } else if output.contains("AEVON_SSL_SUCCESS") || output.contains("Congratulations") || output.contains("new certificate") {
             toastManager.showSuccess("Certificate renewed successfully")

@@ -13,6 +13,14 @@ struct SiteSecuritySection: View {
     @State private var selectedFeature: SiteSecurityFeature?
     @State private var showScanResults = false
 
+    private var hotlinkEnabled: Bool {
+        viewModel.securityStatuses.first { $0.feature == .hotlinkProtection }?.enabled ?? false
+    }
+
+    private var sensitiveFilesEnabled: Bool {
+        viewModel.securityStatuses.first { $0.feature == .sensitiveFiles }?.enabled ?? false
+    }
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: AXSpacing.xl) {
@@ -31,11 +39,11 @@ struct SiteSecuritySection: View {
                 // Quick Actions
                 AXConfigCard(icon: "bolt.shield.fill", title: "Quick Actions", subtitle: "Apply common security configurations") {
                     VStack(spacing: AXSpacing.sm) {
-                        quickActionRow(title: "Block Sensitive Files", description: "Block .env, .git, config files", icon: "eye.slash.fill", color: .purple) {
-                            Task { await viewModel.toggleSensitiveFilesBlock(enable: true) }
+                        quickActionRow(title: sensitiveFilesEnabled ? "Disable Sensitive Files Block" : "Block Sensitive Files", description: "Block .env, .git, config files", icon: "eye.slash.fill", color: .purple) {
+                            Task { await viewModel.toggleSensitiveFilesBlock(enable: !sensitiveFilesEnabled) }
                         }
-                        quickActionRow(title: "Enable Hotlink Protection", description: "Prevent image hotlinking", icon: "link.badge.plus", color: .orange) {
-                            Task { await viewModel.toggleHotlinkProtection(enable: true) }
+                        quickActionRow(title: hotlinkEnabled ? "Disable Hotlink Protection" : "Enable Hotlink Protection", description: "Prevent image hotlinking", icon: "link.badge.plus", color: .orange) {
+                            Task { await viewModel.toggleHotlinkProtection(enable: !hotlinkEnabled) }
                         }
                         quickActionRow(title: "Fix Permissions", description: "Set 755/644 and www-data ownership", icon: "checkmark.shield.fill", color: .axSuccess) {
                             Task { await viewModel.fixPermissions() }

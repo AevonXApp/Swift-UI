@@ -28,7 +28,7 @@ struct DBRenameTableView: View {
                             .font(AXTypography.subheadline)
                             .foregroundColor(.axWarning)
                     }
-                    Text("Rename Table")
+                    Text(L10n.Database.renameTable)
                         .font(AXTypography.headline).fontWeight(.bold)
                         .foregroundColor(.axTextPrimary)
                 }
@@ -47,7 +47,7 @@ struct DBRenameTableView: View {
             VStack(alignment: .leading, spacing: AXSpacing.lg) {
                 // Current name
                 VStack(alignment: .leading, spacing: AXSpacing.xs) {
-                    Text("Current Name")
+                    Text(L10n.Database.currentName)
                         .font(AXTypography.footnote).fontWeight(.semibold)
                         .foregroundColor(.axTextMuted)
                     Text(viewModel.selectedTable?.name ?? "")
@@ -62,7 +62,7 @@ struct DBRenameTableView: View {
 
                 // New name
                 VStack(alignment: .leading, spacing: AXSpacing.xs) {
-                    Text("New Name")
+                    Text(L10n.Database.newName)
                         .font(AXTypography.footnote).fontWeight(.semibold)
                         .foregroundColor(.axTextSecondary)
                     TextField("new_table_name", text: $newName)
@@ -82,7 +82,7 @@ struct DBRenameTableView: View {
                         HStack(spacing: AXSpacing.xxs) {
                             Image(systemName: "exclamationmark.triangle")
                                 .font(AXTypography.caption2)
-                            Text("Table names should not contain spaces")
+                            Text(L10n.Database.tableNameNoSpaces)
                                 .font(AXTypography.caption)
                         }
                         .foregroundColor(.axWarning)
@@ -92,7 +92,7 @@ struct DBRenameTableView: View {
                 // SQL Preview
                 if !newName.isEmpty {
                     VStack(alignment: .leading, spacing: AXSpacing.xs) {
-                        Text("SQL Preview")
+                        Text(L10n.Database.sqlPreview)
                             .font(AXTypography.footnote).fontWeight(.semibold)
                             .foregroundColor(.axTextSecondary)
                         Text(generateSQL())
@@ -146,7 +146,7 @@ struct DBRenameTableView: View {
                                 .scaleEffect(0.5)
                                 .frame(width: 14, height: 14)
                         }
-                        Text(isRenaming ? "Renaming..." : "Rename")
+                        Text(isRenaming ? L10n.Database.renaming : L10n.Database.rename)
                             .font(AXTypography.subheadline).fontWeight(.bold)
                     }
                     .foregroundColor(.white)
@@ -173,6 +173,13 @@ struct DBRenameTableView: View {
 
     private func generateSQL() -> String {
         let oldName = viewModel.selectedTable?.name ?? "table"
-        return "RENAME TABLE `\(oldName)` TO `\(newName)`;"
+        switch viewModel.database.type {
+        case .postgresql, .cockroachdb:
+            return "ALTER TABLE \"\(oldName)\" RENAME TO \"\(newName)\";"
+        case .sqlite:
+            return "ALTER TABLE \"\(oldName)\" RENAME TO \"\(newName)\";"
+        default:
+            return "RENAME TABLE `\(oldName)` TO `\(newName)`;"
+        }
     }
 }

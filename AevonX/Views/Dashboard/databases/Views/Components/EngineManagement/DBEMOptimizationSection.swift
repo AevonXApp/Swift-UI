@@ -16,7 +16,7 @@ struct DBEMOptimizationSection: View {
             VStack(spacing: AXSpacing.xl) {
                 // Page Title
                 HStack {
-                    Text("Optimization")
+                    Text(L10n.Engine.optimization)
                         .font(AXTypography.title)
                         .fontWeight(.bold)
                         .foregroundColor(.axTextPrimary)
@@ -27,15 +27,15 @@ struct DBEMOptimizationSection: View {
                 // AI Analysis Card
                 AXGlassCard(accentColor: .axAccentBlue) {
                     VStack(alignment: .leading, spacing: AXSpacing.lg) {
-                        Text("Performance Analysis")
+                        Text(L10n.Engine.performanceAnalysis)
                             .font(AXTypography.headline)
                             .foregroundColor(.axTextPrimary)
 
-                        Text("AI-powered optimization recommendations will appear here based on your database usage patterns.")
+                        Text(L10n.Engine.aiOptimizationHint)
                             .font(AXTypography.subheadline)
                             .foregroundColor(.axTextMuted)
 
-                        Button("Analyze Performance") {
+                        Button(L10n.Engine.analyzePerformance) {
                             Task { await viewModel.analyzePerformance() }
                         }
                         .font(AXTypography.subheadline)
@@ -53,22 +53,22 @@ struct DBEMOptimizationSection: View {
                 // Quick Presets
                 AXGlassCard(accentColor: .axAccentBlue) {
                     VStack(alignment: .leading, spacing: AXSpacing.lg) {
-                        Text("Quick Presets")
+                        Text(L10n.Engine.quickPresets)
                             .font(AXTypography.headline)
                             .foregroundColor(.axTextPrimary)
 
                         VStack(spacing: AXSpacing.md) {
-                            PresetRow(title: "Web Application", description: "Optimized for web workloads with high read/write ratio") {
+                            PresetRow(title: L10n.Engine.presetWebApp, description: L10n.Engine.presetWebAppDesc) {
                                 Task { await viewModel.applyOptimizationPreset("Web Application") }
                             }
                             .disabled(viewModel.isOperationInProgress)
 
-                            PresetRow(title: "Data Warehouse", description: "Optimized for analytics and reporting workloads") {
+                            PresetRow(title: L10n.Engine.presetDataWarehouse, description: L10n.Engine.presetDataWarehouseDesc) {
                                 Task { await viewModel.applyOptimizationPreset("Data Warehouse") }
                             }
                             .disabled(viewModel.isOperationInProgress)
 
-                            PresetRow(title: "Development", description: "Balanced configuration for development environments") {
+                            PresetRow(title: L10n.Engine.presetDevelopment, description: L10n.Engine.presetDevelopmentDesc) {
                                 Task { await viewModel.applyOptimizationPreset("Development") }
                             }
                             .disabled(viewModel.isOperationInProgress)

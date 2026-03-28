@@ -315,7 +315,9 @@ public final class WebsiteManagementViewModel: ObservableObject {
         let cmds = bridge.createSiteCmd(engine: engine, serverID: serverId, configJSON: configJSON)
         for cmd in cmds {
             let result = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
-            if result.localizedCaseInsensitiveContains("error") || result.localizedCaseInsensitiveContains("failed") || result.localizedCaseInsensitiveContains("permission denied") {
+            // Check for real errors, but exclude benign strings like "error_log", "error_page"
+            let cleanResult = result.replacingOccurrences(of: "error_log", with: "").replacingOccurrences(of: "error_page", with: "")
+            if cleanResult.localizedCaseInsensitiveContains("error") || cleanResult.localizedCaseInsensitiveContains("failed") || cleanResult.localizedCaseInsensitiveContains("permission denied") {
                 CoreLogger.shared.error("Website creation command failed: \(result)", module: "WebsiteManagement")
                 throw WebsiteOperationError.operationFailed(result)
             }

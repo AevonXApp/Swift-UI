@@ -56,42 +56,52 @@ public final class TrafficAnalyticsViewModel: ObservableObject {
         await detectPathsIfNeeded()
 
         await withTaskGroup(of: Void.self) { group in
-            // Load statistics
+            // Load request statistics — Go outputs "  count statusCode" lines
             group.addTask { @MainActor in
                 let logPath = "\(self.serverPaths.logDir)/\(self.website.domain).access.log"
                 let cmd = self.bridge.requestStatsCmd(domain: self.website.domain, timeRange: self.selectedTimeRange.rawValue, logPath: logPath)
                 let result = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
-                let parsedJSON = self.bridge.parseRequestStats(output: result)
-
-                if let data = parsedJSON.data(using: String.Encoding.utf8),
-                   let json = try? JSONDecoder().decode(RequestStatistics.self, from: data) {
-                    self.statistics = json
+                let entries = self.parseCountValueLines(result)
+                let totalReqs = entries.reduce(0) { $0 + $1.0 }
+                var byStatus: [String: Int] = [:]
+                var errorCount = 0
+                for (count, code) in entries {
+                    byStatus[code] = count
+                    if let codeInt = Int(code), codeInt >= 400 {
+                        errorCount += count
+                    }
                 }
+                let errorRate = totalReqs > 0 ? Double(errorCount) / Double(totalReqs) * 100.0 : 0
+                self.statistics = RequestStatistics(
+                    totalRequests: totalReqs,
+                    requestsByStatus: byStatus,
+                    errorRate: errorRate,
+                    timeRange: self.selectedTimeRange,
+                    timestamp: Date()
+                )
             }
 
-            // Load bandwidth data
+            // Load bandwidth — Go outputs single integer (total bytes)
             group.addTask { @MainActor in
                 let logPath = "\(self.serverPaths.logDir)/\(self.website.domain).access.log"
                 let cmd = self.bridge.bandwidthCmd(logPath: logPath)
                 let result = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
-                let parsedJSON = self.bridge.parseBandwidth(output: result)
-
-                if let data = parsedJSON.data(using: String.Encoding.utf8),
-                   let points = try? JSONDecoder().decode([BandwidthDataPoint].self, from: data) {
-                    self.bandwidthData = points
+                let trimmed = result.trimmingCharacters(in: .whitespacesAndNewlines)
+                if let totalBytes = Int(trimmed), totalBytes > 0 {
+                    self.bandwidthData = [
+                        BandwidthDataPoint(timestamp: Date(), bytesIn: 0, bytesOut: totalBytes)
+                    ]
                 }
             }
 
-            // Load top endpoints
+            // Load top endpoints — Go outputs "  count /path" lines
             group.addTask { @MainActor in
                 let logPath = "\(self.serverPaths.logDir)/\(self.website.domain).access.log"
                 let cmd = self.bridge.topEndpointsCmd(domain: self.website.domain, limit: 10, logPath: logPath)
                 let result = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
-                let parsedJSON = self.bridge.parseTopEndpoints(output: result)
-
-                if let data = parsedJSON.data(using: String.Encoding.utf8),
-                   let endpoints = try? JSONDecoder().decode([EndpointStat].self, from: data) {
-                    self.topEndpoints = endpoints
+                let entries = self.parseCountValueLines(result)
+                self.topEndpoints = entries.map { count, path in
+                    EndpointStat(endpoint: path, requestCount: count, averageResponseTime: 0, errorCount: 0)
                 }
             }
         }
@@ -180,6 +190,16 @@ public final class TrafficAnalyticsViewModel: ObservableObject {
 
     public func refresh() async {
         await load()
+    }
+
+    /// Parse "  count value" lines from uniq -c output.
+    private func parseCountValueLines(_ output: String) -> [(Int, String)] {
+        output.split(separator: "\n").compactMap { line in
+            let trimmed = line.trimmingCharacters(in: .whitespaces)
+            let parts = trimmed.split(separator: " ", maxSplits: 1)
+            guard parts.count == 2, let count = Int(parts[0]) else { return nil }
+            return (count, String(parts[1]))
+        }
     }
 
     private func detectPathsIfNeeded() async {

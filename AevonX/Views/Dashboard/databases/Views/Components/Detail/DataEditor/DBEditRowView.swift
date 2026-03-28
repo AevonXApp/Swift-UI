@@ -54,11 +54,11 @@ struct DBEditRowView: View {
             }
 
             VStack(alignment: .leading, spacing: AXSpacing.xxxs) {
-                Text("Edit Row")
+                Text(L10n.Database.editRow)
                     .font(AXTypography.title3)
                     .fontWeight(.bold)
                     .foregroundColor(.axTextPrimary)
-                Text("in \(viewModel.selectedTable?.name ?? "")")
+                Text(L10n.Database.inDatabase(viewModel.selectedTable?.name ?? ""))
                     .font(AXTypography.caption)
                     .foregroundColor(.axTextMuted)
             }
@@ -70,7 +70,7 @@ struct DBEditRowView: View {
                     Circle()
                         .fill(Color.axWarning)
                         .frame(width: 6, height: 6)
-                    Text("\(changedCount) changed")
+                    Text(L10n.Database.changedCount(changedCount))
                         .font(AXTypography.caption2)
                         .fontWeight(.medium)
                         .foregroundColor(.axWarning)
@@ -134,7 +134,7 @@ struct DBEditRowView: View {
                     .cornerRadius(AXCornerRadius.sm)
 
                 if hasChanged {
-                    Text("MODIFIED")
+                    Text(L10n.Database.modified)
                         .font(AXTypography.caption2).fontWeight(.bold)
                         .foregroundColor(.axWarning)
                         .padding(.horizontal, AXSpacing.xs)
@@ -163,7 +163,7 @@ struct DBEditRowView: View {
             }
 
             if !isNull {
-                TextField("value", text: Binding(
+                TextField(L10n.Field.value, text: Binding(
                     get: { values[col.name] ?? "" },
                     set: { values[col.name] = $0 }
                 ))
@@ -207,7 +207,7 @@ struct DBEditRowView: View {
                 HStack(spacing: AXSpacing.xxs) {
                     Image(systemName: "pencil")
                         .font(AXTypography.caption2)
-                    Text("\(changedCount) field\(changedCount == 1 ? "" : "s") modified")
+                    Text(L10n.Database.fieldsModified(changedCount))
                         .font(AXTypography.caption)
                 }
                 .foregroundColor(.axWarning)
@@ -251,7 +251,7 @@ struct DBEditRowView: View {
                     if isSubmitting {
                         ProgressView().scaleEffect(0.6).tint(.white)
                     }
-                    Text(isSubmitting ? "Saving..." : L10n.Button.saveChanges)
+                    Text(isSubmitting ? L10n.Database.saving : L10n.Button.saveChanges)
                 }
                 .font(AXTypography.subheadline)
                 .fontWeight(.bold)

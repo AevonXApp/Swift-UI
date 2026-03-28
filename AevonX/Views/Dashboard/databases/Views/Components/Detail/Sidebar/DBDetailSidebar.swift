@@ -96,7 +96,7 @@ struct DBDetailSidebar: View {
     @ViewBuilder
     private var sidebarItems: some View {
         // Section header
-        Text("NAVIGATION")
+        Text(L10n.Database.navigationHeader)
             .font(AXTypography.caption2).fontWeight(.heavy)
             .foregroundColor(.axTextMuted.opacity(0.5))
             .tracking(1.5)
@@ -136,7 +136,7 @@ struct DBDetailSidebar: View {
             .padding(.horizontal, AXSpacing.sm)
             .padding(.vertical, AXSpacing.sm)
 
-        Text("QUICK ACTIONS")
+        Text(L10n.Database.quickActions)
             .font(AXTypography.caption2).fontWeight(.heavy)
             .foregroundColor(.axTextMuted.opacity(0.5))
             .tracking(1.5)
@@ -154,14 +154,14 @@ struct DBDetailSidebar: View {
         Button {
             viewModel.currentSection = .queryConsole
         } label: {
-            quickActionRow(icon: "terminal", title: "Run Query", color: .axInfo)
+            quickActionRow(icon: "terminal", title: L10n.Database.runQuery, color: .axInfo)
         }
         .buttonStyle(.plain)
 
         Button {
             viewModel.currentSection = .backup
         } label: {
-            quickActionRow(icon: "arrow.down.doc", title: "New Backup", color: .axWarning)
+            quickActionRow(icon: "arrow.down.doc", title: L10n.Database.newBackup, color: .axWarning)
         }
         .buttonStyle(.plain)
 
@@ -180,7 +180,7 @@ struct DBDetailSidebar: View {
                 .padding(.horizontal, AXSpacing.sm)
                 .padding(.vertical, AXSpacing.sm)
 
-            Text("TABLES")
+            Text(L10n.Database.tablesHeader)
                 .font(AXTypography.caption2).fontWeight(.heavy)
                 .foregroundColor(.axTextMuted.opacity(0.5))
                 .tracking(1.5)
@@ -192,7 +192,7 @@ struct DBDetailSidebar: View {
                 Image(systemName: "magnifyingglass")
                     .font(AXTypography.caption2)
                     .foregroundColor(.axTextMuted)
-                TextField("Filter tables...", text: $sidebarTableSearch)
+                TextField(L10n.Database.filterTables, text: $sidebarTableSearch)
                     .font(AXTypography.caption)
                     .foregroundColor(.axTextPrimary)
                     .textFieldStyle(.plain)
@@ -250,7 +250,7 @@ struct DBDetailSidebar: View {
             }
 
             if viewModel.tables.count > 20 && sidebarTableSearch.isEmpty {
-                Text("+ \(viewModel.tables.count - 20) more...")
+                Text(L10n.Database.moreTablesCount(viewModel.tables.count - 20))
                     .font(AXTypography.caption2)
                     .foregroundColor(.axTextMuted)
                     .padding(.horizontal, AXSpacing.sm)
@@ -300,7 +300,7 @@ struct DBDetailSidebar: View {
                     Image(systemName: "tablecells")
                         .font(AXTypography.caption2)
                         .foregroundColor(.axTextMuted.opacity(0.5))
-                    Text("\(viewModel.tables.count) tables")
+                    Text(L10n.Database.tablesFooterCount(viewModel.tables.count))
                         .font(AXTypography.caption)
                         .foregroundColor(.axTextMuted.opacity(0.5))
                 }

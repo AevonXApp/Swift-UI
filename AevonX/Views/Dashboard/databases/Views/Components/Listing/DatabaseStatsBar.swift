@@ -43,7 +43,7 @@ struct DatabaseStatsBar: View {
             AXStatCard(
                 icon: "server.rack",
                 label: L10n.Database.engines,
-                value: "\(viewModel.installedDatabaseTypesCount)/9",
+                value: "\(viewModel.installedDatabaseTypesCount)/\(viewModel.installationStates.count)",
                 color: .axInfo,
                 layout: .horizontal,
                 style: .glass

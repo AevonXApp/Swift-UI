@@ -48,7 +48,7 @@ struct DBCreateTableView: View {
                     .font(AXTypography.title3)
                     .fontWeight(.bold)
                     .foregroundColor(.axTextPrimary)
-                Text("in \(viewModel.database.name)")
+                Text(L10n.Database.inDatabase(viewModel.database.name))
                     .font(AXTypography.caption)
                     .foregroundColor(.axTextMuted)
             }
@@ -112,12 +112,12 @@ struct DBCreateTableView: View {
 
     var tableNameField: some View {
         VStack(alignment: .leading, spacing: AXSpacing.xs) {
-            Text("TABLE NAME")
+            Text(L10n.Database.tableNameHeader)
                 .font(AXTypography.caption2)
                 .fontWeight(.bold)
                 .foregroundColor(.axTextMuted)
                 .tracking(0.5)
-            TextField("e.g. users, posts, orders", text: $tableName)
+            TextField(L10n.Database.tableNamePlaceholder, text: $tableName)
                 .font(.system(.body, design: .monospaced))
                 .foregroundColor(.axTextPrimary)
                 .padding(AXSpacing.md)
@@ -136,7 +136,7 @@ struct DBCreateTableView: View {
                 Image(systemName: "chevron.left.forwardslash.chevron.right")
                     .font(AXTypography.caption2)
                     .foregroundColor(.axAccentBlue)
-                Text("SQL PREVIEW")
+                Text(L10n.Database.sqlPreviewHeader)
                     .font(AXTypography.caption2)
                     .fontWeight(.bold)
                     .foregroundColor(.axTextMuted)
@@ -145,7 +145,7 @@ struct DBCreateTableView: View {
                 Button {
                     NSPasteboard.general.clearContents()
                     NSPasteboard.general.setString(generateSQL(), forType: .string)
-                    GlobalToastManager.shared.showSuccess("SQL copied")
+                    GlobalToastManager.shared.showSuccess(L10n.Database.sqlCopied)
                 } label: {
                     HStack(spacing: AXSpacing.xxs) {
                         Image(systemName: "doc.on.doc")
@@ -180,7 +180,7 @@ struct DBCreateTableView: View {
     var columnsSection: some View {
         VStack(alignment: .leading, spacing: AXSpacing.md) {
             HStack {
-                Text("COLUMNS")
+                Text(L10n.Database.columnsHeader)
                     .font(AXTypography.caption2)
                     .fontWeight(.bold)
                     .foregroundColor(.axTextMuted)
@@ -201,7 +201,7 @@ struct DBCreateTableView: View {
                     HStack(spacing: AXSpacing.xxs) {
                         Image(systemName: "plus")
                             .font(AXTypography.caption2)
-                        Text("Add Column")
+                        Text(L10n.Database.addColumn)
                             .font(AXTypography.caption)
                             .fontWeight(.semibold)
                     }
@@ -228,23 +228,23 @@ struct DBCreateTableView: View {
         HStack(spacing: AXSpacing.sm) {
             Text(L10n.Field.name)
                 .frame(width: 140, alignment: .leading)
-            Text("Type")
+            Text(L10n.Database.typeHeader)
                 .frame(width: 100, alignment: .leading)
-            Text("Length")
+            Text(L10n.Database.lengthHeader)
                 .frame(width: 55, alignment: .leading)
             // Constraint badges
             Text("🔑")
                 .frame(width: 24, alignment: .center)
-                .help("Primary Key")
+                .help(L10n.Database.primaryKeyLabel)
             Text("⬛")
                 .frame(width: 24, alignment: .center)
-                .help("NOT NULL")
+                .help(L10n.Database.notNullLabel)
             Text("↗️")
                 .frame(width: 24, alignment: .center)
-                .help("Auto Increment")
+                .help(L10n.Database.autoIncrementLabel)
             Text("✨")
                 .frame(width: 24, alignment: .center)
-                .help("Unique")
+                .help(L10n.Database.uniqueLabel)
             Spacer()
         }
         .font(AXTypography.caption2)

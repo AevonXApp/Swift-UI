@@ -74,7 +74,7 @@ struct DBSQLConsoleSection: View {
                         .font(AXTypography.subheadline)
                         .foregroundColor(.purple)
                 }
-                Text("SQL Console")
+                Text(L10n.Database.sqlConsole)
                     .font(AXTypography.headline)
                     .foregroundColor(.axTextPrimary)
             }
@@ -105,35 +105,20 @@ struct DBSQLConsoleSection: View {
                     AXMenuItem("SELECT with JOIN", icon: "arrow.triangle.merge", color: .mint) { viewModel.queryText = "SELECT a.*, b.* FROM  a\nINNER JOIN  b ON a.id = b.id\nWHERE 1=1" },
                     AXMenuItem("SELECT with SUBQUERY", icon: "arrow.turn.down.right", color: .purple) { viewModel.queryText = "SELECT * FROM  WHERE id IN (\n  SELECT id FROM  WHERE \n)" },
                 ]),
-                AXMenuSection("DDL", items: [
-                    AXMenuItem("SHOW TABLES", icon: "list.bullet", color: .mint) { viewModel.queryText = "SHOW TABLES" },
-                    AXMenuItem("SHOW DATABASES", icon: "cylinder.split.1x2", color: .orange) { viewModel.queryText = "SHOW DATABASES" },
-                    AXMenuItem("DESCRIBE table", icon: "info.circle", color: .axAccentGreen) { viewModel.queryText = "DESCRIBE " },
-                    AXMenuItem("SHOW CREATE TABLE", icon: "text.alignleft", color: .cyan) { viewModel.queryText = "SHOW CREATE TABLE " },
-                    AXMenuItem("SHOW PROCESSLIST", icon: "person.3", color: .axWarning) { viewModel.queryText = "SHOW PROCESSLIST" },
-                    AXMenuItem("SHOW INDEX FROM ...", icon: "key", color: .yellow) { viewModel.queryText = "SHOW INDEX FROM " },
-                    AXMenuItem("SHOW TABLE STATUS", icon: "chart.bar.doc.horizontal", color: .teal) { viewModel.queryText = "SHOW TABLE STATUS" },
-                    AXMenuItem("SHOW VARIABLES", icon: "gearshape", color: .orange) { viewModel.queryText = "SHOW VARIABLES LIKE '%%'" },
-                ]),
+                AXMenuSection("DDL", items: ddlTemplates),
                 AXMenuSection("DML", items: [
                     AXMenuItem("INSERT INTO ...", icon: "plus.rectangle", color: .axAccentGreen) { viewModel.queryText = "INSERT INTO  (col1, col2) VALUES ('val1', 'val2')" },
                     AXMenuItem("UPDATE ... SET ...", icon: "pencil.circle", color: .axAccentBlue) { viewModel.queryText = "UPDATE  SET col1 = 'value' WHERE id = " },
                     AXMenuItem("DELETE FROM ...", icon: "minus.rectangle", color: .axError) { viewModel.queryText = "DELETE FROM  WHERE id = " },
                     AXMenuItem("REPLACE INTO ...", icon: "arrow.triangle.2.circlepath", color: .purple) { viewModel.queryText = "REPLACE INTO  (col1, col2) VALUES ('val1', 'val2')" },
                 ]),
-                AXMenuSection("Administration", items: [
-                    AXMenuItem("BEGIN / COMMIT", icon: "lock.shield", color: .indigo) { viewModel.queryText = "BEGIN;\n\n-- your queries here\n\nCOMMIT;" },
-                    AXMenuItem("EXPLAIN", icon: "gauge.with.dots.needle.33percent", color: .axWarning) { viewModel.queryText = "EXPLAIN SELECT * FROM " },
-                    AXMenuItem("OPTIMIZE TABLE", icon: "wand.and.stars", color: .orange) { viewModel.queryText = "OPTIMIZE TABLE " },
-                    AXMenuItem("CHECK TABLE", icon: "checkmark.shield", color: .axSuccess) { viewModel.queryText = "CHECK TABLE " },
-                    AXMenuItem("REPAIR TABLE", icon: "wrench.and.screwdriver", color: .purple) { viewModel.queryText = "REPAIR TABLE " },
-                ]),
+                AXMenuSection(L10n.Database.administration, items: adminTemplates),
             ], triggerIcon: "list.bullet.rectangle", triggerSize: 28)
 
             // History
             if !viewModel.queryHistory.isEmpty {
                 AXActionMenu(sections: [
-                    AXMenuSection("Recent", items:
+                    AXMenuSection(L10n.Database.recentHistory, items:
                         viewModel.queryHistory.prefix(20).map { entry in
                             let q = entry.query
                             let label = String(q.prefix(40)) + (q.count > 40 ? "..." : "")
@@ -143,7 +128,7 @@ struct DBSQLConsoleSection: View {
                         }
                     ),
                     AXMenuSection(items: [
-                        AXMenuItem("Clear History", icon: "trash", isDestructive: true) {
+                        AXMenuItem(L10n.Database.clearHistory, icon: "trash", isDestructive: true) {
                             viewModel.queryHistory.removeAll()
                         },
                     ]),
@@ -159,7 +144,7 @@ struct DBSQLConsoleSection: View {
     var quickActionBar: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: AXSpacing.sm) {
-                Text("Quick:")
+                Text(L10n.Database.quickActionLabel)
                     .font(AXTypography.caption).fontWeight(.semibold)
                     .foregroundColor(.axTextMuted)
 
@@ -172,22 +157,38 @@ struct DBSQLConsoleSection: View {
                     }
                 }
 
-                quickChip("SHOW TABLES", icon: "list.bullet", color: .mint) {
-                    viewModel.queryText = "SHOW TABLES"
+                quickChip(L10n.Database.listTables, icon: "list.bullet", color: .mint) {
+                    let dbType = viewModel.database.type
+                    switch dbType {
+                    case .postgresql, .cockroachdb: viewModel.queryText = "\\dt"
+                    case .redis: viewModel.queryText = "KEYS *"
+                    case .mongodb: viewModel.queryText = "show collections"
+                    default: viewModel.queryText = "SHOW TABLES"
+                    }
                     Task { await viewModel.executeQuery() }
                 }
 
-                quickChip("DESCRIBE", icon: "info.circle", color: .axAccentGreen) {
+                quickChip(L10n.Database.describeChip, icon: "info.circle", color: .axAccentGreen) {
                     if let tbl = viewModel.selectedTable?.name {
-                        viewModel.queryText = "DESCRIBE `\(tbl)`"
+                        let dbType = viewModel.database.type
+                        switch dbType {
+                        case .postgresql, .cockroachdb: viewModel.queryText = "\\d \(tbl)"
+                        default: viewModel.queryText = "DESCRIBE `\(tbl)`"
+                        }
                         Task { await viewModel.executeQuery() }
                     } else {
-                        viewModel.queryText = "DESCRIBE "
+                        viewModel.queryText = viewModel.database.type == .postgresql ? "\\d " : "DESCRIBE "
                     }
                 }
 
-                quickChip("PROCESSLIST", icon: "person.3", color: .axWarning) {
-                    viewModel.queryText = "SHOW PROCESSLIST"
+                quickChip(L10n.Database.connections, icon: "person.3", color: .axWarning) {
+                    let dbType = viewModel.database.type
+                    switch dbType {
+                    case .postgresql, .cockroachdb: viewModel.queryText = "SELECT * FROM pg_stat_activity"
+                    case .redis: viewModel.queryText = "CLIENT LIST"
+                    case .mongodb: viewModel.queryText = "db.currentOp()"
+                    default: viewModel.queryText = "SHOW PROCESSLIST"
+                    }
                     Task { await viewModel.executeQuery() }
                 }
 
@@ -201,16 +202,37 @@ struct DBSQLConsoleSection: View {
                 }
 
                 quickChip("DB SIZE", icon: "internaldrive", color: .purple) {
-                    viewModel.queryText = "SELECT table_name AS 'Table', ROUND(data_length/1024/1024, 2) AS 'Data (MB)', ROUND(index_length/1024/1024, 2) AS 'Index (MB)', ROUND((data_length+index_length)/1024/1024, 2) AS 'Total (MB)' FROM information_schema.tables WHERE table_schema = '\(viewModel.database.name)' ORDER BY (data_length+index_length) DESC"
+                    let dbType = viewModel.database.type
+                    switch dbType {
+                    case .postgresql, .cockroachdb:
+                        viewModel.queryText = "SELECT relname, pg_size_pretty(pg_total_relation_size(relid)) FROM pg_catalog.pg_statio_user_tables ORDER BY pg_total_relation_size(relid) DESC"
+                    case .redis:
+                        viewModel.queryText = "INFO memory"
+                    case .mongodb:
+                        viewModel.queryText = "db.stats()"
+                    default:
+                        viewModel.queryText = "SELECT table_name AS 'Table', ROUND(data_length/1024/1024, 2) AS 'Data (MB)', ROUND(index_length/1024/1024, 2) AS 'Index (MB)', ROUND((data_length+index_length)/1024/1024, 2) AS 'Total (MB)' FROM information_schema.tables WHERE table_schema = '\(viewModel.database.name)' ORDER BY (data_length+index_length) DESC"
+                    }
                     Task { await viewModel.executeQuery() }
                 }
 
-                quickChip("VARIABLES", icon: "gearshape", color: .orange) {
-                    viewModel.queryText = "SHOW VARIABLES LIKE '%%'"
+                quickChip(L10n.Database.configChip, icon: "gearshape", color: .orange) {
+                    let dbType = viewModel.database.type
+                    switch dbType {
+                    case .postgresql, .cockroachdb: viewModel.queryText = "SHOW ALL"
+                    case .redis: viewModel.queryText = "CONFIG GET *"
+                    default: viewModel.queryText = "SHOW VARIABLES LIKE '%%'"
+                    }
                 }
 
-                quickChip("STATUS", icon: "chart.bar", color: .teal) {
-                    viewModel.queryText = "SHOW GLOBAL STATUS"
+                quickChip(L10n.Database.statusChip, icon: "chart.bar", color: .teal) {
+                    let dbType = viewModel.database.type
+                    switch dbType {
+                    case .postgresql, .cockroachdb: viewModel.queryText = "SELECT * FROM pg_stat_user_tables"
+                    case .redis: viewModel.queryText = "INFO stats"
+                    case .mongodb: viewModel.queryText = "db.serverStatus()"
+                    default: viewModel.queryText = "SHOW GLOBAL STATUS"
+                    }
                     Task { await viewModel.executeQuery() }
                 }
 
@@ -219,7 +241,7 @@ struct DBSQLConsoleSection: View {
                     .fill(Color.axBorder.opacity(0.3))
                     .frame(width: 1, height: 16)
 
-                Text("Insert:")
+                Text(L10n.Database.insertKeywordLabel)
                     .font(AXTypography.caption).fontWeight(.semibold)
                     .foregroundColor(.axTextMuted)
 
@@ -295,11 +317,11 @@ struct DBSQLConsoleSection: View {
                     .font(AXTypography.caption2)
                     .foregroundColor(.axTextMuted)
                 if !viewModel.queryText.isEmpty {
-                    Text("\(viewModel.queryText.filter { $0 == "\n" }.count + 1) lines · \(viewModel.queryText.count) chars")
+                    Text(L10n.Database.editorLineInfo(viewModel.queryText.filter { $0 == "\n" }.count + 1, viewModel.queryText.count))
                         .font(AXTypography.monoXs)
                         .foregroundColor(.axTextMuted)
                 } else {
-                    Text("Empty")
+                    Text(L10n.Database.emptyValue)
                         .font(AXTypography.caption)
                         .foregroundColor(.axTextMuted.opacity(0.5))
                 }
@@ -315,13 +337,13 @@ struct DBSQLConsoleSection: View {
                     HStack(spacing: AXSpacing.xxs) {
                         Image(systemName: "text.alignleft")
                             .font(AXTypography.caption2)
-                        Text("Format")
+                        Text(L10n.Database.formatAction)
                             .font(AXTypography.caption)
                     }
                     .foregroundColor(.axInfo)
                 }
                 .buttonStyle(.plain)
-                .help("Format & beautify SQL")
+                .help(L10n.Database.formatSQLHint)
             }
 
             // Explain button
@@ -339,7 +361,7 @@ struct DBSQLConsoleSection: View {
                     HStack(spacing: AXSpacing.xxs) {
                         Image(systemName: "gauge.with.dots.needle.33percent")
                             .font(AXTypography.caption2)
-                        Text("Explain")
+                        Text(L10n.Database.explainAction)
                             .font(AXTypography.caption)
                     }
                     .foregroundColor(.axWarning)
@@ -352,14 +374,14 @@ struct DBSQLConsoleSection: View {
                 Button {
                     NSPasteboard.general.clearContents()
                     NSPasteboard.general.setString(viewModel.queryText, forType: .string)
-                    GlobalToastManager.shared.showSuccess("Query copied")
+                    GlobalToastManager.shared.showSuccess(L10n.Database.queryCopied)
                 } label: {
                     Image(systemName: "doc.on.doc")
                         .font(AXTypography.caption2)
                         .foregroundColor(.axTextMuted)
                 }
                 .buttonStyle(.plain)
-                .help("Copy query")
+                .help(L10n.Database.copyQueryHint)
             }
 
             // Clear
@@ -391,7 +413,7 @@ struct DBSQLConsoleSection: View {
                         Image(systemName: "play.fill")
                             .font(AXTypography.caption)
                     }
-                    Text(viewModel.isExecutingQuery ? "Running..." : "Execute")
+                    Text(viewModel.isExecutingQuery ? L10n.Database.runningAction : L10n.Database.executeAction)
                         .font(AXTypography.footnote).fontWeight(.bold)
                 }
                 .foregroundColor(.white)
@@ -421,6 +443,85 @@ struct DBSQLConsoleSection: View {
         .background(Color.axSurface.opacity(0.3))
     }
 
+
+    // MARK: - Engine-Aware Templates
+
+    private var ddlTemplates: [AXMenuItem] {
+        let dbType = viewModel.database.type
+        switch dbType {
+        case .postgresql, .cockroachdb:
+            return [
+                AXMenuItem("List Tables", icon: "list.bullet", color: .mint) { viewModel.queryText = "\\dt" },
+                AXMenuItem("List Databases", icon: "cylinder.split.1x2", color: .orange) { viewModel.queryText = "\\l" },
+                AXMenuItem("Describe Table", icon: "info.circle", color: .axAccentGreen) { viewModel.queryText = "\\d " },
+                AXMenuItem("Show Connections", icon: "person.3", color: .axWarning) { viewModel.queryText = "SELECT * FROM pg_stat_activity" },
+                AXMenuItem("Show Indexes", icon: "key", color: .yellow) { viewModel.queryText = "\\di" },
+                AXMenuItem("Show Table Sizes", icon: "chart.bar.doc.horizontal", color: .teal) { viewModel.queryText = "SELECT relname, pg_size_pretty(pg_total_relation_size(relid)) FROM pg_catalog.pg_statio_user_tables ORDER BY pg_total_relation_size(relid) DESC" },
+                AXMenuItem("Show Settings", icon: "gearshape", color: .orange) { viewModel.queryText = "SHOW ALL" },
+            ]
+        case .redis:
+            return [
+                AXMenuItem("INFO", icon: "info.circle", color: .axAccentGreen) { viewModel.queryText = "INFO" },
+                AXMenuItem("DBSIZE", icon: "number", color: .mint) { viewModel.queryText = "DBSIZE" },
+                AXMenuItem("CONFIG GET *", icon: "gearshape", color: .orange) { viewModel.queryText = "CONFIG GET *" },
+                AXMenuItem("CLIENT LIST", icon: "person.3", color: .axWarning) { viewModel.queryText = "CLIENT LIST" },
+                AXMenuItem("KEYS *", icon: "key", color: .yellow) { viewModel.queryText = "KEYS *" },
+            ]
+        case .mongodb:
+            return [
+                AXMenuItem("Show Collections", icon: "list.bullet", color: .mint) { viewModel.queryText = "show collections" },
+                AXMenuItem("Show Databases", icon: "cylinder.split.1x2", color: .orange) { viewModel.queryText = "show dbs" },
+                AXMenuItem("Server Status", icon: "info.circle", color: .axAccentGreen) { viewModel.queryText = "db.serverStatus()" },
+                AXMenuItem("Current Operations", icon: "person.3", color: .axWarning) { viewModel.queryText = "db.currentOp()" },
+                AXMenuItem("Collection Stats", icon: "chart.bar.doc.horizontal", color: .teal) { viewModel.queryText = "db.getCollectionNames().map(c => ({name: c, ...db[c].stats()}))" },
+            ]
+        default: // MySQL, MariaDB, etc.
+            return [
+                AXMenuItem("SHOW TABLES", icon: "list.bullet", color: .mint) { viewModel.queryText = "SHOW TABLES" },
+                AXMenuItem("SHOW DATABASES", icon: "cylinder.split.1x2", color: .orange) { viewModel.queryText = "SHOW DATABASES" },
+                AXMenuItem("DESCRIBE table", icon: "info.circle", color: .axAccentGreen) { viewModel.queryText = "DESCRIBE " },
+                AXMenuItem("SHOW CREATE TABLE", icon: "text.alignleft", color: .cyan) { viewModel.queryText = "SHOW CREATE TABLE " },
+                AXMenuItem("SHOW PROCESSLIST", icon: "person.3", color: .axWarning) { viewModel.queryText = "SHOW PROCESSLIST" },
+                AXMenuItem("SHOW INDEX FROM ...", icon: "key", color: .yellow) { viewModel.queryText = "SHOW INDEX FROM " },
+                AXMenuItem("SHOW TABLE STATUS", icon: "chart.bar.doc.horizontal", color: .teal) { viewModel.queryText = "SHOW TABLE STATUS" },
+                AXMenuItem("SHOW VARIABLES", icon: "gearshape", color: .orange) { viewModel.queryText = "SHOW VARIABLES LIKE '%%'" },
+            ]
+        }
+    }
+
+    private var adminTemplates: [AXMenuItem] {
+        let dbType = viewModel.database.type
+        switch dbType {
+        case .postgresql, .cockroachdb:
+            return [
+                AXMenuItem("BEGIN / COMMIT", icon: "lock.shield", color: .indigo) { viewModel.queryText = "BEGIN;\n\n-- your queries here\n\nCOMMIT;" },
+                AXMenuItem("EXPLAIN ANALYZE", icon: "gauge.with.dots.needle.33percent", color: .axWarning) { viewModel.queryText = "EXPLAIN ANALYZE SELECT * FROM " },
+                AXMenuItem("VACUUM", icon: "wand.and.stars", color: .orange) { viewModel.queryText = "VACUUM ANALYZE " },
+                AXMenuItem("REINDEX", icon: "wrench.and.screwdriver", color: .purple) { viewModel.queryText = "REINDEX TABLE " },
+            ]
+        case .redis:
+            return [
+                AXMenuItem("BGSAVE", icon: "externaldrive", color: .indigo) { viewModel.queryText = "BGSAVE" },
+                AXMenuItem("BGREWRITEAOF", icon: "wand.and.stars", color: .orange) { viewModel.queryText = "BGREWRITEAOF" },
+                AXMenuItem("SLOWLOG GET", icon: "gauge.with.dots.needle.33percent", color: .axWarning) { viewModel.queryText = "SLOWLOG GET 10" },
+                AXMenuItem("MEMORY DOCTOR", icon: "checkmark.shield", color: .axSuccess) { viewModel.queryText = "MEMORY DOCTOR" },
+            ]
+        case .mongodb:
+            return [
+                AXMenuItem("Compact Collection", icon: "wand.and.stars", color: .orange) { viewModel.queryText = "db.runCommand({compact: ''})" },
+                AXMenuItem("Repair Database", icon: "wrench.and.screwdriver", color: .purple) { viewModel.queryText = "db.repairDatabase()" },
+                AXMenuItem("Profiling", icon: "gauge.with.dots.needle.33percent", color: .axWarning) { viewModel.queryText = "db.setProfilingLevel(1, {slowms: 100})" },
+            ]
+        default: // MySQL, MariaDB
+            return [
+                AXMenuItem("BEGIN / COMMIT", icon: "lock.shield", color: .indigo) { viewModel.queryText = "BEGIN;\n\n-- your queries here\n\nCOMMIT;" },
+                AXMenuItem("EXPLAIN", icon: "gauge.with.dots.needle.33percent", color: .axWarning) { viewModel.queryText = "EXPLAIN SELECT * FROM " },
+                AXMenuItem("OPTIMIZE TABLE", icon: "wand.and.stars", color: .orange) { viewModel.queryText = "OPTIMIZE TABLE " },
+                AXMenuItem("CHECK TABLE", icon: "checkmark.shield", color: .axSuccess) { viewModel.queryText = "CHECK TABLE " },
+                AXMenuItem("REPAIR TABLE", icon: "wrench.and.screwdriver", color: .purple) { viewModel.queryText = "REPAIR TABLE " },
+            ]
+        }
+    }
 
     // Query results, error panel, results table, SQL formatter,
     // export helpers → DBSQLConsoleSection+Results.swift

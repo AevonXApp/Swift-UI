@@ -39,12 +39,12 @@ class CacheViewModel: ObservableObject {
             SiteCacheStatus(type: .browser, enabled: true),
         ]
         
-        browserCacheRules = [
-            BrowserCacheRule(fileTypes: "*.jpg, *.png, *.gif, *.webp", duration: "30 days", cacheControl: "public"),
-            BrowserCacheRule(fileTypes: "*.css, *.js", duration: "7 days", cacheControl: "public, no-transform"),
-            BrowserCacheRule(fileTypes: "*.woff, *.woff2", duration: "1 year", cacheControl: "public, immutable"),
-            BrowserCacheRule(fileTypes: "*.svg, *.ico", duration: "30 days", cacheControl: "public"),
-        ]
+        // Read real browser cache rules from config
+        await detectPathsIfNeeded()
+        let configPath = resolveConfigPath()
+        let cacheCmd = "sudo grep -A2 'location.*\\.' \(configPath) 2>/dev/null | grep -E 'expires|add_header.*Cache' || true"
+        let cacheOutput = await SSHBridge.shared.executeAsync(serverID: serverId, command: cacheCmd)
+        browserCacheRules = parseBrowserCacheRules(cacheOutput)
     }
 
     func purgeSpecificCache(_ type: SiteCacheType) async {
@@ -67,6 +67,42 @@ class CacheViewModel: ObservableObject {
         await detectPathsIfNeeded()
         _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: bridge.purgeAllCachesCmdRouted(engine: engine, cacheDir: serverPaths.cacheDir))
         GlobalToastManager.shared.showSuccess("All caches purged")
+    }
+
+    private func resolveConfigPath() -> String {
+        let sa = engine == "apache" ? serverPaths.apacheSitesAvailable : serverPaths.nginxSitesAvailable
+        if engine == "apache" { return "\(sa)/\(domain).conf" }
+        if serverPaths.serverType == "bt_panel" || sa.contains("/www/server") || sa.contains("/conf.d") || sa.contains("/vhost") {
+            return "\(sa)/\(domain).conf"
+        }
+        return "\(sa)/\(domain)"
+    }
+
+    private func parseBrowserCacheRules(_ output: String) -> [BrowserCacheRule] {
+        // Parse lines like "expires 30d;" and "add_header Cache-Control "public";"
+        let lines = output.components(separatedBy: "\n").map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+        var rules: [BrowserCacheRule] = []
+        var currentDuration = ""
+        var currentCacheControl = ""
+        for line in lines {
+            if line.hasPrefix("expires") {
+                let val = line.replacingOccurrences(of: "expires", with: "").trimmingCharacters(in: .whitespacesAndNewlines).replacingOccurrences(of: ";", with: "")
+                currentDuration = val
+            } else if line.contains("Cache-Control") {
+                let parts = line.components(separatedBy: "\"")
+                if parts.count >= 2 { currentCacheControl = parts[1] }
+            }
+            if !currentDuration.isEmpty {
+                rules.append(BrowserCacheRule(fileTypes: "static assets", duration: currentDuration, cacheControl: currentCacheControl.isEmpty ? "—" : currentCacheControl))
+                currentDuration = ""
+                currentCacheControl = ""
+            }
+        }
+        // Fallback: if no rules detected, show a helpful message
+        if rules.isEmpty {
+            rules.append(BrowserCacheRule(fileTypes: "No cache rules configured", duration: "—", cacheControl: "—"))
+        }
+        return rules
     }
 
     private func detectPathsIfNeeded() async {

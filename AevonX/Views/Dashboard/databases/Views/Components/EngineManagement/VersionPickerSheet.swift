@@ -10,16 +10,16 @@ struct VersionPickerSheet: View {
         NavigationView {
             VStack(spacing: 0) {
                 if viewModel.isFetchingVersions {
-                    ProgressView("Fetching versions...")
+                    ProgressView(L10n.Engine.fetchingVersions)
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else if viewModel.availableVersions.isEmpty {
                     VStack(spacing: AXSpacing.md) {
                         Image(systemName: "exclamationmark.triangle")
                             .font(.largeTitle)
                             .foregroundColor(.axWarning)
-                        Text("No versions available")
+                        Text(L10n.Engine.noVersionsAvailable)
                             .font(AXTypography.headline)
-                        Text("Could not fetch version information.")
+                        Text(L10n.Engine.couldNotFetchVersions)
                             .font(AXTypography.body)
                             .foregroundColor(.axTextMuted)
                     }
@@ -39,7 +39,7 @@ struct VersionPickerSheet: View {
                                         
                                         HStack(spacing: 6) {
                                             if version.isLTS {
-                                                Text("LTS")
+                                                Text(L10n.Engine.lts)
                                                     .font(AXTypography.caption)
                                                     .padding(.horizontal, 6)
                                                     .padding(.vertical, 2)
@@ -49,7 +49,7 @@ struct VersionPickerSheet: View {
                                             }
                                             
                                             if version.isRecommended {
-                                                Text("Recommended")
+                                                Text(L10n.Engine.recommended)
                                                     .font(AXTypography.caption)
                                                     .padding(.horizontal, 6)
                                                     .padding(.vertical, 2)

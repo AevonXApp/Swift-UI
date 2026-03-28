@@ -33,6 +33,15 @@ class SiteCloningViewModel: ObservableObject {
         self.engine = engine
     }
 
+    /// Resolve sites-available / sites-enabled based on the engine type
+    private var sitesAvailable: String {
+        engine == "apache" ? serverPaths.apacheSitesAvailable : serverPaths.nginxSitesAvailable
+    }
+
+    private var sitesEnabled: String {
+        engine == "apache" ? serverPaths.apacheSitesEnabled : serverPaths.nginxSitesEnabled
+    }
+
     func cloneSite() async {
         guard !targetDomain.isEmpty else { return }
         isCloning = true; cloningProgress = "Cloning files..."
@@ -42,8 +51,8 @@ class SiteCloningViewModel: ObservableObject {
             source: domain,
             target: targetDomain,
             docRoot: docRoot,
-            sitesAvailable: serverPaths.nginxSitesAvailable,
-            sitesEnabled: serverPaths.nginxSitesEnabled,
+            sitesAvailable: sitesAvailable,
+            sitesEnabled: sitesEnabled,
             webOwnership: serverPaths.webOwnership
         )
         for cmd in cmds {
@@ -66,8 +75,8 @@ class SiteCloningViewModel: ObservableObject {
             source: domain,
             target: stagingDomain,
             docRoot: docRoot,
-            sitesAvailable: serverPaths.nginxSitesAvailable,
-            sitesEnabled: serverPaths.nginxSitesEnabled,
+            sitesAvailable: sitesAvailable,
+            sitesEnabled: sitesEnabled,
             webOwnership: serverPaths.webOwnership
         )
         for cmd in cmds {
@@ -84,11 +93,24 @@ class SiteCloningViewModel: ObservableObject {
         defer { isCloning = false; cloningProgress = "" }
         await detectPathsIfNeeded()
         let ts = ISO8601DateFormatter().string(from: Date()).replacingOccurrences(of: ":", with: "-")
-        let cmds = bridge.exportMigrationCmds(domain: domain, docRoot: docRoot, sitesAvailable: serverPaths.nginxSitesAvailable, timestamp: ts)
+        var cmds = bridge.exportMigrationCmds(domain: domain, docRoot: docRoot, sitesAvailable: sitesAvailable, timestamp: ts)
+
+        // If user wants DB included, inject a mysqldump before the tar step
+        if includeDBInExport {
+            let exportDir = "/tmp/aevonx_migration_\(domain)_\(ts)"
+            let dbDumpCmd = "DB_NAME=$(grep -oP \"define\\\\(\\s*'DB_NAME'\\s*,\\s*'\\\\K[^']+\" \(docRoot)/wp-config.php 2>/dev/null || echo ''); " +
+                "if [ -n \"$DB_NAME\" ]; then sudo mysqldump --single-transaction \"$DB_NAME\" 2>/dev/null | gzip > \(exportDir)/database.sql.gz; fi"
+            // Insert before the tar command (second to last)
+            if cmds.count >= 2 {
+                cmds.insert(dbDumpCmd, at: cmds.count - 2)
+            }
+        }
+
         for cmd in cmds {
             _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
         }
-        exportPath = "\(serverPaths.backupDir)/\(domain)_migration_\(ts).tar.gz"
+        // Go ExportForMigrationCmds creates archive at /tmp/aevonx_migration_{domain}_{ts}.tar.gz
+        exportPath = "/tmp/aevonx_migration_\(domain)_\(ts).tar.gz"
         GlobalToastManager.shared.showSuccess("Migration export ready")
     }
 

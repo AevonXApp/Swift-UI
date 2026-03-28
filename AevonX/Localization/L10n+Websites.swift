@@ -25,5 +25,12 @@ extension L10n {
         static let restore = s("website.restore", "Restore")
         static let goUpLevel = s("website.goUpLevel", "Go up one level")
         static let selectCurrent = s("website.selectCurrent", "Select Current")
+
+        // MARK: - Operations
+        static let deletedSuccessfully = s("website.deletedSuccessfully", "Website deleted successfully")
+        static let deleteFailed = s("website.deleteFailed", "Failed to delete website")
+        static let phpFpmRestarted = s("website.phpFpmRestarted", "PHP-FPM restarted")
+        static let pm2Restarted = s("website.pm2Restarted", "PM2 restarted")
+        static let restartFailed = s("website.restartFailed", "Restart failed")
     }
 }

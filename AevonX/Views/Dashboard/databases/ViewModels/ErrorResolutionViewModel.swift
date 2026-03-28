@@ -100,8 +100,10 @@ public class ErrorResolutionViewModel: ObservableObject {
     }
     
     public func retryOriginalStep() {
-        // This would communicate back to DatabaseInstallationService to retry
-        // Implementation depends on how we integrate this View
+        state = .idle
+        errorMessage = nil
+        analysis = nil
+        Task { await startAnalysis() }
     }
 }
 

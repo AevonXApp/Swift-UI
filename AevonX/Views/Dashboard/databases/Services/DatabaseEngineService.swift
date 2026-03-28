@@ -80,12 +80,18 @@ public actor DatabaseEngineService {
 
     public func enableService(type: DatabaseType, serverId: String) async throws {
         let cmd = bridge.enableOnBootCmd(engine: type.rawValue)
-        _ = await ssh.executeAsync(serverID: serverId, command: cmd)
+        let result = await ssh.executeAsync(serverID: serverId, command: cmd)
+        if result.lowercased().contains("error") || result.lowercased().contains("failed") {
+            throw DatabaseServiceError.operationFailed(L10n.Service.enableFailed)
+        }
     }
 
     public func disableService(type: DatabaseType, serverId: String) async throws {
         let cmd = bridge.disableOnBootCmd(engine: type.rawValue)
-        _ = await ssh.executeAsync(serverID: serverId, command: cmd)
+        let result = await ssh.executeAsync(serverID: serverId, command: cmd)
+        if result.lowercased().contains("error") || result.lowercased().contains("failed") {
+            throw DatabaseServiceError.operationFailed(L10n.Service.disableFailed)
+        }
     }
 
     public func getServiceStatus(type: DatabaseType, serverId: String) async -> BridgeServiceStatus {

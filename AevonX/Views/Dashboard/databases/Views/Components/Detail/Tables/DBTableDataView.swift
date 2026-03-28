@@ -82,10 +82,10 @@ struct DBTableDataView: View {
                     .font(AXTypography.largeTitle)
                     .foregroundColor(.axTextMuted.opacity(0.4))
             }
-            Text("No Data")
+            Text(L10n.Database.noData)
                 .font(AXTypography.title3).fontWeight(.bold)
                 .foregroundColor(.axTextPrimary)
-            Text("This table is empty")
+            Text(L10n.Database.tableIsEmpty)
                 .font(AXTypography.subheadline)
                 .foregroundColor(.axTextMuted)
             Button {
@@ -94,7 +94,7 @@ struct DBTableDataView: View {
                 HStack(spacing: AXSpacing.xs) {
                     Image(systemName: "plus")
                         .font(AXTypography.caption)
-                    Text("Insert First Row")
+                    Text(L10n.Database.insertFirstRow)
                         .font(AXTypography.subheadline).fontWeight(.semibold)
                 }
                 .foregroundColor(.white)
@@ -118,7 +118,7 @@ struct DBTableDataView: View {
                     Image(systemName: "magnifyingglass")
                         .font(AXTypography.footnote)
                         .foregroundColor(.axTextMuted)
-                    TextField("Search rows...", text: $viewModel.dataSearchText)
+                    TextField(L10n.Database.searchRows, text: $viewModel.dataSearchText)
                         .font(AXTypography.subheadline)
                         .foregroundColor(.axTextPrimary)
                         .textFieldStyle(.plain)
@@ -151,7 +151,7 @@ struct DBTableDataView: View {
                     HStack(spacing: AXSpacing.xxs) {
                         Image(systemName: "number")
                             .font(AXTypography.caption2)
-                        Text("\(displayCount) rows")
+                        Text(L10n.Database.rowCountDisplay(displayCount))
                     }
                     .font(AXTypography.caption)
                     .foregroundColor(.axTextMuted)
@@ -180,7 +180,7 @@ struct DBTableDataView: View {
                         HStack(spacing: AXSpacing.xxs) {
                             Image(systemName: "trash")
                                 .font(AXTypography.caption)
-                            Text("Delete \(viewModel.selectedRows.count)")
+                            Text(L10n.Database.deleteCount(viewModel.selectedRows.count))
                                 .font(AXTypography.footnote).fontWeight(.semibold)
                         }
                         .foregroundColor(.axError)
@@ -197,7 +197,7 @@ struct DBTableDataView: View {
                     HStack(spacing: AXSpacing.xxs) {
                         Image(systemName: "plus")
                             .font(AXTypography.caption)
-                        Text("Add Row")
+                        Text(L10n.Database.addRow)
                             .font(AXTypography.footnote).fontWeight(.semibold)
                     }
                     .foregroundColor(.axAccentGreen)
@@ -215,32 +215,32 @@ struct DBTableDataView: View {
                 // Export
                 if let result = viewModel.browseResult, !result.rows.isEmpty {
                     AXActionMenu(sections: [
-                        AXMenuSection("Data", items: [
-                            AXMenuItem("Copy as CSV", icon: "tablecells", color: .axAccentBlue) {
+                        AXMenuSection(L10n.Database.data, items: [
+                            AXMenuItem(L10n.Database.copyAsCSV, icon: "tablecells", color: .axAccentBlue) {
                                 let csv = exportCSV(result)
                                 NSPasteboard.general.clearContents()
                                 NSPasteboard.general.setString(csv, forType: .string)
-                                GlobalToastManager.shared.showSuccess("Copied \(result.rows.count) rows as CSV")
+                                GlobalToastManager.shared.showSuccess(L10n.Database.copiedRowsAsCSV(result.rows.count))
                             },
-                            AXMenuItem("Copy as JSON", icon: "curlybraces", color: .orange) {
+                            AXMenuItem(L10n.Database.copyAsJSON, icon: "curlybraces", color: .orange) {
                                 let json = exportJSON(result)
                                 NSPasteboard.general.clearContents()
                                 NSPasteboard.general.setString(json, forType: .string)
-                                GlobalToastManager.shared.showSuccess("Copied \(result.rows.count) rows as JSON")
+                                GlobalToastManager.shared.showSuccess(L10n.Database.copiedRowsAsJSON(result.rows.count))
                             },
                         ]),
                         AXMenuSection("SQL", items: [
-                            AXMenuItem("Copy as SQL INSERT", icon: "chevron.left.forwardslash.chevron.right", color: .mint) {
+                            AXMenuItem(L10n.Database.copyAsSQLInsert, icon: "chevron.left.forwardslash.chevron.right", color: .mint) {
                                 let sql = exportSQL(result)
                                 NSPasteboard.general.clearContents()
                                 NSPasteboard.general.setString(sql, forType: .string)
-                                GlobalToastManager.shared.showSuccess("Copied \(result.rows.count) rows as SQL INSERT")
+                                GlobalToastManager.shared.showSuccess(L10n.Database.copiedRowsAsSQLInsert(result.rows.count))
                             },
-                            AXMenuItem("Copy as Markdown", icon: "text.document", color: .purple) {
+                            AXMenuItem(L10n.Database.copyAsMarkdown, icon: "text.document", color: .purple) {
                                 let md = exportMarkdown(result)
                                 NSPasteboard.general.clearContents()
                                 NSPasteboard.general.setString(md, forType: .string)
-                                GlobalToastManager.shared.showSuccess("Copied as Markdown table")
+                                GlobalToastManager.shared.showSuccess(L10n.Database.copiedAsMarkdownTable)
                             },
                         ]),
                     ], triggerIcon: "square.and.arrow.up", triggerSize: 26)
@@ -248,7 +248,7 @@ struct DBTableDataView: View {
 
                 // Page size
                 HStack(spacing: AXSpacing.xs) {
-                    Text("Rows:")
+                    Text(L10n.Database.rowsPerPage)
                         .font(AXTypography.caption)
                         .foregroundColor(.axTextMuted)
                     Picker("", selection: Binding(
@@ -315,7 +315,7 @@ struct DBTableDataView: View {
                         let sql = "SELECT * FROM `\(tbl)` LIMIT 100"
                         NSPasteboard.general.clearContents()
                         NSPasteboard.general.setString(sql, forType: .string)
-                        GlobalToastManager.shared.showSuccess("SELECT query copied")
+                        GlobalToastManager.shared.showSuccess(L10n.Database.selectQueryCopied)
                     },
                     onDescribe: {
                         let tbl = viewModel.selectedTable?.name ?? ""
@@ -342,6 +342,7 @@ struct DBTableDataView: View {
             guard !viewModel.dataSearchText.isEmpty else { return }
             try? await Task.sleep(nanoseconds: 300_000_000)
             guard !Task.isCancelled else { return }
+            viewModel.currentPage = 0
             await viewModel.searchData()
         }
         .sheet(isPresented: $viewModel.showRenameTable) {
@@ -351,7 +352,7 @@ struct DBTableDataView: View {
 
     func sortIndicator(_ sortCol: String) -> some View {
         HStack(spacing: AXSpacing.xxs) {
-            Text("Sorted:")
+            Text(L10n.Database.sorted)
                 .font(AXTypography.caption)
                 .foregroundColor(.axTextMuted)
             Text(sortCol)
@@ -452,12 +453,12 @@ struct DBTableDataView: View {
                             AXActionMenu(sections: [
                                 AXMenuSection(items: {
                                     var items: [AXMenuItem] = [
-                                        AXMenuItem("Hide Column", icon: "eye.slash", color: .axTextMuted) {
+                                        AXMenuItem(L10n.Database.hideColumn, icon: "eye.slash", color: .axTextMuted) {
                                             hiddenColumns.insert(col)
                                         },
                                     ]
                                     if !hiddenColumns.isEmpty {
-                                        items.append(AXMenuItem("Show All Columns", icon: "eye", color: .axAccentBlue) {
+                                        items.append(AXMenuItem(L10n.Database.showAllColumns, icon: "eye", color: .axAccentBlue) {
                                             hiddenColumns.removeAll()
                                         })
                                     }

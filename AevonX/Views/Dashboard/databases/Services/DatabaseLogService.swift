@@ -29,13 +29,20 @@ public actor DatabaseLogService {
 
     /// Return LogContent for error log (used by ViewModels)
     public func readErrorLog(type: DatabaseType, lines: Int = 100, offset: Int = 0, serverId: String) async throws -> LogContent {
-        let raw = try await getErrorLog(type: type, serverId: serverId, lines: lines)
-        return LogContent(content: raw, lineCount: raw.components(separatedBy: .newlines).count)
+        // Fetch extra lines to account for offset, then trim on the Swift side
+        let raw = try await getErrorLog(type: type, serverId: serverId, lines: lines + offset)
+        let allLines = raw.components(separatedBy: .newlines)
+        let sliced = Array(allLines.dropFirst(offset))
+        let content = sliced.joined(separator: "\n")
+        return LogContent(content: content, lineCount: sliced.count)
     }
 
     /// Return LogContent for slow query log (used by ViewModels)
     public func readSlowQueryLog(type: DatabaseType, lines: Int = 100, offset: Int = 0, serverId: String) async throws -> LogContent {
-        let raw = try await getSlowQueryLog(type: type, serverId: serverId, lines: lines)
-        return LogContent(content: raw, lineCount: raw.components(separatedBy: .newlines).count)
+        let raw = try await getSlowQueryLog(type: type, serverId: serverId, lines: lines + offset)
+        let allLines = raw.components(separatedBy: .newlines)
+        let sliced = Array(allLines.dropFirst(offset))
+        let content = sliced.joined(separator: "\n")
+        return LogContent(content: content, lineCount: sliced.count)
     }
 }

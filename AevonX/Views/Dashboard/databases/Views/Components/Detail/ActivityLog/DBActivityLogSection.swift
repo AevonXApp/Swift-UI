@@ -50,12 +50,12 @@ struct DBActivityLogSection: View {
                 Image(systemName: "clock.arrow.2.circlepath")
                     .font(AXTypography.headline)
                     .foregroundColor(.axAccentBlue)
-                Text("Activity Log")
+                Text(L10n.Database.activityLog)
                     .font(AXTypography.headline)
                     .foregroundColor(.axTextPrimary)
 
                 if !viewModel.activityLog.isEmpty {
-                    Text("\(viewModel.activityLog.count) entries")
+                    Text(L10n.Database.entriesCount(viewModel.activityLog.count))
                         .font(AXTypography.caption2)
                         .foregroundColor(.axAccentBlue)
                         .padding(.horizontal, AXSpacing.sm)
@@ -68,15 +68,15 @@ struct DBActivityLogSection: View {
             Spacer()
 
             // Filter
-            Picker("Filter", selection: $filterType) {
-                Text("All").tag("all")
+            Picker(L10n.Database.all, selection: $filterType) {
+                Text(L10n.Database.all).tag("all")
                 Text(L10n.Button.create).tag("create")
-                Text("Insert").tag("insert")
-                Text("Update").tag("update")
+                Text(L10n.Database.filterInsert).tag("insert")
+                Text(L10n.Database.filterUpdate).tag("update")
                 Text(L10n.Button.delete).tag("delete")
-                Text("Alter").tag("alter")
-                Text("Query").tag("select")
-                Text("Backup").tag("backup")
+                Text(L10n.Database.filterAlter).tag("alter")
+                Text(L10n.Database.filterQuery).tag("select")
+                Text(L10n.Database.filterBackup).tag("backup")
             }
             .labelsHidden()
             .frame(width: 100)
@@ -89,7 +89,7 @@ struct DBActivityLogSection: View {
                     }.joined(separator: "\n")
                     NSPasteboard.general.clearContents()
                     NSPasteboard.general.setString(text, forType: .string)
-                    GlobalToastManager.shared.showSuccess("\(viewModel.activityLog.count) log entries copied")
+                    GlobalToastManager.shared.showSuccess(L10n.Database.logEntriesCopied(viewModel.activityLog.count))
                 } label: {
                     HStack(spacing: AXSpacing.xxs) {
                         Image(systemName: "doc.on.doc")
@@ -146,13 +146,13 @@ struct DBActivityLogSection: View {
                 Image(systemName: "line.3.horizontal.decrease.circle")
                     .font(AXTypography.largeTitle)
                     .foregroundColor(.axTextMuted.opacity(0.4))
-                Text("No matching entries")
+                Text(L10n.Database.noMatchingEntries)
                     .font(AXTypography.subheadline)
                     .foregroundColor(.axTextMuted)
                 Button {
                     filterType = "all"
                 } label: {
-                    Text("Clear Filter")
+                    Text(L10n.Database.clearFilter)
                         .font(AXTypography.caption)
                         .foregroundColor(.axAccentBlue)
                 }
@@ -171,10 +171,10 @@ struct DBActivityLogSection: View {
             Image(systemName: "clock")
                 .font(AXTypography.largeTitle)
                 .foregroundColor(.axTextMuted.opacity(0.4))
-            Text("No Activity Yet")
+            Text(L10n.Database.noActivityYet)
                 .font(AXTypography.headline)
                 .foregroundColor(.axTextPrimary)
-            Text("Actions you perform will be logged here")
+            Text(L10n.Database.actionsLoggedHere)
                 .font(AXTypography.subheadline)
                 .foregroundColor(.axTextMuted)
             Spacer()
@@ -234,17 +234,17 @@ struct DBActivityLogSection: View {
                     AXActionMenu(sections: [
                         AXMenuSection(items: {
                             var items: [AXMenuItem] = [
-                                AXMenuItem("Copy Entry", icon: "doc.on.doc", color: .axAccentBlue) {
+                                AXMenuItem(L10n.Database.copyEntry, icon: "doc.on.doc", color: .axAccentBlue) {
                                     NSPasteboard.general.clearContents()
                                     NSPasteboard.general.setString("\(entry.action): \(entry.detail)", forType: .string)
-                                    GlobalToastManager.shared.showSuccess("Log entry copied")
+                                    GlobalToastManager.shared.showSuccess(L10n.Database.logEntryCopied)
                                 },
                             ]
                             if let err = entry.errorMessage {
-                                items.append(AXMenuItem("Copy Error", icon: "exclamationmark.triangle", color: .axError) {
+                                items.append(AXMenuItem(L10n.Database.copyError, icon: "exclamationmark.triangle", color: .axError) {
                                     NSPasteboard.general.clearContents()
                                     NSPasteboard.general.setString(err, forType: .string)
-                                    GlobalToastManager.shared.showSuccess("Error message copied")
+                                    GlobalToastManager.shared.showSuccess(L10n.Database.errorMessageCopied)
                                 })
                             }
                             return items

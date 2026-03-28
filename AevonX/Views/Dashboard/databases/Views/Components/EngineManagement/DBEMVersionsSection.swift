@@ -16,7 +16,7 @@ struct DBEMVersionsSection: View {
             VStack(spacing: AXSpacing.xl) {
                 // Page Title
                 HStack {
-                    Text("Versions")
+                    Text(L10n.Engine.versions)
                         .font(AXTypography.title)
                         .fontWeight(.bold)
                         .foregroundColor(.axTextPrimary)
@@ -39,7 +39,7 @@ struct DBEMVersionsSection: View {
                 // Current Version
                 AXGlassCard(accentColor: .axAccentBlue) {
                     VStack(alignment: .leading, spacing: AXSpacing.lg) {
-                        Text("Current Version")
+                        Text(L10n.Engine.currentVersion)
                             .font(AXTypography.headline)
                             .foregroundColor(.axTextPrimary)
 
@@ -66,13 +66,13 @@ struct DBEMVersionsSection: View {
                 AXGlassCard(accentColor: .axAccentBlue) {
                     VStack(alignment: .leading, spacing: AXSpacing.lg) {
                         HStack {
-                            Text("Available Versions")
+                            Text(L10n.Engine.availableVersions)
                                 .font(AXTypography.headline)
                                 .foregroundColor(.axTextPrimary)
 
                             Spacer()
 
-                            Button("Update to Latest") {
+                            Button(L10n.Engine.updateToLatest) {
                                 viewModel.showUpdateConfirmation()
                             }
                             .font(AXTypography.subheadline)
@@ -96,11 +96,11 @@ struct DBEMVersionsSection: View {
                             }
                         } else if viewModel.availableVersions.isEmpty {
                             VStack(spacing: AXSpacing.md) {
-                                Text("No versions fetched yet.")
+                                Text(L10n.Engine.noVersionsFetched)
                                     .font(AXTypography.subheadline)
                                     .foregroundColor(.axTextMuted)
 
-                                Button("Fetch Available Versions") {
+                                Button(L10n.Engine.fetchAvailableVersions) {
                                     Task { await viewModel.fetchAvailableVersions() }
                                 }
                                 .font(AXTypography.subheadline)
@@ -119,7 +119,7 @@ struct DBEMVersionsSection: View {
                                                 .foregroundColor(.axTextPrimary)
 
                                             if version.isLTS {
-                                                Text("LTS")
+                                                Text(L10n.Engine.lts)
                                                     .font(AXTypography.caption2)
                                                     .fontWeight(.bold)
                                                     .foregroundColor(.axAccentBlue)
@@ -130,7 +130,7 @@ struct DBEMVersionsSection: View {
                                             }
 
                                             if version.isRecommended {
-                                                Text("Recommended")
+                                                Text(L10n.Engine.recommended)
                                                     .font(AXTypography.caption2)
                                                     .fontWeight(.bold)
                                                     .foregroundColor(.axAccentGreen)
@@ -141,7 +141,7 @@ struct DBEMVersionsSection: View {
                                             }
 
                                             if version.version == viewModel.engineInfo?.version {
-                                                Text("Installed")
+                                                Text(L10n.Engine.installed)
                                                     .font(AXTypography.caption2)
                                                     .fontWeight(.bold)
                                                     .foregroundColor(.axTextMuted)
@@ -153,7 +153,7 @@ struct DBEMVersionsSection: View {
                                         }
 
                                         if let date = version.releaseDate {
-                                            Text("Released \(date, style: .date)")
+                                            Text(L10n.Engine.releasedDate(date))
                                                 .font(AXTypography.caption)
                                                 .foregroundColor(.axTextMuted)
                                         }

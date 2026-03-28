@@ -252,6 +252,12 @@ struct AXLaunchStep3DomainPath: View {
                     .stroke(Color.axBorder, lineWidth: 1)
             )
 
+            if !viewModel.isValidRemoteAppName {
+                Text("Invalid app name: avoid paths with \"..\" or shell characters")
+                    .font(AXTypography.caption)
+                    .foregroundColor(.axError)
+            }
+
             Text(L10n.AXLaunch.fullPath + ": " + viewModel.fullRemotePath)
                 .font(AXTypography.caption)
                 .foregroundColor(.axTextMuted)

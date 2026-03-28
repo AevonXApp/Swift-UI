@@ -379,7 +379,17 @@ struct UnifiedDatabaseDetailView: View {
         default:        return
         }
 
-        _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
+        let result = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
+        if result.lowercased().contains("error") || result.lowercased().contains("failed") {
+            let msg: String
+            switch action {
+            case "start":   msg = L10n.Service.startFailed
+            case "stop":    msg = L10n.Service.stopFailed
+            case "restart": msg = L10n.Service.restartFailed
+            default:        msg = result
+            }
+            GlobalToastManager.shared.showError(msg)
+        }
 
         // Re-check status
         try? await Task.sleep(nanoseconds: 1_500_000_000)

@@ -161,6 +161,7 @@ public final class DatabaseDetailViewModel: ObservableObject {
     @Published public var showEditRow = false
     @Published public var editingRowIndex: Int?
     @Published public var editingRowValues: [String: String?] = [:]
+    @Published public var duplicateRowValues: [String: String]?
     @Published public var dataSearchText = ""
     @Published public var isSearching = false
 
@@ -605,28 +606,101 @@ public final class DatabaseDetailViewModel: ObservableObject {
         operationResult = .idle
     }
 
-    /// Parse raw index string from SSH into TableIndex array
+    /// Parse raw index string from SSH into TableIndex array (engine-aware)
     func parseIndexString(_ raw: String) -> [TableIndex] {
         guard !raw.isEmpty else { return [] }
+        switch database.type {
+        case .postgresql, .cockroachdb:
+            return parsePostgreSQLIndexes(raw)
+        case .sqlite:
+            return parseSQLiteIndexes(raw)
+        case .mongodb:
+            return parseMongoDBIndexes(raw)
+        default:
+            return parseMySQLIndexes(raw)
+        }
+    }
+
+    /// MySQL/MariaDB: SHOW INDEX output — tab-separated columns
+    /// Format: Table | Non_unique | Key_name | Seq | Column_name | ...
+    private func parseMySQLIndexes(_ raw: String) -> [TableIndex] {
         var indexes: [TableIndex] = []
-        let lines = raw.components(separatedBy: .newlines)
-        for line in lines {
+        for line in raw.components(separatedBy: .newlines) {
             let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
             guard !trimmed.isEmpty else { continue }
             let parts = trimmed.components(separatedBy: "\t").filter { !$0.isEmpty }
-            if parts.count >= 2 {
-                let name = parts.count > 2 ? parts[2] : parts[0]
-                let colName = parts.count > 4 ? parts[4] : parts.last ?? ""
-                let isUnique = parts.count > 1 ? parts[1] == "0" : false
-                let existing = indexes.firstIndex { $0.name == name }
-                if let idx = existing {
-                    let updated = indexes[idx]
-                    var cols = updated.columns
+            if parts.count >= 5 {
+                let name = parts[2]
+                let colName = parts[4]
+                let isUnique = parts[1] == "0"
+                if let idx = indexes.firstIndex(where: { $0.name == name }) {
+                    var cols = indexes[idx].columns
                     cols.append(colName)
-                    indexes[idx] = TableIndex(name: updated.name, columns: cols, isUnique: updated.isUnique, type: updated.type)
+                    indexes[idx] = TableIndex(name: name, columns: cols, isUnique: indexes[idx].isUnique, type: indexes[idx].type)
                 } else {
                     indexes.append(TableIndex(name: name, columns: [colName], isUnique: isUnique))
                 }
+            }
+        }
+        return indexes
+    }
+
+    /// PostgreSQL: "indexname | indexdef" from pg_indexes
+    private func parsePostgreSQLIndexes(_ raw: String) -> [TableIndex] {
+        var indexes: [TableIndex] = []
+        for line in raw.components(separatedBy: .newlines) {
+            let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !trimmed.isEmpty else { continue }
+            let parts = trimmed.components(separatedBy: "|").map { $0.trimmingCharacters(in: .whitespaces) }
+            guard parts.count >= 2 else { continue }
+            let name = parts[0]
+            let indexDef = parts[1]
+            let isUnique = indexDef.lowercased().contains("unique")
+            // Extract columns from "... (col1, col2)" pattern
+            var columns: [String] = []
+            if let parenStart = indexDef.range(of: "(", options: .backwards),
+               let parenEnd = indexDef.range(of: ")", options: .backwards) {
+                let colStr = indexDef[parenStart.upperBound..<parenEnd.lowerBound]
+                columns = colStr.components(separatedBy: ",").map { $0.trimmingCharacters(in: .whitespaces) }
+            }
+            let indexType = indexDef.lowercased().contains("using btree") ? "BTREE" :
+                            indexDef.lowercased().contains("using hash") ? "HASH" :
+                            indexDef.lowercased().contains("using gin") ? "GIN" :
+                            indexDef.lowercased().contains("using gist") ? "GiST" : "BTREE"
+            indexes.append(TableIndex(name: name, columns: columns, isUnique: isUnique, type: indexType))
+        }
+        return indexes
+    }
+
+    /// SQLite: PRAGMA index_list output — pipe-separated: seq|name|unique|origin|partial
+    private func parseSQLiteIndexes(_ raw: String) -> [TableIndex] {
+        var indexes: [TableIndex] = []
+        for line in raw.components(separatedBy: .newlines) {
+            let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !trimmed.isEmpty else { continue }
+            let parts = trimmed.components(separatedBy: "|")
+            guard parts.count >= 3 else { continue }
+            let name = parts[1]
+            let isUnique = parts[2] == "1"
+            indexes.append(TableIndex(name: name, columns: [], isUnique: isUnique))
+        }
+        return indexes
+    }
+
+    /// MongoDB: JSON per line from getIndexes()
+    private func parseMongoDBIndexes(_ raw: String) -> [TableIndex] {
+        var indexes: [TableIndex] = []
+        for line in raw.components(separatedBy: .newlines) {
+            let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard trimmed.hasPrefix("{"), let data = trimmed.data(using: .utf8) else { continue }
+            if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
+                let name = json["name"] as? String ?? ""
+                let isUnique = json["unique"] as? Bool ?? false
+                var columns: [String] = []
+                if let key = json["key"] as? [String: Any] {
+                    columns = Array(key.keys)
+                }
+                indexes.append(TableIndex(name: name, columns: columns, isUnique: isUnique))
             }
         }
         return indexes
