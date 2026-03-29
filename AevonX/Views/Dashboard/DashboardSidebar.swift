@@ -113,6 +113,19 @@ struct DashboardSidebar: View {
                         .foregroundColor(.axTextMuted)
                         .lineLimit(1)
                 }
+
+                if viewModel.isConnected {
+                    HStack(spacing: AXSpacing.xs) {
+                        SidebarMiniBar(label: "CPU", value: viewModel.cpuUsage,
+                            color: viewModel.cpuUsage < 50 ? .axAccentBlue : viewModel.cpuUsage < 80 ? .axWarning : .axError)
+                        SidebarMiniBar(label: "RAM", value: viewModel.memoryUsage,
+                            color: viewModel.memoryUsage < 60 ? .axAccentGreen : viewModel.memoryUsage < 85 ? .axWarning : .axError)
+                        SidebarMiniBar(label: "DSK", value: viewModel.diskUsage,
+                            color: viewModel.diskUsage < 70 ? .axAccentGreen : viewModel.diskUsage < 90 ? .axWarning : .axError)
+                    }
+                    .padding(.top, 3)
+                    .transition(.opacity.combined(with: .move(edge: .top)))
+                }
             }
 
             Spacer(minLength: 0)
@@ -471,5 +484,40 @@ struct DashboardConnectionStatusIndicator: View {
         if viewModel.isReconnecting { return "Reconnecting..." }
         if viewModel.isConnecting { return L10n.Status.connecting }
         return L10n.Status.disconnected
+    }
+}
+
+// MARK: - Sidebar Mini Stat Bar
+
+private struct SidebarMiniBar: View {
+    let label: String
+    let value: Double   // 0-100
+    let color: Color
+
+    var body: some View {
+        VStack(spacing: 2) {
+            HStack(spacing: 2) {
+                Text(label)
+                    .font(.system(size: 7, weight: .semibold))
+                    .foregroundColor(.axTextMuted)
+                Spacer()
+                Text("\(Int(value))%")
+                    .font(.system(size: 7, weight: .bold, design: .monospaced))
+                    .foregroundColor(color)
+            }
+            GeometryReader { geo in
+                ZStack(alignment: .leading) {
+                    Capsule()
+                        .fill(Color.axBackgroundTertiary)
+                    Capsule()
+                        .fill(color)
+                        .frame(width: geo.size.width * min(value / 100, 1.0))
+                        .animation(.easeInOut(duration: 0.5), value: value)
+                }
+                .frame(height: 3)
+            }
+            .frame(height: 3)
+        }
+        .frame(maxWidth: .infinity)
     }
 }

@@ -136,7 +136,7 @@ struct AevonXApp: App {
         CoreLogger.shared.info("App entering foreground", module: "AppLifecycle")
 
         // Check auto-lock timeout
-        await MainActor.run { settingsManager.checkAutoLock() }
+        await MainActor.run { AppSettingsManager.shared.checkAutoLock() }
 
         // Resume any suspended operations
         await resumeBackgroundOperations()
@@ -147,7 +147,7 @@ struct AevonXApp: App {
         CoreLogger.shared.info("App entering background", module: "AppLifecycle")
 
         // Record the time for auto-lock timeout calculation
-        await MainActor.run { settingsManager.updateLastActiveTime() }
+        await MainActor.run { AppSettingsManager.shared.updateLastActiveTime() }
 
         // Pause non-essential operations
         await pauseForegroundOperations()
@@ -195,8 +195,9 @@ struct AevonXApp: App {
             queue: .main
         ) { _ in
             Task { @MainActor in
-                if self.settingsManager.lockOnMinimize && self.settingsManager.appLockEnabled {
-                    self.settingsManager.lock()
+                let mgr = AppSettingsManager.shared
+                if mgr.lockOnMinimize && mgr.appLockEnabled {
+                    mgr.lock()
                 }
             }
         }
@@ -228,8 +229,9 @@ struct AevonXApp: App {
     /// it on wake and trigger automatic reconnection.
     private func deviceWillSleep() async {
         CoreLogger.shared.info("Device going to sleep — keeping connections alive", module: "AppLifecycle")
-        if settingsManager.lockOnSleep && settingsManager.appLockEnabled {
-            await MainActor.run { settingsManager.lock() }
+        let mgr = AppSettingsManager.shared
+        if mgr.lockOnSleep && mgr.appLockEnabled {
+            await MainActor.run { mgr.lock() }
         }
     }
     
@@ -248,7 +250,7 @@ struct AevonXApp: App {
         CoreLogger.shared.info("App terminating - cleaning up connections", module: "AppLifecycle")
 
         // Clear clipboard if setting is enabled
-        if settingsManager.clearClipboardOnExit {
+        if AppSettingsManager.shared.clearClipboardOnExit {
             #if os(macOS)
             NSPasteboard.general.clearContents()
             #endif

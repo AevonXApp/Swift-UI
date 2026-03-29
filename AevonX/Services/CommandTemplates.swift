@@ -150,12 +150,12 @@ public enum OverviewCommand {
             return "cat /sys/class/thermal/thermal_zone*/temp 2>/dev/null | head -1 | awk '{print $1/1000}' || sensors 2>/dev/null | grep 'Core 0' | awk '{print $3}' | sed 's/+//;s/°C//' || echo 'N/A'"
             
         case .websiteCount:
-            // Count nginx/apache vhosts
-            return "(ls /etc/nginx/sites-enabled/ 2>/dev/null; ls /etc/apache2/sites-enabled/ 2>/dev/null; ls /etc/httpd/conf.d/ 2>/dev/null) | wc -l"
+            // Count websites — BT Panel SQLite (authoritative), fallback to config counting
+            return "if [ -f /www/server/panel/data/default.db ]; then sqlite3 /www/server/panel/data/default.db \"SELECT count(*) FROM sites;\" 2>/dev/null || echo '0'; elif [ -d /etc/nginx/sites-enabled ]; then ls -1 /etc/nginx/sites-enabled/ 2>/dev/null | grep -vcE '(default|^$)'; elif [ -d /etc/nginx/conf.d ]; then ls -1 /etc/nginx/conf.d/*.conf 2>/dev/null | grep -vcE '(default|^$)'; elif [ -d /etc/apache2/sites-enabled ]; then ls -1 /etc/apache2/sites-enabled/ 2>/dev/null | grep -vcE '(000-default|default)'; elif [ -d /usr/local/lsws/conf/vhosts ]; then ls -1 /usr/local/lsws/conf/vhosts/ 2>/dev/null | wc -l; else echo '0'; fi"
             
         case .serviceCount:
-            // Count active systemd services
-            return "systemctl list-units --type=service --state=active 2>/dev/null | grep -c '.service' || echo '0'"
+            // Count known active server management services (nginx, mysql, redis, php-fpm, docker, etc.)
+            return #"c=0; for s in nginx apache2 httpd mysql mysqld mariadb postgresql redis redis-server memcached docker containerd pm2 supervisor haproxy varnish; do systemctl is-active "$s" 2>/dev/null | grep -q "^active" && c=$((c+1)); done; php=$(systemctl list-units --type=service --state=active 2>/dev/null | grep -cE 'php[0-9.]+-fpm' || echo 0); echo $((c+php))"#
         }
     }
     

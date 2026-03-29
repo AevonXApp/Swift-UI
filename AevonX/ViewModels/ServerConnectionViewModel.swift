@@ -219,7 +219,37 @@ public class ServerConnectionViewModel: ObservableObject {
     var loadAverage: String { stats.loadAverage }
     var cpuTemperature: Double? { stats.cpuTemperature }
     var temperatureHistory: [Double] { stats.temperatureHistory }
-    
+    var totalRAMMB: Int { stats.totalRAMMB }
+    var usedRAMMB: Int { stats.usedRAMMB }
+    var totalDiskGB: Double { stats.totalDiskGB }
+    var usedDiskGB: Double { stats.usedDiskGB }
+    var cpuCores: Int { stats.cpuCores }
+    var swapUsage: Double { stats.swapUsage }
+    var swapTotalMB: Int { stats.swapTotalMB }
+    var swapUsedMB: Int { stats.swapUsedMB }
+    var netRxGB: Double { stats.netRxGB }
+    var netTxGB: Double { stats.netTxGB }
+    var cpuModelName: String { stats.cpuModelName }
+    var cpuCoreLoads: [Double] { stats.cpuCoreLoads }
+    var cpuUserPct: Double { stats.cpuUserPct }
+    var cpuSystemPct: Double { stats.cpuSystemPct }
+    var cpuIowaitPct: Double { stats.cpuIowaitPct }
+    var cpuIdlePct: Double { stats.cpuIdlePct }
+    var cpuStealPct: Double { stats.cpuStealPct }
+    var processesTotal: Int { stats.processesTotal }
+    var processesRunning: Int { stats.processesRunning }
+    var ramAvailableMB: Int { stats.ramAvailableMB }
+    var ramBuffCacheMB: Int { stats.ramBuffCacheMB }
+    var netRxSpeedKBs: Double { stats.netRxSpeedKBs }
+    var netTxSpeedKBs: Double { stats.netTxSpeedKBs }
+    var netRxSpeedHistory: [Double] { stats.netRxSpeedHistory }
+    var netTxSpeedHistory: [Double] { stats.netTxSpeedHistory }
+
+    /// Trigger per-core CPU detail fetch (delegates to stats VM)
+    func fetchCPUCores() async {
+        await stats.fetchCPUCores()
+    }
+
     var databases: [DatabaseInfo] { databasesVM.databases }
     var isLoadingDatabases: Bool { databasesVM.isLoading }
     var databaseError: String? { databasesVM.error }
@@ -229,8 +259,18 @@ public class ServerConnectionViewModel: ObservableObject {
     }
     
     var websites: [AevonXCoreBridge.CoreWebsiteInfo] { websitesVM.websites }
-    var websiteCount: Int { websitesVM.count > 0 ? websitesVM.count : websiteInventoryCount }
-    var databaseCount: Int { databasesVM.databases.count > 0 ? databasesVM.databases.count : databaseInventoryCount }
+    /// Website count — prefer inventory SSH count (authoritative via BT Panel DB / config counting),
+    /// only use websitesVM when it has actually loaded data from the Websites tab.
+    var websiteCount: Int {
+        if websiteInventoryCount > 0 { return websiteInventoryCount }
+        return websitesVM.count
+    }
+    /// Count of SQL databases only (PostgreSQL + MySQL) — excludes Redis/cache.
+    /// Prefer inventory SSH count (authoritative), fallback to loaded database list.
+    var databaseCount: Int {
+        if databaseInventoryCount > 0 { return databaseInventoryCount }
+        return databasesVM.databases.filter { $0.type != .redis }.count
+    }
     var isLoadingWebsites: Bool { websitesVM.isLoading }
     
     var isRestartConfirming: Bool {
@@ -275,6 +315,9 @@ public class ServerConnectionViewModel: ObservableObject {
     @Published private(set) var applicationCount: Int = 0
     @Published private(set) var websiteInventoryCount: Int = 0
     @Published private(set) var databaseInventoryCount: Int = 0
+
+    /// OS detected via SSH (fallback when server.os is nil/Unknown)
+    @Published private(set) var detectedOS: String?
     
     // MARK: - Published Properties - Terminal Sessions
     
@@ -1142,37 +1185,154 @@ public class ServerConnectionViewModel: ObservableObject {
         databasesVM.reset()
         websitesVM.reset()
         applicationCount = 0
+        websiteInventoryCount = 0
+        databaseInventoryCount = 0
+        detectedOS = nil
     }
     
     /// Updates inventory counts from Go SSH data
     private func updateInventoryCounts() async {
-        // Count applications/services (1 SSH command)
-        if let serviceResult = try? await executeCommand(.overview(.serviceCount)) {
-            applicationCount = parseCount(serviceResult.stdout) ?? 0
+        // All inventory queries use Swift SSH (immediate, no Go binary needed)
+        // Single batched command: websites, databases, services — separated by ~~AX~~ delimiter
+        let inventoryBatch = [
+            // Section 0: Website count — BT Panel SQLite DB (authoritative), fallback to config counting
+            """
+            if [ -f /www/server/panel/data/default.db ]; then \
+              sqlite3 /www/server/panel/data/default.db "SELECT count(*) FROM sites;" 2>/dev/null || echo '0'; \
+            elif [ -d /etc/nginx/sites-enabled ]; then \
+              ls -1 /etc/nginx/sites-enabled/ 2>/dev/null | grep -vcE '(default|^$)'; \
+            elif [ -d /etc/nginx/conf.d ]; then \
+              ls -1 /etc/nginx/conf.d/*.conf 2>/dev/null | grep -vcE '(default|^$)'; \
+            elif [ -d /etc/apache2/sites-enabled ]; then \
+              ls -1 /etc/apache2/sites-enabled/ 2>/dev/null | grep -vcE '(000-default|default)'; \
+            elif [ -d /usr/local/lsws/conf/vhosts ]; then \
+              ls -1 /usr/local/lsws/conf/vhosts/ 2>/dev/null | wc -l; \
+            elif [ -d /usr/local/CyberCP ]; then \
+              sqlite3 /usr/local/CyberCP/CyberCP.db "SELECT count(*) FROM websiteFunctions_websites;" 2>/dev/null || echo '0'; \
+            else echo '0'; fi
+            """,
+            // Section 1: Database count — BT Panel DB (authoritative), then try MySQL + PostgreSQL
+            """
+            db=0; \
+            if [ -f /www/server/panel/data/default.db ]; then \
+              db=$(sqlite3 /www/server/panel/data/default.db "SELECT count(*) FROM databases;" 2>/dev/null || echo '0'); \
+            else \
+              mp=$(mysql -uroot -N -e 'SHOW DATABASES;' 2>/dev/null | grep -vcE '^(information_schema|performance_schema|mysql|sys|test)$' || echo '0'); \
+              pg=$(sudo -u postgres psql -t -c "SELECT count(*) FROM pg_database WHERE NOT datistemplate AND datname != 'postgres';" 2>/dev/null | tr -d ' ' || echo '0'); \
+              db=$((mp + pg)); \
+            fi; echo "$db"
+            """,
+            // Section 2: Active services count
+            """
+            c=0; \
+            for s in nginx apache2 httpd mysql mysqld mariadb postgresql redis redis-server memcached docker containerd pm2 supervisor haproxy varnish litespeed lsws openlitespeed; do \
+              systemctl is-active "$s" 2>/dev/null | grep -q "^active" && c=$((c+1)); \
+            done; \
+            php=$(systemctl list-units --type=service --state=active 2>/dev/null | grep -cE 'php[0-9.]+-fpm' || echo 0); \
+            echo $((c+php))
+            """
+        ].joined(separator: "; echo '~~AX~~'; ")
+
+        let inventoryOut = await SSHBridge.shared.executeAsync(serverID: serverId, command: inventoryBatch)
+        let invSections = inventoryOut.components(separatedBy: "~~AX~~").map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+
+        if invSections.count > 0 { websiteInventoryCount = parseCount(invSections[0]) ?? 0 }
+        if invSections.count > 1 { databaseInventoryCount = parseCount(invSections[1]) ?? 0 }
+        if invSections.count > 2 { applicationCount = parseCount(invSections[2]) ?? 0 }
+
+        // Fetch all hardware specs + network + OS in a single batched SSH call
+        // This is the Swift SSH path — works immediately without Go binary rebuild.
+        // Output format (each on its own line, delimited by markers):
+        let batchCmd = [
+            // Line 1: RAM — "total used available buff/cache" in MB
+            "free 2>/dev/null | awk '/Mem:/ {printf \"%d %d %d %d\\n\", int($2/1024), int($3/1024), int($7/1024), int($6/1024)}'",
+            // Line 2: Disk — "totalGB usedGB"
+            "df / 2>/dev/null | awk 'NR==2 {printf \"%.1f %.1f\\n\", $2/1048576, $3/1048576}'",
+            // Line 3: CPU cores
+            "nproc 2>/dev/null || echo 1",
+            // Line 4: CPU model
+            "grep -m1 'model name' /proc/cpuinfo 2>/dev/null | cut -d: -f2 | xargs || echo ''",
+            // Line 5: Network totals — "rxGB txGB"
+            "cat /proc/net/dev 2>/dev/null | awk 'NR>2 && !/lo:/ {rx+=$2; tx+=$10} END {printf \"%.2f %.2f\\n\", rx/1073741824, tx/1073741824}'",
+            // Line 6: OS pretty name
+            ". /etc/os-release 2>/dev/null && echo \"$PRETTY_NAME\" || uname -s 2>/dev/null || echo 'Unknown'",
+            // Line 7: Swap — "totalMB usedMB"
+            "free 2>/dev/null | awk '/Swap:/ {printf \"%d %d\\n\", int($2/1024), int($3/1024)}'"
+        ].joined(separator: "; echo '~~AX~~'; ")
+
+        let hwOut = await SSHBridge.shared.executeAsync(serverID: serverId, command: batchCmd)
+        let sections = hwOut.components(separatedBy: "~~AX~~").map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+
+        // Parse RAM (section 0)
+        var ramTotal = 0, ramUsed = 0, ramAvail = 0, ramBC = 0
+        if sections.count > 0 {
+            let parts = sections[0].split(separator: " ")
+            if parts.count >= 4 {
+                ramTotal = Int(parts[0]) ?? 0
+                ramUsed  = Int(parts[1]) ?? 0
+                ramAvail = Int(parts[2]) ?? 0
+                ramBC    = Int(parts[3]) ?? 0
+            }
         }
-        
-        // Count websites — lightweight ls | wc -l via Go SSH
-        let websiteStdout = await SSHBridge.shared.executeAsync(
-            serverID: serverId,
-            command: "ls -1 /etc/nginx/sites-enabled/ 2>/dev/null | grep -v default | wc -l"
-        )
-        websiteInventoryCount = parseCount(websiteStdout) ?? 0
-        
-        // Count databases — quick queries via Go SSH
-        var dbCount = 0
-        // MySQL databases
-        let mysqlStdout = await SSHBridge.shared.executeAsync(
-            serverID: serverId,
-            command: "mysql -N -e 'SHOW DATABASES;' 2>/dev/null | grep -vcE '^(information_schema|performance_schema|mysql|sys)$' || echo '0'"
-        )
-        dbCount += parseCount(mysqlStdout) ?? 0
-        // PostgreSQL databases
-        let pgStdout = await SSHBridge.shared.executeAsync(
-            serverID: serverId,
-            command: "sudo -u postgres psql -t -c 'SELECT count(*) FROM pg_database WHERE NOT datistemplate;' 2>/dev/null || echo '0'"
-        )
-        dbCount += parseCount(pgStdout) ?? 0
-        databaseInventoryCount = dbCount
+
+        // Parse Disk (section 1)
+        var diskTotal = 0.0, diskUsed = 0.0
+        if sections.count > 1 {
+            let parts = sections[1].split(separator: " ")
+            if parts.count >= 2 {
+                diskTotal = Double(parts[0]) ?? 0
+                diskUsed  = Double(parts[1]) ?? 0
+            }
+        }
+
+        // Parse CPU cores (section 2)
+        let cores = sections.count > 2 ? (Int(sections[2]) ?? 0) : 0
+
+        // Parse CPU model (section 3)
+        let cpuModel = sections.count > 3 ? sections[3] : ""
+
+        // Apply hardware specs
+        if ramTotal > 0 {
+            stats.applyHardwareSpecs(
+                totalRAMMB: ramTotal,
+                usedRAMMB: ramUsed,
+                totalDiskGB: diskTotal,
+                usedDiskGB: diskUsed,
+                cpuCores: cores,
+                ramAvailableMB: ramAvail,
+                ramBuffCacheMB: ramBC,
+                cpuModelName: cpuModel
+            )
+        }
+
+        // Parse Network totals (section 4)
+        if sections.count > 4 {
+            let netParts = sections[4].split(separator: " ")
+            if netParts.count >= 2,
+               let rxGB = Double(netParts[0]),
+               let txGB = Double(netParts[1]) {
+                stats.applyNetworkTotals(rxGB: rxGB, txGB: txGB)
+            }
+        }
+
+        // Parse OS (section 5)
+        if sections.count > 5 {
+            let osName = sections[5]
+            if !osName.isEmpty && osName != "Unknown" {
+                detectedOS = osName
+            }
+        }
+
+        // Parse Swap (section 6)
+        if sections.count > 6 {
+            let swapParts = sections[6].split(separator: " ")
+            if swapParts.count >= 2,
+               let swapTotal = Int(swapParts[0]),
+               let swapUsed = Int(swapParts[1]),
+               swapTotal > 0 {
+                stats.applySwapInfo(totalMB: swapTotal, usedMB: swapUsed)
+            }
+        }
     }
     
     private func parseCount(_ output: String) -> Int? {
