@@ -47,6 +47,7 @@ extension L10n {
         static let clear = s("button.clear", "Clear")
         static let search = s("button.search", "Search")
         static let select = s("button.select", "Select")
+        static let discard = s("button.discard", "Discard")
     }
 
     // MARK: - Form Fields (Shared.strings)
@@ -104,6 +105,7 @@ extension L10n {
         static let enabled = s("status.enabled", "Enabled")
         static let disabled = s("status.disabled", "Disabled")
         static let unknown = s("status.unknown", "Unknown")
+        static let empty = s("status.empty", "Empty")
         static let error = s("status.error", "Error")
         static let failed = s("status.failed", "Failed")
 

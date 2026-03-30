@@ -1,0 +1,341 @@
+/* Server Settings — Connection State */
+"ss.notConnected" = "Not Connected";
+"ss.connectToManage" = "Connect to your server to manage settings, services, and resources.";
+
+/* Server Settings — Hero */
+"ss.publicIP" = "Public IP";
+"ss.restartSSH" = "Restart SSH";
+"ss.checkUpdates" = "Check Updates";
+"ss.upgrade" = "Upgrade (%lld)";
+
+/* Server Settings — Server Info */
+"ss.serverInfo" = "Server Info";
+"ss.systemDetails" = "System details";
+"ss.hostname" = "Hostname";
+"ss.os" = "OS";
+"ss.kernel" = "Kernel";
+"ss.architecture" = "Architecture";
+"ss.cpu" = "CPU";
+"ss.totalRAM" = "Total RAM";
+"ss.uptime" = "Uptime";
+"ss.timezone" = "Timezone";
+"ss.noPartitions" = "No partitions found";
+
+/* Server Settings — Network Card */
+"ss.network" = "Network";
+"ss.ipDNSConfig" = "IP & DNS configuration";
+"ss.privateIP" = "Private IP";
+"ss.gateway" = "Gateway";
+"ss.dnsServers" = "DNS Servers";
+
+/* Server Settings — Connection Card */
+"ss.connection" = "Connection";
+"ss.sshConnectionDetails" = "SSH connection details";
+"ss.status" = "Status";
+
+/* Server Settings — System Card */
+"ss.system" = "System";
+"ss.swapMemory" = "Swap Memory";
+
+/* Server Settings — SSH Security */
+"ss.sshSecurity" = "SSH Security";
+"ss.sshdConfigMgmt" = "sshd_config management";
+"ss.sshPort" = "SSH Port";
+"ss.permitRootLogin" = "Permit Root Login";
+"ss.passwordAuth" = "Password Auth";
+"ss.maxAuthTries" = "Max Auth Tries";
+"ss.authorizedKeys" = "Authorized Keys";
+"ss.saveReloadSSH" = "Save & Reload SSH";
+
+/* Server Settings — SSH Security Audit */
+"ss.sshSecurityAudit" = "SSH Security Audit";
+"ss.keysLoginsHardening" = "Keys, logins, and hardening";
+"ss.noIssuesFound" = "No issues found";
+"ss.x11Forwarding" = "X11Forwarding";
+"ss.allowUsers" = "AllowUsers";
+"ss.securityScore" = "Security Score: %lld/100";
+
+/* Server Settings — SSH Keys */
+"ss.hostKeyFingerprints" = "Host Key Fingerprints";
+"ss.noHostKeys" = "No host keys found";
+"ss.pastePublicKey" = "Paste public key (ssh-rsa ...)";
+"ss.authorizedKeysCount" = "Authorized Keys (%lld)";
+"ss.bits" = "%lld bits";
+
+/* Server Settings — SSH Logins */
+"ss.failedLogins" = "Failed Logins (%lld)";
+"ss.showingLast10" = "showing last 10";
+"ss.noFailedLogins" = "No failed logins detected";
+"ss.recentLogins" = "Recent Logins";
+"ss.noRecentLogins" = "No recent logins";
+
+/* Server Settings — Firewall */
+"ss.firewall" = "Firewall";
+"ss.notDetected" = "Not detected";
+"ss.noFirewallDetected" = "No firewall detected (ufw, firewalld, or iptables)";
+"ss.addRule" = "Add Rule";
+"ss.tcp" = "TCP";
+"ss.udp" = "UDP";
+"ss.allow" = "Allow";
+"ss.deny" = "Deny";
+"ss.ssh" = "SSH";
+"ss.http" = "HTTP";
+"ss.https" = "HTTPS";
+"ss.blockIPPlaceholder" = "Block IP address...";
+"ss.block" = "Block";
+"ss.noRulesConfigured" = "No rules configured";
+"ss.action" = "Action";
+"ss.proto" = "Proto";
+"ss.source" = "Source";
+"ss.rulesCount" = "Rules (%lld)";
+
+/* Server Settings — Fail2Ban */
+"ss.fail2ban" = "Fail2Ban";
+"ss.notInstalled" = "Not installed";
+"ss.fail2banNotInstalled" = "Fail2Ban is not installed";
+"ss.installFail2banDesc" = "Install it to protect against brute-force attacks";
+"ss.noJailsConfigured" = "No jails configured";
+"ss.banned" = "Banned";
+"ss.totalBanned" = "Total Banned";
+"ss.totalFailed" = "Total Failed";
+"ss.currentlyBanned" = "Currently Banned:";
+"ss.unban" = "Unban";
+"ss.banLog" = "Ban Log";
+"ss.last20Entries" = "last 20 entries";
+"ss.noBanLogEntries" = "No ban log entries";
+"ss.jailsCount" = "%lld jails";
+
+/* Server Settings — Network Management */
+"ss.networkConnections" = "Network & Connections";
+"ss.interfaces" = "Interfaces";
+"ss.listeningPorts" = "Listening Ports";
+"ss.filterPlaceholder" = "Filter...";
+"ss.noPortsMatch" = "No ports match search";
+"ss.activeConnections" = "Active Connections";
+"ss.noActiveConnections" = "No active connections";
+"ss.local" = "Local";
+"ss.remoteAddress" = "Remote Address";
+"ss.process" = "Process";
+"ss.routingTable" = "Routing Table";
+"ss.noRoutesFound" = "No routes found";
+"ss.destination" = "Destination";
+"ss.interfaceCol" = "Interface";
+"ss.flags" = "Flags";
+"ss.dnsConfiguration" = "DNS Configuration";
+"ss.hostsFile" = "Hosts File";
+"ss.socketStatistics" = "Socket Statistics";
+"ss.interfacesPortsSummary" = "%lld interfaces · %lld ports";
+"ss.portNum" = "Port %lld";
+"ss.moreConnections" = "+ %lld more";
+
+/* Server Settings — Resource Monitor */
+"ss.resourceMonitor" = "Resource Monitor";
+"ss.realTimeMetrics" = "Real-time server metrics";
+"ss.off" = "Off";
+"ss.ram" = "RAM";
+"ss.swap" = "Swap";
+"ss.load" = "Load";
+"ss.ioWait" = "IO Wait";
+"ss.diskLatency" = "disk latency";
+"ss.processes" = "Processes";
+"ss.networkLabel" = "Network";
+"ss.temp" = "Temp";
+"ss.normal" = "Normal";
+"ss.warm" = "Warm";
+"ss.hot" = "Hot";
+"ss.diskIO" = "Disk I/O";
+"ss.sectors" = "sectors";
+"ss.total" = "total";
+"ss.topProcesses" = "Top Processes";
+"ss.pid" = "PID";
+"ss.cpuPercent" = "CPU%";
+"ss.memPercent" = "MEM%";
+"ss.command" = "Command";
+"ss.diskUsage" = "Disk Usage";
+"ss.cores" = "%lld cores";
+"ss.inodePercent" = "Inode: %lld%%";
+
+/* Server Settings — User Management */
+"ss.userManagement" = "User Management";
+"ss.systemUsersAccess" = "System users & access";
+"ss.advancedUsers" = "Advanced Users";
+"ss.activeSessions" = "Active Sessions (%lld)";
+"ss.noActiveSessions" = "No active sessions";
+"ss.groupsSudo" = "Groups & Sudo";
+"ss.sudoUsers" = "Sudo users:";
+"ss.newGroupPlaceholder" = "New group name";
+"ss.passwordStatus" = "Password Status";
+"ss.noPasswordData" = "No password data";
+"ss.unlock" = "Unlock";
+"ss.lock" = "Lock";
+"ss.revokeSudo" = "Revoke sudo";
+"ss.grantSudo" = "Grant sudo";
+"ss.diskUsagePerUser" = "Disk Usage per User";
+"ss.noDiskUsageData" = "No disk usage data";
+"ss.loginHistory" = "Login History";
+"ss.noLoginHistory" = "No login history";
+"ss.sessionsGroupsSummary" = "%lld sessions · %lld groups";
+"ss.uidLabel" = "UID:%lld";
+"ss.gidLabel" = "GID:%lld";
+"ss.changedDate" = "Changed: %@";
+
+/* Server Settings — Services */
+"ss.services" = "Services";
+"ss.searchServicesPlaceholder" = "Search services...";
+"ss.noServicesMatch" = "No services match filter";
+"ss.serviceLogs" = "Service Logs";
+"ss.lines" = "Lines";
+"ss.noLogsAvailable" = "No logs available";
+"ss.servicesCount" = "%lld services";
+"ss.serviceLogsTitle" = "Service Logs: %@";
+
+/* Server Settings — Password Management */
+"ss.passwordManagement" = "Password Management";
+"ss.changePasswords" = "Change system & database passwords";
+"ss.rootPassword" = "Root Password";
+"ss.linuxRootUser" = "Linux root user";
+"ss.mysqlRoot" = "MySQL Root";
+"ss.mysqlRootDesc" = "MySQL database root user";
+"ss.postgresql" = "PostgreSQL";
+"ss.postgresqlDesc" = "PostgreSQL postgres user";
+"ss.newPassword" = "New Password";
+"ss.confirmPassword" = "Confirm";
+
+/* Server Settings — System Control */
+"ss.systemControl" = "System Control";
+"ss.hardwareSystem" = "Hardware & System";
+"ss.totalDisk" = "Total Disk";
+"ss.virtualization" = "Virtualization";
+"ss.securityModule" = "Security Module:";
+"ss.none" = "None";
+"ss.rebootRequired" = "Reboot Required";
+"ss.powerControl" = "Power Control";
+"ss.reboot" = "Reboot";
+"ss.shutdown" = "Shutdown";
+"ss.min" = "min";
+"ss.schedule" = "Schedule";
+"ss.confirmReboot" = "Are you sure you want to reboot?";
+"ss.confirmShutdown" = "Are you sure you want to shutdown?";
+"ss.noSwapConfigured" = "No swap configured";
+"ss.sizeMB" = "Size (MB)";
+"ss.mb" = "MB";
+"ss.resizeSwap" = "Resize Swap";
+"ss.disableSwap" = "Disable Swap";
+"ss.kernelParameters" = "Kernel Parameters";
+"ss.noKernelParams" = "No kernel parameters loaded";
+"ss.scheduled" = "Scheduled: %@";
+
+/* Server Settings — Updates */
+"ss.systemUpdates" = "System Updates";
+"ss.packageUpdates" = "Package updates & security patches";
+"ss.checkForUpdates" = "Check for Updates";
+"ss.checkForUpdatesDesc" = "Scan your server for available package updates and security patches.";
+"ss.checkNow" = "Check Now";
+"ss.checkingUpdates" = "Checking for updates...";
+"ss.upToDate" = "Up to date";
+"ss.sec" = "SEC";
+"ss.update" = "Update";
+"ss.securityCount" = "%lld Security";
+"ss.totalCount" = "%lld Total";
+"ss.securityOnly" = "Security Only (%lld)";
+"ss.updateAll" = "Update All (%lld)";
+"ss.morePackages" = "+ %lld more packages";
+
+/* Server Settings — System Logs */
+"ss.systemLogs" = "System Logs";
+"ss.sourcePicker" = "Source";
+"ss.priorityPicker" = "Priority";
+"ss.servicePlaceholder" = "Service...";
+"ss.searchPlaceholder" = "Search...";
+"ss.query" = "Query";
+"ss.noLogEntries" = "No log entries";
+"ss.logFileSizes" = "Log File Sizes";
+"ss.rotateAll" = "Rotate All";
+"ss.logFilesCount" = "%lld log files";
+
+/* Server Settings — Log Priority Labels */
+"ss.priorityAll" = "All";
+"ss.priorityError" = "Error";
+"ss.priorityWarning" = "Warning";
+"ss.priorityInfo" = "Info";
+"ss.priorityDebug" = "Debug";
+
+/* Server Settings — Cron Jobs */
+"ss.cronJobs" = "Cron Jobs";
+"ss.noCronJobs" = "No cron jobs found";
+"ss.addCronJob" = "Add Cron Job";
+"ss.user" = "User";
+"ss.commandPlaceholder" = "Command...";
+"ss.templates" = "Templates:";
+"ss.everyHour" = "Every hour";
+"ss.daily3AM" = "Daily 3AM";
+"ss.weeklySun" = "Weekly Sun";
+"ss.monthly1st" = "Monthly 1st";
+"ss.cronLog" = "Cron Log";
+"ss.noCronLogEntries" = "No cron log entries";
+"ss.cronJobsCount" = "%lld jobs";
+
+/* Server Settings — Danger Zone */
+"ss.dangerZone" = "Danger Zone";
+"ss.destructiveActions" = "Destructive actions";
+"ss.removeServer" = "Remove Server";
+"ss.removeServerDesc" = "Permanently remove from your fleet";
+"ss.removeServerTitle" = "Remove Server?";
+"ss.removeServerWarning" = "This will permanently remove the server from your fleet. This cannot be undone.";
+"ss.deleteUserTitle" = "Delete System User?";
+"ss.deleteUserWarning" = "This will remove the system user and may affect running services.";
+
+/* Server Settings — Messages */
+"ss.logCleared" = "Log cleared";
+"ss.logClearFailed" = "Failed to clear log";
+"ss.cronJobAdded" = "Cron job added";
+"ss.cronJobAddFailed" = "Failed to add cron job";
+"ss.cronJobDeleted" = "Cron job deleted";
+"ss.cronJobDeleteFailed" = "Failed to delete cron job";
+"ss.keyAdded" = "Key added";
+"ss.keyAddFailed" = "Failed to add key";
+"ss.keyRemoved" = "Key removed";
+"ss.keyRemoveFailed" = "Failed to remove key";
+"ss.firewallDisabled" = "Firewall disabled";
+"ss.firewallEnabled" = "Firewall enabled";
+"ss.firewallToggleFailed" = "Failed to toggle firewall";
+"ss.ruleAdded" = "Rule added";
+"ss.ruleAddFailed" = "Failed to add rule";
+"ss.ruleDeleted" = "Rule deleted";
+"ss.ruleDeleteFailed" = "Failed to delete rule";
+"ss.ipBlocked" = "IP blocked";
+"ss.ipBlockFailed" = "Failed to block IP";
+"ss.ipUnblocked" = "IP unblocked";
+"ss.ipUnblockFailed" = "Failed to unblock IP";
+"ss.ipUnbanned" = "IP unbanned";
+"ss.ipUnbanFailed" = "Failed to unban IP";
+"ss.sessionTerminated" = "Session terminated";
+"ss.sessionTerminateFailed" = "Failed to kill session";
+"ss.groupCreated" = "Group created";
+"ss.groupCreateFailed" = "Failed to create group";
+"ss.groupDeleted" = "Group deleted";
+"ss.groupDeleteFailed" = "Failed to delete group";
+"ss.userAddedToGroup" = "User added to group";
+"ss.userAddToGroupFailed" = "Failed to add user to group";
+"ss.userRemovedFromGroup" = "User removed from group";
+"ss.userRemoveFromGroupFailed" = "Failed to remove user from group";
+"ss.sudoGranted" = "Sudo granted";
+"ss.sudoGrantFailed" = "Failed to grant sudo";
+"ss.sudoRevoked" = "Sudo revoked";
+"ss.sudoRevokeFailed" = "Failed to revoke sudo";
+"ss.shellChanged" = "Shell changed";
+"ss.shellChangeFailed" = "Failed to change shell";
+"ss.userLocked" = "User locked";
+"ss.userLockFailed" = "Failed to lock user";
+"ss.userUnlocked" = "User unlocked";
+"ss.userUnlockFailed" = "Failed to unlock user";
+"ss.rebootInitiated" = "Reboot initiated";
+"ss.shutdownInitiated" = "Shutdown initiated";
+"ss.rebootScheduled" = "Reboot scheduled";
+"ss.rebootScheduleFailed" = "Failed to schedule reboot";
+"ss.rebootCancelled" = "Scheduled reboot cancelled";
+"ss.rebootCancelFailed" = "Failed to cancel reboot";
+"ss.swapResized" = "Swap resized";
+"ss.swapResizeFailed" = "Failed to resize swap";
+"ss.paramUpdated" = "Parameter updated";
+"ss.paramUpdateFailed" = "Failed to update parameter";
