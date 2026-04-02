@@ -241,6 +241,7 @@ private extension CerberusContentView {
         AXSidebarCategoryHeader(title: L10n.Cerberus.Root.catOverview, icon: "chart.xyaxis.line")
         sidebarRow(.dashboard)
         sidebarRow(.traffic)
+        sidebarRow(.visitorLog)
         sidebarRow(.attacks)
 
         // SECURITY
@@ -260,6 +261,7 @@ private extension CerberusContentView {
         // MANAGEMENT
         AXSidebarCategoryHeader(title: L10n.Cerberus.Root.catManagement, icon: "gearshape.2.fill")
         sidebarRow(.domains)
+        sidebarRow(.settings)
     }
 
     func sidebarRow(_ tab: CerberusTab) -> some View {
@@ -303,11 +305,11 @@ private extension CerberusContentView {
                 Circle()
                     .fill(Color.axAccentGreen)
                     .frame(width: 6, height: 6)
-                Text(L10n.Cerberus.Root.modulesCount(12))
+                Text(L10n.Cerberus.Root.modulesCount(viewModel.enabledModuleCount))
                     .font(.system(size: 9, weight: .medium))
                     .foregroundColor(Color.axTextMuted.opacity(0.5))
                 Spacer()
-                Text("v5.0")
+                Text(viewModel.serviceStatus?.binary ?? "—")
                     .font(.system(size: 9, weight: .medium, design: .monospaced))
                     .foregroundColor(Color.axTextMuted.opacity(0.5))
             }
@@ -336,8 +338,11 @@ private extension CerberusContentView {
             case .compliance:   CerberusComplianceView(viewModel: viewModel)
             case .sessions:     CerberusSessionView(viewModel: viewModel)
             case .customRules:  CerberusCustomRulesView(viewModel: viewModel)
+            case .visitorLog:   CerberusVisitorLogView(viewModel: viewModel)
+            case .settings:     CerberusSettingsView(viewModel: viewModel)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .animation(.easeInOut(duration: 0.15), value: viewModel.selectedTab)
     }
 }

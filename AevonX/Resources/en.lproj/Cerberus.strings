@@ -13,6 +13,8 @@
 "cerberus.tab.compliance" = "Compliance";
 "cerberus.tab.sessions" = "Sessions";
 "cerberus.tab.rules" = "Rules";
+"cerberus.tab.visitorLog" = "Visitor Log";
+"cerberus.tab.settings" = "Settings";
 
 /* Root / Header */
 "cerberus.root.brand" = "AXCerberus";
@@ -184,6 +186,24 @@
 "cerberus.ip.countryCodePlaceholder" = "e.g. CN, RU, KP";
 "cerberus.ip.countryCodeHint" = "ISO 3166-1 alpha-2 code (2 letters)";
 "cerberus.ip.blockCountryBtn" = "Block Country";
+"cerberus.ip.validIP" = "Valid IP address";
+"cerberus.ip.validCIDR" = "Valid CIDR range (%lld addresses)";
+"cerberus.ip.invalidIP" = "Invalid IP or CIDR range";
+"cerberus.ip.modeSingle" = "Single";
+"cerberus.ip.modeBulk" = "Bulk Import";
+"cerberus.ip.bulkLabel" = "IP Addresses (one per line)";
+"cerberus.ip.bulkValid" = "%lld valid";
+"cerberus.ip.bulkInvalid" = "%lld invalid";
+"cerberus.ip.bulkAction" = "%@ %lld IPs";
+"cerberus.ip.confirmDeleteTitle" = "Remove IP";
+"cerberus.ip.confirmDeleteAction" = "Remove";
+"cerberus.ip.confirmDeleteMessage" = "Are you sure you want to remove %@ from the list?";
+"cerberus.ip.copiedToClipboard" = "Copied %lld IPs to clipboard";
+"cerberus.ip.copyTooltip" = "Copy all IPs to clipboard";
+"cerberus.ip.searchCountry" = "Search countries...";
+"cerberus.ip.selectCountries" = "Select Countries to Block";
+"cerberus.ip.selectCountriesDesc" = "Choose countries to block from a searchable list";
+"cerberus.ip.blockCountries" = "Block %lld Countries";
 
 /* Domains */
 "cerberus.domains.title" = "Domain Management";
@@ -244,6 +264,24 @@
 "cerberus.modules.dlpDesc" = "Scans responses for credit cards, API keys, traces";
 "cerberus.modules.ssrfDesc" = "Prevents Server-Side Request Forgery attacks";
 "cerberus.modules.alertDesc" = "Routes security events to webhooks";
+"cerberus.modules.threatFeed" = "Threat Feed";
+"cerberus.modules.threatFeedDesc" = "Auto-updated IP reputation lists";
+"cerberus.modules.apiSecurity" = "API Security";
+"cerberus.modules.apiSecDesc" = "JSON validation, method enforcement, schema checks";
+"cerberus.modules.securityHeaders" = "Security Headers";
+"cerberus.modules.secHeadersDesc" = "HSTS, CSP, X-Frame-Options injection";
+"cerberus.modules.challenge" = "Challenge Gate";
+"cerberus.modules.challengeDesc" = "Proof-of-Work challenge for suspicious traffic";
+"cerberus.modules.vpatch" = "Virtual Patching";
+"cerberus.modules.vpatchDesc" = "Hot-fix rules for known CVEs without code changes";
+"cerberus.modules.anomaly" = "Anomaly Detection";
+"cerberus.modules.anomalyDesc" = "Statistical baseline deviation alerting";
+"cerberus.modules.session" = "Session Tracking";
+"cerberus.modules.sessionDesc" = "Session hijacking and ATO detection";
+"cerberus.modules.customRules" = "Custom Rules";
+"cerberus.modules.customRulesDesc" = "User-defined DSL-based matching rules";
+"cerberus.modules.statsAPI" = "Stats API";
+"cerberus.modules.statsAPIDesc" = "Real-time metrics and log export API";
 "cerberus.modules.globalLimit" = "Global Limit";
 "cerberus.modules.loginLimit" = "Login Limit";
 "cerberus.modules.apiLimit" = "API Limit";
@@ -316,6 +354,46 @@
 "cerberus.honeypot.detailUA" = "User-Agent";
 "cerberus.honeypot.detailBody" = "Body";
 
+/* Domain Detail */
+"cerberus.domainDetail.tabOverview" = "Overview";
+"cerberus.domainDetail.tabTraffic" = "Traffic";
+"cerberus.domainDetail.tabAttacks" = "Attacks";
+"cerberus.domainDetail.tabCountries" = "Countries";
+"cerberus.domainDetail.requests" = "Requests";
+"cerberus.domainDetail.blocked" = "Blocked";
+"cerberus.domainDetail.blockRate" = "Block Rate";
+"cerberus.domainDetail.avgLatency" = "Avg Latency";
+"cerberus.domainDetail.topPaths" = "Top Paths";
+"cerberus.domainDetail.noTraffic" = "No traffic data for this domain";
+"cerberus.domainDetail.noAttacks" = "No blocked requests — looking good";
+"cerberus.domainDetail.noCountries" = "No country data available";
+
+/* Visitor Log */
+"cerberus.visitorLog.title" = "Visitor Log";
+"cerberus.visitorLog.subtitle" = "Real-time access log with request details";
+"cerberus.visitorLog.totalRequests" = "Total Requests";
+"cerberus.visitorLog.botRequests" = "Bot Requests";
+"cerberus.visitorLog.avgLatency" = "Avg Latency";
+"cerberus.visitorLog.errorRate" = "Error Rate";
+"cerberus.visitorLog.filterAll" = "All";
+"cerberus.visitorLog.filterSuccess" = "Success";
+"cerberus.visitorLog.filterErrors" = "Errors";
+"cerberus.visitorLog.filterBlocked" = "Blocked";
+"cerberus.visitorLog.filterBots" = "Bots";
+"cerberus.visitorLog.searchPlaceholder" = "Search by IP, path, or user agent...";
+"cerberus.visitorLog.colTime" = "Time";
+"cerberus.visitorLog.colIP" = "IP";
+"cerberus.visitorLog.colCountry" = "Country";
+"cerberus.visitorLog.colMethod" = "Method";
+"cerberus.visitorLog.colPath" = "Path";
+"cerberus.visitorLog.colStatus" = "Status";
+"cerberus.visitorLog.colLatency" = "Latency";
+"cerberus.visitorLog.noEntries" = "No log entries";
+"cerberus.visitorLog.noEntriesDesc" = "Access log entries will appear here as traffic flows through the WAF.";
+"cerberus.visitorLog.allDomains" = "All Domains";
+"cerberus.visitorLog.showingEntries" = "Showing %lld–%lld of %lld";
+"cerberus.visitorLog.pageOf" = "%lld / %lld";
+
 /* Custom Rules */
 "cerberus.rules.title" = "Custom Rules Engine";
 "cerberus.rules.subtitle" = "DSL-based request matching & filtering";
@@ -373,6 +451,7 @@
 "cerberus.toast.syncFailed" = "Sync failed: %@";
 "cerberus.toast.configSaved" = "%@ config saved";
 "cerberus.toast.configSaveFailed" = "%@ config save failed";
+"cerberus.toast.configPartialFail" = "%@ config partially saved — %lld key(s) failed";
 "cerberus.toast.startFailed" = "Start failed: %@";
 "cerberus.toast.stopFailed" = "Stop failed: %@";
 "cerberus.toast.restartFailed" = "Restart failed: %@";
@@ -387,9 +466,49 @@
 "cerberus.toast.wafReloaded" = "WAF config reloaded";
 "cerberus.toast.threatFeedsUpdated" = "Threat feeds updated";
 "cerberus.toast.virtualPatchRemoved" = "Virtual patch removed";
+"cerberus.toast.virtualPatchApplied" = "Virtual patch applied";
 "cerberus.toast.configBackupCreated" = "Config backup created";
+"cerberus.toast.configRestored" = "Configuration restored from backup";
+"cerberus.toast.logsExported" = "Logs exported successfully";
 "cerberus.toast.ruleAdded" = "Rule added";
 "cerberus.toast.ruleRemoved" = "Rule removed";
+"cerberus.toast.configLoadFailed" = "Failed to load WAF configuration";
+
+/* DDoS Level Names */
+"cerberus.dashboard.ddosLevelNone" = "None";
+"cerberus.dashboard.ddosLevelLow" = "Low";
+"cerberus.dashboard.ddosLevelMedium" = "Medium";
+"cerberus.dashboard.ddosLevelHigh" = "High";
+"cerberus.dashboard.ddosLevelUnknown" = "Unknown";
+"cerberus.dashboard.domainHealth" = "Domain Health";
+
+/* Settings */
+"cerberus.settings.title" = "Settings";
+"cerberus.settings.subtitle" = "Backups, patches, exports & raw configuration";
+"cerberus.settings.sectionBackups" = "Backups";
+"cerberus.settings.sectionVPatches" = "Virtual Patches";
+"cerberus.settings.sectionExport" = "Log Export";
+"cerberus.settings.sectionRawConfig" = "Raw Config";
+"cerberus.settings.backupsTitle" = "Config Backups";
+"cerberus.settings.backupsDesc" = "Snapshot and restore WAF configuration state";
+"cerberus.settings.createBackup" = "Create Backup";
+"cerberus.settings.savedBackups" = "Saved Backups";
+"cerberus.settings.noBackups" = "No config backups yet";
+"cerberus.settings.restore" = "Restore";
+"cerberus.settings.vpatchesTitle" = "Virtual Patches";
+"cerberus.settings.vpatchesDesc" = "Temporary vulnerability shields applied without code changes";
+"cerberus.settings.activePatches" = "Active Patches";
+"cerberus.settings.noVPatches" = "No virtual patches applied";
+"cerberus.settings.exportAccess" = "Export Access Logs";
+"cerberus.settings.exportAccessDesc" = "Download all access log entries as structured data";
+"cerberus.settings.exportBlock" = "Export Block Logs";
+"cerberus.settings.exportBlockDesc" = "Download all blocked request entries as structured data";
+"cerberus.settings.export" = "Export";
+"cerberus.settings.rawConfigTitle" = "Raw Configuration";
+"cerberus.settings.rawConfigDesc" = "All key-value pairs from the active WAF configuration";
+"cerberus.settings.noConfig" = "Configuration not loaded";
+"cerberus.settings.configKey" = "Key";
+"cerberus.settings.configValue" = "Value";
 
 /* Plugin Gate */
 "cerberus.gate.notInstalled" = "This plugin is not installed on this server.";

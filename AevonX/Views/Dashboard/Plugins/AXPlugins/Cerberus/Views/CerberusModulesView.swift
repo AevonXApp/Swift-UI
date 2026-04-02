@@ -26,7 +26,12 @@ struct CerberusModulesView: View {
             }
             .padding(AXSpacing.xl)
         }
-        .task { await viewModel.loadModuleConfig() }
+        .task {
+            async let cfg: () = viewModel.loadModuleConfig()
+            async let vp:  () = viewModel.loadVPatches()
+            async let cb:  () = viewModel.loadConfigBackups()
+            _ = await (cfg, vp, cb)
+        }
     }
 }
 
@@ -114,6 +119,7 @@ private extension CerberusModulesView {
             }
         }
         .opacity(module.enabled ? 1.0 : 0.7)
+        .animation(.easeInOut(duration: 0.2), value: module.enabled)
     }
 
     func moduleCardHeader(_ module: ModuleCardData) -> some View {
@@ -184,6 +190,15 @@ private extension CerberusModulesView {
         case "dlp_enabled":                   viewModel.dlpEnabled = enabled
         case "ssrf_enabled":                  viewModel.ssrfEnabled = enabled
         case "alerts_enabled":                viewModel.alertsEnabled = enabled
+        case "threat_feed_enabled":           viewModel.threatFeedEnabled = enabled
+        case "api_sec_enabled":               viewModel.apiSecEnabled = enabled
+        case "security_headers_enabled":      viewModel.securityHeadersEnabled = enabled
+        case "challenge_enabled":             viewModel.challengeEnabled = enabled
+        case "vpatch_enabled":                viewModel.vpatchEnabled = enabled
+        case "anomaly_enabled":               viewModel.anomalyEnabled = enabled
+        case "session_enabled":               viewModel.sessionEnabled = enabled
+        case "custom_rules_enabled":          viewModel.customRulesEnabled = enabled
+        case "stats_api_enabled":             viewModel.statsAPIEnabled = enabled
         default: break
         }
     }
@@ -366,6 +381,7 @@ private extension CerberusModulesView {
             }
         }
         .opacity(enabled ? 1.0 : 0.65)
+        .animation(.easeInOut(duration: 0.25), value: enabled)
     }
 
     func configSectionHeader(icon: String, title: String, color: Color, enabled: Bool) -> some View {
@@ -470,6 +486,42 @@ private extension CerberusModulesView {
                        color: .axAccentGreen, category: "Alerting", layer: "SVC",
                        description: L10n.Cerberus.Modules.alertDesc,
                        enabled: viewModel.alertsEnabled),
+        ModuleCardData(key: "threat_feed_enabled", name: L10n.Cerberus.Modules.threatFeed, icon: "sensor.tag.radiowaves.forward.fill",
+                       color: .axAccentPurple, category: "Intelligence", layer: "L7",
+                       description: L10n.Cerberus.Modules.threatFeedDesc,
+                       enabled: viewModel.threatFeedEnabled),
+        ModuleCardData(key: "api_sec_enabled", name: L10n.Cerberus.Modules.apiSecurity, icon: "lock.doc",
+                       color: .mint, category: "API", layer: "L7",
+                       description: L10n.Cerberus.Modules.apiSecDesc,
+                       enabled: viewModel.apiSecEnabled),
+        ModuleCardData(key: "security_headers_enabled", name: L10n.Cerberus.Modules.securityHeaders, icon: "doc.badge.gearshape",
+                       color: .axAccentGreen, category: "Headers", layer: "L7",
+                       description: L10n.Cerberus.Modules.secHeadersDesc,
+                       enabled: viewModel.securityHeadersEnabled),
+        ModuleCardData(key: "challenge_enabled", name: L10n.Cerberus.Modules.challenge, icon: "brain.head.profile",
+                       color: .orange, category: "Defense", layer: "L7",
+                       description: L10n.Cerberus.Modules.challengeDesc,
+                       enabled: viewModel.challengeEnabled),
+        ModuleCardData(key: "vpatch_enabled", name: L10n.Cerberus.Modules.vpatch, icon: "bandage",
+                       color: .axError, category: "Protection", layer: "L7",
+                       description: L10n.Cerberus.Modules.vpatchDesc,
+                       enabled: viewModel.vpatchEnabled),
+        ModuleCardData(key: "anomaly_enabled", name: L10n.Cerberus.Modules.anomaly, icon: "waveform.path.ecg",
+                       color: .axWarning, category: "Detection", layer: "L7",
+                       description: L10n.Cerberus.Modules.anomalyDesc,
+                       enabled: viewModel.anomalyEnabled),
+        ModuleCardData(key: "session_enabled", name: L10n.Cerberus.Modules.session, icon: "person.2.circle",
+                       color: .cyan, category: "Tracking", layer: "L7",
+                       description: L10n.Cerberus.Modules.sessionDesc,
+                       enabled: viewModel.sessionEnabled),
+        ModuleCardData(key: "custom_rules_enabled", name: L10n.Cerberus.Modules.customRules, icon: "list.bullet.rectangle",
+                       color: .axAccentBlue, category: "Rules", layer: "L7",
+                       description: L10n.Cerberus.Modules.customRulesDesc,
+                       enabled: viewModel.customRulesEnabled),
+        ModuleCardData(key: "stats_api_enabled", name: L10n.Cerberus.Modules.statsAPI, icon: "chart.bar.doc.horizontal",
+                       color: .indigo, category: "System", layer: "SVC",
+                       description: L10n.Cerberus.Modules.statsAPIDesc,
+                       enabled: viewModel.statsAPIEnabled),
     ]}
 }
 

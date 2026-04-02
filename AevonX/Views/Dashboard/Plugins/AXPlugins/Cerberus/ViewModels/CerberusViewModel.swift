@@ -24,6 +24,8 @@ enum CerberusTab: String, CaseIterable {
     case compliance = "Compliance"
     case sessions = "Sessions"
     case customRules = "Rules"
+    case visitorLog = "Visitor Log"
+    case settings = "Settings"
 
     var icon: String {
         switch self {
@@ -39,6 +41,8 @@ enum CerberusTab: String, CaseIterable {
         case .compliance: return "checkmark.shield.fill"
         case .sessions: return "person.2.circle.fill"
         case .customRules: return "doc.text.magnifyingglass"
+        case .visitorLog: return "list.bullet.rectangle.portrait"
+        case .settings:   return "gearshape.2.fill"
         }
     }
 
@@ -56,6 +60,8 @@ enum CerberusTab: String, CaseIterable {
         case .compliance:   return L10n.Cerberus.Tab.compliance
         case .sessions:     return L10n.Cerberus.Tab.sessions
         case .customRules:  return L10n.Cerberus.Tab.rules
+        case .visitorLog:   return L10n.Cerberus.Tab.visitorLog
+        case .settings:     return L10n.Cerberus.Tab.settings
         }
     }
 
@@ -73,6 +79,8 @@ enum CerberusTab: String, CaseIterable {
         case .compliance:   return .axAccentGreen
         case .sessions:     return .cyan
         case .customRules:  return .axAccentBlue
+        case .visitorLog:   return .axAccentBlue
+        case .settings:     return .axTextSecondary
         }
     }
 
@@ -89,8 +97,18 @@ class CerberusViewModel: ObservableObject {
 
     // MARK: - Loading State
 
-    @Published var isLoading = false
+    @Published var dashboardLoading = false
+    @Published var attacksLoading = false
+    @Published var trafficLoading = false
+    @Published var ipLoading = false
+    @Published var honeypotLoading = false
+    @Published var domainsLoading = false
+    @Published var alertsLoading = false
+    @Published var visitorLogLoading = false
     @Published var errorMessage: String?
+    @Published var configLoadFailed = false
+    @Published var moduleConfig: [String: Any]?
+    @Published var lastRefreshed: Date?
 
     // MARK: - Dashboard Data
 
@@ -131,6 +149,10 @@ class CerberusViewModel: ObservableObject {
     // MARK: - Domain Stats
 
     @Published var domainStats: [String: DomainStats] = [:]
+
+    // MARK: - QPS
+
+    @Published var currentQPS: Double?
 
     // MARK: - Extended Stats
 
@@ -178,6 +200,12 @@ class CerberusViewModel: ObservableObject {
 
     @Published var configBackups: [WAFConfigBackup] = []
 
+    // MARK: - Time Series & Domain Countries
+
+    @Published var timeSeries: [WAFTimeSeriesBucket] = []
+    @Published var timeSeriesLoading = false
+    @Published var domainCountries: [CountryStats] = []
+
     // MARK: - Module Config State
 
     @Published var configOperationInProgress = false
@@ -192,6 +220,23 @@ class CerberusViewModel: ObservableObject {
     @Published var dlpEnabled = true
     @Published var ssrfEnabled = true
     @Published var alertsEnabled = false
+    @Published var threatFeedEnabled = true
+    @Published var apiSecEnabled = false
+    @Published var securityHeadersEnabled = true
+    @Published var challengeEnabled = true
+    @Published var vpatchEnabled = false
+    @Published var anomalyEnabled = false
+    @Published var sessionEnabled = false
+    @Published var customRulesEnabled = false
+    @Published var statsAPIEnabled = true
+
+    var enabledModuleCount: Int {
+        [wafEnabled, rateLimitEnabled, ddosEnabled, botDetectionEnabled,
+         honeypotEnabled, credentialEnabled, dlpEnabled, ssrfEnabled, alertsEnabled,
+         threatFeedEnabled, apiSecEnabled, securityHeadersEnabled, challengeEnabled,
+         vpatchEnabled, anomalyEnabled, sessionEnabled, customRulesEnabled, statsAPIEnabled]
+            .filter { $0 }.count
+    }
 
     // Rate Limit config
     @Published var globalRateLimit: Double = 300
@@ -215,7 +260,7 @@ class CerberusViewModel: ObservableObject {
     @Published var ddosMaxConnsPerIP: Double = 100
 
     // Honeypot config
-    @Published var honeypotPaths = "/wp-admin,/phpmyadmin,/.env"
+    @Published var honeypotPaths = ""
     @Published var honeypotAutoBlock = true
 
     // Alerts config
@@ -227,15 +272,45 @@ class CerberusViewModel: ObservableObject {
 
     let serverId: String
     private let cerberus = CerberusManager.shared
+    private var refreshTask: Task<Void, Never>?
+    private static let refreshDebounce: TimeInterval = 5
 
     init(serverId: String) {
         self.serverId = serverId
     }
 
+    // MARK: - Auto-Refresh
+
+    func startAutoRefresh(interval: TimeInterval = 30) {
+        stopAutoRefresh()
+        refreshTask = Task { [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(nanoseconds: UInt64(interval * 1_000_000_000))
+                guard !Task.isCancelled, let self else { return }
+                await self.loadDashboard()
+                await self.loadQPS()
+            }
+        }
+    }
+
+    func stopAutoRefresh() {
+        refreshTask?.cancel()
+        refreshTask = nil
+    }
+
+    /// Debounced manual refresh — ignores calls within `refreshDebounce` of last load.
+    func refreshIfNeeded() async {
+        if let last = lastRefreshed,
+           Date().timeIntervalSince(last) < Self.refreshDebounce {
+            return
+        }
+        await loadDashboard()
+    }
+
     // MARK: - Load All Dashboard Data
 
     func loadDashboard() async {
-        isLoading = true
+        dashboardLoading = true
         errorMessage = nil
 
         do {
@@ -253,17 +328,18 @@ class CerberusViewModel: ObservableObject {
             serviceStatus   = sv
             credentialStatus = cr
             countries       = ctrs
+            lastRefreshed   = Date()
         } catch {
             errorMessage = error.localizedDescription
         }
 
-        isLoading = false
+        dashboardLoading = false
     }
 
     // MARK: - Load Attacks Data
 
     func loadAttacks() async {
-        isLoading = true
+        attacksLoading = true
         errorMessage = nil
 
         do {
@@ -281,13 +357,13 @@ class CerberusViewModel: ObservableObject {
             errorMessage = error.localizedDescription
         }
 
-        isLoading = false
+        attacksLoading = false
     }
 
     // MARK: - Load IP Lists
 
     func loadIPLists() async {
-        isLoading = true
+        ipLoading = true
         errorMessage = nil
 
         do {
@@ -301,7 +377,7 @@ class CerberusViewModel: ObservableObject {
             errorMessage = error.localizedDescription
         }
 
-        isLoading = false
+        ipLoading = false
     }
 
     // MARK: - IP Operations
@@ -391,13 +467,13 @@ class CerberusViewModel: ObservableObject {
     // MARK: - Load Honeypot
 
     func loadHoneypot() async {
-        isLoading = true
+        honeypotLoading = true
         do {
             honeypotHits = try await cerberus.getHoneypotHits(on: serverId)
         } catch {
             errorMessage = error.localizedDescription
         }
-        isLoading = false
+        honeypotLoading = false
     }
 
     // MARK: - Load Domain Stats
@@ -482,7 +558,7 @@ class CerberusViewModel: ObservableObject {
     // MARK: - Load Extended Stats
 
     func loadTrafficAnalytics() async {
-        isLoading = true
+        trafficLoading = true
         do {
             async let ds = cerberus.getDomainStats(on: serverId)
             async let rt = cerberus.getResponseTimes(on: serverId)
@@ -497,25 +573,27 @@ class CerberusViewModel: ObservableObject {
         } catch {
             errorMessage = error.localizedDescription
         }
-        isLoading = false
+        trafficLoading = false
     }
 
     func loadAlerts() async {
-        isLoading = true
+        alertsLoading = true
         do {
             recentAlerts = try await cerberus.getRecentAlerts(on: serverId)
         } catch {
             errorMessage = error.localizedDescription
         }
-        isLoading = false
+        alertsLoading = false
     }
 
     func loadAccessLog() async {
+        visitorLogLoading = true
         do {
             accessLog = try await cerberus.getAccessLog(on: serverId)
         } catch {
-            errorMessage = error.localizedDescription
+            GlobalToastManager.shared.showError(L10n.Cerberus.Toast.errorPrefix("Access log", error.localizedDescription))
         }
+        visitorLogLoading = false
     }
 
     func loadBlockLog() async {
@@ -554,13 +632,16 @@ class CerberusViewModel: ObservableObject {
     func loadModuleConfig() async {
         do {
             let cfg = try await cerberus.getFullConfig(on: serverId)
+            configLoadFailed = false
             applyConfig(cfg)
         } catch {
-            // Non-fatal: config panel shows defaults
+            configLoadFailed = true
+            errorMessage = L10n.Cerberus.Toast.configLoadFailed
         }
     }
 
     private func applyConfig(_ cfg: [String: Any]) {
+        moduleConfig = cfg
         wafEnabled          = cfg.bool("waf_enabled", default: true)
         rateLimitEnabled    = cfg.bool("rate_limit_enabled", default: true)
         ddosEnabled         = cfg.bool("ddos_enabled", default: true)
@@ -570,6 +651,15 @@ class CerberusViewModel: ObservableObject {
         dlpEnabled          = cfg.bool("dlp_enabled", default: true)
         ssrfEnabled         = cfg.bool("ssrf_enabled", default: true)
         alertsEnabled       = cfg.bool("alerts_enabled", default: false)
+        threatFeedEnabled   = cfg.bool("threat_feed_enabled", default: true)
+        apiSecEnabled       = cfg.bool("api_sec_enabled", default: false)
+        securityHeadersEnabled = cfg.bool("security_headers_enabled", default: true)
+        challengeEnabled    = cfg.bool("challenge_enabled", default: true)
+        vpatchEnabled       = cfg.bool("vpatch_enabled", default: false)
+        anomalyEnabled      = cfg.bool("anomaly_enabled", default: false)
+        sessionEnabled      = cfg.bool("session_enabled", default: false)
+        customRulesEnabled  = cfg.bool("custom_rules_enabled", default: false)
+        statsAPIEnabled     = cfg.bool("stats_api_enabled", default: true)
 
         globalRateLimit     = cfg.double("global_rate_limit", default: 300)
         loginRateLimit      = cfg.double("login_rate_limit", default: 10)
@@ -588,7 +678,7 @@ class CerberusViewModel: ObservableObject {
         ddosSpikeMultiplier = cfg.double("ddos_spike_multiplier", default: 3.0)
         ddosMaxConnsPerIP   = cfg.double("max_connections_per_ip", default: 100)
 
-        honeypotPaths       = cfg.string("honeypot_paths", default: "/wp-admin,/.env")
+        honeypotPaths       = cfg.string("honeypot_paths", default: "")
         honeypotAutoBlock   = cfg.bool("honeypot_auto_block", default: true)
 
         alertWebhookURL     = cfg.string("alert_webhook_url", default: "")
@@ -720,20 +810,44 @@ class CerberusViewModel: ObservableObject {
 
     private func batchConfigSet(_ pairs: [(String, String)], label: String) async {
         configOperationInProgress = true
-        var failed = false
-        for (key, value) in pairs {
-            do {
-                try await cerberus.configSet(key: key, value: value, on: serverId)
-            } catch {
-                failed = true
-                break
+
+        // Create a backup before applying changes
+        do {
+            _ = try await cerberus.configBackup(on: serverId)
+        } catch {
+            // Backup failure is non-fatal — continue
+        }
+
+        // Try native batch API first, fall back to sequential
+        let updates = Dictionary(pairs, uniquingKeysWith: { _, last in last })
+        do {
+            let result = try await cerberus.configSetBatch(updates, on: serverId)
+            if result.failed == 0 {
+                GlobalToastManager.shared.showSuccess(L10n.Cerberus.Toast.configSaved(label))
+            } else if result.succeeded == 0 {
+                GlobalToastManager.shared.showError(L10n.Cerberus.Toast.configSaveFailed(label))
+            } else {
+                GlobalToastManager.shared.showWarning(L10n.Cerberus.Toast.configPartialFail(label, result.failed))
+            }
+        } catch {
+            // Fallback: sequential config set
+            var failedKeys: [String] = []
+            for (key, value) in pairs {
+                do {
+                    try await cerberus.configSet(key: key, value: value, on: serverId)
+                } catch {
+                    failedKeys.append(key)
+                }
+            }
+            if failedKeys.count == pairs.count {
+                GlobalToastManager.shared.showError(L10n.Cerberus.Toast.configSaveFailed(label))
+            } else if !failedKeys.isEmpty {
+                GlobalToastManager.shared.showWarning(L10n.Cerberus.Toast.configPartialFail(label, failedKeys.count))
+            } else {
+                GlobalToastManager.shared.showSuccess(L10n.Cerberus.Toast.configSaved(label))
             }
         }
-        if failed {
-            GlobalToastManager.shared.showError(L10n.Cerberus.Toast.configSaveFailed(label))
-        } else {
-            GlobalToastManager.shared.showSuccess(L10n.Cerberus.Toast.configSaved(label))
-        }
+
         configOperationInProgress = false
     }
 
@@ -873,6 +987,95 @@ class CerberusViewModel: ObservableObject {
         } catch {
             GlobalToastManager.shared.showError(L10n.Cerberus.Toast.errorPrefix("Remove rule", error.localizedDescription))
         }
+    }
+
+    // MARK: - QPS
+
+    func loadQPS() async {
+        do {
+            currentQPS = try await cerberus.getQPS(on: serverId)
+        } catch {
+            GlobalToastManager.shared.showError(L10n.Cerberus.Toast.errorPrefix("QPS", error.localizedDescription))
+        }
+    }
+
+    // MARK: - Virtual Patch Apply
+
+    func applyVirtualPatch(patchJSON: String) async {
+        do {
+            try await cerberus.applyVPatch(patchJSON, on: serverId)
+            GlobalToastManager.shared.showSuccess(L10n.Cerberus.Toast.virtualPatchApplied)
+        } catch {
+            GlobalToastManager.shared.showError(L10n.Cerberus.Toast.errorPrefix("VPatch", error.localizedDescription))
+        }
+    }
+
+    // MARK: - Log Export
+
+    func exportLogData(logType: String) async -> [String: Any]? {
+        do {
+            let result = try await cerberus.exportLogs(logType, on: serverId)
+            GlobalToastManager.shared.showSuccess(L10n.Cerberus.Toast.logsExported)
+            return result
+        } catch {
+            GlobalToastManager.shared.showError(L10n.Cerberus.Toast.errorPrefix("Export", error.localizedDescription))
+            return nil
+        }
+    }
+
+    // MARK: - Config Restore
+
+    func restoreConfigBackup(name: String) async {
+        do {
+            try await cerberus.configRestore(name, on: serverId)
+            GlobalToastManager.shared.showSuccess(L10n.Cerberus.Toast.configRestored)
+            await loadModuleConfig()
+        } catch {
+            GlobalToastManager.shared.showError(L10n.Cerberus.Toast.errorPrefix("Restore", error.localizedDescription))
+        }
+    }
+
+    // MARK: - Per-Domain Countries
+
+    func loadDomainCountries(domain: String) async {
+        do {
+            let result = try await cerberus.getDomainCountries(domain: domain, on: serverId)
+            domainCountries = result.countries
+        } catch {
+            GlobalToastManager.shared.showError(L10n.Cerberus.Toast.errorPrefix("Countries", error.localizedDescription))
+        }
+    }
+
+    // MARK: - Extended Time Series
+
+    func loadTimeSeries(start: String, end: String, granularity: String) async {
+        timeSeriesLoading = true
+        do {
+            let result = try await cerberus.getTimeSeries(start: start, end: end, granularity: granularity, on: serverId)
+            timeSeries = result.buckets
+        } catch {
+            GlobalToastManager.shared.showError(L10n.Cerberus.Toast.errorPrefix("TimeSeries", error.localizedDescription))
+        }
+        timeSeriesLoading = false
+    }
+
+    // MARK: - Config Batch Update
+
+    func configSetBatchNative(_ updates: [String: String], label: String) async {
+        configOperationInProgress = true
+        do {
+            let result = try await cerberus.configSetBatch(updates, on: serverId)
+            if result.failed == 0 {
+                GlobalToastManager.shared.showSuccess(L10n.Cerberus.Toast.configSaved(label))
+            } else if result.succeeded == 0 {
+                GlobalToastManager.shared.showError(L10n.Cerberus.Toast.configSaveFailed(label))
+            } else {
+                GlobalToastManager.shared.showWarning(L10n.Cerberus.Toast.configPartialFail(label, result.failed))
+            }
+        } catch {
+            GlobalToastManager.shared.showError(L10n.Cerberus.Toast.errorPrefix(label, error.localizedDescription))
+        }
+        configOperationInProgress = false
     }
 }
 

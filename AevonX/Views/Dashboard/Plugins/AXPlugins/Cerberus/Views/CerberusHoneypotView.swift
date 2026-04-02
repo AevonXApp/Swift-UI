@@ -140,7 +140,7 @@ private extension CerberusHoneypotView {
             icon: "ant",
             columns: logColumns,
             rows: buildRows(),
-            isLoading: viewModel.isLoading,
+            isLoading: viewModel.honeypotLoading,
             accentColor: .axWarning,
             rowActions: [
                 AXLogRowAction(

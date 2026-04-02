@@ -17,6 +17,9 @@ struct CerberusAttacksView: View {
     @State private var blockLogFilter = ""
     @State private var selectedSection: AttackSection = .overview
     @State private var barsAppeared = false
+    @State private var blockLogPage = 0
+    @State private var selectedDomain: String?
+    private let blockLogPageSize = 50
 
     enum AttackSection: String, CaseIterable {
         case overview = "Overview"
@@ -36,7 +39,7 @@ struct CerberusAttacksView: View {
             Divider().background(Color.axDivider)
             ScrollView {
                 VStack(spacing: AXSpacing.lg) {
-                    if viewModel.isLoading && viewModel.attackTypes.isEmpty {
+                    if viewModel.attacksLoading && viewModel.attackTypes.isEmpty {
                         attacksSkeletonContent
                     } else if selectedSection == .overview {
                         overviewContent
@@ -48,8 +51,9 @@ struct CerberusAttacksView: View {
             }
         }
         .task {
-            await viewModel.loadAttacks()
-            await viewModel.loadBlockLog()
+            async let atk:  () = viewModel.loadAttacks()
+            async let blog: () = viewModel.loadBlockLog()
+            _ = await (atk, blog)
             withAnimation(.easeOut(duration: 0.6).delay(0.2)) {
                 barsAppeared = true
             }
@@ -546,9 +550,56 @@ struct CerberusAttacksView: View {
 
     private var blockLogFilterBar: some View {
         HStack(spacing: AXSpacing.md) {
+            blockLogDomainPicker
             AXTextField(placeholder: L10n.Cerberus.Attacks.filterPlaceholder, text: $blockLogFilter, icon: "magnifyingglass")
             blockLogRefreshButton
         }
+        .onChange(of: blockLogFilter) { _ in blockLogPage = 0 }
+        .onChange(of: selectedDomain) { _ in blockLogPage = 0 }
+    }
+
+    private var blockLogDomainPicker: some View {
+        Menu {
+            Button {
+                selectedDomain = nil
+            } label: {
+                HStack {
+                    Text(L10n.Cerberus.VisitorLog.allDomains)
+                    if selectedDomain == nil { Image(systemName: "checkmark") }
+                }
+            }
+            Divider()
+            ForEach(blockLogDomains, id: \.self) { domain in
+                Button {
+                    selectedDomain = domain
+                } label: {
+                    HStack {
+                        Text(domain)
+                        if selectedDomain == domain { Image(systemName: "checkmark") }
+                    }
+                }
+            }
+        } label: {
+            HStack(spacing: AXSpacing.xxxs) {
+                Image(systemName: "globe").font(.system(size: 10))
+                Text(selectedDomain ?? L10n.Cerberus.VisitorLog.allDomains)
+                    .font(AXTypography.caption)
+                    .fontWeight(selectedDomain != nil ? .semibold : .regular)
+                    .lineLimit(1)
+                Image(systemName: "chevron.down").font(.system(size: 8))
+            }
+            .foregroundStyle(selectedDomain != nil ? Color.axAccentBlue : Color.axTextSecondary)
+            .padding(.horizontal, AXSpacing.md)
+            .padding(.vertical, AXSpacing.xs)
+            .background(selectedDomain != nil ? Color.axAccentBlue.opacity(0.1) : Color.axSurface)
+            .clipShape(RoundedRectangle(cornerRadius: AXCornerRadius.md))
+        }
+    }
+
+    private var blockLogDomains: [String] {
+        Array(Set(viewModel.blockLog.map(\.host)))
+            .filter { !$0.isEmpty }
+            .sorted()
     }
 
     private var blockLogRefreshButton: some View {
@@ -625,9 +676,59 @@ struct CerberusAttacksView: View {
     }
 
     private var blockLogRows: some View {
-        ForEach(Array(filteredBlockLog.prefix(100).enumerated()), id: \.element.id) { idx, entry in
-            blockLogRowContent(entry: entry, isEven: idx % 2 == 0)
+        VStack(spacing: 0) {
+            ForEach(Array(paginatedBlockLog.enumerated()), id: \.element.id) { idx, entry in
+                blockLogRowContent(entry: entry, isEven: idx % 2 == 0)
+            }
+            if blockLogTotalPages > 1 {
+                blockLogPaginationBar
+            }
         }
+    }
+
+    private var paginatedBlockLog: [WAFBlockLogEntry] {
+        let start = blockLogPage * blockLogPageSize
+        let end = min(start + blockLogPageSize, filteredBlockLog.count)
+        guard start < end else { return [] }
+        return Array(filteredBlockLog[start..<end])
+    }
+
+    private var blockLogTotalPages: Int {
+        max(1, (filteredBlockLog.count + blockLogPageSize - 1) / blockLogPageSize)
+    }
+
+    private var blockLogPaginationBar: some View {
+        HStack(spacing: AXSpacing.md) {
+            Text(L10n.Cerberus.VisitorLog.showingEntries(
+                blockLogPage * blockLogPageSize + 1,
+                min((blockLogPage + 1) * blockLogPageSize, filteredBlockLog.count),
+                filteredBlockLog.count
+            ))
+            .font(AXTypography.caption)
+            .foregroundStyle(Color.axTextMuted)
+            Spacer()
+            HStack(spacing: AXSpacing.xs) {
+                blockLogPageBtn(icon: "chevron.left", action: { blockLogPage -= 1 }, disabled: blockLogPage == 0)
+                Text(L10n.Cerberus.VisitorLog.pageOf(blockLogPage + 1, blockLogTotalPages))
+                    .font(AXTypography.monoSm)
+                    .foregroundStyle(Color.axTextSecondary)
+                blockLogPageBtn(icon: "chevron.right", action: { blockLogPage += 1 }, disabled: blockLogPage >= blockLogTotalPages - 1)
+            }
+        }
+        .padding(.top, AXSpacing.md)
+    }
+
+    private func blockLogPageBtn(icon: String, action: @escaping () -> Void, disabled: Bool) -> some View {
+        Button(action: action) {
+            Image(systemName: icon)
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundStyle(disabled ? Color.axTextMuted.opacity(0.4) : Color.axAccentBlue)
+                .frame(width: 26, height: 26)
+                .background(disabled ? Color.clear : Color.axAccentBlue.opacity(0.08))
+                .clipShape(RoundedRectangle(cornerRadius: AXCornerRadius.sm))
+        }
+        .buttonStyle(.plain)
+        .disabled(disabled)
     }
 
     private func blockLogRowContent(entry: WAFBlockLogEntry, isEven: Bool) -> some View {
@@ -773,9 +874,15 @@ struct CerberusAttacksView: View {
     }
 
     private var filteredBlockLog: [WAFBlockLogEntry] {
-        guard !blockLogFilter.isEmpty else { return viewModel.blockLog }
+        var entries = viewModel.blockLog
+
+        if let domain = selectedDomain {
+            entries = entries.filter { $0.host == domain }
+        }
+
+        guard !blockLogFilter.isEmpty else { return entries }
         let q = blockLogFilter.lowercased()
-        return viewModel.blockLog.filter {
+        return entries.filter {
             $0.ip.lowercased().contains(q) || $0.rule.lowercased().contains(q) ||
             $0.path.lowercased().contains(q) || $0.country.lowercased().contains(q)
         }

@@ -18,12 +18,13 @@ struct CerberusDashboardView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: AXSpacing.lg) {
-                if viewModel.isLoading && viewModel.overview == nil {
+                if viewModel.dashboardLoading && viewModel.overview == nil {
                     skeletonContent
                 } else {
                     errorBanner
                     threatHeroCard
                     primaryStatsGrid
+                    domainHealthRow
                     middleRow
                     liveIndicatorsRow
                     ddosShieldCard
@@ -33,8 +34,15 @@ struct CerberusDashboardView: View {
             .padding(AXSpacing.xl)
         }
         .task {
-            await viewModel.loadDashboard()
-            await viewModel.loadBlockLog()
+            async let dash: () = viewModel.loadDashboard()
+            async let blog: () = viewModel.loadBlockLog()
+            async let qps:  () = viewModel.loadQPS()
+            async let anom: () = viewModel.loadAnomalyStatus()
+            _ = await (dash, blog, qps, anom)
+            viewModel.startAutoRefresh()
+        }
+        .onDisappear {
+            viewModel.stopAutoRefresh()
         }
     }
 
@@ -140,7 +148,20 @@ struct CerberusDashboardView: View {
             if (viewModel.overview?.blockedRequests ?? 0) > 0 {
                 AXBadge(text: L10n.Cerberus.Dashboard.blockedCount(viewModel.formatNumber(viewModel.overview?.blockedRequests ?? 0)), color: .axWarning, style: .soft)
             }
+            if let refreshed = viewModel.lastRefreshed {
+                lastRefreshedBadge(refreshed)
+            }
         }
+    }
+
+    private func lastRefreshedBadge(_ date: Date) -> some View {
+        HStack(spacing: AXSpacing.xxxs) {
+            Image(systemName: "arrow.clockwise")
+                .font(.system(size: 9))
+            Text(date, style: .relative)
+                .font(AXTypography.caption2)
+        }
+        .foregroundStyle(Color.axTextMuted)
     }
 
     private var threatIconBadge: some View {
@@ -200,7 +221,7 @@ struct CerberusDashboardView: View {
     private var heroMetricsRight: some View {
         VStack(alignment: .trailing, spacing: AXSpacing.lg) {
             heroMetric(label: L10n.Cerberus.Dashboard.totalRequests, value: viewModel.formatNumber(viewModel.overview?.totalRequests ?? 0), color: .axAccentBlue)
-            heroMetric(label: L10n.Cerberus.Dashboard.requestsPerSec, value: String(format: "%.1f", viewModel.overview?.qps ?? 0.0), color: .axAccentGreen)
+            heroMetric(label: L10n.Cerberus.Dashboard.requestsPerSec, value: String(format: "%.1f", viewModel.currentQPS ?? viewModel.overview?.qps ?? 0.0), color: .axAccentGreen)
             heroMetric(label: L10n.Cerberus.Dashboard.uptime, value: viewModel.formatUptime(viewModel.overview?.uptimeSeconds ?? 0), color: .axAccentPurple)
         }
     }
@@ -234,7 +255,7 @@ struct CerberusDashboardView: View {
                             icon: "checkmark.shield.fill", color: .axAccentGreen,
                             subtitle: L10n.Cerberus.Dashboard.passedThrough)
             primaryStatCard(title: L10n.Cerberus.Dashboard.statQPS,
-                            value: String(format: "%.1f", viewModel.overview?.qps ?? 0.0),
+                            value: String(format: "%.1f", viewModel.currentQPS ?? viewModel.overview?.qps ?? 0.0),
                             icon: "gauge.with.dots.needle.33percent", color: .axAccentPurple,
                             subtitle: L10n.Cerberus.Dashboard.queriesSec)
         }
@@ -262,6 +283,77 @@ struct CerberusDashboardView: View {
                 }
             }
         }
+    }
+
+    // MARK: - Domain Health Row
+
+    @ViewBuilder
+    private var domainHealthRow: some View {
+        if !viewModel.domains.isEmpty {
+            VStack(alignment: .leading, spacing: AXSpacing.sm) {
+                HStack {
+                    gradientIconBox(icon: "globe", color: .mint, size: 22)
+                    Text(L10n.Cerberus.Dashboard.domainHealth)
+                        .font(AXTypography.subheadline)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(Color.axTextPrimary)
+                    Spacer()
+                }
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: AXSpacing.md) {
+                        ForEach(viewModel.domains) { domain in
+                            domainMiniCard(domain)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private func domainMiniCard(_ domain: WAFDomainInfo) -> some View {
+        let stats = viewModel.domainStats[domain.domain]
+        return VStack(alignment: .leading, spacing: AXSpacing.xs) {
+            HStack(spacing: AXSpacing.xs) {
+                Circle()
+                    .fill(domain.enabled ? Color.axAccentGreen : Color.axTextMuted)
+                    .frame(width: 6, height: 6)
+                Text(domain.domain)
+                    .font(AXTypography.caption)
+                    .fontWeight(.medium)
+                    .foregroundStyle(Color.axTextPrimary)
+                    .lineLimit(1)
+            }
+            HStack(spacing: AXSpacing.lg) {
+                VStack(alignment: .leading, spacing: AXSpacing.xxxs) {
+                    Text(viewModel.formatNumber(Int(stats?.totalRequests ?? 0)))
+                        .font(AXTypography.subheadline)
+                        .fontWeight(.bold)
+                        .foregroundStyle(Color.axAccentBlue)
+                    Text(L10n.Cerberus.Dashboard.totalRequests)
+                        .font(AXTypography.caption2)
+                        .foregroundStyle(Color.axTextMuted)
+                }
+                VStack(alignment: .leading, spacing: AXSpacing.xxxs) {
+                    Text(viewModel.formatNumber(Int(stats?.blockedRequests ?? 0)))
+                        .font(AXTypography.subheadline)
+                        .fontWeight(.bold)
+                        .foregroundStyle(Color.axError)
+                    Text(L10n.Cerberus.Dashboard.statBlocked)
+                        .font(AXTypography.caption2)
+                        .foregroundStyle(Color.axTextMuted)
+                }
+            }
+        }
+        .padding(AXSpacing.md)
+        .frame(minWidth: 180)
+        .background(
+            RoundedRectangle(cornerRadius: AXCornerRadius.md)
+                .fill(Color.axSurface)
+                .overlay(
+                    RoundedRectangle(cornerRadius: AXCornerRadius.md)
+                        .stroke(Color.axBorder.opacity(0.5), lineWidth: 1)
+                )
+        )
     }
 
     // MARK: - Middle Row (Timeline + Countries)
@@ -577,7 +669,7 @@ struct CerberusDashboardView: View {
     private var ddosShieldTitleRow: some View {
         HStack(spacing: AXSpacing.sm) {
             Text(L10n.Cerberus.Dashboard.ddosShield).font(AXTypography.headline).fontWeight(.semibold).foregroundStyle(Color.axTextPrimary)
-            AXBadge(text: L10n.Cerberus.Dashboard.levelName(viewModel.ddosStatus?.level ?? 0, viewModel.ddosStatus?.levelName ?? "None"), color: ddosColor, style: .soft)
+            AXBadge(text: L10n.Cerberus.Dashboard.levelName(viewModel.ddosStatus?.level ?? 0, L10n.Cerberus.Dashboard.ddosLevelName(for: viewModel.ddosStatus?.levelKey ?? "none")), color: ddosColor, style: .soft)
             if viewModel.ddosStatus?.underAttack == true {
                 AXBadge(text: L10n.Cerberus.Dashboard.underAttack, color: .axError, style: .soft)
             }

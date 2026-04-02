@@ -35,7 +35,7 @@ struct CerberusTrafficView: View {
             Divider().background(Color.axDivider)
             ScrollView {
                 VStack(spacing: AXSpacing.lg) {
-                    if viewModel.isLoading && viewModel.domainStats.isEmpty {
+                    if viewModel.trafficLoading && viewModel.domainStats.isEmpty {
                         skeletonContent
                     } else if selectedSection == .analytics {
                         analyticsContent
@@ -47,8 +47,9 @@ struct CerberusTrafficView: View {
             }
         }
         .task {
-            await viewModel.loadTrafficAnalytics()
-            await viewModel.loadAccessLog()
+            async let traf: () = viewModel.loadTrafficAnalytics()
+            async let alog: () = viewModel.loadAccessLog()
+            _ = await (traf, alog)
         }
         .sheet(isPresented: Binding(get: { selectedDomainName != nil }, set: { if !$0 { selectedDomainName = nil } })) {
             if let domain = selectedDomainName { domainDetailSheet(domain) }

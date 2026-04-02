@@ -16,7 +16,7 @@ struct CerberusAlertsView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: AXSpacing.lg) {
-                if viewModel.isLoading && viewModel.recentAlerts.isEmpty {
+                if viewModel.alertsLoading && viewModel.recentAlerts.isEmpty {
                     alertsSkeletonContent
                 } else {
                     alertsHero

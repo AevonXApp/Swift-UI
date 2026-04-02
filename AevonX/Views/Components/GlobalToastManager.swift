@@ -14,6 +14,7 @@ import Combine
 public enum ToastType {
     case success
     case error
+    case warning
     case info
     case loading
 
@@ -21,6 +22,7 @@ public enum ToastType {
         switch self {
         case .success: return "checkmark.circle.fill"
         case .error: return "xmark.circle.fill"
+        case .warning: return "exclamationmark.triangle.fill"
         case .info: return "info.circle.fill"
         case .loading: return "arrow.triangle.2.circlepath"
         }
@@ -30,6 +32,7 @@ public enum ToastType {
         switch self {
         case .success: return .axSuccess
         case .error: return .axError
+        case .warning: return .axWarning
         case .info: return .axAccentBlue
         case .loading: return .axAccentBlue
         }
@@ -91,6 +94,10 @@ public final class GlobalToastManager: ObservableObject {
 
     public func showError(_ message: String, duration: TimeInterval = 8.0) {
         show(message, type: .error, duration: duration)
+    }
+
+    public func showWarning(_ message: String, duration: TimeInterval = 5.0) {
+        show(message, type: .warning, duration: duration)
     }
 
     public func showInfo(_ message: String, duration: TimeInterval = 4.0) {

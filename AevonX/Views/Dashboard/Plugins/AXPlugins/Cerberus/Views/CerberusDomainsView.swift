@@ -12,6 +12,7 @@ struct CerberusDomainsView: View {
     @ObservedObject var viewModel: CerberusViewModel
     @State private var showAddSheet = false
     @State private var newDomain = ""
+    @State private var selectedDomain: WAFDomainInfo?
 
     var body: some View {
         ScrollView {
@@ -30,6 +31,9 @@ struct CerberusDomainsView: View {
         .background(Color.axBackground)
         .task { await viewModel.loadDomains() }
         .sheet(isPresented: $showAddSheet) { addDomainSheet }
+        .sheet(item: $selectedDomain) { domain in
+            CerberusDomainDetailView(viewModel: viewModel, domain: domain)
+        }
     }
 }
 
@@ -312,16 +316,21 @@ private extension CerberusDomainsView {
 private extension CerberusDomainsView {
 
     func domainRow(_ domain: WAFDomainInfo) -> some View {
-        AXCard {
-            HStack(spacing: AXSpacing.md) {
-                domainShieldIcon(domain.enabled)
-                domainInfo(domain)
-                Spacer()
-                domainToggle(domain)
-                domainDeleteButton(domain)
+        Button {
+            selectedDomain = domain
+        } label: {
+            AXCard {
+                HStack(spacing: AXSpacing.md) {
+                    domainShieldIcon(domain.enabled)
+                    domainInfo(domain)
+                    Spacer()
+                    domainToggle(domain)
+                    domainDeleteButton(domain)
+                }
+                .padding(AXSpacing.lg)
             }
-            .padding(AXSpacing.lg)
         }
+        .buttonStyle(.plain)
     }
 
     func domainShieldIcon(_ enabled: Bool) -> some View {
