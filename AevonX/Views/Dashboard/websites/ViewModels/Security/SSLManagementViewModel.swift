@@ -299,13 +299,23 @@ public final class SSLManagementViewModel: ObservableObject {
         showLetsEncryptSheet = false
 
         // Check for certbot success/failure markers
-        if lastOutput.contains("AEVON_SSL_FAILED") || lastOutput.contains("Certificate not yet due for renewal") || (lastOutput.contains("error") && lastOutput.contains("certbot")) {
+        let isFailed = lastOutput.contains("AEVON_SSL_FAILED")
+            || lastOutput.contains("AEVON_SSL_INSTALL_FAILED")
+            || lastOutput.contains("Certificate not yet due for renewal")
+            || (lastOutput.contains("error") && lastOutput.contains("certbot"))
+            || lastOutput.contains("command not found")
+
+        if isFailed {
             error = "SSL issuance failed"
             log.debug("[\(website.domain)] LE issuance FAILED: \(lastOutput.suffix(200))", module: module)
             toastManager.showError("SSL certificate issuance failed — check server logs")
-        } else {
+        } else if lastOutput.contains("AEVON_SSL_SUCCESS") || lastOutput.contains("Congratulations") || lastOutput.contains("new certificate") || lastOutput.contains("Successfully received certificate") {
             log.debug("[\(website.domain)] LE issuance SUCCESS", module: module)
             toastManager.showSuccess("Let's Encrypt certificate issued successfully")
+        } else {
+            error = "SSL issuance result unclear"
+            log.debug("[\(website.domain)] LE issuance UNCERTAIN: \(lastOutput.suffix(200))", module: module)
+            toastManager.showError("Certificate issuance may have failed — verify manually")
         }
 
         await load()
@@ -495,12 +505,17 @@ public final class SSLManagementViewModel: ObservableObject {
         log.debug("[\(website.domain)] Renew result: \(output.prefix(300))", module: module)
 
         // Check renewal result
-        if output.contains("AEVON_SSL_FAILED") || output.contains("not yet due for renewal") {
+        let renewFailed = output.contains("AEVON_SSL_FAILED")
+            || output.contains("AEVON_SSL_INSTALL_FAILED")
+            || output.contains("not yet due for renewal")
+            || output.contains("command not found")
+
+        if renewFailed {
             toastManager.showError("Certificate renewal failed — cert may not be due yet")
-        } else if output.contains("AEVON_SSL_SUCCESS") || output.contains("Congratulations") || output.contains("new certificate") {
+        } else if output.contains("AEVON_SSL_SUCCESS") || output.contains("Congratulations") || output.contains("new certificate") || output.contains("Successfully received certificate") {
             toastManager.showSuccess("Certificate renewed successfully")
         } else {
-            toastManager.showSuccess("Certificate renewal completed")
+            toastManager.showError("Certificate renewal result unclear — verify manually")
         }
 
         await load()

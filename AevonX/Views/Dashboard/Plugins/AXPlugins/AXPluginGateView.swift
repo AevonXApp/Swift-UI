@@ -110,43 +110,28 @@ struct AXPluginGateView<Content: View>: View {
 
     @ViewBuilder
     private var installAction: some View {
-        if let pricing = gate.pluginInfo?.pricing,
-           (pricing.isPaid || pricing.isSubscribers),
-           gate.pluginInfo?.isPurchased != true {
-            // Paid / Subscribers and NOT purchased → link to purchase
-            VStack(spacing: AXSpacing.sm) {
-                AXPrimaryButton(
-                    title: L10n.Cerberus.Gate.getPlugin,
-                    icon: "cart",
-                    action: { gate.openPurchasePage() }
-                )
-                Text(L10n.Cerberus.Gate.opensInBrowser)
-                    .font(AXTypography.caption)
-                    .foregroundStyle(Color.axTextMuted)
-            }
-        } else {
-            // Free → direct install
-            VStack(spacing: AXSpacing.sm) {
-                AXPrimaryButton(
-                    title: L10n.Cerberus.Gate.installPlugin,
-                    icon: "arrow.down.circle",
-                    action: {
-                        Task { await gate.install(slug: slug, serverId: serverId) }
-                    },
-                    isLoading: gate.isInstalling
-                )
+        // No client-side pricing gates — backend decides authorization.
+        // If license is denied, performInstall transitions to .licenseRequired.
+        VStack(spacing: AXSpacing.sm) {
+            AXPrimaryButton(
+                title: L10n.Cerberus.Gate.installPlugin,
+                icon: "arrow.down.circle",
+                action: {
+                    Task { await gate.install(slug: slug, serverId: serverId) }
+                },
+                isLoading: gate.isInstalling
+            )
 
-                if let status = gate.installStatus {
-                    HStack(spacing: AXSpacing.xs) {
-                        if gate.isInstalling {
-                            ProgressView()
-                                .scaleEffect(0.6)
-                                .frame(width: 14, height: 14)
-                        }
-                        Text(status)
-                            .font(AXTypography.caption)
-                            .foregroundStyle(Color.axTextSecondary)
+            if let status = gate.installStatus {
+                HStack(spacing: AXSpacing.xs) {
+                    if gate.isInstalling {
+                        ProgressView()
+                            .scaleEffect(0.6)
+                            .frame(width: 14, height: 14)
                     }
+                    Text(status)
+                        .font(AXTypography.caption)
+                        .foregroundStyle(Color.axTextSecondary)
                 }
             }
         }
@@ -270,7 +255,7 @@ class AXPluginGateViewModel: ObservableObject {
                 // (handles free→paid transitions, expired subscriptions, etc.)
                 let licenseResult = await pluginManager.verifyLicense(slug: slug, on: serverId)
 
-                if licenseResult.valid {
+                if licenseResult.isAuthorized {
                     state = .installed
                 } else {
                     // Installed but license no longer valid
@@ -369,21 +354,24 @@ class AXPluginGateViewModel: ObservableObject {
         log.info("[PluginGate] Mode: \(isDevMode ? "DEV" : "PROD")", module: "PluginGate")
 
         do {
-            // ── Step 1: Verify license (ALWAYS) ──
+            // ── Step 1: Verify license (ALWAYS — backend decides) ──
             log.info("[PluginGate] Step 1: Verifying license...", module: "PluginGate")
             let licenseResult = await pluginManager.verifyLicense(slug: plugin.slug, on: serverId)
-            log.info("[PluginGate] License: valid=\(licenseResult.valid), type=\(licenseResult.pricingType), reason=\(licenseResult.reason ?? "none")", module: "PluginGate")
-
-            if !licenseResult.valid {
-                throw PluginInstallError(userMessage: licenseResult.userMessage ?? "Plugin license verification failed.")
+            // SECURITY: license_token is the proof, not boolean "valid"
+            guard licenseResult.isAuthorized else {
+                // Backend denied — transition to licenseRequired with purchase prompt
+                let message = licenseResult.userMessage ?? L10n.Cerberus.Gate.licenseRequired
+                isInstalling = false
+                installStatus = nil
+                state = .licenseRequired(message)
+                return
             }
 
-            // ── Step 2: Install via secure path (blind relay or legacy) ──
+            // ── Step 2: Install via secure path ──
             installStatus = L10n.Cerberus.Gate.preparingInstall
             let token = await AevonXCoreBridge.AuthService.shared.getToken() ?? ""
             let targetVersion = plugin.activeVersion
 
-            // Get download info for legacy fallback path
             let downloadJSON = await apiBridge.getPluginDownloadInfoAsync(
                 baseURL: baseURL, token: token,
                 pluginID: plugin.id,
@@ -394,7 +382,7 @@ class AXPluginGateViewModel: ObservableObject {
             let dlData = parseGoResult(downloadJSON)
             let downloadUrl = dlData?["download_url"] as? String ?? ""
 
-            log.info("[PluginGate] Step 2: Secure install (blind relay if license token available)", module: "PluginGate")
+            log.info("[PluginGate] Step 2: Secure install", module: "PluginGate")
             try await pluginManager.installSecure(
                 plugin: plugin,
                 version: targetVersion,

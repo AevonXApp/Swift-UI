@@ -32,3 +32,139 @@
 
 /* Version */
 "plugin.version" = "Version";
+
+/* Community developer fallback */
+"plugin.community" = "Community";
+
+/* Search placeholder */
+"plugin.search" = "Search plugins...";
+
+/* Loading state */
+"plugin.loading" = "Loading marketplace...";
+
+/* No plugins found */
+"plugin.noPlugins" = "No plugins found";
+
+/* No installed plugins */
+"plugin.noInstalled" = "No plugins installed";
+
+/* Browse marketplace hint */
+"plugin.browseHint" = "Browse the marketplace to find powerful extensions.";
+
+/* Adjust filters hint */
+"plugin.adjustFilters" = "Try adjusting your search or filters.";
+
+/* Purchase button */
+"plugin.buy" = "Purchase";
+
+/* Pro only badge */
+"plugin.proOnly" = "Pro Only";
+
+/* All filter */
+"plugin.all" = "All";
+
+/* Reinstall button */
+"plugin.reinstall" = "Reinstall";
+
+/* Downloads label */
+"plugin.downloads" = "Downloads";
+
+/* Rating label */
+"plugin.rating" = "Rating";
+
+/* Support link */
+"plugin.support" = "Support";
+
+/* Repository link */
+"plugin.repository" = "Repository";
+
+/* ── Plugin Detail ── */
+
+/* About section */
+"plugin.detail.about" = "About";
+
+/* Versions section */
+"plugin.detail.versions" = "Versions";
+
+/* What's New section */
+"plugin.detail.whatsNew" = "What's New";
+
+/* Developer section */
+"plugin.detail.developer" = "Developer";
+
+/* Latest version badge */
+"plugin.detail.latest" = "Latest";
+
+/* Currently installed badge */
+"plugin.detail.current" = "Installed";
+
+/* No changelog */
+"plugin.detail.noChangelog" = "No changelog available";
+
+/* No description */
+"plugin.detail.noDescription" = "No description available";
+
+/* No versions */
+"plugin.detail.noVersions" = "No versions available";
+
+/* Show all versions button */
+"plugin.detail.showAllVersions" = "Show All Versions";
+
+/* Older version badge */
+"plugin.detail.olderVersion" = "Older Version";
+
+/* Servers limit */
+"plugin.detail.servers" = "Servers";
+
+/* Category label */
+"plugin.detail.category" = "Category";
+
+/* Verified developer badge */
+"plugin.detail.verifiedDeveloper" = "Verified";
+
+/* New plugin (no rating yet) */
+"plugin.detail.newPlugin" = "New";
+
+/* ── Plugin Updates ── */
+
+/* Update available badge */
+"plugin.update.available" = "Update Available";
+
+/* Update all button */
+"plugin.update.updateAll" = "Update All";
+
+/* Update single button */
+"plugin.update.update" = "Update";
+
+/* Checking for updates */
+"plugin.update.checking" = "Checking for updates...";
+
+/* No updates available */
+"plugin.update.noUpdates" = "All plugins are up to date";
+
+/* Verifying license */
+"plugin.update.verifyingLicense" = "Verifying license...";
+
+/* Downloading update */
+"plugin.update.downloading" = "Downloading update...";
+
+/* Installing update */
+"plugin.update.installing" = "Installing update...";
+
+/* Finalizing */
+"plugin.update.finalizing" = "Finalizing...";
+
+/* Update complete */
+"plugin.update.complete" = "Update complete";
+
+/* Update failed */
+"plugin.update.failed" = "Update failed";
+
+/* License verification failed */
+"plugin.update.licenseFailed" = "License verification failed";
+
+/* Download failed */
+"plugin.update.downloadFailed" = "Failed to prepare download. Please try again.";
+
+/* Generic update error */
+"plugin.update.genericError" = "Update failed. Please try again later.";

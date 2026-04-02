@@ -295,7 +295,11 @@ public final class AddWebsiteViewModel: ObservableObject {
             let cmds = bridge.createSiteCmd(engine: selectedEngine, serverID: serverId, configJSON: configJSON)
             for cmd in cmds {
                 let result = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
-                if result.localizedCaseInsensitiveContains("error") || result.localizedCaseInsensitiveContains("failed") || result.localizedCaseInsensitiveContains("permission denied") {
+                // Strip known success markers before checking for errors
+                let cleaned = result
+                    .replacingOccurrences(of: "AEVONX_ERRORPAGES_DEPLOYED", with: "")
+                    .replacingOccurrences(of: "AEVONX_ERRORPAGE_EOF", with: "")
+                if cleaned.localizedCaseInsensitiveContains("error") || cleaned.localizedCaseInsensitiveContains("failed") || cleaned.localizedCaseInsensitiveContains("permission denied") {
                     CoreLogger.shared.error("Website creation command failed: \(result)", module: "AddWebsiteViewModel")
                     throw AddWebsiteError.creationFailed(result)
                 }

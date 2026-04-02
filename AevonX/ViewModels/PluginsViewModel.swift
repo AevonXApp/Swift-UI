@@ -29,6 +29,10 @@ class PluginsViewModel: ObservableObject {
     @Published var installationStatus: [String: String] = [:]   // pluginId: status message
     @Published var installSources: [String: InstallSource] = [:] // slug: source
     @Published var pluginStatuses: [String: PluginStatusInfo] = [:] // slug: security status
+    @Published var availableUpdates: [PluginUpdateInfo] = []
+    @Published var isCheckingUpdates = false
+    @Published var updateProgress: [String: Double] = [:] // slug: progress
+    @Published var updateStatus: [String: String] = [:]   // slug: status message
 
     private let apiService = PluginAPIService.shared   // only for downloadPluginFile
     private let pluginManager = PluginManager.shared
@@ -169,31 +173,58 @@ class PluginsViewModel: ObservableObject {
             }
             installationProgress[plugin.id] = 0.15
 
+            // ── Step 0.5: Collect and store server fingerprint for license binding ──
+            installationStatus[plugin.id] = "Collecting server fingerprint..."
+            log.info("[PluginInstall] Step 0.5: Collecting fingerprint for \(serverId)...", module: "PluginsVM")
+            let fpRaw = await pluginManager.collectServerFingerprint(serverID: serverId)
+            // Extract inner data from Go wrapper {"success":true,"data":{...}}
+            var fpData = fpRaw
+            if let rawData = fpRaw.data(using: .utf8),
+               let wrapper = try? JSONSerialization.jsonObject(with: rawData) as? [String: Any],
+               let inner = wrapper["data"] {
+                if let innerData = try? JSONSerialization.data(withJSONObject: inner),
+                   let innerStr = String(data: innerData, encoding: .utf8) {
+                    fpData = innerStr
+                }
+            }
+            let _ = await AevonXCoreBridge.APIBridge.shared.setRemoteFingerprint(serverID: serverId, fingerprintJSON: fpData)
+            log.info("[PluginInstall] Step 0.5 ✓ Fingerprint stored", module: "PluginsVM")
+
             // ── Step 1: Verify license (ALWAYS) ──
             installationStatus[plugin.id] = "Verifying license..."
             log.info("[PluginInstall] Step 1: Verifying license for \(plugin.slug)...", module: "PluginsVM")
 
             let licenseResult = await pluginManager.verifyLicense(slug: plugin.slug, on: serverId)
-            log.info("[PluginInstall] Step 1 result: valid=\(licenseResult.valid), type=\(licenseResult.pricingType), reason=\(licenseResult.reason ?? "none"), ttl=\(licenseResult.ttl ?? 0)", module: "PluginsVM")
 
-            if !licenseResult.valid {
-                let userMsg = licenseResult.userMessage ?? "Plugin license verification failed."
-                log.error("[PluginInstall] ✖ License denied: \(userMsg)", module: "PluginsVM")
+            // SECURITY: The license_token is the ONLY proof of authorization.
+            // We don't rely on a boolean "valid" — that can be patched.
+            // No token = backend refused to authorize = cannot install.
+            // The token is AES-256-GCM encrypted + HMAC-SHA256 signed with 60s TTL.
+            guard let _ = licenseResult.licenseToken, licenseResult.licenseToken?.isEmpty == false else {
+                let userMsg = licenseResult.userMessage ?? L10n.Plugin.Update.licenseFailed
+                log.error("[PluginInstall] License denied", module: "PluginsVM")
                 throw PluginInstallError(userMessage: userMsg)
             }
             installationProgress[plugin.id] = 0.2
 
-            // ── Step 2: Get download token ──
+            // ── Step 1.5: Detect server architecture ──
+            installationStatus[plugin.id] = "Detecting server architecture..."
+            log.info("[PluginInstall] Step 1.5: Detecting server architecture...", module: "PluginsVM")
+            let serverArch = await pluginManager.detectServerArchitecture(serverID: serverId)
+            log.info("[PluginInstall] Step 1.5 ✓ Architecture: \(serverArch)", module: "PluginsVM")
+
+            // ── Step 2: Get download token (arch-specific) ──
             installationStatus[plugin.id] = "Requesting download..."
             let token = await AevonXCoreBridge.AuthService.shared.getToken() ?? ""
-            log.info("[PluginInstall] Step 2: Requesting download token", module: "PluginsVM")
+            log.info("[PluginInstall] Step 2: Requesting download token (arch=\(serverArch))", module: "PluginsVM")
 
             let downloadJSON = await apiBridge.getPluginDownloadInfoAsync(
                 baseURL: baseURL, token: token,
                 pluginID: plugin.id,
                 versionID: targetVersion?.id ?? "",
                 serverID: serverId,
-                serverIP: ""
+                serverIP: "",
+                architecture: serverArch
             )
 
             guard let dlData = parseGoResult(downloadJSON),
@@ -368,8 +399,52 @@ class PluginsViewModel: ObservableObject {
         }
     }
     
+    // MARK: - Plugin Updates
+
+    func checkForUpdates(on serverId: String) async {
+        let log = AevonXCoreBridge.CoreLogger.shared
+        log.info("[PluginUpdates] ▶ Checking for plugin updates...", module: "PluginsVM")
+        isCheckingUpdates = true
+
+        do {
+            let updates = try await pluginManager.checkForUpdates(on: serverId)
+            self.availableUpdates = updates
+            log.info("[PluginUpdates] ✓ Found \(updates.count) update(s)", module: "PluginsVM")
+        } catch {
+            log.error("[PluginUpdates] ✖ Check failed: \(error.localizedDescription)", module: "PluginsVM")
+        }
+
+        isCheckingUpdates = false
+    }
+
+    func hasUpdate(for slug: String) -> Bool {
+        availableUpdates.contains { $0.pluginSlug == slug }
+    }
+
+    func updateInfo(for slug: String) -> PluginUpdateInfo? {
+        availableUpdates.first { $0.pluginSlug == slug }
+    }
+
+    func updatePlugin(_ plugin: Plugin, on serverId: String) async {
+        guard let update = updateInfo(for: plugin.slug) else { return }
+        guard !installationProgress.keys.contains(plugin.id) else { return }
+
+        let log = AevonXCoreBridge.CoreLogger.shared
+        log.info("[PluginUpdate] ▶ Updating \(plugin.slug) \(update.installedVersion) → \(update.latestVersion) via install flow", module: "PluginsVM")
+
+        // Use the same install flow (local download → SSH upload) — just target activeVersion
+        await installPlugin(plugin, version: plugin.activeVersion, on: serverId, serverIP: "")
+
+        // Remove from available updates after successful install
+        if installationStatus[plugin.id] != "Failed" {
+            availableUpdates.removeAll { $0.pluginSlug == plugin.slug }
+            // Re-check for updates
+            await checkForUpdates(on: serverId)
+        }
+    }
+
     // MARK: - Go Bridge Helpers
-    
+
     // MARK: - Plugin Security Status
 
     func refreshPluginStatuses(serverID: String) async {

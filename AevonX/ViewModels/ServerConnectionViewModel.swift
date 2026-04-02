@@ -654,8 +654,8 @@ public class ServerConnectionViewModel: ObservableObject {
     
     /// Disconnects from the server cleanly
     func disconnect() async {
-        guard isConnected || isConnecting else { return }
-        
+        guard (isConnected || isConnecting) && connectionStage != .disconnecting else { return }
+
         connectionStage = .disconnecting
         
         // Stop stats polling

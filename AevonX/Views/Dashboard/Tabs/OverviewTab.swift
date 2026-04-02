@@ -1026,7 +1026,7 @@ private struct SystemInfoCard: View {
 
     private func osIcon(_ os: String) -> String {
         let lower = os.lowercased()
-        if lower.contains("ubuntu") || lower.contains("debian") { return "ubuntu.fill" }
+        if lower.contains("ubuntu") || lower.contains("debian") { return "circle.hexagongrid" }
         if lower.contains("centos") || lower.contains("rhel") || lower.contains("fedora") || lower.contains("rocky") { return "server.rack" }
         if lower.contains("arch") { return "archivebox" }
         if lower.contains("windows") { return "desktopcomputer" }
