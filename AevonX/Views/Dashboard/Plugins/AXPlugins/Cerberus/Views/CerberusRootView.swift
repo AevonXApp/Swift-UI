@@ -38,6 +38,8 @@ private struct CerberusContentView: View {
             }
         }
         .background(Color.axBackground)
+        .onAppear { viewModel.startAutoRefresh() }
+        .onDisappear { viewModel.stopAutoRefresh() }
     }
 }
 

@@ -12,6 +12,8 @@ import AevonXCoreBridge
 struct CerberusSettingsView: View {
     @ObservedObject var viewModel: CerberusViewModel
     @State private var selectedSection: CerberusSettingsSection = .backups
+    @State private var vpatchToDelete: String?
+    @State private var backupToRestore: String?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -26,6 +28,28 @@ struct CerberusSettingsView: View {
             async let v: () = viewModel.loadVPatches()
             async let c: () = viewModel.loadModuleConfig()
             _ = await (b, v, c)
+        }
+        .confirmationDialog(
+            L10n.Cerberus.Dialog.deleteVPatch,
+            isPresented: Binding(get: { vpatchToDelete != nil }, set: { if !$0 { vpatchToDelete = nil } }),
+            titleVisibility: .visible
+        ) {
+            Button(L10n.Cerberus.Dialog.delete, role: .destructive) {
+                if let id = vpatchToDelete {
+                    Task { await viewModel.removeVPatch(id) }
+                }
+            }
+        }
+        .confirmationDialog(
+            L10n.Cerberus.Dialog.restoreBackup,
+            isPresented: Binding(get: { backupToRestore != nil }, set: { if !$0 { backupToRestore = nil } }),
+            titleVisibility: .visible
+        ) {
+            Button(L10n.Cerberus.Settings.restore, role: .destructive) {
+                if let name = backupToRestore {
+                    Task { await viewModel.restoreConfigBackup(name: name) }
+                }
+            }
         }
     }
 }
@@ -243,7 +267,7 @@ private extension CerberusSettingsView {
             }
             Spacer()
             Button {
-                Task { await viewModel.restoreConfigBackup(name: backup.name) }
+                backupToRestore = backup.name
             } label: {
                 HStack(spacing: AXSpacing.xxxs) {
                     Image(systemName: "arrow.counterclockwise")
@@ -292,7 +316,7 @@ private extension CerberusSettingsView {
                 }
                 Spacer()
                 AXBadge(
-                    text: "\(viewModel.vPatches.filter(\.enabled).count)/\(viewModel.vPatches.count) active",
+                    text: L10n.Cerberus.Badge.active(viewModel.vPatches.filter(\.enabled).count, viewModel.vPatches.count),
                     color: .axAccentGreen, style: .soft
                 )
             }
@@ -350,7 +374,7 @@ private extension CerberusSettingsView {
                         .fontWeight(.semibold)
                         .foregroundStyle(Color.axTextPrimary)
                 }
-                AXBadge(text: patch.severity.capitalized, color: severityColor(patch.severity), style: .soft)
+                AXBadge(text: L10n.Cerberus.Alerts.filterLabel(for: patch.severity), color: severityColor(patch.severity), style: .soft)
                 if !patch.enabled {
                     AXBadge(text: L10n.Status.disabled, color: .axTextMuted, style: .soft)
                 }
@@ -372,7 +396,7 @@ private extension CerberusSettingsView {
 
     func vpatchRowActions(_ patch: WAFVirtualPatch) -> some View {
         Button {
-            Task { await viewModel.removeVPatch(patch.patchID) }
+            vpatchToDelete = patch.patchID
         } label: {
             Image(systemName: "trash")
                 .font(.system(size: 11))
@@ -436,7 +460,7 @@ private extension CerberusSettingsView {
                 AXPrimaryButton(
                     title: L10n.Cerberus.Settings.export,
                     icon: "square.and.arrow.up",
-                    action: { Task { _ = await viewModel.exportLogData(logType: logType) } },
+                    action: { Task { await viewModel.exportLogData(logType: logType) } },
                     isLoading: viewModel.configOperationInProgress
                 )
             }
@@ -587,14 +611,22 @@ private extension CerberusSettingsView {
         }
     }
 
+    private static let isoFmt: ISO8601DateFormatter = {
+        let f = ISO8601DateFormatter()
+        f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return f
+    }()
+    private static let isoFmtBasic = ISO8601DateFormatter()
+    private static let backupDateFmt: DateFormatter = {
+        let f = DateFormatter()
+        f.dateStyle = .medium
+        f.timeStyle = .short
+        return f
+    }()
+
     func formatBackupDate(_ iso: String) -> String {
-        let fmt = ISO8601DateFormatter()
-        fmt.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        guard let date = fmt.date(from: iso) ?? ISO8601DateFormatter().date(from: iso) else { return iso }
-        let display = DateFormatter()
-        display.dateStyle = .medium
-        display.timeStyle = .short
-        return display.string(from: date)
+        guard let date = Self.isoFmt.date(from: iso) ?? Self.isoFmtBasic.date(from: iso) else { return iso }
+        return Self.backupDateFmt.string(from: date)
     }
 
     func formatBytes(_ bytes: Int) -> String {

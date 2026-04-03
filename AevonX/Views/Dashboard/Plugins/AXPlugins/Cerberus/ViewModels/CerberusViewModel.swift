@@ -7,6 +7,7 @@
 
 import SwiftUI
 import Combine
+import UniformTypeIdentifiers
 import AevonXCoreBridge
 
 // MARK: - Tab
@@ -150,6 +151,16 @@ class CerberusViewModel: ObservableObject {
 
     @Published var domainStats: [String: DomainStats] = [:]
 
+    // MARK: - Domain Detail
+
+    @Published var selectedDomainTimeline: [TimelineEntry] = []
+    @Published var selectedDomainCountries: [CountryStats] = []
+    @Published var selectedDomainAccessLog: [WAFAccessLogEntry] = []
+    @Published var selectedDomainBlockLog: [WAFBlockLogEntry] = []
+    @Published var selectedDomainBlockedIPs: [String] = []
+    @Published var selectedDomainBlockedCountries: [String] = []
+    @Published var domainDetailLoading = false
+
     // MARK: - QPS
 
     @Published var currentQPS: Double?
@@ -161,7 +172,9 @@ class CerberusViewModel: ObservableObject {
     @Published var botDetails: WAFBotDetails?
     @Published var recentAlerts: [WAFAlertEvent] = []
     @Published var accessLog: [WAFAccessLogEntry] = []
+    @Published var accessLogTotal: Int = 0
     @Published var blockLog: [WAFBlockLogEntry] = []
+    @Published var blockLogTotal: Int = 0
 
     // MARK: - Service Lifecycle
 
@@ -260,7 +273,7 @@ class CerberusViewModel: ObservableObject {
     @Published var ddosMaxConnsPerIP: Double = 100
 
     // Honeypot config
-    @Published var honeypotPaths = ""
+    @Published var honeypotPaths = "/wp-admin,/.env,/phpmyadmin,/wp-login.php,/xmlrpc.php,/.git/config,/actuator"
     @Published var honeypotAutoBlock = true
 
     // Alerts config
@@ -287,10 +300,46 @@ class CerberusViewModel: ObservableObject {
             while !Task.isCancelled {
                 try? await Task.sleep(nanoseconds: UInt64(interval * 1_000_000_000))
                 guard !Task.isCancelled, let self else { return }
-                await self.loadDashboard()
-                await self.loadQPS()
+                await self.refreshActiveTab()
             }
         }
+    }
+
+    private func refreshActiveTab() async {
+        switch selectedTab {
+        case .dashboard:
+            await loadDashboard()
+            await loadQPS()
+        case .attacks:
+            await loadAttacks()
+        case .traffic:
+            await loadTrafficAnalytics()
+            await loadAccessLog()
+        case .visitorLog:
+            await loadAccessLog()
+        case .domains:
+            await loadDomains()
+        case .ipManagement:
+            await loadIPLists()
+        case .modules:
+            await loadModuleConfig()
+        case .honeypot:
+            await loadHoneypot()
+        case .alerts:
+            await loadAlerts()
+        case .threatFeed:
+            await loadThreatFeedStatus()
+        case .compliance:
+            await loadComplianceReport()
+        case .sessions:
+            await loadSessionStatus()
+        case .customRules:
+            await loadCustomRules()
+        case .settings:
+            await loadConfigBackups()
+            await loadVPatches()
+        }
+        lastRefreshed = Date()
     }
 
     func stopAutoRefresh() {
@@ -313,26 +362,57 @@ class CerberusViewModel: ObservableObject {
         dashboardLoading = true
         errorMessage = nil
 
-        do {
-            async let o  = cerberus.getOverview(on: serverId)
-            async let t  = cerberus.getTimeline(on: serverId)
-            async let d  = cerberus.getDDoSStatus(on: serverId)
-            async let s  = cerberus.getServiceStatus(on: serverId)
-            async let c  = cerberus.getCredentialStatus(on: serverId)
-            async let co = cerberus.getCountries(on: serverId)
+        async let o: Result<WAFOverview, Error> = {
+            do { return .success(try await cerberus.getOverview(on: serverId)) }
+            catch { return .failure(error) }
+        }()
+        async let t: Result<[TimelineEntry], Error> = {
+            do { return .success(try await cerberus.getTimeline(on: serverId)) }
+            catch { return .failure(error) }
+        }()
+        async let d: Result<DDoSStatus, Error> = {
+            do { return .success(try await cerberus.getDDoSStatus(on: serverId)) }
+            catch { return .failure(error) }
+        }()
+        async let s: Result<WAFServiceStatus, Error> = {
+            do { return .success(try await cerberus.getServiceStatus(on: serverId)) }
+            catch { return .failure(error) }
+        }()
+        async let c: Result<CredentialStatus, Error> = {
+            do { return .success(try await cerberus.getCredentialStatus(on: serverId)) }
+            catch { return .failure(error) }
+        }()
+        async let co: Result<[CountryStats], Error> = {
+            do { return .success(try await cerberus.getCountries(on: serverId)) }
+            catch { return .failure(error) }
+        }()
 
-            let (ov, tl, dd, sv, cr, ctrs) = try await (o, t, d, s, c, co)
-            overview        = ov
-            timeline        = tl
-            ddosStatus      = dd
-            serviceStatus   = sv
-            credentialStatus = cr
-            countries       = ctrs
-            lastRefreshed   = Date()
-        } catch {
-            errorMessage = error.localizedDescription
+        let (ro, rt, rd, rs, rc, rco) = await (o, t, d, s, c, co)
+
+        if case .success(let v) = ro { overview = v }
+        if case .success(let v) = rt { timeline = v }
+        if case .success(let v) = rd { ddosStatus = v }
+        if case .success(let v) = rs { serviceStatus = v }
+        if case .success(let v) = rc { credentialStatus = v }
+        if case .success(let v) = rco { countries = v }
+
+        // If overview failed due to SSH, retry once after short delay
+        if case .failure(let err) = ro {
+            let errStr = err.localizedDescription
+            if errStr.contains("ssh not connected") || errStr.contains("ssh failed") {
+                try? await Task.sleep(nanoseconds: 2_000_000_000)
+                if let retryOverview = try? await cerberus.getOverview(on: serverId) {
+                    overview = retryOverview
+                    errorMessage = nil
+                    lastRefreshed = Date()
+                    dashboardLoading = false
+                    return
+                }
+            }
+            errorMessage = errStr
         }
 
+        lastRefreshed = Date()
         dashboardLoading = false
     }
 
@@ -342,20 +422,34 @@ class CerberusViewModel: ObservableObject {
         attacksLoading = true
         errorMessage = nil
 
-        do {
-            async let at = cerberus.getAttackTypes(on: serverId)
-            async let ta = cerberus.getTopAttackers(on: serverId)
-            async let tu = cerberus.getTopURIs(on: serverId)
-            async let co = cerberus.getCountries(on: serverId)
+        async let at: Result<[AttackTypeStats], Error> = {
+            do { return .success(try await cerberus.getAttackTypes(on: serverId)) }
+            catch { return .failure(error) }
+        }()
+        async let ta: Result<[AttackerInfo], Error> = {
+            do { return .success(try await cerberus.getTopAttackers(on: serverId)) }
+            catch { return .failure(error) }
+        }()
+        async let tu: Result<[URIStats], Error> = {
+            do { return .success(try await cerberus.getTopURIs(on: serverId)) }
+            catch { return .failure(error) }
+        }()
+        async let co: Result<[CountryStats], Error> = {
+            do { return .success(try await cerberus.getCountries(on: serverId)) }
+            catch { return .failure(error) }
+        }()
 
-            let (types, attackers, uris, ctrs) = try await (at, ta, tu, co)
-            attackTypes = types
-            topAttackers = attackers
-            topURIs = uris
-            countries = ctrs
-        } catch {
-            errorMessage = error.localizedDescription
-        }
+        let (rat, rta, rtu, rco) = await (at, ta, tu, co)
+
+        if case .success(let v) = rat { attackTypes = v }
+        if case .success(let v) = rta { topAttackers = v }
+        if case .success(let v) = rtu { topURIs = v }
+        if case .success(let v) = rco { countries = v }
+
+        if case .failure(let err) = rat { errorMessage = err.localizedDescription }
+        else if case .failure(let err) = rta { errorMessage = err.localizedDescription }
+        else if case .failure(let err) = rtu { errorMessage = err.localizedDescription }
+        else if case .failure(let err) = rco { errorMessage = err.localizedDescription }
 
         attacksLoading = false
     }
@@ -366,16 +460,22 @@ class CerberusViewModel: ObservableObject {
         ipLoading = true
         errorMessage = nil
 
-        do {
-            async let bl = cerberus.listBlockedIPs(on: serverId)
-            async let al = cerberus.listAllowedIPs(on: serverId)
+        async let bl: Result<[String], Error> = {
+            do { return .success(try await cerberus.listBlockedIPs(on: serverId)) }
+            catch { return .failure(error) }
+        }()
+        async let al: Result<[String], Error> = {
+            do { return .success(try await cerberus.listAllowedIPs(on: serverId)) }
+            catch { return .failure(error) }
+        }()
 
-            let (blocked, allowed) = try await (bl, al)
-            blockedIPs = blocked
-            allowedIPs = allowed
-        } catch {
-            errorMessage = error.localizedDescription
-        }
+        let (rbl, ral) = await (bl, al)
+
+        if case .success(let v) = rbl { blockedIPs = v }
+        if case .success(let v) = ral { allowedIPs = v }
+
+        if case .failure(let err) = rbl { errorMessage = err.localizedDescription }
+        else if case .failure(let err) = ral { errorMessage = err.localizedDescription }
 
         ipLoading = false
     }
@@ -427,6 +527,38 @@ class CerberusViewModel: ObservableObject {
         } catch {
             GlobalToastManager.shared.showError(L10n.Cerberus.Toast.failedToRemove(ip, error.localizedDescription))
         }
+        ipOperationInProgress = false
+    }
+
+    func bulkBlockIPs(_ ips: [String]) async {
+        ipOperationInProgress = true
+        var failed: [String] = []
+        for ip in ips {
+            do { try await cerberus.blockIP(ip, on: serverId) }
+            catch { failed.append(ip) }
+        }
+        if failed.isEmpty {
+            GlobalToastManager.shared.showSuccess(L10n.Cerberus.Toast.blocked("\(ips.count) IPs"))
+        } else {
+            GlobalToastManager.shared.showWarning(L10n.Cerberus.Toast.failedToBlock("\(failed.count)/\(ips.count)", "partial failure"))
+        }
+        await loadIPLists()
+        ipOperationInProgress = false
+    }
+
+    func bulkAllowIPs(_ ips: [String]) async {
+        ipOperationInProgress = true
+        var failed: [String] = []
+        for ip in ips {
+            do { try await cerberus.allowIP(ip, on: serverId) }
+            catch { failed.append(ip) }
+        }
+        if failed.isEmpty {
+            GlobalToastManager.shared.showSuccess(L10n.Cerberus.Toast.allowed("\(ips.count) IPs"))
+        } else {
+            GlobalToastManager.shared.showWarning(L10n.Cerberus.Toast.failedToAllow("\(failed.count)/\(ips.count)", "partial failure"))
+        }
+        await loadIPLists()
         ipOperationInProgress = false
     }
 
@@ -489,15 +621,31 @@ class CerberusViewModel: ObservableObject {
     // MARK: - Domain Management
 
     func loadDomains() async {
-        do {
-            async let d = cerberus.listDomains(on: serverId)
-            async let w = cerberus.detectWebServer(on: serverId)
-            let (domainList, wsInfo) = try await (d, w)
-            domains = domainList
-            webServerInfo = wsInfo
-        } catch {
-            errorMessage = error.localizedDescription
-        }
+        domainsLoading = true
+
+        async let d: Result<[WAFDomainInfo], Error> = {
+            do { return .success(try await cerberus.listDomains(on: serverId)) }
+            catch { return .failure(error) }
+        }()
+        async let w: Result<WAFWebServerInfo, Error> = {
+            do { return .success(try await cerberus.detectWebServer(on: serverId)) }
+            catch { return .failure(error) }
+        }()
+        async let ds: Result<[String: DomainStats], Error> = {
+            do { return .success(try await cerberus.getDomainStats(on: serverId)) }
+            catch { return .failure(error) }
+        }()
+
+        let (rd, rw, rds) = await (d, w, ds)
+
+        if case .success(let v) = rd { domains = v }
+        if case .success(let v) = rw { webServerInfo = v }
+        if case .success(let v) = rds { domainStats = v }
+
+        if case .failure(let err) = rd { errorMessage = err.localizedDescription }
+        else if case .failure(let err) = rw { errorMessage = err.localizedDescription }
+
+        domainsLoading = false
     }
 
     func addDomain(_ domain: String) async {
@@ -555,24 +703,129 @@ class CerberusViewModel: ObservableObject {
         domainOperationInProgress = false
     }
 
+    // MARK: - Domain Detail
+
+    func loadDomainDetail(domain: String) async {
+        domainDetailLoading = true
+
+        async let tl: Result<WAFDomainTimeline, Error> = {
+            do { return .success(try await cerberus.getDomainTimeline(domain: domain, on: serverId)) }
+            catch { return .failure(error) }
+        }()
+        async let co: Result<WAFDomainCountries, Error> = {
+            do { return .success(try await cerberus.getDomainCountries(domain: domain, on: serverId)) }
+            catch { return .failure(error) }
+        }()
+        async let al: Result<WAFAccessLogResponse, Error> = {
+            do { return .success(try await cerberus.getDomainAccessLog(domain: domain, on: serverId)) }
+            catch { return .failure(error) }
+        }()
+        async let bl: Result<WAFBlockLogResponse, Error> = {
+            do { return .success(try await cerberus.getDomainBlockLog(domain: domain, on: serverId)) }
+            catch { return .failure(error) }
+        }()
+        async let ips: Result<WAFDomainRulesIP, Error> = {
+            do { return .success(try await cerberus.getDomainBlockedIPs(domain: domain, on: serverId)) }
+            catch { return .failure(error) }
+        }()
+        async let ctrs: Result<WAFDomainRulesCountry, Error> = {
+            do { return .success(try await cerberus.getDomainBlockedCountries(domain: domain, on: serverId)) }
+            catch { return .failure(error) }
+        }()
+
+        let (rtl, rco, ral, rbl, rips, rctrs) = await (tl, co, al, bl, ips, ctrs)
+
+        if case .success(let v) = rtl { selectedDomainTimeline = v.timeline }
+        if case .success(let v) = rco { selectedDomainCountries = v.countries }
+        if case .success(let v) = ral { selectedDomainAccessLog = v.entries }
+        if case .success(let v) = rbl { selectedDomainBlockLog = v.entries }
+        if case .success(let v) = rips { selectedDomainBlockedIPs = v.blockedIPs }
+        if case .success(let v) = rctrs { selectedDomainBlockedCountries = v.blockedCountries }
+
+        domainDetailLoading = false
+    }
+
+    func domainBlockIP(_ ip: String, domain: String) async {
+        domainOperationInProgress = true
+        do {
+            try await cerberus.domainBlockIP(ip, domain: domain, on: serverId)
+            GlobalToastManager.shared.showSuccess("IP \(ip) blocked on \(domain)")
+            selectedDomainBlockedIPs.append(ip)
+        } catch {
+            GlobalToastManager.shared.showError(error.localizedDescription)
+        }
+        domainOperationInProgress = false
+    }
+
+    func domainUnblockIP(_ ip: String, domain: String) async {
+        domainOperationInProgress = true
+        do {
+            try await cerberus.domainUnblockIP(ip, domain: domain, on: serverId)
+            GlobalToastManager.shared.showSuccess("IP \(ip) unblocked on \(domain)")
+            selectedDomainBlockedIPs.removeAll { $0 == ip }
+        } catch {
+            GlobalToastManager.shared.showError(error.localizedDescription)
+        }
+        domainOperationInProgress = false
+    }
+
+    func domainBlockCountry(_ code: String, domain: String) async {
+        domainOperationInProgress = true
+        do {
+            try await cerberus.domainBlockCountry(code, domain: domain, on: serverId)
+            GlobalToastManager.shared.showSuccess("Country \(code) blocked on \(domain)")
+            selectedDomainBlockedCountries.append(code)
+        } catch {
+            GlobalToastManager.shared.showError(error.localizedDescription)
+        }
+        domainOperationInProgress = false
+    }
+
+    func domainUnblockCountry(_ code: String, domain: String) async {
+        domainOperationInProgress = true
+        do {
+            try await cerberus.domainUnblockCountry(code, domain: domain, on: serverId)
+            GlobalToastManager.shared.showSuccess("Country \(code) unblocked on \(domain)")
+            selectedDomainBlockedCountries.removeAll { $0 == code }
+        } catch {
+            GlobalToastManager.shared.showError(error.localizedDescription)
+        }
+        domainOperationInProgress = false
+    }
+
     // MARK: - Load Extended Stats
 
     func loadTrafficAnalytics() async {
         trafficLoading = true
-        do {
-            async let ds = cerberus.getDomainStats(on: serverId)
-            async let rt = cerberus.getResponseTimes(on: serverId)
-            async let sc = cerberus.getStatusCodes(on: serverId)
-            async let bd = cerberus.getBotDetails(on: serverId)
 
-            let (domains, times, codes, bots) = try await (ds, rt, sc, bd)
-            domainStats = domains
-            responseTimes = times
-            statusCodes = codes
-            botDetails = bots
-        } catch {
-            errorMessage = error.localizedDescription
+        async let ds: Result<[String: DomainStats], Error> = {
+            do { return .success(try await cerberus.getDomainStats(on: serverId)) }
+            catch { return .failure(error) }
+        }()
+        async let rt: Result<WAFResponseTimes, Error> = {
+            do { return .success(try await cerberus.getResponseTimes(on: serverId)) }
+            catch { return .failure(error) }
+        }()
+        async let sc: Result<[WAFStatusCode], Error> = {
+            do { return .success(try await cerberus.getStatusCodes(on: serverId)) }
+            catch { return .failure(error) }
+        }()
+        async let bd: Result<WAFBotDetails, Error> = {
+            do { return .success(try await cerberus.getBotDetails(on: serverId)) }
+            catch { return .failure(error) }
+        }()
+
+        let (rds, rrt, rsc, rbd) = await (ds, rt, sc, bd)
+
+        if case .success(let v) = rds { domainStats = v }
+        if case .success(let v) = rrt { responseTimes = v }
+        if case .success(let v) = rsc { statusCodes = v }
+        if case .success(let v) = rbd { botDetails = v }
+
+        if case .failure(let err) = rds {
+            errorMessage = err.localizedDescription
         }
+
         trafficLoading = false
     }
 
@@ -589,16 +842,30 @@ class CerberusViewModel: ObservableObject {
     func loadAccessLog() async {
         visitorLogLoading = true
         do {
-            accessLog = try await cerberus.getAccessLog(on: serverId)
+            let response = try await cerberus.getAccessLog(on: serverId)
+            accessLog = response.entries
+            accessLogTotal = response.total
         } catch {
-            GlobalToastManager.shared.showError(L10n.Cerberus.Toast.errorPrefix("Access log", error.localizedDescription))
+            let errStr = error.localizedDescription
+            if errStr.contains("ssh not connected") || errStr.contains("ssh failed") {
+                try? await Task.sleep(nanoseconds: 2_000_000_000)
+                if let response = try? await cerberus.getAccessLog(on: serverId) {
+                    accessLog = response.entries
+                    accessLogTotal = response.total
+                    visitorLogLoading = false
+                    return
+                }
+            }
+            GlobalToastManager.shared.showError(L10n.Cerberus.Toast.errorPrefix("Access log", errStr))
         }
         visitorLogLoading = false
     }
 
     func loadBlockLog() async {
         do {
-            blockLog = try await cerberus.getBlockLog(on: serverId)
+            let response = try await cerberus.getBlockLog(on: serverId)
+            blockLog = response.entries
+            blockLogTotal = response.total
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -678,7 +945,7 @@ class CerberusViewModel: ObservableObject {
         ddosSpikeMultiplier = cfg.double("ddos_spike_multiplier", default: 3.0)
         ddosMaxConnsPerIP   = cfg.double("max_connections_per_ip", default: 100)
 
-        honeypotPaths       = cfg.string("honeypot_paths", default: "")
+        honeypotPaths       = cfg.string("honeypot_paths", default: "/wp-admin,/.env,/phpmyadmin,/wp-login.php,/xmlrpc.php,/.git/config,/actuator")
         honeypotAutoBlock   = cfg.bool("honeypot_auto_block", default: true)
 
         alertWebhookURL     = cfg.string("alert_webhook_url", default: "")
@@ -693,8 +960,10 @@ class CerberusViewModel: ObservableObject {
         do {
             try await cerberus.configSet(key: key, value: enabled ? "true" : "false", on: serverId)
             GlobalToastManager.shared.showSuccess(enabled ? L10n.Cerberus.Toast.moduleEnabled : L10n.Cerberus.Toast.moduleDisabled)
+            await loadModuleConfig()
         } catch {
             GlobalToastManager.shared.showError(L10n.Cerberus.Toast.failed(error.localizedDescription))
+            await loadModuleConfig()
         }
         configOperationInProgress = false
     }
@@ -848,6 +1117,8 @@ class CerberusViewModel: ObservableObject {
             }
         }
 
+        // Reload config to reflect actual backend state
+        await loadModuleConfig()
         configOperationInProgress = false
     }
 
@@ -962,7 +1233,9 @@ class CerberusViewModel: ObservableObject {
     func loadCustomRules() async {
         rulesLoading = true
         do {
-            customRules = try await cerberus.listRules(on: serverId)
+            let response = try await cerberus.listRules(on: serverId)
+            customRules = response.rules
+            customRulesEnabled = response.enabled
         } catch {
             GlobalToastManager.shared.showError(L10n.Cerberus.Toast.errorPrefix("Rules", error.localizedDescription))
         }
@@ -1012,14 +1285,18 @@ class CerberusViewModel: ObservableObject {
 
     // MARK: - Log Export
 
-    func exportLogData(logType: String) async -> [String: Any]? {
+    func exportLogData(logType: String) async {
         do {
             let result = try await cerberus.exportLogs(logType, on: serverId)
+            let data = try JSONSerialization.data(withJSONObject: result, options: [.prettyPrinted, .sortedKeys])
+            let panel = NSSavePanel()
+            panel.nameFieldStringValue = "cerberus-\(logType)-export.json"
+            panel.allowedContentTypes = [.json]
+            guard panel.runModal() == .OK, let url = panel.url else { return }
+            try data.write(to: url)
             GlobalToastManager.shared.showSuccess(L10n.Cerberus.Toast.logsExported)
-            return result
         } catch {
             GlobalToastManager.shared.showError(L10n.Cerberus.Toast.errorPrefix("Export", error.localizedDescription))
-            return nil
         }
     }
 

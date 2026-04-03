@@ -198,7 +198,7 @@ private extension CerberusHoneypotView {
             AXLogRowDetail(label: L10n.Cerberus.Honeypot.detailUA, value: hit.userAgent),
         ]
         for (key, value) in hit.headers.sorted(by: { $0.key < $1.key }) {
-            details.append(AXLogRowDetail(label: "H: \(key)", value: value))
+            details.append(AXLogRowDetail(label: "\(L10n.Cerberus.Honeypot.headerPrefix): \(key)", value: value))
         }
         if !hit.body.isEmpty {
             details.append(AXLogRowDetail(label: L10n.Cerberus.Honeypot.detailBody, value: hit.body))
@@ -219,14 +219,20 @@ private extension CerberusHoneypotView {
         Set(viewModel.honeypotHits.map(\.path)).count
     }
 
+    private static let isoFmt: ISO8601DateFormatter = {
+        let f = ISO8601DateFormatter()
+        f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return f
+    }()
+    private static let isoFmtBasic = ISO8601DateFormatter()
+    private static let displayFmt: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "MMM d, HH:mm:ss"
+        return f
+    }()
+
     func formatTime(_ iso: String) -> String {
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        guard let date = formatter.date(from: iso) ?? ISO8601DateFormatter().date(from: iso) else {
-            return iso
-        }
-        let display = DateFormatter()
-        display.dateFormat = "MMM d, HH:mm:ss"
-        return display.string(from: date)
+        guard let date = Self.isoFmt.date(from: iso) ?? Self.isoFmtBasic.date(from: iso) else { return iso }
+        return Self.displayFmt.string(from: date)
     }
 }

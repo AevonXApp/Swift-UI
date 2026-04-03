@@ -222,6 +222,8 @@ extension L10n {
             static let colLatency           = s("cerberus.traffic.colLatency", "Latency")
             static let colBot               = s("cerberus.traffic.colBot", "Bot")
             static let noStatusCodeData     = s("cerberus.traffic.noStatusCodeData", "No status code data")
+            static let latencyAvg           = s("cerberus.traffic.latencyAvg", "Avg")
+            static let latencyMax           = s("cerberus.traffic.latencyMax", "Max")
 
             static func blockedPct(_ pct: String) -> String {
                 let dv: String.LocalizationValue = "\(pct) blocked"
@@ -344,6 +346,9 @@ extension L10n {
             static let domainName           = s("cerberus.domains.domainName", "Domain Name")
             static let domainPlaceholder    = s("cerberus.domains.domainPlaceholder", "example.com")
             static let domainHint           = s("cerberus.domains.domainHint", "Subdomains like api.example.com are supported")
+            static let requests             = s("cerberus.domains.requests", "Requests")
+            static let blocked              = s("cerberus.domains.blocked", "Blocked")
+            static let blockRate            = s("cerberus.domains.blockRate", "Block Rate")
         }
 
         // MARK: Alerts
@@ -365,6 +370,46 @@ extension L10n {
             static let type                 = s("cerberus.alerts.type", "Type")
             static let severity             = s("cerberus.alerts.severity", "Severity")
             static let timestamp            = s("cerberus.alerts.timestamp", "Timestamp")
+
+            // Severity filter chips
+            static let filterAll            = s("cerberus.alerts.filterAll", "All")
+            static let filterCritical       = s("cerberus.alerts.filterCritical", "Critical")
+            static let filterHigh           = s("cerberus.alerts.filterHigh", "High")
+            static let filterMedium         = s("cerberus.alerts.filterMedium", "Medium")
+            static let filterLow            = s("cerberus.alerts.filterLow", "Low")
+
+            static func filterLabel(for key: String) -> String {
+                switch key {
+                case "all":      return filterAll
+                case "critical": return filterCritical
+                case "high":     return filterHigh
+                case "medium":   return filterMedium
+                case "low":      return filterLow
+                default:         return key.capitalized
+                }
+            }
+
+            private static let alertTypeMap: [String: String] = [
+                "waf_block": s("cerberus.alerts.type.waf_block", "WAF Block"),
+                "rate_limit": s("cerberus.alerts.type.rate_limit", "Rate Limit"),
+                "ddos_spike": s("cerberus.alerts.type.ddos_spike", "DDoS Spike"),
+                "bot_detected": s("cerberus.alerts.type.bot_detected", "Bot Detected"),
+                "credential_attack": s("cerberus.alerts.type.credential_attack", "Credential Attack"),
+                "honeypot_hit": s("cerberus.alerts.type.honeypot_hit", "Honeypot Hit"),
+                "ssrf_attempt": s("cerberus.alerts.type.ssrf_attempt", "SSRF Attempt"),
+                "dlp_leak": s("cerberus.alerts.type.dlp_leak", "DLP Leak"),
+                "anomaly": s("cerberus.alerts.type.anomaly", "Anomaly"),
+                "session_hijack": s("cerberus.alerts.type.session_hijack", "Session Hijack"),
+                "threat_feed": s("cerberus.alerts.type.threat_feed", "Threat Feed"),
+                "custom_rule": s("cerberus.alerts.type.custom_rule", "Custom Rule"),
+                "challenge_fail": s("cerberus.alerts.type.challenge_fail", "Challenge Fail"),
+                "geo_block": s("cerberus.alerts.type.geo_block", "Geo Block"),
+                "ip_block": s("cerberus.alerts.type.ip_block", "IP Block"),
+            ]
+
+            static func alertTypeDisplay(_ type: String) -> String {
+                alertTypeMap[type] ?? type.replacingOccurrences(of: "_", with: " ").capitalized
+            }
         }
 
         // MARK: Modules
@@ -447,6 +492,78 @@ extension L10n {
             static let maxAlertsPerHour     = s("cerberus.modules.maxAlertsPerHour", "Max Alerts / Hour")
             static let minimumSeverity      = s("cerberus.modules.minimumSeverity", "Minimum Severity")
             static let saveAlertConfig      = s("cerberus.modules.saveAlertConfig", "Save Alert Config")
+            // Config units
+            static let unitReqPerMin        = s("cerberus.modules.unitReqPerMin", "req/min")
+            static let unitTimes            = s("cerberus.modules.unitTimes", "×")
+            static let unitConns            = s("cerberus.modules.unitConns", "conns")
+            static let unitPerHour          = s("cerberus.modules.unitPerHour", "per hour")
+            static let unitAlerts           = s("cerberus.modules.unitAlerts", "alerts")
+            // Categories
+            static let catCore              = s("cerberus.modules.catCore", "Core")
+            static let catTraffic           = s("cerberus.modules.catTraffic", "Traffic")
+            static let catDefense           = s("cerberus.modules.catDefense", "Defense")
+            static let catDetection         = s("cerberus.modules.catDetection", "Detection")
+            static let catAuth              = s("cerberus.modules.catAuth", "Auth")
+            static let catData              = s("cerberus.modules.catData", "Data")
+            static let catAlerting          = s("cerberus.modules.catAlerting", "Alerting")
+            static let catIntelligence      = s("cerberus.modules.catIntelligence", "Intelligence")
+            static let catAPI               = s("cerberus.modules.catAPI", "API")
+            static let catHeaders           = s("cerberus.modules.catHeaders", "Headers")
+            static let catProtection        = s("cerberus.modules.catProtection", "Protection")
+            static let catTracking          = s("cerberus.modules.catTracking", "Tracking")
+            static let catRules             = s("cerberus.modules.catRules", "Rules")
+            static let catSystem            = s("cerberus.modules.catSystem", "System")
+            // DLP Modes
+            static let dlpModeLog           = s("cerberus.modules.dlpModeLog", "Log")
+            static let dlpModeMask          = s("cerberus.modules.dlpModeMask", "Mask")
+            static let dlpModeBlock         = s("cerberus.modules.dlpModeBlock", "Block")
+            // Alert Severity
+            static let sevLow               = s("cerberus.modules.sevLow", "Low")
+            static let sevMedium            = s("cerberus.modules.sevMedium", "Medium")
+            static let sevHigh              = s("cerberus.modules.sevHigh", "High")
+            static let sevCritical          = s("cerberus.modules.sevCritical", "Critical")
+
+            static func categoryLabel(for key: String) -> String {
+                switch key {
+                case "Core": return catCore
+                case "Traffic": return catTraffic
+                case "Defense": return catDefense
+                case "Detection": return catDetection
+                case "Auth": return catAuth
+                case "Data": return catData
+                case "Alerting": return catAlerting
+                case "Intelligence": return catIntelligence
+                case "API": return catAPI
+                case "Headers": return catHeaders
+                case "Protection": return catProtection
+                case "Tracking": return catTracking
+                case "Rules": return catRules
+                case "System": return catSystem
+                default: return key
+                }
+            }
+
+            static func dlpModeLabel(for mode: String) -> String {
+                switch mode {
+                case "log": return dlpModeLog
+                case "mask": return dlpModeMask
+                case "block": return dlpModeBlock
+                default: return mode.capitalized
+                }
+            }
+
+            static func severityLabel(for sev: String) -> String {
+                switch sev {
+                case "low": return sevLow
+                case "medium": return sevMedium
+                case "high": return sevHigh
+                case "critical": return sevCritical
+                default: return sev.capitalized
+                }
+            }
+            // Placeholders
+            static let trapPathsPlaceholder = s("cerberus.modules.trapPathsPlaceholder", "/wp-admin,/.env,/phpmyadmin")
+            static let webhookPlaceholder   = s("cerberus.modules.webhookPlaceholder", "https://hooks.example.com/...")
         }
 
         // MARK: Sessions
@@ -499,6 +616,7 @@ extension L10n {
             static let detailTime       = s("cerberus.honeypot.detailTime", "Time")
             static let detailUA         = s("cerberus.honeypot.detailUA", "User-Agent")
             static let detailBody       = s("cerberus.honeypot.detailBody", "Body")
+            static let headerPrefix     = s("cerberus.honeypot.headerPrefix", "Header")
         }
 
         // MARK: Domain Detail
@@ -510,6 +628,7 @@ extension L10n {
             static let tabTraffic   = s("cerberus.domainDetail.tabTraffic", "Traffic")
             static let tabAttacks   = s("cerberus.domainDetail.tabAttacks", "Attacks")
             static let tabCountries = s("cerberus.domainDetail.tabCountries", "Countries")
+            static let tabBlocking  = s("cerberus.domainDetail.tabBlocking", "Block Rules")
             static let requests     = s("cerberus.domainDetail.requests", "Requests")
             static let blocked      = s("cerberus.domainDetail.blocked", "Blocked")
             static let blockRate    = s("cerberus.domainDetail.blockRate", "Block Rate")
@@ -518,6 +637,21 @@ extension L10n {
             static let noTraffic    = s("cerberus.domainDetail.noTraffic", "No traffic data for this domain")
             static let noAttacks    = s("cerberus.domainDetail.noAttacks", "No blocked requests — looking good")
             static let noCountries  = s("cerberus.domainDetail.noCountries", "No country data available")
+            static let trafficChart = s("cerberus.domainDetail.trafficChart", "Traffic Timeline")
+            static let topCountries = s("cerberus.domainDetail.topCountries", "Top Countries")
+            static let recentVisits = s("cerberus.domainDetail.recentVisits", "Recent Visits")
+            static let blockedIPs       = s("cerberus.domainDetail.blockedIPs", "Blocked IPs")
+            static let blockedCountries = s("cerberus.domainDetail.blockedCountries", "Blocked Countries")
+            static let addIP            = s("cerberus.domainDetail.addIP", "Block IP")
+            static let addCountry       = s("cerberus.domainDetail.addCountry", "Block Country")
+            static let ipPlaceholder    = s("cerberus.domainDetail.ipPlaceholder", "e.g. 192.168.1.1")
+            static let countryPlaceholder = s("cerberus.domainDetail.countryPlaceholder", "e.g. CN")
+            static let noBlockedIPs     = s("cerberus.domainDetail.noBlockedIPs", "No IPs blocked for this domain")
+            static let noBlockedCountries = s("cerberus.domainDetail.noBlockedCountries", "No countries blocked for this domain")
+            static let allowed          = s("cerberus.domainDetail.allowed", "Allowed")
+            static let today            = s("cerberus.domainDetail.today", "Today")
+            static let week             = s("cerberus.domainDetail.week", "Week")
+            static let month            = s("cerberus.domainDetail.month", "Month")
         }
 
         // MARK: Visitor Log
@@ -547,6 +681,14 @@ extension L10n {
             static let noEntries        = s("cerberus.visitorLog.noEntries", "No log entries")
             static let noEntriesDesc    = s("cerberus.visitorLog.noEntriesDesc", "Access log entries will appear here as traffic flows through the WAF.")
             static let allDomains       = s("cerberus.visitorLog.allDomains", "All Domains")
+            static let detailHost       = s("cerberus.visitorLog.detailHost", "Host")
+            static let detailBytesIn    = s("cerberus.visitorLog.detailBytesIn", "Bytes In")
+            static let detailBytesOut   = s("cerberus.visitorLog.detailBytesOut", "Bytes Out")
+            static let detailUserAgent  = s("cerberus.visitorLog.detailUserAgent", "User-Agent")
+            static let detailBot        = s("cerberus.visitorLog.detailBot", "Bot")
+            static let detailTimestamp  = s("cerberus.visitorLog.detailTimestamp", "Timestamp")
+            static let yes              = s("cerberus.visitorLog.yes", "Yes")
+            static let no               = s("cerberus.visitorLog.no", "No")
 
             static func showingEntries(_ from: Int, _ to: Int, _ total: Int) -> String {
                 let dv: String.LocalizationValue = "Showing \(from)–\(to) of \(total)"
@@ -575,8 +717,10 @@ extension L10n {
             static let newRuleDesc      = s("cerberus.rules.newRuleDesc", "Define a DSL expression to match and act on requests")
             static let ruleID           = s("cerberus.rules.ruleID", "Rule ID")
             static let ruleIDPlaceholder = s("cerberus.rules.ruleIDPlaceholder", "e.g. block-php-admin")
-            static let ruleExpression   = s("cerberus.rules.ruleExpression", "Rule Expression")
-            static let syntaxExample    = s("cerberus.rules.syntaxExample", "Syntax Example")
+            static let ruleExpression       = s("cerberus.rules.ruleExpression", "Rule Expression")
+            static let syntaxExample        = s("cerberus.rules.syntaxExample", "Syntax Example")
+            static let expressionPlaceholder = s("cerberus.rules.expressionPlaceholder", "WHEN ... THEN ...")
+            static let syntaxHint           = s("cerberus.rules.syntaxHint", "WHEN path.startsWith(\"/api\") AND method == \"POST\" THEN block")
         }
 
         // MARK: Threat Feed
@@ -614,6 +758,11 @@ extension L10n {
             static let noReport         = s("cerberus.compliance.noReport", "No Compliance Report")
             static let noReportDesc     = s("cerberus.compliance.noReportDesc", "Connect to a server and run an audit to generate your compliance report.")
             static let generateReport   = s("cerberus.compliance.generateReport", "Generate Report")
+
+            static func totalChecks(_ count: Int) -> String {
+                let dv: String.LocalizationValue = "\(count) total"
+                return String(localized: "cerberus.compliance.totalChecks", defaultValue: dv, table: table)
+            }
         }
 
         // MARK: Settings
@@ -776,6 +925,86 @@ extension L10n {
             static let configLoadFailed     = s("cerberus.toast.configLoadFailed", "Failed to load WAF configuration")
         }
 
+        // MARK: Delete Confirmation Dialogs
+        enum Dialog {
+            private static let table = "Cerberus"
+            private static func s(_ k: StaticString, _ v: String.LocalizationValue) -> String { String(localized: k, defaultValue: v, table: table) }
+
+            static let delete       = s("cerberus.dialog.delete", "Delete")
+            static let deleteRule   = s("cerberus.dialog.deleteRule", "Are you sure you want to delete this rule?")
+            static let deleteDomain = s("cerberus.dialog.deleteDomain", "Are you sure you want to remove this domain?")
+            static let deleteVPatch    = s("cerberus.dialog.deleteVPatch", "Are you sure you want to remove this virtual patch?")
+            static let restoreBackup   = s("cerberus.dialog.restoreBackup", "Are you sure you want to restore this backup? Current configuration will be overwritten.")
+        }
+
+        // MARK: Pagination
+        enum Pagination {
+            private static let table = "Cerberus"
+
+            static func showing(_ from: Int, _ to: Int, _ total: Int) -> String {
+                let dv: String.LocalizationValue = "Showing \(from)–\(to) of \(total)"
+                return String(localized: "cerberus.pagination.showing", defaultValue: dv, table: table)
+            }
+            static func page(_ current: Int, _ total: Int) -> String {
+                let dv: String.LocalizationValue = "\(current) / \(total)"
+                return String(localized: "cerberus.pagination.page", defaultValue: dv, table: table)
+            }
+        }
+
+        // MARK: Badge Format Strings
+        enum Badge {
+            private static let table = "Cerberus"
+
+            static func active(_ current: Int, _ total: Int) -> String {
+                let dv: String.LocalizationValue = "\(current)/\(total) active"
+                return String(localized: "cerberus.badge.active", defaultValue: dv, table: table)
+            }
+            static func entries(_ count: Int) -> String {
+                let dv: String.LocalizationValue = "\(count) entries"
+                return String(localized: "cerberus.badge.entries", defaultValue: dv, table: table)
+            }
+            static func entriesStr(_ count: String) -> String {
+                let dv: String.LocalizationValue = "\(count) entries"
+                return String(localized: "cerberus.badge.entriesStr", defaultValue: dv, table: table)
+            }
+            static func samples(_ count: Int) -> String {
+                let dv: String.LocalizationValue = "\(count) samples"
+                return String(localized: "cerberus.badge.samples", defaultValue: dv, table: table)
+            }
+            static func sources(_ count: Int) -> String {
+                let dv: String.LocalizationValue = "\(count) sources"
+                return String(localized: "cerberus.badge.sources", defaultValue: dv, table: table)
+            }
+            static func events(_ count: Int) -> String {
+                let dv: String.LocalizationValue = "\(count) events"
+                return String(localized: "cerberus.badge.events", defaultValue: dv, table: table)
+            }
+            static func types(_ count: Int) -> String {
+                let dv: String.LocalizationValue = "\(count) types"
+                return String(localized: "cerberus.badge.types", defaultValue: dv, table: table)
+            }
+            static func ips(_ count: Int) -> String {
+                let dv: String.LocalizationValue = "\(count) IPs"
+                return String(localized: "cerberus.badge.ips", defaultValue: dv, table: table)
+            }
+            static func paths(_ count: Int) -> String {
+                let dv: String.LocalizationValue = "\(count) paths"
+                return String(localized: "cerberus.badge.paths", defaultValue: dv, table: table)
+            }
+            static func countries(_ count: Int) -> String {
+                let dv: String.LocalizationValue = "\(count) countries"
+                return String(localized: "cerberus.badge.countries", defaultValue: dv, table: table)
+            }
+            static func rules(_ count: Int) -> String {
+                let dv: String.LocalizationValue = "\(count) rules"
+                return String(localized: "cerberus.badge.rules", defaultValue: dv, table: table)
+            }
+            static func domains(_ count: Int) -> String {
+                let dv: String.LocalizationValue = "\(count) domains"
+                return String(localized: "cerberus.badge.domains", defaultValue: dv, table: table)
+            }
+        }
+
         // MARK: Plugin Gate
         enum Gate {
             private static let table = "Cerberus"
@@ -797,6 +1026,19 @@ extension L10n {
             static let checkFailed          = s("cerberus.gate.checkFailed", "Failed to check plugin status")
             static let checkFailedDesc      = s("cerberus.gate.checkFailedDesc", "Unable to check plugin status. Please try again.")
             static let licenseRequired      = s("cerberus.gate.licenseRequired", "A valid license is required to use this plugin.")
+            static let buildingPlugin       = s("cerberus.gate.buildingPlugin", "Building secure binary... This may take a moment.")
+            static let downloadingPlugin    = s("cerberus.gate.downloadingPlugin", "Downloading and deploying...")
+            static let buildingProtection   = s("cerberus.gate.buildingProtection", "Building protected binary...")
+            static let downloadingProgress  = s("cerberus.gate.downloadingProgress", "Downloading...")
+            static let deployingToServer    = s("cerberus.gate.deployingToServer", "Deploying to server...")
+            static let installingPlugin     = s("cerberus.gate.installingPlugin", "Installing plugin...")
+            static let verifyingInstall     = s("cerberus.gate.verifyingInstall", "Verifying installation...")
+            static let buildingAgent        = s("cerberus.gate.buildingAgent", "Building security agent...")
+            static let downloadingAgent     = s("cerberus.gate.downloadingAgent", "Downloading agent...")
+            static let uploadingToServer    = s("cerberus.gate.uploadingToServer", "Uploading to server...")
+            static let installingService    = s("cerberus.gate.installingService", "Installing service...")
+            static let verifyingService     = s("cerberus.gate.verifyingService", "Verifying service...")
+            static let agentDeployed        = s("cerberus.gate.agentDeployed", "Agent deployed successfully")
 
             static func installedSuccessfully(_ name: String) -> String {
                 let dv: String.LocalizationValue = "\(name) installed successfully"

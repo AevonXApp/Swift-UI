@@ -87,7 +87,7 @@ private extension CerberusModulesView {
                 ProgressView().scaleEffect(0.8)
             }
             AXBadge(
-                text: "\(moduleCards.filter(\.enabled).count)/\(moduleCards.count) active",
+                text: L10n.Cerberus.Badge.active(moduleCards.filter(\.enabled).count, moduleCards.count),
                 color: .axAccentGreen, style: .soft
             )
         }
@@ -137,7 +137,7 @@ private extension CerberusModulesView {
                     .font(AXTypography.subheadline)
                     .fontWeight(.medium)
                     .foregroundStyle(Color.axTextPrimary)
-                Text(module.category)
+                Text(L10n.Cerberus.Modules.categoryLabel(for: module.category))
                     .font(AXTypography.caption)
                     .foregroundStyle(Color.axTextMuted)
             }
@@ -212,11 +212,11 @@ private extension CerberusModulesView {
         configSection(icon: "gauge.with.dots.needle.33percent", title: L10n.Cerberus.Modules.rateLimiter,
                       color: .axWarning, enabled: viewModel.rateLimitEnabled) {
             configSlider(label: L10n.Cerberus.Modules.globalLimit, value: $viewModel.globalRateLimit,
-                         range: 10...2000, unit: "req/min", color: .axWarning)
+                         range: 10...2000, unit: L10n.Cerberus.Modules.unitReqPerMin, color: .axWarning)
             configSlider(label: L10n.Cerberus.Modules.loginLimit, value: $viewModel.loginRateLimit,
-                         range: 1...100, unit: "req/min", color: .axError)
+                         range: 1...100, unit: L10n.Cerberus.Modules.unitReqPerMin, color: .axError)
             configSlider(label: L10n.Cerberus.Modules.apiLimit, value: $viewModel.apiRateLimit,
-                         range: 10...1000, unit: "req/min", color: .axAccentBlue)
+                         range: 10...1000, unit: L10n.Cerberus.Modules.unitReqPerMin, color: .axAccentBlue)
             configToggle(label: L10n.Cerberus.Modules.throttleMode, sub: L10n.Cerberus.Modules.throttleDesc,
                          value: $viewModel.throttleMode, color: .axWarning)
             saveBtn(label: L10n.Cerberus.Modules.saveRateLimits) { await viewModel.saveRateLimitConfig() }
@@ -227,9 +227,9 @@ private extension CerberusModulesView {
         configSection(icon: "bolt.shield", title: L10n.Cerberus.Modules.ddosShield,
                       color: .axError, enabled: viewModel.ddosEnabled) {
             configSlider(label: L10n.Cerberus.Modules.spikeMultiplier, value: $viewModel.ddosSpikeMultiplier,
-                         range: 1.5...20, unit: "×", color: .axError)
+                         range: 1.5...20, unit: L10n.Cerberus.Modules.unitTimes, color: .axError)
             configSlider(label: L10n.Cerberus.Modules.maxConnsPerIP, value: $viewModel.ddosMaxConnsPerIP,
-                         range: 5...500, unit: "conns", color: .axWarning)
+                         range: 5...500, unit: L10n.Cerberus.Modules.unitConns, color: .axWarning)
             configToggle(label: L10n.Cerberus.Modules.autoMitigate, sub: L10n.Cerberus.Modules.autoMitigateDesc,
                          value: $viewModel.ddosAutoMitigate, color: .axError)
             saveBtn(label: L10n.Cerberus.Modules.saveDDoSConfig) { await viewModel.saveDDoSConfig() }
@@ -240,9 +240,9 @@ private extension CerberusModulesView {
         configSection(icon: "key.fill", title: L10n.Cerberus.Modules.credentialGuard,
                       color: .axError, enabled: viewModel.credentialEnabled) {
             configSlider(label: L10n.Cerberus.Modules.maxAttemptsIP, value: $viewModel.credMaxPerIP,
-                         range: 3...200, unit: "per hour", color: .axError)
+                         range: 3...200, unit: L10n.Cerberus.Modules.unitPerHour, color: .axError)
             configSlider(label: L10n.Cerberus.Modules.maxAttemptsUser, value: $viewModel.credMaxPerUser,
-                         range: 3...100, unit: "per hour", color: .axWarning)
+                         range: 3...100, unit: L10n.Cerberus.Modules.unitPerHour, color: .axWarning)
             saveBtn(label: L10n.Cerberus.Modules.saveCredConfig) { await viewModel.saveCredentialConfig() }
         }
     }
@@ -266,7 +266,7 @@ private extension CerberusModulesView {
                       color: .axWarning, enabled: viewModel.honeypotEnabled) {
             VStack(alignment: .leading, spacing: AXSpacing.xs) {
                 Text(L10n.Cerberus.Modules.trapPaths).font(AXTypography.caption).foregroundStyle(Color.axTextTertiary)
-                AXTextField(placeholder: "/wp-admin,/.env,/phpmyadmin", text: $viewModel.honeypotPaths,
+                AXTextField(placeholder: L10n.Cerberus.Modules.trapPathsPlaceholder, text: $viewModel.honeypotPaths,
                             icon: "ant", accentColor: .axWarning)
             }
             configToggle(label: L10n.Cerberus.Modules.autoBlockVisitors, sub: L10n.Cerberus.Modules.autoBlockDesc,
@@ -280,11 +280,11 @@ private extension CerberusModulesView {
                       color: .axAccentGreen, enabled: viewModel.alertsEnabled) {
             VStack(alignment: .leading, spacing: AXSpacing.xs) {
                 Text(L10n.Cerberus.Modules.webhookURL).font(AXTypography.caption).foregroundStyle(Color.axTextTertiary)
-                AXTextField(placeholder: "https://hooks.example.com/...", text: $viewModel.alertWebhookURL,
+                AXTextField(placeholder: L10n.Cerberus.Modules.webhookPlaceholder, text: $viewModel.alertWebhookURL,
                             icon: "link", accentColor: .axAccentGreen)
             }
             configSlider(label: L10n.Cerberus.Modules.maxAlertsPerHour, value: $viewModel.alertMaxPerHour,
-                         range: 1...100, unit: "alerts", color: .axAccentGreen)
+                         range: 1...100, unit: L10n.Cerberus.Modules.unitAlerts, color: .axAccentGreen)
             alertSeverityPicker
             saveBtn(label: L10n.Cerberus.Modules.saveAlertConfig) { await viewModel.saveAlertsConfig() }
         }
@@ -301,7 +301,7 @@ private extension CerberusModulesView {
             HStack(spacing: AXSpacing.sm) {
                 ForEach(["log", "mask", "block"], id: \.self) { mode in
                     Button { viewModel.dlpMode = mode } label: {
-                        Text(mode.capitalized)
+                        Text(L10n.Cerberus.Modules.dlpModeLabel(for: mode))
                             .font(AXTypography.monoSm)
                             .foregroundStyle(viewModel.dlpMode == mode ? Color.axTextPrimary : Color.axTextMuted)
                             .padding(.horizontal, AXSpacing.sm)
@@ -341,7 +341,7 @@ private extension CerberusModulesView {
             HStack(spacing: AXSpacing.sm) {
                 ForEach(["low", "medium", "high", "critical"], id: \.self) { sev in
                     Button { viewModel.alertSeverity = sev } label: {
-                        Text(sev.capitalized)
+                        Text(L10n.Cerberus.Modules.severityLabel(for: sev))
                             .font(AXTypography.monoXs)
                             .foregroundStyle(viewModel.alertSeverity == sev ? Color.axTextPrimary : Color.axTextMuted)
                             .padding(.horizontal, AXSpacing.xs)

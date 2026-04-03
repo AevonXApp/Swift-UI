@@ -12,6 +12,8 @@ struct CerberusAlertsView: View {
     @ObservedObject var viewModel: CerberusViewModel
     @State private var severityFilter: String = "all"
     @State private var selectedAlert: WAFAlertEvent?
+    @State private var alertPage = 0
+    private let alertPageSize = 50
 
     var body: some View {
         ScrollView {
@@ -28,6 +30,7 @@ struct CerberusAlertsView: View {
             .padding(AXSpacing.xl)
         }
         .task { await viewModel.loadAlerts() }
+        .onChange(of: severityFilter) { _ in alertPage = 0 }
         .sheet(item: $selectedAlert) { alertDetailSheet($0) }
     }
 }
@@ -89,7 +92,7 @@ private extension CerberusAlertsView {
                         .foregroundStyle(Color.axTextTertiary)
                     if !viewModel.recentAlerts.isEmpty {
                         AXBadge(
-                            text: "\(viewModel.recentAlerts.count) events",
+                            text: L10n.Cerberus.Badge.events(viewModel.recentAlerts.count),
                             color: heroAccentColor, style: .soft
                         )
                     }
@@ -207,20 +210,20 @@ private extension CerberusAlertsView {
                 .font(AXTypography.caption)
                 .foregroundStyle(Color.axTextMuted)
             ForEach(["all", "critical", "high", "medium", "low"], id: \.self) { sev in
-                filterChip(sev)
+                filterChip(sev, label: L10n.Cerberus.Alerts.filterLabel(for: sev))
             }
             Spacer()
-            Text("\(filteredAlerts.count) events")
+            Text(L10n.Cerberus.Badge.events(filteredAlerts.count))
                 .font(AXTypography.monoXs)
                 .foregroundStyle(Color.axTextMuted)
         }
     }
 
-    func filterChip(_ sev: String) -> some View {
+    func filterChip(_ sev: String, label: String) -> some View {
         let isSelected = severityFilter == sev
         let chipColor = severityColor(sev)
         return Button { severityFilter = sev } label: {
-            Text(sev.capitalized)
+            Text(label)
                 .font(AXTypography.monoXs)
                 .fontWeight(isSelected ? .semibold : .regular)
                 .foregroundStyle(isSelected ? Color.axTextPrimary : Color.axTextMuted)
@@ -264,7 +267,7 @@ private extension CerberusAlertsView {
                 .font(AXTypography.headline)
                 .foregroundStyle(Color.axTextPrimary)
             Spacer()
-            AXBadge(text: "\(filteredAlerts.count) events", color: .axAccentBlue, style: .soft)
+            AXBadge(text: L10n.Cerberus.Badge.events(filteredAlerts.count), color: .axAccentBlue, style: .soft)
         }
     }
 
@@ -294,15 +297,60 @@ private extension CerberusAlertsView {
         }
     }
 
+    private var paginatedAlerts: [WAFAlertEvent] {
+        let start = alertPage * alertPageSize
+        let end = min(start + alertPageSize, filteredAlerts.count)
+        guard start < end else { return [] }
+        return Array(filteredAlerts[start..<end])
+    }
+
+    private var alertTotalPages: Int {
+        max(1, (filteredAlerts.count + alertPageSize - 1) / alertPageSize)
+    }
+
     var alertFeedRows: some View {
         VStack(spacing: AXSpacing.xxs) {
-            ForEach(filteredAlerts) { alert in
+            ForEach(paginatedAlerts) { alert in
                 Button { selectedAlert = alert } label: {
                     alertRowContent(alert)
                 }
                 .buttonStyle(.plain)
             }
+            if filteredAlerts.count > alertPageSize {
+                alertPaginationBar
+            }
         }
+    }
+
+    private var alertPaginationBar: some View {
+        HStack(spacing: AXSpacing.md) {
+            Text(L10n.Cerberus.Pagination.showing(
+                alertPage * alertPageSize + 1,
+                min((alertPage + 1) * alertPageSize, filteredAlerts.count),
+                filteredAlerts.count
+            ))
+            .font(AXTypography.caption).foregroundStyle(Color.axTextMuted)
+            Spacer()
+            HStack(spacing: AXSpacing.xs) {
+                alertPageBtn(icon: "chevron.left", action: { alertPage -= 1 }, disabled: alertPage == 0)
+                Text(L10n.Cerberus.Pagination.page(alertPage + 1, alertTotalPages))
+                    .font(AXTypography.monoSm).foregroundStyle(Color.axTextSecondary)
+                alertPageBtn(icon: "chevron.right", action: { alertPage += 1 }, disabled: alertPage >= alertTotalPages - 1)
+            }
+        }
+        .padding(.horizontal, AXSpacing.sm).padding(.vertical, AXSpacing.sm)
+        .background(Color.axSurface)
+    }
+
+    private func alertPageBtn(icon: String, action: @escaping () -> Void, disabled: Bool) -> some View {
+        Button(action: action) {
+            Image(systemName: icon)
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundStyle(disabled ? Color.axTextMuted.opacity(0.4) : Color.axAccentBlue)
+                .frame(width: 26, height: 26)
+                .background(RoundedRectangle(cornerRadius: AXCornerRadius.sm).fill(Color.axSurface))
+        }
+        .buttonStyle(.plain).disabled(disabled)
     }
 
     func alertRowContent(_ alert: WAFAlertEvent) -> some View {
@@ -348,11 +396,11 @@ private extension CerberusAlertsView {
     func alertRowText(_ alert: WAFAlertEvent, color: Color) -> some View {
         VStack(alignment: .leading, spacing: AXSpacing.xxxs) {
             HStack(spacing: AXSpacing.xs) {
-                Text(alert.type.replacingOccurrences(of: "_", with: " ").capitalized)
+                Text(L10n.Cerberus.Alerts.alertTypeDisplay(alert.type))
                     .font(AXTypography.subheadline)
                     .fontWeight(.medium)
                     .foregroundStyle(Color.axTextPrimary)
-                AXBadge(text: alert.severity.capitalized, color: color, style: .soft)
+                AXBadge(text: L10n.Cerberus.Alerts.filterLabel(for: alert.severity), color: color, style: .soft)
             }
             Text(alert.message)
                 .font(AXTypography.caption)
@@ -394,12 +442,12 @@ private extension CerberusAlertsView {
             // Details
             ScrollView {
                 VStack(spacing: AXSpacing.xxs) {
-                    alertDetailField(label: L10n.Cerberus.Alerts.type, value: alert.type, icon: "tag.fill", color: accent)
-                    alertDetailField(label: L10n.Cerberus.Alerts.severity, value: alert.severity.capitalized, icon: "exclamationmark.triangle.fill", color: accent)
+                    alertDetailField(label: L10n.Cerberus.Alerts.type, value: L10n.Cerberus.Alerts.alertTypeDisplay(alert.type), icon: "tag.fill", color: accent)
+                    alertDetailField(label: L10n.Cerberus.Alerts.severity, value: L10n.Cerberus.Alerts.filterLabel(for: alert.severity), icon: "exclamationmark.triangle.fill", color: accent)
                     alertDetailField(label: L10n.Cerberus.Alerts.timestamp, value: alert.timestamp, icon: "clock.fill", color: .axAccentBlue)
                     if let details = alert.details {
                         ForEach(details.sorted(by: { $0.key < $1.key }), id: \.key) { key, value in
-                            alertDetailField(label: key.capitalized, value: value, icon: "info.circle.fill", color: .axAccentPurple)
+                            alertDetailField(label: key.replacingOccurrences(of: "_", with: " ").capitalized, value: value, icon: "info.circle.fill", color: .axAccentPurple)
                         }
                     }
                 }
@@ -425,7 +473,7 @@ private extension CerberusAlertsView {
             }
             .padding(AXSpacing.lg)
         }
-        .frame(width: 500, height: 480)
+        .frame(minWidth: 420, idealWidth: 500, maxWidth: 600, minHeight: 400, idealHeight: 480, maxHeight: 580)
         .background(Color.axBackground)
     }
 
@@ -443,12 +491,12 @@ private extension CerberusAlertsView {
                     .foregroundStyle(accent)
             }
             VStack(alignment: .leading, spacing: AXSpacing.xxxs) {
-                Text(alert.type.replacingOccurrences(of: "_", with: " ").capitalized)
+                Text(L10n.Cerberus.Alerts.alertTypeDisplay(alert.type))
                     .font(AXTypography.headline)
                     .fontWeight(.bold)
                     .foregroundStyle(Color.axTextPrimary)
                 HStack(spacing: AXSpacing.sm) {
-                    AXBadge(text: alert.severity.capitalized, color: accent, style: .soft)
+                    AXBadge(text: L10n.Cerberus.Alerts.filterLabel(for: alert.severity), color: accent, style: .soft)
                     Text(formatTimestamp(alert.timestamp))
                         .font(AXTypography.monoXs)
                         .foregroundStyle(Color.axTextMuted)
@@ -535,12 +583,20 @@ private extension CerberusAlertsView {
         }
     }
 
+    private static let isoFmt: ISO8601DateFormatter = {
+        let f = ISO8601DateFormatter()
+        f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return f
+    }()
+    private static let isoFmtBasic = ISO8601DateFormatter()
+    private static let timeFmt: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "HH:mm:ss"
+        return f
+    }()
+
     func formatTimestamp(_ iso: String) -> String {
-        let fmt = ISO8601DateFormatter()
-        fmt.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        guard let date = fmt.date(from: iso) ?? ISO8601DateFormatter().date(from: iso) else { return iso }
-        let display = DateFormatter()
-        display.dateFormat = "HH:mm:ss"
-        return display.string(from: date)
+        guard let date = Self.isoFmt.date(from: iso) ?? Self.isoFmtBasic.date(from: iso) else { return iso }
+        return Self.timeFmt.string(from: date)
     }
 }

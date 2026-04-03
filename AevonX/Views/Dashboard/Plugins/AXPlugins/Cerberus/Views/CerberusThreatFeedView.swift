@@ -18,7 +18,6 @@ struct CerberusThreatFeedView: View {
                     skeletonContent
                 } else if let status = viewModel.threatFeedStatus, status.enabled {
                     heroCard(status)
-                    statsRow(status)
                     sourcesSection(status)
                 } else {
                     disabledState
@@ -178,57 +177,6 @@ struct CerberusThreatFeedView: View {
         }
     }
 
-    // MARK: - Stats Row
-
-    private func statsRow(_ status: WAFThreatFeedStatus) -> some View {
-        HStack(spacing: AXSpacing.md) {
-            statCard(
-                icon: "list.number", label: L10n.Cerberus.ThreatFeed.totalEntries,
-                value: formatLargeNumber(status.totalEntries ?? 0),
-                color: .axAccentBlue
-            )
-            statCard(
-                icon: "hand.raised.fill", label: L10n.Cerberus.ThreatFeed.blockedByFeed,
-                value: formatLargeNumber(status.blockedByFeed ?? 0),
-                color: .axError
-            )
-            statCard(
-                icon: "checkmark.shield.fill", label: L10n.Cerberus.ThreatFeed.sourcesActive,
-                value: "\(resolvedSources(status).count)",
-                color: .axAccentGreen
-            )
-        }
-    }
-
-    private func statCard(icon: String, label: String, value: String, color: Color) -> some View {
-        AXCard {
-            HStack(spacing: AXSpacing.md) {
-                statIconBox(icon: icon, color: color)
-                VStack(alignment: .leading, spacing: AXSpacing.xxxs) {
-                    Text(value)
-                        .font(AXTypography.title2)
-                        .fontWeight(.bold)
-                        .foregroundStyle(Color.axTextPrimary)
-                    Text(label)
-                        .font(AXTypography.caption2)
-                        .foregroundStyle(Color.axTextMuted)
-                }
-                Spacer()
-            }
-        }
-    }
-
-    private func statIconBox(icon: String, color: Color) -> some View {
-        RoundedRectangle(cornerRadius: AXCornerRadius.md)
-            .fill(color.opacity(0.12))
-            .frame(width: 36, height: 36)
-            .overlay(
-                Image(systemName: icon)
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(color)
-            )
-    }
-
     // MARK: - Sources Section
 
     private func sourcesSection(_ status: WAFThreatFeedStatus) -> some View {
@@ -250,7 +198,7 @@ struct CerberusThreatFeedView: View {
                 .fontWeight(.semibold)
                 .foregroundStyle(Color.axTextPrimary)
             AXBadge(
-                text: "\(resolvedSources(status).count) sources",
+                text: L10n.Cerberus.Badge.sources(resolvedSources(status).count),
                 color: .axAccentPurple, style: .soft
             )
             Spacer()
@@ -298,7 +246,7 @@ struct CerberusThreatFeedView: View {
 
     private func sourceEntryBadge(_ source: WAFThreatSource) -> some View {
         AXBadge(
-            text: "\(formatLargeNumber(source.entries)) entries",
+            text: L10n.Cerberus.Badge.entriesStr(formatLargeNumber(source.entries)),
             color: .axAccentBlue, style: .soft
         )
     }

@@ -153,6 +153,8 @@
 "cerberus.traffic.colLatency" = "Latency";
 "cerberus.traffic.colBot" = "Bot";
 "cerberus.traffic.noStatusCodeData" = "No status code data";
+"cerberus.traffic.latencyAvg" = "Avg";
+"cerberus.traffic.latencyMax" = "Max";
 "cerberus.traffic.blockedPct" = "%@ blocked";
 "cerberus.traffic.allowedPct" = "%@ allowed";
 
@@ -353,6 +355,7 @@
 "cerberus.honeypot.detailTime" = "Time";
 "cerberus.honeypot.detailUA" = "User-Agent";
 "cerberus.honeypot.detailBody" = "Body";
+"cerberus.honeypot.headerPrefix" = "Header";
 
 /* Domain Detail */
 "cerberus.domainDetail.tabOverview" = "Overview";
@@ -391,6 +394,14 @@
 "cerberus.visitorLog.noEntries" = "No log entries";
 "cerberus.visitorLog.noEntriesDesc" = "Access log entries will appear here as traffic flows through the WAF.";
 "cerberus.visitorLog.allDomains" = "All Domains";
+"cerberus.visitorLog.detailHost" = "Host";
+"cerberus.visitorLog.detailBytesIn" = "Bytes In";
+"cerberus.visitorLog.detailBytesOut" = "Bytes Out";
+"cerberus.visitorLog.detailUserAgent" = "User-Agent";
+"cerberus.visitorLog.detailBot" = "Bot";
+"cerberus.visitorLog.detailTimestamp" = "Timestamp";
+"cerberus.visitorLog.yes" = "Yes";
+"cerberus.visitorLog.no" = "No";
 "cerberus.visitorLog.showingEntries" = "Showing %lld–%lld of %lld";
 "cerberus.visitorLog.pageOf" = "%lld / %lld";
 
@@ -432,6 +443,7 @@
 "cerberus.compliance.noReport" = "No Compliance Report";
 "cerberus.compliance.noReportDesc" = "Connect to a server and run an audit to generate your compliance report.";
 "cerberus.compliance.generateReport" = "Generate Report";
+"cerberus.compliance.totalChecks" = "%lld total";
 
 /* Toast Messages */
 "cerberus.toast.blocked" = "Blocked %@";
@@ -527,4 +539,106 @@
 "cerberus.gate.checkFailed" = "Failed to check plugin status";
 "cerberus.gate.checkFailedDesc" = "Unable to check plugin status. Please try again.";
 "cerberus.gate.licenseRequired" = "A valid license is required to use this plugin.";
+"cerberus.gate.buildingPlugin" = "Building secure binary... This may take a moment.";
+"cerberus.gate.downloadingPlugin" = "Downloading and deploying...";
+"cerberus.gate.buildingProtection" = "Building protected binary...";
+"cerberus.gate.downloadingProgress" = "Downloading...";
+"cerberus.gate.deployingToServer" = "Deploying to server...";
+"cerberus.gate.installingPlugin" = "Installing plugin...";
+"cerberus.gate.verifyingInstall" = "Verifying installation...";
+"cerberus.gate.buildingAgent" = "Building security agent...";
+"cerberus.gate.downloadingAgent" = "Downloading agent...";
+"cerberus.gate.uploadingToServer" = "Uploading to server...";
+"cerberus.gate.installingService" = "Installing service...";
+"cerberus.gate.verifyingService" = "Verifying service...";
+"cerberus.gate.agentDeployed" = "Agent deployed successfully";
 "cerberus.gate.installedSuccessfully" = "%@ installed successfully";
+
+/* Delete Confirmation Dialogs */
+"cerberus.dialog.delete" = "Delete";
+"cerberus.dialog.deleteRule" = "Are you sure you want to delete this rule?";
+"cerberus.dialog.deleteDomain" = "Are you sure you want to remove this domain?";
+"cerberus.dialog.deleteVPatch" = "Are you sure you want to remove this virtual patch?";
+"cerberus.dialog.restoreBackup" = "Are you sure you want to restore this backup? Current configuration will be overwritten.";
+
+/* Badge Format Strings */
+"cerberus.badge.active" = "%lld/%lld active";
+"cerberus.badge.entries" = "%lld entries";
+"cerberus.badge.entriesStr" = "%@ entries";
+"cerberus.badge.samples" = "%lld samples";
+"cerberus.badge.sources" = "%lld sources";
+"cerberus.badge.events" = "%lld events";
+"cerberus.badge.types" = "%lld types";
+"cerberus.badge.ips" = "%lld IPs";
+"cerberus.badge.paths" = "%lld paths";
+"cerberus.badge.countries" = "%lld countries";
+"cerberus.badge.rules" = "%lld rules";
+"cerberus.badge.domains" = "%lld domains";
+
+/* Alert Severity Filters */
+/* Alert Type Display Names */
+"cerberus.alerts.type.waf_block" = "WAF Block";
+"cerberus.alerts.type.rate_limit" = "Rate Limit";
+"cerberus.alerts.type.ddos_spike" = "DDoS Spike";
+"cerberus.alerts.type.bot_detected" = "Bot Detected";
+"cerberus.alerts.type.credential_attack" = "Credential Attack";
+"cerberus.alerts.type.honeypot_hit" = "Honeypot Hit";
+"cerberus.alerts.type.ssrf_attempt" = "SSRF Attempt";
+"cerberus.alerts.type.dlp_leak" = "DLP Leak";
+"cerberus.alerts.type.anomaly" = "Anomaly";
+"cerberus.alerts.type.session_hijack" = "Session Hijack";
+"cerberus.alerts.type.threat_feed" = "Threat Feed";
+"cerberus.alerts.type.custom_rule" = "Custom Rule";
+"cerberus.alerts.type.challenge_fail" = "Challenge Fail";
+"cerberus.alerts.type.geo_block" = "Geo Block";
+"cerberus.alerts.type.ip_block" = "IP Block";
+
+"cerberus.alerts.filterAll" = "All";
+"cerberus.alerts.filterCritical" = "Critical";
+"cerberus.alerts.filterHigh" = "High";
+"cerberus.alerts.filterMedium" = "Medium";
+"cerberus.alerts.filterLow" = "Low";
+
+/* Module Config Units */
+"cerberus.modules.unitReqPerMin" = "req/min";
+"cerberus.modules.unitTimes" = "×";
+"cerberus.modules.unitConns" = "conns";
+"cerberus.modules.unitPerHour" = "per hour";
+"cerberus.modules.unitAlerts" = "alerts";
+
+/* Module Categories */
+"cerberus.modules.catCore" = "Core";
+"cerberus.modules.catTraffic" = "Traffic";
+"cerberus.modules.catDefense" = "Defense";
+"cerberus.modules.catDetection" = "Detection";
+"cerberus.modules.catAuth" = "Auth";
+"cerberus.modules.catData" = "Data";
+"cerberus.modules.catAlerting" = "Alerting";
+"cerberus.modules.catIntelligence" = "Intelligence";
+"cerberus.modules.catAPI" = "API";
+"cerberus.modules.catHeaders" = "Headers";
+"cerberus.modules.catProtection" = "Protection";
+"cerberus.modules.catTracking" = "Tracking";
+"cerberus.modules.catRules" = "Rules";
+"cerberus.modules.catSystem" = "System";
+
+/* DLP Modes */
+"cerberus.modules.dlpModeLog" = "Log";
+"cerberus.modules.dlpModeMask" = "Mask";
+"cerberus.modules.dlpModeBlock" = "Block";
+
+/* Alert Severity Labels */
+"cerberus.modules.sevLow" = "Low";
+"cerberus.modules.sevMedium" = "Medium";
+"cerberus.modules.sevHigh" = "High";
+"cerberus.modules.sevCritical" = "Critical";
+
+/* Placeholders */
+"cerberus.modules.trapPathsPlaceholder" = "/wp-admin,/.env,/phpmyadmin";
+"cerberus.modules.webhookPlaceholder" = "https://hooks.example.com/...";
+"cerberus.rules.expressionPlaceholder" = "WHEN ... THEN ...";
+"cerberus.rules.syntaxHint" = "WHEN path.startsWith(\"/api\") AND method == \"POST\" THEN block";
+
+/* Pagination (shared) */
+"cerberus.pagination.showing" = "Showing %lld–%lld of %lld";
+"cerberus.pagination.page" = "%lld / %lld";

@@ -3,6 +3,7 @@
 //  AevonX
 //
 //  IP Guard tab — blocklist, allowlist, GeoIP country blocking.
+//  All add-forms are inline (no sheets).
 //
 
 import SwiftUI
@@ -12,13 +13,13 @@ struct CerberusIPManagementView: View {
     @ObservedObject var viewModel: CerberusViewModel
     @State private var newBlockIP = ""
     @State private var newAllowIP = ""
-    @State private var newBlockCountry = ""
     @State private var searchQuery = ""
-    @State private var showAddBlockSheet = false
-    @State private var showAddAllowSheet = false
-    @State private var showAddCountrySheet = false
+    @State private var showAddBlockForm = false
+    @State private var showAddAllowForm = false
+    @State private var showAddCountryForm = false
     @State private var confirmDeleteIP: IPDeleteTarget?
-    @State private var bulkMode = false
+    @State private var bulkBlockMode = false
+    @State private var bulkAllowMode = false
     @State private var countrySearch = ""
 
     var body: some View {
@@ -43,9 +44,6 @@ struct CerberusIPManagementView: View {
             async let geo: () = viewModel.loadGeoIP()
             _ = await (ips, geo)
         }
-        .sheet(isPresented: $showAddBlockSheet) { addIPSheet(isBlock: true) }
-        .sheet(isPresented: $showAddAllowSheet) { addIPSheet(isBlock: false) }
-        .sheet(isPresented: $showAddCountrySheet) { addCountrySheet }
         .alert(
             L10n.Cerberus.IP.confirmDeleteTitle,
             isPresented: Binding(
@@ -173,6 +171,12 @@ private extension CerberusIPManagementView {
         AXCard(accentColor: .axError) {
             VStack(alignment: .leading, spacing: AXSpacing.md) {
                 blocklistHeader
+
+                // Inline add form
+                if showAddBlockForm {
+                    inlineAddIPForm(isBlock: true)
+                }
+
                 if filteredBlockedIPs.isEmpty {
                     ipEmptyState(text: L10n.Cerberus.IP.noBlockedIPs, icon: "hand.raised.slash")
                 } else {
@@ -189,7 +193,10 @@ private extension CerberusIPManagementView {
             Spacer()
             AXBadge(text: "\(filteredBlockedIPs.count)", color: .axError, style: .soft)
             copyBtn(ips: viewModel.blockedIPs)
-            addBtn(color: .axError) { showAddBlockSheet = true }
+            addToggleBtn(color: .axError, isExpanded: $showAddBlockForm) {
+                showAddAllowForm = false
+                showAddCountryForm = false
+            }
         }
     }
 
@@ -210,6 +217,12 @@ private extension CerberusIPManagementView {
         AXCard(accentColor: .axAccentGreen) {
             VStack(alignment: .leading, spacing: AXSpacing.md) {
                 allowlistHeader
+
+                // Inline add form
+                if showAddAllowForm {
+                    inlineAddIPForm(isBlock: false)
+                }
+
                 if filteredAllowedIPs.isEmpty {
                     ipEmptyState(text: L10n.Cerberus.IP.noAllowedIPs, icon: "checkmark.shield")
                 } else {
@@ -226,7 +239,10 @@ private extension CerberusIPManagementView {
             Spacer()
             AXBadge(text: "\(filteredAllowedIPs.count)", color: .axAccentGreen, style: .soft)
             copyBtn(ips: viewModel.allowedIPs)
-            addBtn(color: .axAccentGreen) { showAddAllowSheet = true }
+            addToggleBtn(color: .axAccentGreen, isExpanded: $showAddAllowForm) {
+                showAddBlockForm = false
+                showAddCountryForm = false
+            }
         }
     }
 
@@ -239,7 +255,202 @@ private extension CerberusIPManagementView {
     }
 }
 
-// MARK: - IP Row
+// MARK: - Inline Add IP Form
+
+private extension CerberusIPManagementView {
+
+    func inlineAddIPForm(isBlock: Bool) -> some View {
+        let accent: Color = isBlock ? .axError : .axAccentGreen
+        let binding: Binding<String> = isBlock ? $newBlockIP : $newAllowIP
+        let inputValue = isBlock ? newBlockIP : newAllowIP
+        let isBulk = isBlock ? bulkBlockMode : bulkAllowMode
+        let bulkBinding: Binding<Bool> = isBlock ? $bulkBlockMode : $bulkAllowMode
+        let validation = isBulk
+            ? IPValidation.validateBulk(inputValue)
+            : (valid: [String](), invalid: [String]())
+        let singleValidation = isBulk ? nil : IPValidation.validate(inputValue)
+
+        return VStack(spacing: AXSpacing.md) {
+            Divider().background(accent.opacity(0.3))
+
+            // Mode toggle
+            Picker("", selection: bulkBinding) {
+                Text(L10n.Cerberus.IP.modeSingle).tag(false)
+                Text(L10n.Cerberus.IP.modeBulk).tag(true)
+            }
+            .pickerStyle(.segmented)
+
+            // Input
+            VStack(alignment: .leading, spacing: AXSpacing.xs) {
+                Text(isBulk ? L10n.Cerberus.IP.bulkLabel : L10n.Cerberus.IP.ipLabel)
+                    .font(AXTypography.caption)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(Color.axTextSecondary)
+                if isBulk {
+                    TextEditor(text: binding)
+                        .font(AXTypography.monoSm)
+                        .frame(height: 80)
+                        .padding(AXSpacing.xs)
+                        .background(Color.axSurfaceHover.opacity(0.3))
+                        .clipShape(RoundedRectangle(cornerRadius: AXCornerRadius.md))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: AXCornerRadius.md)
+                                .stroke(Color.axBorder, lineWidth: 1)
+                        )
+                } else {
+                    AXTextField(
+                        placeholder: L10n.Cerberus.IP.ipPlaceholder,
+                        text: binding,
+                        icon: "network",
+                        accentColor: accent,
+                        validation: { _ in
+                            if case .invalid = IPValidation.validate(inputValue) { return false }
+                            return true
+                        }
+                    )
+                }
+            }
+
+            // Validation feedback
+            inlineValidationFeedback(
+                singleValidation: singleValidation,
+                bulkValidation: validation,
+                accent: accent
+            )
+
+            // Actions
+            inlineIPActions(
+                isBlock: isBlock, accent: accent,
+                inputValue: inputValue, isBulk: isBulk,
+                singleValidation: singleValidation,
+                bulkValidation: validation
+            )
+
+            Divider().background(accent.opacity(0.3))
+        }
+        .padding(.vertical, AXSpacing.xs)
+        .animation(.easeInOut(duration: 0.2), value: isBulk)
+    }
+
+    @ViewBuilder
+    private func inlineValidationFeedback(
+        singleValidation: IPValidation.Result?,
+        bulkValidation: (valid: [String], invalid: [String]),
+        accent: Color
+    ) -> some View {
+        if let sv = singleValidation {
+            switch sv {
+            case .empty:
+                ipHintRow(accent: accent)
+            case .validIP:
+                validationBadge(icon: "checkmark.circle.fill", text: L10n.Cerberus.IP.validIP, color: .axAccentGreen)
+            case .validCIDR(let count):
+                validationBadge(icon: "checkmark.circle.fill", text: L10n.Cerberus.IP.validCIDR(count), color: .axAccentGreen)
+            case .invalid:
+                validationBadge(icon: "xmark.circle.fill", text: L10n.Cerberus.IP.invalidIP, color: .axError)
+            }
+        } else {
+            if !bulkValidation.valid.isEmpty || !bulkValidation.invalid.isEmpty {
+                HStack(spacing: AXSpacing.md) {
+                    if !bulkValidation.valid.isEmpty {
+                        validationBadge(icon: "checkmark.circle.fill", text: L10n.Cerberus.IP.bulkValid(bulkValidation.valid.count), color: .axAccentGreen)
+                    }
+                    if !bulkValidation.invalid.isEmpty {
+                        validationBadge(icon: "xmark.circle.fill", text: L10n.Cerberus.IP.bulkInvalid(bulkValidation.invalid.count), color: .axError)
+                    }
+                }
+            } else {
+                ipHintRow(accent: accent)
+            }
+        }
+    }
+
+    private func inlineIPActions(
+        isBlock: Bool, accent: Color,
+        inputValue: String, isBulk: Bool,
+        singleValidation: IPValidation.Result?,
+        bulkValidation: (valid: [String], invalid: [String])
+    ) -> some View {
+        let isDisabled: Bool = {
+            if isBulk { return bulkValidation.valid.isEmpty }
+            guard let sv = singleValidation else { return true }
+            switch sv {
+            case .validIP, .validCIDR: return false
+            default: return true
+            }
+        }()
+        let iconName = isBlock ? "hand.raised.fill" : "checkmark.shield.fill"
+
+        return HStack(spacing: AXSpacing.sm) {
+            Button {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    if isBlock {
+                        newBlockIP = ""
+                        bulkBlockMode = false
+                        showAddBlockForm = false
+                    } else {
+                        newAllowIP = ""
+                        bulkAllowMode = false
+                        showAddAllowForm = false
+                    }
+                }
+            } label: {
+                Text(L10n.Button.cancel)
+                    .font(AXTypography.caption)
+                    .fontWeight(.medium)
+                    .foregroundStyle(Color.axTextSecondary)
+                    .padding(.horizontal, AXSpacing.lg)
+                    .padding(.vertical, AXSpacing.xs)
+                    .background(Color.axSurface)
+                    .clipShape(RoundedRectangle(cornerRadius: AXCornerRadius.md))
+                    .overlay(RoundedRectangle(cornerRadius: AXCornerRadius.md).strokeBorder(Color.axBorder, lineWidth: 1))
+            }
+            .buttonStyle(.plain)
+
+            Button {
+                Task {
+                    if isBulk {
+                        if isBlock { await viewModel.bulkBlockIPs(bulkValidation.valid) }
+                        else { await viewModel.bulkAllowIPs(bulkValidation.valid) }
+                    } else {
+                        if isBlock { await viewModel.blockIP(newBlockIP) }
+                        else { await viewModel.allowIP(newAllowIP) }
+                    }
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        if isBlock { newBlockIP = ""; bulkBlockMode = false; showAddBlockForm = false }
+                        else { newAllowIP = ""; bulkAllowMode = false; showAddAllowForm = false }
+                    }
+                }
+            } label: {
+                HStack(spacing: AXSpacing.xs) {
+                    if viewModel.ipOperationInProgress {
+                        ProgressView()
+                            .controlSize(.small)
+                    } else {
+                        Image(systemName: iconName)
+                            .font(.system(size: 10))
+                    }
+                    Text(isBulk
+                         ? L10n.Cerberus.IP.bulkAction(isBlock, bulkValidation.valid.count)
+                         : (isBlock ? L10n.Cerberus.IP.blockIPBtn : L10n.Cerberus.IP.allowIPBtn))
+                        .font(AXTypography.caption)
+                        .fontWeight(.semibold)
+                }
+                .foregroundStyle(isDisabled ? Color.axTextMuted : .white)
+                .padding(.horizontal, AXSpacing.lg)
+                .padding(.vertical, AXSpacing.xs)
+                .background(isDisabled ? Color.axSurface : accent)
+                .clipShape(RoundedRectangle(cornerRadius: AXCornerRadius.md))
+            }
+            .buttonStyle(.plain)
+            .disabled(isDisabled || viewModel.ipOperationInProgress)
+
+            Spacer()
+        }
+    }
+}
+
+// MARK: - IP Row & Shared Components
 
 private extension CerberusIPManagementView {
 
@@ -297,9 +508,14 @@ private extension CerberusIPManagementView {
         .help(L10n.Cerberus.IP.copyTooltip)
     }
 
-    func addBtn(color: Color, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Image(systemName: "plus.circle.fill")
+    func addToggleBtn(color: Color, isExpanded: Binding<Bool>, onExpand: @escaping () -> Void) -> some View {
+        Button {
+            withAnimation(.easeInOut(duration: 0.2)) {
+                if !isExpanded.wrappedValue { onExpand() }
+                isExpanded.wrappedValue.toggle()
+            }
+        } label: {
+            Image(systemName: isExpanded.wrappedValue ? "xmark.circle.fill" : "plus.circle.fill")
                 .foregroundStyle(color)
         }
         .buttonStyle(.plain)
@@ -320,6 +536,36 @@ private extension CerberusIPManagementView {
             Spacer()
         }
     }
+
+    func ipHintRow(accent: Color) -> some View {
+        HStack(spacing: AXSpacing.sm) {
+            Image(systemName: "info.circle.fill")
+                .font(.system(size: 11))
+                .foregroundStyle(accent.opacity(0.6))
+            Text(L10n.Cerberus.IP.ipHint)
+                .font(AXTypography.caption2)
+                .foregroundStyle(Color.axTextMuted)
+        }
+        .padding(AXSpacing.sm)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(accent.opacity(0.04))
+        .clipShape(RoundedRectangle(cornerRadius: AXCornerRadius.sm))
+    }
+
+    func validationBadge(icon: String, text: String, color: Color) -> some View {
+        HStack(spacing: AXSpacing.xs) {
+            Image(systemName: icon)
+                .font(.system(size: 11))
+                .foregroundStyle(color)
+            Text(text)
+                .font(AXTypography.caption)
+                .foregroundStyle(color)
+        }
+        .padding(.vertical, AXSpacing.xs)
+        .padding(.horizontal, AXSpacing.sm)
+        .background(color.opacity(0.08))
+        .clipShape(RoundedRectangle(cornerRadius: AXCornerRadius.sm))
+    }
 }
 
 // MARK: - GeoIP Section
@@ -333,6 +579,12 @@ private extension CerberusIPManagementView {
                 Text(L10n.Cerberus.IP.geoIPDesc)
                     .font(AXTypography.caption)
                     .foregroundStyle(Color.axTextTertiary)
+
+                // Inline add country form
+                if showAddCountryForm {
+                    inlineAddCountryForm
+                }
+
                 if viewModel.blockedCountries.isEmpty {
                     ipEmptyState(text: L10n.Cerberus.IP.noCountriesBlocked, icon: "globe")
                 } else {
@@ -348,7 +600,10 @@ private extension CerberusIPManagementView {
             Text(L10n.Cerberus.IP.countryBlocking).font(AXTypography.headline).foregroundStyle(Color.axTextPrimary)
             Spacer()
             AXBadge(text: "\(viewModel.blockedCountries.count)", color: .axAccentPurple, style: .soft)
-            addBtn(color: .axAccentPurple) { showAddCountrySheet = true }
+            addToggleBtn(color: .axAccentPurple, isExpanded: $showAddCountryForm) {
+                showAddBlockForm = false
+                showAddAllowForm = false
+            }
         }
     }
 
@@ -361,11 +616,16 @@ private extension CerberusIPManagementView {
     }
 
     func countryChip(_ code: String) -> some View {
-        HStack(spacing: AXSpacing.xs) {
+        let name = Locale.current.localizedString(forRegionCode: code) ?? code
+        return HStack(spacing: AXSpacing.xs) {
             Text(flagEmoji(for: code))
-            Text(code)
-                .font(AXTypography.monoSm)
+            Text(name)
+                .font(AXTypography.caption)
                 .foregroundStyle(Color.axTextPrimary)
+                .lineLimit(1)
+            Text(code)
+                .font(AXTypography.monoXs)
+                .foregroundStyle(Color.axTextTertiary)
             Spacer()
             Button {
                 Task { await viewModel.unblockCountry(code) }
@@ -383,269 +643,11 @@ private extension CerberusIPManagementView {
     }
 }
 
-// MARK: - Add IP Sheet
+// MARK: - Inline Add Country Form
 
 private extension CerberusIPManagementView {
 
-    func addIPSheet(isBlock: Bool) -> some View {
-        let accent: Color = isBlock ? .axError : .axAccentGreen
-        let iconName = isBlock ? "hand.raised.fill" : "checkmark.shield.fill"
-        let binding: Binding<String> = isBlock ? $newBlockIP : $newAllowIP
-        let inputValue = isBlock ? newBlockIP : newAllowIP
-        let validation = bulkMode
-            ? IPValidation.validateBulk(inputValue)
-            : (valid: [String](), invalid: [String]())
-        let singleValidation = bulkMode ? nil : IPValidation.validate(inputValue)
-
-        return VStack(spacing: 0) {
-            addIPSheetHeader(accent: accent, iconName: iconName, isBlock: isBlock)
-
-            // Mode toggle
-            Picker("", selection: $bulkMode) {
-                Text(L10n.Cerberus.IP.modeSingle).tag(false)
-                Text(L10n.Cerberus.IP.modeBulk).tag(true)
-            }
-            .pickerStyle(.segmented)
-            .padding(.horizontal, AXSpacing.xxl)
-            .padding(.bottom, AXSpacing.md)
-
-            // Input section
-            VStack(spacing: AXSpacing.md) {
-                VStack(alignment: .leading, spacing: AXSpacing.xs) {
-                    Text(bulkMode ? L10n.Cerberus.IP.bulkLabel : L10n.Cerberus.IP.ipLabel)
-                        .font(AXTypography.caption)
-                        .fontWeight(.semibold)
-                        .foregroundStyle(Color.axTextSecondary)
-                    if bulkMode {
-                        TextEditor(text: binding)
-                            .font(AXTypography.monoSm)
-                            .frame(height: 100)
-                            .padding(AXSpacing.xs)
-                            .background(Color.axSurfaceHover.opacity(0.3))
-                            .clipShape(RoundedRectangle(cornerRadius: AXCornerRadius.md))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: AXCornerRadius.md)
-                                    .stroke(Color.axBorder, lineWidth: 1)
-                            )
-                    } else {
-                        AXTextField(
-                            placeholder: L10n.Cerberus.IP.ipPlaceholder,
-                            text: binding,
-                            icon: "network",
-                            accentColor: accent,
-                            validation: { _ in
-                                if case .invalid = IPValidation.validate(inputValue) { return false }
-                                return true
-                            }
-                        )
-                    }
-                }
-
-                // Validation feedback
-                addIPValidationFeedback(
-                    singleValidation: singleValidation,
-                    bulkValidation: validation,
-                    accent: accent
-                )
-            }
-            .padding(.horizontal, AXSpacing.xxl)
-
-            Spacer()
-
-            addIPSheetActions(
-                isBlock: isBlock, accent: accent, iconName: iconName,
-                inputValue: inputValue, singleValidation: singleValidation,
-                bulkValidation: validation
-            )
-        }
-        .frame(width: 480, height: bulkMode ? 480 : 420)
-        .background(Color.axBackground)
-    }
-
-    private func addIPSheetHeader(accent: Color, iconName: String, isBlock: Bool) -> some View {
-        VStack(spacing: AXSpacing.md) {
-            ZStack {
-                Circle()
-                    .fill(
-                        RadialGradient(
-                            colors: [accent.opacity(0.2), accent.opacity(0.04)],
-                            center: .center, startRadius: 0, endRadius: 28
-                        )
-                    )
-                    .frame(width: 52, height: 52)
-                Circle()
-                    .stroke(accent.opacity(0.2), lineWidth: 1)
-                    .frame(width: 52, height: 52)
-                Image(systemName: iconName)
-                    .font(.system(size: 20, weight: .semibold))
-                    .foregroundStyle(accent)
-            }
-            Text(isBlock ? L10n.Cerberus.IP.blockIPTitle : L10n.Cerberus.IP.allowIPTitle)
-                .font(AXTypography.headline)
-                .fontWeight(.bold)
-                .foregroundStyle(Color.axTextPrimary)
-            Text(isBlock ? L10n.Cerberus.IP.blockIPDesc : L10n.Cerberus.IP.allowIPDesc)
-                .font(AXTypography.caption)
-                .foregroundStyle(Color.axTextTertiary)
-        }
-        .padding(.top, AXSpacing.xxl)
-        .padding(.bottom, AXSpacing.lg)
-    }
-
-    @ViewBuilder
-    private func addIPValidationFeedback(
-        singleValidation: IPValidation.Result?,
-        bulkValidation: (valid: [String], invalid: [String]),
-        accent: Color
-    ) -> some View {
-        if let sv = singleValidation {
-            switch sv {
-            case .empty:
-                ipHintRow(accent: accent)
-            case .validIP:
-                validationBadge(
-                    icon: "checkmark.circle.fill",
-                    text: L10n.Cerberus.IP.validIP,
-                    color: .axAccentGreen
-                )
-            case .validCIDR(let count):
-                validationBadge(
-                    icon: "checkmark.circle.fill",
-                    text: L10n.Cerberus.IP.validCIDR(count),
-                    color: .axAccentGreen
-                )
-            case .invalid:
-                validationBadge(
-                    icon: "xmark.circle.fill",
-                    text: L10n.Cerberus.IP.invalidIP,
-                    color: .axError
-                )
-            }
-        } else {
-            // Bulk mode
-            if !bulkValidation.valid.isEmpty || !bulkValidation.invalid.isEmpty {
-                HStack(spacing: AXSpacing.md) {
-                    if !bulkValidation.valid.isEmpty {
-                        validationBadge(
-                            icon: "checkmark.circle.fill",
-                            text: L10n.Cerberus.IP.bulkValid(bulkValidation.valid.count),
-                            color: .axAccentGreen
-                        )
-                    }
-                    if !bulkValidation.invalid.isEmpty {
-                        validationBadge(
-                            icon: "xmark.circle.fill",
-                            text: L10n.Cerberus.IP.bulkInvalid(bulkValidation.invalid.count),
-                            color: .axError
-                        )
-                    }
-                }
-            } else {
-                ipHintRow(accent: accent)
-            }
-        }
-    }
-
-    private func ipHintRow(accent: Color) -> some View {
-        HStack(spacing: AXSpacing.sm) {
-            Image(systemName: "info.circle.fill")
-                .font(.system(size: 11))
-                .foregroundStyle(accent.opacity(0.6))
-            Text(L10n.Cerberus.IP.ipHint)
-                .font(AXTypography.caption2)
-                .foregroundStyle(Color.axTextMuted)
-        }
-        .padding(AXSpacing.sm)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(accent.opacity(0.04))
-        .clipShape(RoundedRectangle(cornerRadius: AXCornerRadius.sm))
-    }
-
-    private func validationBadge(icon: String, text: String, color: Color) -> some View {
-        HStack(spacing: AXSpacing.xs) {
-            Image(systemName: icon)
-                .font(.system(size: 11))
-                .foregroundStyle(color)
-            Text(text)
-                .font(AXTypography.caption)
-                .foregroundStyle(color)
-        }
-        .padding(.vertical, AXSpacing.xs)
-        .padding(.horizontal, AXSpacing.sm)
-        .background(color.opacity(0.08))
-        .clipShape(RoundedRectangle(cornerRadius: AXCornerRadius.sm))
-    }
-
-    private func addIPSheetActions(
-        isBlock: Bool, accent: Color, iconName: String,
-        inputValue: String, singleValidation: IPValidation.Result?,
-        bulkValidation: (valid: [String], invalid: [String])
-    ) -> some View {
-        let isDisabled: Bool = {
-            if bulkMode {
-                return bulkValidation.valid.isEmpty
-            }
-            guard let sv = singleValidation else { return true }
-            switch sv {
-            case .validIP, .validCIDR: return false
-            default: return true
-            }
-        }()
-
-        return HStack(spacing: AXSpacing.md) {
-            Button {
-                bulkMode = false
-                if isBlock { newBlockIP = ""; showAddBlockSheet = false }
-                else { newAllowIP = ""; showAddAllowSheet = false }
-            } label: {
-                Text(L10n.Button.cancel)
-                    .font(AXTypography.subheadline)
-                    .fontWeight(.medium)
-                    .foregroundStyle(Color.axTextSecondary)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, AXSpacing.sm)
-                    .background(Color.axSurface)
-                    .clipShape(RoundedRectangle(cornerRadius: AXCornerRadius.md))
-                    .overlay(RoundedRectangle(cornerRadius: AXCornerRadius.md).strokeBorder(Color.axBorder, lineWidth: 1))
-            }
-            .buttonStyle(.plain)
-
-            AXPrimaryButton(
-                title: bulkMode
-                    ? L10n.Cerberus.IP.bulkAction(isBlock, bulkValidation.valid.count)
-                    : (isBlock ? L10n.Cerberus.IP.blockIPBtn : L10n.Cerberus.IP.allowIPBtn),
-                icon: iconName,
-                action: {
-                    Task {
-                        if bulkMode {
-                            for ip in bulkValidation.valid {
-                                if isBlock { await viewModel.blockIP(ip) }
-                                else { await viewModel.allowIP(ip) }
-                            }
-                        } else {
-                            if isBlock { await viewModel.blockIP(newBlockIP) }
-                            else { await viewModel.allowIP(newAllowIP) }
-                        }
-                        bulkMode = false
-                        if isBlock { newBlockIP = ""; showAddBlockSheet = false }
-                        else { newAllowIP = ""; showAddAllowSheet = false }
-                    }
-                },
-                isLoading: viewModel.ipOperationInProgress,
-                isDisabled: isDisabled,
-                style: isBlock ? .destructive : .primary,
-                accentColor: accent
-            )
-        }
-        .padding(AXSpacing.xxl)
-    }
-}
-
-// MARK: - Add Country Sheet
-
-private extension CerberusIPManagementView {
-
-    var addCountrySheet: some View {
+    var inlineAddCountryForm: some View {
         let alreadyBlocked = Set(viewModel.blockedCountries.map { $0.uppercased() })
         let filtered = CountryData.all.filter { entry in
             !alreadyBlocked.contains(entry.code) && (
@@ -655,73 +657,59 @@ private extension CerberusIPManagementView {
             )
         }
 
-        return VStack(spacing: 0) {
-            countrySheetHeader
-            countrySearchBar
-            countryList(filtered)
-            countrySheetActions
-        }
-        .frame(width: 480, height: 500)
-        .background(Color.axBackground)
-    }
+        return VStack(spacing: AXSpacing.md) {
+            Divider().background(Color.axAccentPurple.opacity(0.3))
 
-    private var countrySheetHeader: some View {
-        VStack(spacing: AXSpacing.sm) {
-            ZStack {
-                Circle()
-                    .fill(
-                        RadialGradient(
-                            colors: [Color.axAccentPurple.opacity(0.2), Color.axAccentPurple.opacity(0.04)],
-                            center: .center, startRadius: 0, endRadius: 28
-                        )
-                    )
-                    .frame(width: 48, height: 48)
-                Circle()
-                    .stroke(Color.axAccentPurple.opacity(0.2), lineWidth: 1)
-                    .frame(width: 48, height: 48)
-                Image(systemName: "globe.badge.chevron.backward")
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundStyle(Color.axAccentPurple)
-            }
-            Text(L10n.Cerberus.IP.selectCountries)
-                .font(AXTypography.headline)
-                .fontWeight(.bold)
-                .foregroundStyle(Color.axTextPrimary)
-            Text(L10n.Cerberus.IP.selectCountriesDesc)
-                .font(AXTypography.caption)
-                .foregroundStyle(Color.axTextTertiary)
-        }
-        .padding(.top, AXSpacing.xl)
-        .padding(.bottom, AXSpacing.md)
-    }
+            // Search
+            AXTextField(
+                placeholder: L10n.Cerberus.IP.searchCountry,
+                text: $countrySearch,
+                icon: "magnifyingglass",
+                accentColor: .axAccentPurple
+            )
 
-    private var countrySearchBar: some View {
-        AXTextField(
-            placeholder: L10n.Cerberus.IP.searchCountry,
-            text: $countrySearch,
-            icon: "magnifyingglass",
-            accentColor: .axAccentPurple
-        )
-        .padding(.horizontal, AXSpacing.xxl)
-        .padding(.bottom, AXSpacing.sm)
-    }
-
-    private func countryList(_ filtered: [CountryData]) -> some View {
-        ScrollView {
-            LazyVStack(spacing: AXSpacing.xxxs) {
-                ForEach(filtered, id: \.code) { entry in
-                    countryRow(entry)
+            // Country list — scrollable within the card
+            ScrollView {
+                LazyVStack(spacing: AXSpacing.xxxs) {
+                    ForEach(filtered, id: \.code) { entry in
+                        inlineCountryRow(entry)
+                    }
                 }
             }
-            .padding(.horizontal, AXSpacing.xxl)
+            .frame(maxHeight: 260)
+
+            // Done button
+            HStack {
+                Text(L10n.Cerberus.IP.selectCountriesDesc)
+                    .font(AXTypography.caption2)
+                    .foregroundStyle(Color.axTextMuted)
+                Spacer()
+                Button {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        countrySearch = ""
+                        showAddCountryForm = false
+                    }
+                } label: {
+                    Text(L10n.Button.done)
+                        .font(AXTypography.caption)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(Color.axAccentPurple)
+                        .padding(.horizontal, AXSpacing.lg)
+                        .padding(.vertical, AXSpacing.xs)
+                        .background(Color.axAccentPurple.opacity(0.1))
+                        .clipShape(RoundedRectangle(cornerRadius: AXCornerRadius.md))
+                }
+                .buttonStyle(.plain)
+            }
+
+            Divider().background(Color.axAccentPurple.opacity(0.3))
         }
+        .padding(.vertical, AXSpacing.xs)
     }
 
-    private func countryRow(_ entry: CountryData) -> some View {
+    private func inlineCountryRow(_ entry: CountryData) -> some View {
         Button {
-            Task {
-                await viewModel.blockCountry(entry.code)
-            }
+            Task { await viewModel.blockCountry(entry.code) }
         } label: {
             HStack(spacing: AXSpacing.sm) {
                 Text(flagEmoji(for: entry.code))
@@ -747,27 +735,6 @@ private extension CerberusIPManagementView {
         .buttonStyle(.plain)
         .disabled(viewModel.geoIPOperationInProgress)
     }
-
-    private var countrySheetActions: some View {
-        HStack {
-            Spacer()
-            Button {
-                countrySearch = ""
-                showAddCountrySheet = false
-            } label: {
-                Text(L10n.Button.done)
-                    .font(AXTypography.subheadline)
-                    .fontWeight(.medium)
-                    .foregroundStyle(Color.axAccentPurple)
-                    .padding(.horizontal, AXSpacing.xl)
-                    .padding(.vertical, AXSpacing.sm)
-                    .background(Color.axAccentPurple.opacity(0.1))
-                    .clipShape(RoundedRectangle(cornerRadius: AXCornerRadius.md))
-            }
-            .buttonStyle(.plain)
-        }
-        .padding(AXSpacing.xxl)
-    }
 }
 
 // MARK: - Helpers
@@ -775,7 +742,7 @@ private extension CerberusIPManagementView {
 private extension CerberusIPManagementView {
 
     var totalRules: Int {
-        viewModel.blockedIPs.count + viewModel.blockedCountries.count
+        viewModel.blockedIPs.count + viewModel.allowedIPs.count + viewModel.blockedCountries.count
     }
 
     var filteredBlockedIPs: [String] {
@@ -860,7 +827,7 @@ private enum IPValidation {
 
         let addressCount: Int
         if isV6 {
-            let hostBits = min(maxPrefix - prefix, 63) // cap to avoid overflow
+            let hostBits = min(maxPrefix - prefix, 63)
             addressCount = 1 << hostBits
         } else {
             addressCount = 1 << (32 - prefix)
@@ -883,42 +850,19 @@ struct CountryData {
     let code: String
     let name: String
 
-    static let all: [CountryData] = [
-        .init(code: "AF", name: "Afghanistan"), .init(code: "AL", name: "Albania"),
-        .init(code: "DZ", name: "Algeria"), .init(code: "AR", name: "Argentina"),
-        .init(code: "AU", name: "Australia"), .init(code: "AT", name: "Austria"),
-        .init(code: "BD", name: "Bangladesh"), .init(code: "BY", name: "Belarus"),
-        .init(code: "BE", name: "Belgium"), .init(code: "BR", name: "Brazil"),
-        .init(code: "BG", name: "Bulgaria"), .init(code: "CA", name: "Canada"),
-        .init(code: "CL", name: "Chile"), .init(code: "CN", name: "China"),
-        .init(code: "CO", name: "Colombia"), .init(code: "HR", name: "Croatia"),
-        .init(code: "CZ", name: "Czech Republic"), .init(code: "DK", name: "Denmark"),
-        .init(code: "EG", name: "Egypt"), .init(code: "EE", name: "Estonia"),
-        .init(code: "FI", name: "Finland"), .init(code: "FR", name: "France"),
-        .init(code: "DE", name: "Germany"), .init(code: "GR", name: "Greece"),
-        .init(code: "HK", name: "Hong Kong"), .init(code: "HU", name: "Hungary"),
-        .init(code: "IN", name: "India"), .init(code: "ID", name: "Indonesia"),
-        .init(code: "IR", name: "Iran"), .init(code: "IQ", name: "Iraq"),
-        .init(code: "IE", name: "Ireland"), .init(code: "IL", name: "Israel"),
-        .init(code: "IT", name: "Italy"), .init(code: "JP", name: "Japan"),
-        .init(code: "KZ", name: "Kazakhstan"), .init(code: "KE", name: "Kenya"),
-        .init(code: "KP", name: "North Korea"), .init(code: "KR", name: "South Korea"),
-        .init(code: "LV", name: "Latvia"), .init(code: "LT", name: "Lithuania"),
-        .init(code: "MY", name: "Malaysia"), .init(code: "MX", name: "Mexico"),
-        .init(code: "MA", name: "Morocco"), .init(code: "NL", name: "Netherlands"),
-        .init(code: "NZ", name: "New Zealand"), .init(code: "NG", name: "Nigeria"),
-        .init(code: "NO", name: "Norway"), .init(code: "PK", name: "Pakistan"),
-        .init(code: "PE", name: "Peru"), .init(code: "PH", name: "Philippines"),
-        .init(code: "PL", name: "Poland"), .init(code: "PT", name: "Portugal"),
-        .init(code: "RO", name: "Romania"), .init(code: "RU", name: "Russia"),
-        .init(code: "SA", name: "Saudi Arabia"), .init(code: "RS", name: "Serbia"),
-        .init(code: "SG", name: "Singapore"), .init(code: "SK", name: "Slovakia"),
-        .init(code: "ZA", name: "South Africa"), .init(code: "ES", name: "Spain"),
-        .init(code: "SE", name: "Sweden"), .init(code: "CH", name: "Switzerland"),
-        .init(code: "SY", name: "Syria"), .init(code: "TW", name: "Taiwan"),
-        .init(code: "TH", name: "Thailand"), .init(code: "TR", name: "Turkey"),
-        .init(code: "UA", name: "Ukraine"), .init(code: "AE", name: "United Arab Emirates"),
-        .init(code: "GB", name: "United Kingdom"), .init(code: "US", name: "United States"),
-        .init(code: "VN", name: "Vietnam"), .init(code: "VE", name: "Venezuela"),
-    ]
+    /// All ISO 3166-1 countries, names auto-localized via Locale.
+    static let all: [CountryData] = {
+        let locale = Locale.current
+        return Locale.Region.isoRegions
+            .filter { $0.subRegions.isEmpty }
+            .compactMap { region in
+                let code = region.identifier
+                guard code.count == 2,
+                      let name = locale.localizedString(forRegionCode: code),
+                      name != code
+                else { return nil }
+                return CountryData(code: code, name: name)
+            }
+            .sorted { $0.name.localizedCompare($1.name) == .orderedAscending }
+    }()
 }

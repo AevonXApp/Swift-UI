@@ -70,7 +70,7 @@ struct CerberusAttacksView: View {
             }
             Spacer()
             if selectedSection == .blockLog && !viewModel.blockLog.isEmpty {
-                AXBadge(text: "\(filteredBlockLog.count) entries", color: .axError, style: .soft)
+                AXBadge(text: L10n.Cerberus.Badge.entries(filteredBlockLog.count), color: .axError, style: .soft)
             }
         }
         .padding(.horizontal, AXSpacing.xl)
@@ -230,7 +230,7 @@ struct CerberusAttacksView: View {
             Text(L10n.Cerberus.Attacks.attackVectors).font(AXTypography.headline).foregroundStyle(Color.axTextPrimary)
             Spacer()
             if !viewModel.attackTypes.isEmpty {
-                AXBadge(text: "\(viewModel.attackTypes.count) types", color: .axError, style: .soft)
+                AXBadge(text: L10n.Cerberus.Badge.types(viewModel.attackTypes.count), color: .axError, style: .soft)
             }
         }
     }
@@ -348,7 +348,7 @@ struct CerberusAttacksView: View {
             Text(L10n.Cerberus.Attacks.topAttackers).font(AXTypography.headline).foregroundStyle(Color.axTextPrimary)
             Spacer()
             if !viewModel.topAttackers.isEmpty {
-                AXBadge(text: "\(viewModel.topAttackers.count) IPs", color: .axError, style: .soft)
+                AXBadge(text: L10n.Cerberus.Badge.ips(viewModel.topAttackers.count), color: .axError, style: .soft)
             }
         }
     }
@@ -422,7 +422,7 @@ struct CerberusAttacksView: View {
             Text(L10n.Cerberus.Attacks.targetedURIs).font(AXTypography.headline).foregroundStyle(Color.axTextPrimary)
             Spacer()
             if !viewModel.topURIs.isEmpty {
-                AXBadge(text: "\(viewModel.topURIs.count) paths", color: .axWarning, style: .soft)
+                AXBadge(text: L10n.Cerberus.Badge.paths(viewModel.topURIs.count), color: .axWarning, style: .soft)
             }
         }
     }
@@ -484,7 +484,7 @@ struct CerberusAttacksView: View {
             Text(L10n.Cerberus.Attacks.attackOrigins).font(AXTypography.headline).foregroundStyle(Color.axTextPrimary)
             Spacer()
             if !viewModel.countries.isEmpty {
-                AXBadge(text: "\(viewModel.countries.count) countries", color: .axAccentPurple, style: .soft)
+                AXBadge(text: L10n.Cerberus.Badge.countries(viewModel.countries.count), color: .axAccentPurple, style: .soft)
             }
         }
     }
@@ -506,7 +506,7 @@ struct CerberusAttacksView: View {
         return HStack(spacing: AXSpacing.sm) {
             Text(flagEmoji(for: country.countryCode)).font(AXTypography.title3)
             VStack(alignment: .leading, spacing: AXSpacing.xxxs) {
-                Text(country.countryName.isEmpty ? country.countryCode : country.countryName)
+                Text(localizedCountryName(country))
                     .font(AXTypography.caption).foregroundStyle(Color.axTextPrimary).lineLimit(1)
                 countryCellBar(country: country, maxCount: maxCount, barColor: barColor)
             }
@@ -699,7 +699,7 @@ struct CerberusAttacksView: View {
 
     private var blockLogPaginationBar: some View {
         HStack(spacing: AXSpacing.md) {
-            Text(L10n.Cerberus.VisitorLog.showingEntries(
+            Text(L10n.Cerberus.Pagination.showing(
                 blockLogPage * blockLogPageSize + 1,
                 min((blockLogPage + 1) * blockLogPageSize, filteredBlockLog.count),
                 filteredBlockLog.count
@@ -709,7 +709,7 @@ struct CerberusAttacksView: View {
             Spacer()
             HStack(spacing: AXSpacing.xs) {
                 blockLogPageBtn(icon: "chevron.left", action: { blockLogPage -= 1 }, disabled: blockLogPage == 0)
-                Text(L10n.Cerberus.VisitorLog.pageOf(blockLogPage + 1, blockLogTotalPages))
+                Text(L10n.Cerberus.Pagination.page(blockLogPage + 1, blockLogTotalPages))
                     .font(AXTypography.monoSm)
                     .foregroundStyle(Color.axTextSecondary)
                 blockLogPageBtn(icon: "chevron.right", action: { blockLogPage += 1 }, disabled: blockLogPage >= blockLogTotalPages - 1)
@@ -764,7 +764,7 @@ struct CerberusAttacksView: View {
             Rectangle().fill(Color.axBorder.opacity(0.15)).frame(height: 1)
             attackerSheetActions(attacker)
         }
-        .frame(width: 500, height: 440)
+        .frame(minWidth: 420, idealWidth: 500, maxWidth: 600, minHeight: 380, idealHeight: 440, maxHeight: 540)
         .background(Color.axBackground)
     }
 
@@ -900,7 +900,7 @@ struct CerberusAttacksView: View {
 
     private func severityBadge(_ severity: String) -> some View {
         let color = severityColor(severity)
-        return Text(severity.prefix(1).uppercased() + severity.dropFirst().lowercased())
+        return Text(L10n.Cerberus.Alerts.filterLabel(for: severity))
             .font(AXTypography.monoXs)
             .foregroundStyle(color)
             .padding(.horizontal, AXSpacing.xs)
@@ -946,6 +946,11 @@ struct CerberusAttacksView: View {
             if let s = Unicode.Scalar(base + scalar.value) { flag.append(String(s)) }
         }
         return flag.isEmpty ? "🏳️" : flag
+    }
+
+    private func localizedCountryName(_ country: CountryStats) -> String {
+        if !country.countryName.isEmpty { return country.countryName }
+        return Locale.current.localizedString(forRegionCode: country.countryCode) ?? country.countryCode
     }
 
     private func formatTime(_ ts: String) -> String {

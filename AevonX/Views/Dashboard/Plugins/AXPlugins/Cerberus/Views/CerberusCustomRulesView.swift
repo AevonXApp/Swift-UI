@@ -13,6 +13,7 @@ struct CerberusCustomRulesView: View {
     @State private var showAddSheet = false
     @State private var newRuleID = ""
     @State private var newRuleExpression = ""
+    @State private var ruleToDelete: String?
 
     var body: some View {
         ScrollView {
@@ -32,6 +33,17 @@ struct CerberusCustomRulesView: View {
         }
         .task { await viewModel.loadCustomRules() }
         .sheet(isPresented: $showAddSheet) { addRuleSheet }
+        .confirmationDialog(
+            L10n.Cerberus.Dialog.deleteRule,
+            isPresented: Binding(get: { ruleToDelete != nil }, set: { if !$0 { ruleToDelete = nil } }),
+            titleVisibility: .visible
+        ) {
+            Button(L10n.Cerberus.Dialog.delete, role: .destructive) {
+                if let id = ruleToDelete {
+                    Task { await viewModel.removeCustomRule(id: id) }
+                }
+            }
+        }
     }
 
     // MARK: - Hero Header
@@ -79,7 +91,7 @@ struct CerberusCustomRulesView: View {
 
     private var ruleCountBadge: some View {
         AXBadge(
-            text: "\(viewModel.customRules.count) rule\(viewModel.customRules.count == 1 ? "" : "s")",
+            text: L10n.Cerberus.Badge.rules(viewModel.customRules.count),
             color: .axAccentGreen,
             style: .soft
         )
@@ -196,7 +208,7 @@ struct CerberusCustomRulesView: View {
 
     private func deleteButton(ruleID: String) -> some View {
         Button {
-            Task { await viewModel.removeCustomRule(id: ruleID) }
+            ruleToDelete = ruleID
         } label: {
             Image(systemName: "trash")
                 .font(.system(size: 12, weight: .medium))
@@ -232,7 +244,7 @@ struct CerberusCustomRulesView: View {
             Text(L10n.Cerberus.Rules.syntaxFormat)
                 .font(AXTypography.monoSm)
                 .foregroundStyle(Color.axAccentGreen)
-            Text("WHEN path.startsWith(\"/api\") AND method == \"POST\" THEN block")
+            Text(L10n.Cerberus.Rules.syntaxHint)
                 .font(AXTypography.monoXs)
                 .foregroundStyle(Color.axTextTertiary)
         }
@@ -288,7 +300,7 @@ struct CerberusCustomRulesView: View {
             Rectangle().fill(Color.axBorder.opacity(0.15)).frame(height: 1)
             ruleSheetActions
         }
-        .frame(width: 540, height: 460)
+        .frame(minWidth: 460, idealWidth: 540, maxWidth: 640, minHeight: 380, idealHeight: 460, maxHeight: 560)
         .background(Color.axBackground)
     }
 
@@ -348,7 +360,7 @@ struct CerberusCustomRulesView: View {
                     .fontWeight(.semibold)
                     .foregroundStyle(Color.axTextSecondary)
                 AXTextField(
-                    placeholder: "WHEN ... THEN ...",
+                    placeholder: L10n.Cerberus.Rules.expressionPlaceholder,
                     text: $newRuleExpression,
                     icon: "chevron.left.forwardslash.chevron.right",
                     accentColor: .axAccentGreen
@@ -366,7 +378,7 @@ struct CerberusCustomRulesView: View {
                         .fontWeight(.semibold)
                         .foregroundStyle(Color.axAccentPurple)
                 }
-                Text("WHEN path.startsWith(\"/api\") AND method == \"POST\" THEN block")
+                Text(L10n.Cerberus.Rules.syntaxHint)
                     .font(AXTypography.monoXs)
                     .foregroundStyle(Color.axTextTertiary)
                     .padding(AXSpacing.sm)

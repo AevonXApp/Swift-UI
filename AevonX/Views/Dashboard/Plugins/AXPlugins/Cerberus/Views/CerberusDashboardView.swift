@@ -34,15 +34,13 @@ struct CerberusDashboardView: View {
             .padding(AXSpacing.xl)
         }
         .task {
-            async let dash: () = viewModel.loadDashboard()
+            // Load core dashboard first (6 SSH calls), then supplementary (3 SSH calls)
+            // to avoid overwhelming the SSH multiplexer with 9+ concurrent commands.
+            await viewModel.loadDashboard()
             async let blog: () = viewModel.loadBlockLog()
             async let qps:  () = viewModel.loadQPS()
             async let anom: () = viewModel.loadAnomalyStatus()
-            _ = await (dash, blog, qps, anom)
-            viewModel.startAutoRefresh()
-        }
-        .onDisappear {
-            viewModel.stopAutoRefresh()
+            _ = await (blog, qps, anom)
         }
     }
 
@@ -561,7 +559,7 @@ struct CerberusDashboardView: View {
     private func countryRowDetail(_ country: CountryStats, maxCount: Int) -> some View {
         VStack(alignment: .leading, spacing: AXSpacing.xxxs) {
             HStack {
-                Text(country.countryName.isEmpty ? country.countryCode : country.countryName)
+                Text(localizedCountryName(country))
                     .font(AXTypography.caption).foregroundStyle(Color.axTextPrimary).lineLimit(1)
                 Spacer()
                 Text(viewModel.formatNumber(country.count))
@@ -934,6 +932,11 @@ struct CerberusDashboardView: View {
     private func flagEmoji(for code: String) -> String {
         let base: UInt32 = 127397
         return code.uppercased().unicodeScalars.compactMap { Unicode.Scalar(base + $0.value).map(String.init) }.joined()
+    }
+
+    private func localizedCountryName(_ country: CountryStats) -> String {
+        if !country.countryName.isEmpty { return country.countryName }
+        return Locale.current.localizedString(forRegionCode: country.countryCode) ?? country.countryCode
     }
 
     private func severityColor(_ s: String) -> Color {

@@ -3,6 +3,7 @@
 //  AevonX
 //
 //  Domain management for AXCerberus WAF.
+//  Domain detail is shown inline (full page), not in a sheet.
 //
 
 import SwiftUI
@@ -10,19 +11,32 @@ import AevonXCoreBridge
 
 struct CerberusDomainsView: View {
     @ObservedObject var viewModel: CerberusViewModel
-    @State private var showAddSheet = false
+    @State private var showAddForm = false
     @State private var newDomain = ""
     @State private var selectedDomain: WAFDomainInfo?
+    @State private var domainToDelete: String?
+    @State private var hoveredDomain: String?
 
     var body: some View {
+        if let domain = selectedDomain {
+            CerberusDomainDetailView(viewModel: viewModel, domain: domain) {
+                withAnimation(.easeInOut(duration: 0.25)) { selectedDomain = nil }
+            }
+        } else {
+            domainListPage
+        }
+    }
+
+    private var domainListPage: some View {
         ScrollView {
-            VStack(spacing: AXSpacing.xl) {
+            VStack(spacing: AXSpacing.xxl) {
                 heroHeader
                 if viewModel.domainOperationInProgress && viewModel.domains.isEmpty {
-                    loadingSkeleton
+                    DomainLoadingSkeleton()
                 } else {
-                    webServerSection
-                    statsRow
+                    webServerBanner
+                    if showAddForm { inlineAddDomainForm }
+                    globalStatsStrip
                     domainListSection
                 }
             }
@@ -30,9 +44,16 @@ struct CerberusDomainsView: View {
         }
         .background(Color.axBackground)
         .task { await viewModel.loadDomains() }
-        .sheet(isPresented: $showAddSheet) { addDomainSheet }
-        .sheet(item: $selectedDomain) { domain in
-            CerberusDomainDetailView(viewModel: viewModel, domain: domain)
+        .confirmationDialog(
+            L10n.Cerberus.Dialog.deleteDomain,
+            isPresented: Binding(get: { domainToDelete != nil }, set: { if !$0 { domainToDelete = nil } }),
+            titleVisibility: .visible
+        ) {
+            Button(L10n.Cerberus.Dialog.delete, role: .destructive) {
+                if let domain = domainToDelete {
+                    Task { await viewModel.removeDomain(domain) }
+                }
+            }
         }
     }
 }
@@ -42,18 +63,29 @@ struct CerberusDomainsView: View {
 private extension CerberusDomainsView {
 
     var heroHeader: some View {
-        HStack(alignment: .top, spacing: AXSpacing.lg) {
-            heroTitleGroup
-            Spacer()
-            heroActions
-        }
-    }
-
-    var heroTitleGroup: some View {
-        VStack(alignment: .leading, spacing: AXSpacing.xs) {
-            HStack(spacing: AXSpacing.sm) {
+        HStack(alignment: .center, spacing: AXSpacing.lg) {
+            ZStack {
+                Circle()
+                    .fill(
+                        LinearGradient(
+                            colors: [.axAccentBlue.opacity(0.2), .axAccentPurple.opacity(0.15)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .frame(width: 48, height: 48)
+                Circle()
+                    .strokeBorder(
+                        LinearGradient(
+                            colors: [.axAccentBlue.opacity(0.4), .axAccentPurple.opacity(0.2)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ),
+                        lineWidth: 1
+                    )
+                    .frame(width: 48, height: 48)
                 Image(systemName: "globe.badge.chevron.backward")
-                    .font(AXTypography.title2)
+                    .font(.system(size: 20, weight: .medium))
                     .foregroundStyle(
                         LinearGradient(
                             colors: [.axAccentBlue, .axAccentPurple],
@@ -61,114 +93,112 @@ private extension CerberusDomainsView {
                             endPoint: .bottomTrailing
                         )
                     )
+            }
+            VStack(alignment: .leading, spacing: AXSpacing.xxxs) {
                 Text(L10n.Cerberus.Domains.title)
                     .font(AXTypography.headline)
                     .foregroundStyle(Color.axTextPrimary)
+                Text(L10n.Cerberus.Domains.subtitle)
+                    .font(AXTypography.caption)
+                    .foregroundStyle(Color.axTextTertiary)
             }
-            Text(L10n.Cerberus.Domains.subtitle)
-                .font(AXTypography.caption)
-                .foregroundStyle(Color.axTextTertiary)
+            Spacer()
+            heroActionButtons
         }
     }
 
-    var heroActions: some View {
+    var heroActionButtons: some View {
         HStack(spacing: AXSpacing.sm) {
-            syncButton
-            addDomainButton
-        }
-    }
-
-    var syncButton: some View {
-        Button {
-            Task { await viewModel.syncDomains() }
-        } label: {
-            HStack(spacing: AXSpacing.xs) {
-                Image(systemName: "arrow.triangle.2.circlepath")
-                    .font(AXTypography.caption)
-                Text(L10n.Cerberus.Domains.sync)
-                    .font(AXTypography.subheadline)
+            Button {
+                Task { await viewModel.syncDomains() }
+            } label: {
+                HStack(spacing: AXSpacing.xs) {
+                    Image(systemName: "arrow.triangle.2.circlepath")
+                        .font(.system(size: 11, weight: .medium))
+                    Text(L10n.Cerberus.Domains.sync)
+                        .font(AXTypography.caption)
+                        .fontWeight(.medium)
+                }
+                .foregroundStyle(Color.axAccentBlue)
+                .padding(.horizontal, AXSpacing.md)
+                .padding(.vertical, AXSpacing.sm)
+                .background(Color.axAccentBlue.opacity(0.08))
+                .clipShape(RoundedRectangle(cornerRadius: AXCornerRadius.md))
+                .overlay(
+                    RoundedRectangle(cornerRadius: AXCornerRadius.md)
+                        .strokeBorder(Color.axAccentBlue.opacity(0.15), lineWidth: 1)
+                )
             }
-            .padding(.horizontal, AXSpacing.lg)
-            .padding(.vertical, AXSpacing.sm)
-            .background(Color.axAccentBlue.opacity(0.1))
-            .foregroundStyle(Color.axAccentBlue)
-            .clipShape(RoundedRectangle(cornerRadius: AXCornerRadius.md))
-            .overlay(
-                RoundedRectangle(cornerRadius: AXCornerRadius.md)
-                    .strokeBorder(Color.axAccentBlue.opacity(0.2), lineWidth: 1)
-            )
-        }
-        .buttonStyle(.plain)
-        .disabled(viewModel.domainOperationInProgress)
-    }
+            .buttonStyle(.plain)
+            .disabled(viewModel.domainOperationInProgress)
 
-    var addDomainButton: some View {
-        Button {
-            showAddSheet = true
-        } label: {
-            HStack(spacing: AXSpacing.xs) {
-                Image(systemName: "plus.circle.fill")
-                    .font(AXTypography.caption)
-                Text(L10n.Cerberus.Domains.addDomain)
-                    .font(AXTypography.subheadline)
+            Button {
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) { showAddForm.toggle() }
+            } label: {
+                HStack(spacing: AXSpacing.xs) {
+                    Image(systemName: showAddForm ? "xmark" : "plus")
+                        .font(.system(size: 11, weight: .semibold))
+                    Text(L10n.Cerberus.Domains.addDomain)
+                        .font(AXTypography.caption)
+                        .fontWeight(.medium)
+                }
+                .foregroundStyle(.white)
+                .padding(.horizontal, AXSpacing.md)
+                .padding(.vertical, AXSpacing.sm)
+                .background(
+                    LinearGradient(
+                        colors: [.axAccentGreen, .axAccentGreen.opacity(0.85)],
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                )
+                .clipShape(RoundedRectangle(cornerRadius: AXCornerRadius.md))
             }
-            .padding(.horizontal, AXSpacing.lg)
-            .padding(.vertical, AXSpacing.sm)
-            .background(Color.axAccentGreen.opacity(0.1))
-            .foregroundStyle(Color.axAccentGreen)
-            .clipShape(RoundedRectangle(cornerRadius: AXCornerRadius.md))
-            .overlay(
-                RoundedRectangle(cornerRadius: AXCornerRadius.md)
-                    .strokeBorder(Color.axAccentGreen.opacity(0.2), lineWidth: 1)
-            )
+            .buttonStyle(.plain)
         }
-        .buttonStyle(.plain)
     }
 }
 
-// MARK: - Web Server Card
+// MARK: - Web Server Banner
 
 private extension CerberusDomainsView {
 
-    var webServerSection: some View {
+    var webServerBanner: some View {
         AXGlassCard {
             HStack(spacing: AXSpacing.lg) {
-                webServerIconBox
-                webServerInfo
+                ZStack {
+                    RoundedRectangle(cornerRadius: AXCornerRadius.lg)
+                        .fill(
+                            LinearGradient(
+                                colors: [.axAccentBlue.opacity(0.15), .axAccentPurple.opacity(0.1)],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .frame(width: 44, height: 44)
+                    Image(systemName: "server.rack")
+                        .font(.system(size: 18, weight: .medium))
+                        .foregroundStyle(Color.axAccentBlue)
+                }
+                webServerInfoText
                 Spacer()
-                webServerStatus
+                webServerStatusBadge
             }
             .padding(AXSpacing.lg)
         }
     }
 
-    var webServerIconBox: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: AXCornerRadius.lg)
-                .fill(
-                    LinearGradient(
-                        colors: [.axAccentBlue.opacity(0.15), .axAccentPurple.opacity(0.1)],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
-                .frame(width: 44, height: 44)
-            Image(systemName: "server.rack")
-                .font(AXTypography.title3)
-                .foregroundStyle(Color.axAccentBlue)
-        }
-    }
-
-    var webServerInfo: some View {
+    var webServerInfoText: some View {
         VStack(alignment: .leading, spacing: AXSpacing.xxxs) {
             if let ws = viewModel.webServerInfo {
                 Text(ws.type.isEmpty ? L10n.Cerberus.Domains.noWebServer : ws.type.capitalized)
                     .font(AXTypography.subheadline)
+                    .fontWeight(.medium)
                     .foregroundStyle(Color.axTextPrimary)
                 if ws.port > 0 {
                     HStack(spacing: AXSpacing.xs) {
                         Text(L10n.Field.port)
-                            .font(AXTypography.caption)
+                            .font(AXTypography.caption2)
                             .foregroundStyle(Color.axTextTertiary)
                         Text("\(ws.port)")
                             .font(AXTypography.monoSm)
@@ -183,7 +213,7 @@ private extension CerberusDomainsView {
         }
     }
 
-    var webServerStatus: some View {
+    var webServerStatusBadge: some View {
         Group {
             if let ws = viewModel.webServerInfo {
                 AXStatusBadge(
@@ -197,62 +227,151 @@ private extension CerberusDomainsView {
     }
 }
 
-// MARK: - Stats Row
+// MARK: - Inline Add Domain Form
 
 private extension CerberusDomainsView {
 
-    var statsRow: some View {
-        HStack(spacing: AXSpacing.md) {
-            statCard(
-                label: L10n.Cerberus.Domains.totalDomains,
-                value: "\(viewModel.domains.count)",
+    var inlineAddDomainForm: some View {
+        AXCard(accentColor: .axAccentGreen) {
+            VStack(spacing: AXSpacing.md) {
+                addFormHeader
+                addFormInput
+                addFormHint
+                addFormActions
+            }
+        }
+        .transition(.opacity.combined(with: .move(edge: .top)))
+    }
+
+    var addFormHeader: some View {
+        HStack(spacing: AXSpacing.sm) {
+            Image(systemName: "globe.badge.chevron.backward")
+                .font(AXTypography.subheadline)
+                .foregroundStyle(Color.axAccentGreen)
+            Text(L10n.Cerberus.Domains.addDomainTitle)
+                .font(AXTypography.subheadline)
+                .fontWeight(.semibold)
+                .foregroundStyle(Color.axTextPrimary)
+            Spacer()
+        }
+    }
+
+    var addFormInput: some View {
+        VStack(alignment: .leading, spacing: AXSpacing.xs) {
+            Text(L10n.Cerberus.Domains.domainName)
+                .font(AXTypography.caption)
+                .fontWeight(.semibold)
+                .foregroundStyle(Color.axTextSecondary)
+            AXTextField(
+                placeholder: L10n.Cerberus.Domains.domainPlaceholder,
+                text: $newDomain,
                 icon: "globe",
+                accentColor: .axAccentGreen
+            )
+        }
+    }
+
+    var addFormHint: some View {
+        HStack(spacing: AXSpacing.sm) {
+            Image(systemName: "info.circle.fill")
+                .font(.system(size: 11))
+                .foregroundStyle(Color.axAccentGreen.opacity(0.6))
+            Text(L10n.Cerberus.Domains.domainHint)
+                .font(AXTypography.caption2)
+                .foregroundStyle(Color.axTextMuted)
+        }
+        .padding(AXSpacing.sm)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.axAccentGreen.opacity(0.04))
+        .clipShape(RoundedRectangle(cornerRadius: AXCornerRadius.sm))
+    }
+
+    var addFormActions: some View {
+        let trimmed = newDomain.trimmingCharacters(in: .whitespacesAndNewlines)
+        return HStack(spacing: AXSpacing.sm) {
+            Button {
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                    showAddForm = false
+                    newDomain = ""
+                }
+            } label: {
+                Text(L10n.Button.cancel)
+                    .font(AXTypography.caption)
+                    .fontWeight(.medium)
+                    .foregroundStyle(Color.axTextSecondary)
+                    .padding(.horizontal, AXSpacing.lg)
+                    .padding(.vertical, AXSpacing.xs)
+                    .background(Color.axSurface)
+                    .clipShape(RoundedRectangle(cornerRadius: AXCornerRadius.md))
+                    .overlay(RoundedRectangle(cornerRadius: AXCornerRadius.md).strokeBorder(Color.axBorder, lineWidth: 1))
+            }
+            .buttonStyle(.plain)
+
+            Button {
+                guard !trimmed.isEmpty else { return }
+                Task {
+                    await viewModel.addDomain(trimmed)
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                        showAddForm = false
+                        newDomain = ""
+                    }
+                }
+            } label: {
+                HStack(spacing: AXSpacing.xs) {
+                    Image(systemName: "plus.circle.fill")
+                        .font(.system(size: 10))
+                    Text(L10n.Cerberus.Domains.addDomain)
+                        .font(AXTypography.caption)
+                        .fontWeight(.semibold)
+                }
+                .foregroundStyle(trimmed.isEmpty ? Color.axTextMuted : .white)
+                .padding(.horizontal, AXSpacing.lg)
+                .padding(.vertical, AXSpacing.xs)
+                .background(trimmed.isEmpty ? Color.axSurface : Color.axAccentGreen)
+                .clipShape(RoundedRectangle(cornerRadius: AXCornerRadius.md))
+            }
+            .buttonStyle(.plain)
+            .disabled(trimmed.isEmpty)
+            Spacer()
+        }
+    }
+}
+
+// MARK: - Global Stats Strip
+
+private extension CerberusDomainsView {
+
+    var globalStatsStrip: some View {
+        HStack(spacing: AXSpacing.md) {
+            DomainMiniStat(
+                icon: "globe",
+                value: "\(viewModel.domains.count)",
+                label: L10n.Cerberus.Domains.totalDomains,
                 color: .axAccentBlue
             )
-            statCard(
-                label: L10n.Cerberus.Domains.protected,
-                value: "\(protectedCount)",
+            DomainMiniStat(
                 icon: "checkmark.shield.fill",
+                value: "\(viewModel.domains.filter(\.enabled).count)",
+                label: L10n.Cerberus.Domains.protected,
                 color: .axAccentGreen
             )
-            statCard(
-                label: L10n.Cerberus.Domains.unprotected,
-                value: "\(unprotectedCount)",
+            DomainMiniStat(
                 icon: "shield.slash",
-                color: unprotectedCount > 0 ? .axWarning : .axTextMuted
+                value: "\(viewModel.domains.filter { !$0.enabled }.count)",
+                label: L10n.Cerberus.Domains.unprotected,
+                color: viewModel.domains.contains(where: { !$0.enabled }) ? .axWarning : .axTextMuted
+            )
+            DomainMiniStat(
+                icon: "chart.bar.fill",
+                value: DomainFormatHelper.formatNumber(totalRequests),
+                label: L10n.Cerberus.Domains.requests,
+                color: .axAccentPurple
             )
         }
     }
 
-    var protectedCount: Int {
-        viewModel.domains.filter(\.enabled).count
-    }
-
-    var unprotectedCount: Int {
-        viewModel.domains.filter { !$0.enabled }.count
-    }
-
-    func statCard(label: String, value: String, icon: String, color: Color) -> some View {
-        AXGlassCard {
-            VStack(spacing: AXSpacing.sm) {
-                HStack(spacing: AXSpacing.xs) {
-                    Image(systemName: icon)
-                        .font(AXTypography.caption)
-                        .foregroundStyle(color)
-                    Spacer()
-                    Text(value)
-                        .font(AXTypography.title2)
-                        .foregroundStyle(color)
-                }
-                HStack {
-                    Text(label)
-                        .font(AXTypography.caption2)
-                        .foregroundStyle(Color.axTextTertiary)
-                    Spacer()
-                }
-            }
-            .padding(AXSpacing.md)
-        }
+    var totalRequests: Int {
+        viewModel.domainStats.values.reduce(0) { $0 + $1.totalRequests }
     }
 }
 
@@ -264,9 +383,9 @@ private extension CerberusDomainsView {
         VStack(alignment: .leading, spacing: AXSpacing.md) {
             domainListHeader
             if viewModel.domains.isEmpty {
-                emptyState
+                domainEmptyState
             } else {
-                domainList
+                domainGrid
             }
         }
     }
@@ -275,11 +394,12 @@ private extension CerberusDomainsView {
         HStack {
             Text(L10n.Cerberus.Domains.configuredDomains)
                 .font(AXTypography.subheadline)
+                .fontWeight(.medium)
                 .foregroundStyle(Color.axTextSecondary)
             Spacer()
             if !viewModel.domains.isEmpty {
                 AXBadge(
-                    text: "\(viewModel.domains.count) domain\(viewModel.domains.count == 1 ? "" : "s")",
+                    text: L10n.Cerberus.Badge.domains(viewModel.domains.count),
                     color: .axAccentBlue,
                     style: .soft
                 )
@@ -287,15 +407,28 @@ private extension CerberusDomainsView {
         }
     }
 
-    var domainList: some View {
-        VStack(spacing: AXSpacing.sm) {
+    var domainGrid: some View {
+        VStack(spacing: AXSpacing.md) {
             ForEach(viewModel.domains) { domain in
-                domainRow(domain)
+                DomainCard(
+                    domain: domain,
+                    stats: viewModel.domainStats[domain.domain],
+                    isHovered: hoveredDomain == domain.domain,
+                    operationInProgress: viewModel.domainOperationInProgress,
+                    onSelect: {
+                        withAnimation(.easeInOut(duration: 0.25)) { selectedDomain = domain }
+                    },
+                    onToggle: { val in
+                        Task { await viewModel.toggleDomain(domain.domain, enabled: val) }
+                    },
+                    onDelete: { domainToDelete = domain.domain },
+                    onHover: { hoveredDomain = $0 ? domain.domain : nil }
+                )
             }
         }
     }
 
-    var emptyState: some View {
+    var domainEmptyState: some View {
         AXGlassCard {
             AXEmptyState(
                 icon: "globe",
@@ -311,198 +444,282 @@ private extension CerberusDomainsView {
     }
 }
 
-// MARK: - Domain Row
+// MARK: - Mini Stat Card
 
-private extension CerberusDomainsView {
+private struct DomainMiniStat: View {
+    let icon: String
+    let value: String
+    let label: String
+    let color: Color
 
-    func domainRow(_ domain: WAFDomainInfo) -> some View {
-        Button {
-            selectedDomain = domain
-        } label: {
-            AXCard {
-                HStack(spacing: AXSpacing.md) {
-                    domainShieldIcon(domain.enabled)
-                    domainInfo(domain)
-                    Spacer()
-                    domainToggle(domain)
-                    domainDeleteButton(domain)
+    var body: some View {
+        VStack(spacing: AXSpacing.sm) {
+            HStack {
+                ZStack {
+                    RoundedRectangle(cornerRadius: AXCornerRadius.sm)
+                        .fill(
+                            LinearGradient(
+                                colors: [color.opacity(0.2), color.opacity(0.08)],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .frame(width: 28, height: 28)
+                    Image(systemName: icon)
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(color)
                 }
-                .padding(AXSpacing.lg)
+                Spacer()
+                Text(value)
+                    .font(AXTypography.title2)
+                    .fontWeight(.heavy)
+                    .foregroundStyle(color)
             }
-        }
-        .buttonStyle(.plain)
-    }
-
-    func domainShieldIcon(_ enabled: Bool) -> some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: AXCornerRadius.md)
-                .fill(enabled ? Color.axAccentGreen.opacity(0.1) : Color.axTextMuted.opacity(0.08))
-                .frame(width: 36, height: 36)
-            Image(systemName: enabled ? "checkmark.shield.fill" : "shield.slash")
-                .font(AXTypography.subheadline)
-                .foregroundStyle(enabled ? Color.axAccentGreen : Color.axTextMuted)
-        }
-    }
-
-    func domainInfo(_ domain: WAFDomainInfo) -> some View {
-        VStack(alignment: .leading, spacing: AXSpacing.xxxs) {
-            Text(domain.domain)
-                .font(AXTypography.monoMd)
-                .foregroundStyle(Color.axTextPrimary)
-            HStack(spacing: AXSpacing.xs) {
-                Text(domain.webServer.isEmpty ? L10n.Cerberus.Domains.unknownServer : domain.webServer)
+            HStack {
+                Text(label)
                     .font(AXTypography.caption2)
                     .foregroundStyle(Color.axTextTertiary)
-                if domain.enabled {
-                    AXBadge(text: L10n.Status.active, color: .axAccentGreen, style: .soft)
-                }
+                    .lineLimit(1)
+                Spacer()
             }
         }
-    }
-
-    func domainToggle(_ domain: WAFDomainInfo) -> some View {
-        Toggle("", isOn: Binding(
-            get: { domain.enabled },
-            set: { val in Task { await viewModel.toggleDomain(domain.domain, enabled: val) } }
-        ))
-        .toggleStyle(.switch)
-        .labelsHidden()
-        .disabled(viewModel.domainOperationInProgress)
-    }
-
-    func domainDeleteButton(_ domain: WAFDomainInfo) -> some View {
-        Button {
-            Task { await viewModel.removeDomain(domain.domain) }
-        } label: {
-            Image(systemName: "trash")
-                .font(AXTypography.caption)
-                .foregroundStyle(Color.axError)
-                .frame(width: 30, height: 30)
-                .background(Color.axError.opacity(0.08))
-                .clipShape(RoundedRectangle(cornerRadius: AXCornerRadius.md))
+        .padding(AXSpacing.md)
+        .background(
+            RoundedRectangle(cornerRadius: AXCornerRadius.lg)
+                .fill(Color.axSurface)
                 .overlay(
-                    RoundedRectangle(cornerRadius: AXCornerRadius.md)
-                        .strokeBorder(Color.axError.opacity(0.15), lineWidth: 1)
+                    RoundedRectangle(cornerRadius: AXCornerRadius.lg)
+                        .fill(
+                            LinearGradient(
+                                colors: [color.opacity(0.04), Color.clear],
+                                startPoint: .top,
+                                endPoint: .bottom
+                            )
+                        )
                 )
-        }
-        .buttonStyle(.plain)
-        .disabled(viewModel.domainOperationInProgress)
+                .overlay(
+                    RoundedRectangle(cornerRadius: AXCornerRadius.lg)
+                        .strokeBorder(color.opacity(0.12), lineWidth: 1)
+                )
+        )
     }
 }
 
-// MARK: - Add Domain Sheet
+// MARK: - Domain Card
 
-private extension CerberusDomainsView {
+private struct DomainCard: View {
+    let domain: WAFDomainInfo
+    let stats: DomainStats?
+    let isHovered: Bool
+    let operationInProgress: Bool
+    let onSelect: () -> Void
+    let onToggle: (Bool) -> Void
+    let onDelete: () -> Void
+    let onHover: (Bool) -> Void
 
-    var addDomainSheet: some View {
-        VStack(spacing: 0) {
-            // Hero
-            VStack(spacing: AXSpacing.md) {
-                ZStack {
-                    Circle()
-                        .fill(
-                            RadialGradient(
-                                colors: [Color.axAccentGreen.opacity(0.2), Color.axAccentGreen.opacity(0.04)],
-                                center: .center, startRadius: 0, endRadius: 28
-                            )
+    private var total: Int { stats?.totalRequests ?? 0 }
+    private var blocked: Int { stats?.blockedRequests ?? 0 }
+    private var blockRate: Double { total > 0 ? Double(blocked) / Double(total) * 100 : 0 }
+
+    var body: some View {
+        Button(action: onSelect) {
+            HStack(spacing: 0) {
+                // Gradient left accent bar
+                RoundedRectangle(cornerRadius: AXCornerRadius.sm)
+                    .fill(
+                        LinearGradient(
+                            colors: domain.enabled
+                                ? [.axAccentGreen, .axAccentBlue]
+                                : [.axTextMuted.opacity(0.4), .axTextMuted.opacity(0.2)],
+                            startPoint: .top,
+                            endPoint: .bottom
                         )
-                        .frame(width: 52, height: 52)
-                    Circle()
-                        .stroke(Color.axAccentGreen.opacity(0.2), lineWidth: 1)
-                        .frame(width: 52, height: 52)
-                    Image(systemName: "globe.badge.chevron.backward")
-                        .font(.system(size: 20, weight: .semibold))
-                        .foregroundStyle(Color.axAccentGreen)
+                    )
+                    .frame(width: 4)
+                    .padding(.vertical, AXSpacing.sm)
+
+                VStack(spacing: 0) {
+                    cardHeader
+                    cardDivider
+                    cardStats
                 }
-                Text(L10n.Cerberus.Domains.addDomainTitle)
-                    .font(AXTypography.headline)
+            }
+            .background(
+                RoundedRectangle(cornerRadius: AXCornerRadius.lg)
+                    .fill(Color.axSurface)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: AXCornerRadius.lg)
+                            .fill(
+                                LinearGradient(
+                                    colors: [
+                                        domain.enabled ? Color.axAccentGreen.opacity(0.02) : Color.clear,
+                                        Color.clear
+                                    ],
+                                    startPoint: .leading,
+                                    endPoint: .trailing
+                                )
+                            )
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: AXCornerRadius.lg)
+                            .strokeBorder(
+                                isHovered ? Color.axAccentBlue.opacity(0.35) : Color.axBorder.opacity(0.4),
+                                lineWidth: 1
+                            )
+                    )
+            )
+            .clipShape(RoundedRectangle(cornerRadius: AXCornerRadius.lg))
+            .shadow(
+                color: isHovered ? Color.axAccentBlue.opacity(0.12) : Color.black.opacity(0.04),
+                radius: isHovered ? 12 : 4,
+                y: isHovered ? 4 : 2
+            )
+        }
+        .buttonStyle(.plain)
+        .onHover { onHover($0) }
+        .animation(.easeOut(duration: 0.2), value: isHovered)
+    }
+
+    private var cardHeader: some View {
+        HStack(spacing: AXSpacing.md) {
+            shieldIcon
+            VStack(alignment: .leading, spacing: AXSpacing.xxxs) {
+                Text(domain.domain)
+                    .font(AXTypography.monoMd)
+                    .fontWeight(.medium)
+                    .foregroundStyle(Color.axTextPrimary)
+                HStack(spacing: AXSpacing.xs) {
+                    Text(domain.webServer.isEmpty ? L10n.Cerberus.Domains.unknownServer : domain.webServer)
+                        .font(AXTypography.caption2)
+                        .foregroundStyle(Color.axTextTertiary)
+                    if domain.enabled {
+                        AXBadge(text: L10n.Status.active, color: .axAccentGreen, style: .soft)
+                    }
+                }
+            }
+            Spacer()
+            Toggle("", isOn: Binding(
+                get: { domain.enabled },
+                set: { onToggle($0) }
+            ))
+            .toggleStyle(.switch)
+            .labelsHidden()
+            .disabled(operationInProgress)
+
+            Button(action: onDelete) {
+                Image(systemName: "trash")
+                    .font(.system(size: 11))
+                    .foregroundStyle(Color.axError)
+                    .frame(width: 28, height: 28)
+                    .background(Color.axError.opacity(0.06))
+                    .clipShape(RoundedRectangle(cornerRadius: AXCornerRadius.sm))
+            }
+            .buttonStyle(.plain)
+            .disabled(operationInProgress)
+        }
+        .padding(.horizontal, AXSpacing.lg)
+        .padding(.vertical, AXSpacing.md)
+    }
+
+    private var cardDivider: some View {
+        Rectangle()
+            .fill(
+                LinearGradient(
+                    colors: [
+                        domain.enabled ? Color.axAccentGreen.opacity(0.3) : Color.axTextMuted.opacity(0.15),
+                        domain.enabled ? Color.axAccentBlue.opacity(0.2) : Color.axTextMuted.opacity(0.05),
+                    ],
+                    startPoint: .leading,
+                    endPoint: .trailing
+                )
+            )
+            .frame(height: 1)
+    }
+
+    private var cardStats: some View {
+        HStack(spacing: 0) {
+            statCell(
+                icon: "chart.bar.fill",
+                value: DomainFormatHelper.formatNumber(total),
+                label: L10n.Cerberus.Domains.requests,
+                color: .axAccentBlue
+            )
+            statDivider
+            statCell(
+                icon: "hand.raised.fill",
+                value: DomainFormatHelper.formatNumber(blocked),
+                label: L10n.Cerberus.Domains.blocked,
+                color: .axError
+            )
+            statDivider
+            statCell(
+                icon: "shield.lefthalf.filled",
+                value: String(format: "%.1f%%", blockRate),
+                label: L10n.Cerberus.Domains.blockRate,
+                color: blockRate > 10 ? .axWarning : .axAccentGreen
+            )
+            Spacer()
+            Image(systemName: "chevron.right")
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundStyle(Color.axTextMuted.opacity(0.5))
+                .padding(.trailing, AXSpacing.lg)
+        }
+        .padding(.vertical, AXSpacing.md)
+    }
+
+    private func statCell(icon: String, value: String, label: String, color: Color) -> some View {
+        HStack(spacing: AXSpacing.sm) {
+            ZStack {
+                RoundedRectangle(cornerRadius: AXCornerRadius.sm)
+                    .fill(color.opacity(0.08))
+                    .frame(width: 24, height: 24)
+                Image(systemName: icon)
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundStyle(color)
+            }
+            VStack(alignment: .leading, spacing: 0) {
+                Text(value)
+                    .font(AXTypography.monoSm)
                     .fontWeight(.bold)
                     .foregroundStyle(Color.axTextPrimary)
-                Text(L10n.Cerberus.Domains.addDomainDesc)
-                    .font(AXTypography.caption)
+                Text(label)
+                    .font(.system(size: 9))
                     .foregroundStyle(Color.axTextTertiary)
             }
-            .padding(.top, AXSpacing.xxl)
-            .padding(.bottom, AXSpacing.lg)
-
-            // Input
-            VStack(spacing: AXSpacing.lg) {
-                VStack(alignment: .leading, spacing: AXSpacing.xs) {
-                    Text(L10n.Cerberus.Domains.domainName)
-                        .font(AXTypography.caption)
-                        .fontWeight(.semibold)
-                        .foregroundStyle(Color.axTextSecondary)
-                    AXTextField(
-                        placeholder: L10n.Cerberus.Domains.domainPlaceholder,
-                        text: $newDomain,
-                        icon: "globe",
-                        accentColor: .axAccentGreen
-                    )
-                }
-
-                HStack(spacing: AXSpacing.sm) {
-                    Image(systemName: "info.circle.fill")
-                        .font(.system(size: 11))
-                        .foregroundStyle(Color.axAccentGreen.opacity(0.6))
-                    Text(L10n.Cerberus.Domains.domainHint)
-                        .font(AXTypography.caption2)
-                        .foregroundStyle(Color.axTextMuted)
-                }
-                .padding(AXSpacing.sm)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(Color.axAccentGreen.opacity(0.04))
-                .clipShape(RoundedRectangle(cornerRadius: AXCornerRadius.sm))
-            }
-            .padding(.horizontal, AXSpacing.xxl)
-
-            Spacer()
-
-            // Actions
-            HStack(spacing: AXSpacing.md) {
-                Button {
-                    showAddSheet = false
-                    newDomain = ""
-                } label: {
-                    Text(L10n.Button.cancel)
-                        .font(AXTypography.subheadline)
-                        .fontWeight(.medium)
-                        .foregroundStyle(Color.axTextSecondary)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, AXSpacing.sm)
-                        .background(Color.axSurface)
-                        .clipShape(RoundedRectangle(cornerRadius: AXCornerRadius.md))
-                        .overlay(RoundedRectangle(cornerRadius: AXCornerRadius.md).strokeBorder(Color.axBorder, lineWidth: 1))
-                }
-                .buttonStyle(.plain)
-
-                AXPrimaryButton(
-                    title: L10n.Cerberus.Domains.addDomain,
-                    icon: "plus.circle.fill",
-                    action: {
-                        let d = newDomain.trimmingCharacters(in: .whitespacesAndNewlines)
-                        guard !d.isEmpty else { return }
-                        Task {
-                            await viewModel.addDomain(d)
-                            showAddSheet = false
-                            newDomain = ""
-                        }
-                    },
-                    isDisabled: newDomain.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
-                    accentColor: .axAccentGreen
-                )
-            }
-            .padding(AXSpacing.xxl)
         }
-        .frame(width: 440, height: 400)
-        .background(Color.axBackground)
+        .padding(.horizontal, AXSpacing.lg)
+    }
+
+    private var statDivider: some View {
+        Rectangle()
+            .fill(Color.axBorder.opacity(0.3))
+            .frame(width: 1, height: 28)
+    }
+
+    private var shieldIcon: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: AXCornerRadius.md)
+                .fill(
+                    LinearGradient(
+                        colors: domain.enabled
+                            ? [Color.axAccentGreen.opacity(0.15), Color.axAccentGreen.opacity(0.05)]
+                            : [Color.axTextMuted.opacity(0.1), Color.axTextMuted.opacity(0.04)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .frame(width: 38, height: 38)
+            Image(systemName: domain.enabled ? "checkmark.shield.fill" : "shield.slash")
+                .font(.system(size: 16))
+                .foregroundStyle(domain.enabled ? Color.axAccentGreen : Color.axTextMuted)
+        }
     }
 }
 
 // MARK: - Loading Skeleton
 
-private extension CerberusDomainsView {
-
-    var loadingSkeleton: some View {
+private struct DomainLoadingSkeleton: View {
+    var body: some View {
         VStack(spacing: AXSpacing.md) {
             AXGlassCard {
                 HStack(spacing: AXSpacing.lg) {
@@ -516,37 +733,39 @@ private extension CerberusDomainsView {
                 .padding(AXSpacing.lg)
             }
             HStack(spacing: AXSpacing.md) {
-                ForEach(0..<3, id: \.self) { _ in
-                    skeletonStatCard
+                ForEach(0..<4, id: \.self) { _ in
+                    AXGlassCard {
+                        VStack(spacing: AXSpacing.sm) {
+                            AXSkeletonBlock(lines: 1, height: 24)
+                            AXSkeletonBlock(lines: 1, height: 12)
+                        }
+                        .padding(AXSpacing.md)
+                    }
                 }
             }
             ForEach(0..<3, id: \.self) { _ in
-                skeletonDomainRow
+                AXCard {
+                    HStack(spacing: AXSpacing.md) {
+                        RoundedRectangle(cornerRadius: AXCornerRadius.md)
+                            .fill(Color.axSurface)
+                            .frame(width: 36, height: 36)
+                            .shimmer()
+                        AXSkeletonBlock(lines: 2, height: 14)
+                        Spacer()
+                    }
+                    .padding(AXSpacing.lg)
+                }
             }
         }
     }
+}
 
-    var skeletonStatCard: some View {
-        AXGlassCard {
-            VStack(spacing: AXSpacing.sm) {
-                AXSkeletonBlock(lines: 1, height: 24)
-                AXSkeletonBlock(lines: 1, height: 12)
-            }
-            .padding(AXSpacing.md)
-        }
-    }
+// MARK: - Format Helper
 
-    var skeletonDomainRow: some View {
-        AXCard {
-            HStack(spacing: AXSpacing.md) {
-                RoundedRectangle(cornerRadius: AXCornerRadius.md)
-                    .fill(Color.axSurface)
-                    .frame(width: 36, height: 36)
-                    .shimmer()
-                AXSkeletonBlock(lines: 2, height: 14)
-                Spacer()
-            }
-            .padding(AXSpacing.lg)
-        }
+enum DomainFormatHelper {
+    static func formatNumber(_ n: Int) -> String {
+        if n >= 1_000_000 { return String(format: "%.1fM", Double(n) / 1_000_000) }
+        if n >= 1_000 { return String(format: "%.1fK", Double(n) / 1_000) }
+        return "\(n)"
     }
 }

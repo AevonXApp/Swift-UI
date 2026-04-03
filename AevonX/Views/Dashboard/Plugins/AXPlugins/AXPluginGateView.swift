@@ -112,23 +112,61 @@ struct AXPluginGateView<Content: View>: View {
     private var installAction: some View {
         // No client-side pricing gates — backend decides authorization.
         // If license is denied, performInstall transitions to .licenseRequired.
-        VStack(spacing: AXSpacing.sm) {
-            AXPrimaryButton(
-                title: L10n.Cerberus.Gate.installPlugin,
-                icon: "arrow.down.circle",
-                action: {
-                    Task { await gate.install(slug: slug, serverId: serverId) }
-                },
-                isLoading: gate.isInstalling
-            )
+        VStack(spacing: AXSpacing.md) {
+            if gate.isInstalling {
+                installProgressView
+            } else {
+                AXPrimaryButton(
+                    title: L10n.Cerberus.Gate.installPlugin,
+                    icon: "arrow.down.circle",
+                    action: {
+                        Task { await gate.install(slug: slug, serverId: serverId) }
+                    },
+                    isLoading: false
+                )
+            }
+        }
+    }
 
+    private var installProgressView: some View {
+        VStack(spacing: AXSpacing.md) {
+            // Progress bar
+            VStack(spacing: AXSpacing.xs) {
+                GeometryReader { geo in
+                    ZStack(alignment: .leading) {
+                        RoundedRectangle(cornerRadius: AXCornerRadius.xs)
+                            .fill(Color.axSurface)
+                            .frame(height: 6)
+                        RoundedRectangle(cornerRadius: AXCornerRadius.xs)
+                            .fill(
+                                LinearGradient(
+                                    colors: [Color.axAccentBlue, Color.axAccentPurple],
+                                    startPoint: .leading,
+                                    endPoint: .trailing
+                                )
+                            )
+                            .frame(width: geo.size.width * gate.installProgress, height: 6)
+                            .animation(.easeInOut(duration: 0.4), value: gate.installProgress)
+                    }
+                }
+                .frame(height: 6)
+                .frame(maxWidth: 300)
+
+                HStack {
+                    Text("\(Int(gate.installProgress * 100))%")
+                        .font(AXTypography.monoSm)
+                        .foregroundStyle(Color.axAccentBlue)
+                    Spacer()
+                }
+                .frame(maxWidth: 300)
+            }
+
+            // Status text
             if let status = gate.installStatus {
                 HStack(spacing: AXSpacing.xs) {
-                    if gate.isInstalling {
-                        ProgressView()
-                            .scaleEffect(0.6)
-                            .frame(width: 14, height: 14)
-                    }
+                    ProgressView()
+                        .scaleEffect(0.6)
+                        .frame(width: 14, height: 14)
                     Text(status)
                         .font(AXTypography.caption)
                         .foregroundStyle(Color.axTextSecondary)
@@ -234,6 +272,7 @@ class AXPluginGateViewModel: ObservableObject {
     @Published var pluginInfo: Plugin?
     @Published var isInstalling = false
     @Published var installStatus: String?
+    @Published var installProgress: Double = 0
 
     private let pluginManager = PluginManager.shared
     private let apiBridge = APIBridge.shared
@@ -344,6 +383,7 @@ class AXPluginGateViewModel: ObservableObject {
 
     private func performInstall(plugin: Plugin, serverId: String) async {
         isInstalling = true
+        installProgress = 0
         installStatus = L10n.Cerberus.Gate.verifyingLicense
 
         let log = AevonXCoreBridge.CoreLogger.shared
@@ -355,19 +395,20 @@ class AXPluginGateViewModel: ObservableObject {
 
         do {
             // ── Step 1: Verify license (ALWAYS — backend decides) ──
+            installProgress = 0.02
             log.info("[PluginGate] Step 1: Verifying license...", module: "PluginGate")
             let licenseResult = await pluginManager.verifyLicense(slug: plugin.slug, on: serverId)
-            // SECURITY: license_token is the proof, not boolean "valid"
             guard licenseResult.isAuthorized else {
-                // Backend denied — transition to licenseRequired with purchase prompt
                 let message = licenseResult.userMessage ?? L10n.Cerberus.Gate.licenseRequired
                 isInstalling = false
                 installStatus = nil
+                installProgress = 0
                 state = .licenseRequired(message)
                 return
             }
+            installProgress = 0.05
 
-            // ── Step 2: Install via secure path ──
+            // ── Step 2: Prepare download info ──
             installStatus = L10n.Cerberus.Gate.preparingInstall
             let token = await AevonXCoreBridge.AuthService.shared.getToken() ?? ""
             let targetVersion = plugin.activeVersion
@@ -381,7 +422,12 @@ class AXPluginGateViewModel: ObservableObject {
             )
             let dlData = parseGoResult(downloadJSON)
             let downloadUrl = dlData?["download_url"] as? String ?? ""
+            installProgress = 0.08
 
+            // ── Step 3: Secure install (3 phases with real progress) ──
+            // Phase 1 (0.08-0.10): Fingerprint collection
+            // Phase 2 (0.10-0.50): Build preparation (async, may poll)
+            // Phase 3 (0.50-0.95): Download + deploy
             log.info("[PluginGate] Step 2: Secure install", module: "PluginGate")
             try await pluginManager.installSecure(
                 plugin: plugin,
@@ -396,15 +442,27 @@ class AXPluginGateViewModel: ObservableObject {
                 nonce: licenseResult.nonce
             ) { status, progress in
                 Task { @MainActor in
-                    self.installStatus = status
+                    // Map Go progress phases to user-friendly status messages
+                    self.installProgress = progress
+                    if progress < 0.10 {
+                        self.installStatus = L10n.Cerberus.Gate.preparingInstall
+                    } else if progress < 0.50 {
+                        self.installStatus = L10n.Cerberus.Gate.buildingPlugin
+                    } else if progress < 0.95 {
+                        self.installStatus = L10n.Cerberus.Gate.downloadingPlugin
+                    } else {
+                        self.installStatus = status
+                    }
                 }
             }
 
-            // Step 3: Reload hooks
+            // ── Step 4: Reload hooks ──
+            installProgress = 0.96
             installStatus = L10n.Cerberus.Gate.finalizing
             log.info("[PluginGate] Reloading hooks...", module: "PluginGate")
             await AevonXCoreBridge.HookLoader.shared.load(serverId: serverId, force: true)
 
+            installProgress = 1.0
             let totalDuration = CFAbsoluteTimeGetCurrent() - startTime
             log.info("[PluginGate] ✅ \(plugin.slug) installed in \(String(format: "%.1f", totalDuration))s", module: "PluginGate")
 
@@ -424,6 +482,7 @@ class AXPluginGateViewModel: ObservableObject {
         }
 
         isInstalling = false
+        installProgress = 0
     }
 
     // MARK: - Purchase

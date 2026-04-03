@@ -16,6 +16,8 @@ struct CerberusTrafficView: View {
     @State private var selectedSection: TrafficSection = .analytics
     @State private var accessLogFilter = ""
     @State private var selectedDomainName: String?
+    @State private var accessLogPage = 0
+    private let accessLogPageSize = 50
 
     enum TrafficSection: String, CaseIterable {
         case analytics = "Analytics"
@@ -47,10 +49,12 @@ struct CerberusTrafficView: View {
             }
         }
         .task {
-            async let traf: () = viewModel.loadTrafficAnalytics()
-            async let alog: () = viewModel.loadAccessLog()
-            _ = await (traf, alog)
+            // Load traffic analytics first (4 SSH calls), then access log (1 SSH call)
+            // to avoid SSH multiplexer contention.
+            await viewModel.loadTrafficAnalytics()
+            await viewModel.loadAccessLog()
         }
+        .onChange(of: accessLogFilter) { _ in accessLogPage = 0 }
         .sheet(isPresented: Binding(get: { selectedDomainName != nil }, set: { if !$0 { selectedDomainName = nil } })) {
             if let domain = selectedDomainName { domainDetailSheet(domain) }
         }
@@ -65,7 +69,7 @@ struct CerberusTrafficView: View {
             }
             Spacer()
             if selectedSection == .accessLog && !viewModel.accessLog.isEmpty {
-                AXBadge(text: "\(filteredAccessLog.count) entries", color: .axAccentBlue, style: .soft)
+                AXBadge(text: L10n.Cerberus.Badge.entries(filteredAccessLog.count), color: .axAccentBlue, style: .soft)
             }
         }
         .padding(.horizontal, AXSpacing.xl).padding(.vertical, AXSpacing.sm)
@@ -173,7 +177,7 @@ struct CerberusTrafficView: View {
             Text(L10n.Cerberus.Traffic.responseLatency).font(AXTypography.headline).foregroundStyle(Color.axTextPrimary)
             Spacer()
             if let rt = viewModel.responseTimes {
-                AXBadge(text: "\(rt.samples) samples", color: .axWarning, style: .soft)
+                AXBadge(text: L10n.Cerberus.Badge.samples(rt.samples), color: .axWarning, style: .soft)
             }
         }
         .padding(.bottom, AXSpacing.md)
@@ -207,7 +211,7 @@ struct CerberusTrafficView: View {
             ("P50", rt.p50, .axAccentGreen),
             ("P95", rt.p95, .axWarning),
             ("P99", rt.p99, .axError),
-            ("Avg", rt.avg, .axAccentBlue),
+            (L10n.Cerberus.Traffic.latencyAvg, rt.avg, .axAccentBlue),
         ]
         return Chart(data, id: \.0) { label, value, color in
             BarMark(x: .value("Percentile", label), y: .value("ms", value))
@@ -232,8 +236,8 @@ struct CerberusTrafficView: View {
             latencyRow(label: "P50", value: rt.p50, max: maxVal, color: .axAccentGreen)
             latencyRow(label: "P95", value: rt.p95, max: maxVal, color: .axWarning)
             latencyRow(label: "P99", value: rt.p99, max: maxVal, color: .axError)
-            latencyRow(label: "Avg", value: rt.avg, max: maxVal, color: .axAccentBlue)
-            latencyRow(label: "Max", value: rt.max, max: maxVal, color: .axError)
+            latencyRow(label: L10n.Cerberus.Traffic.latencyAvg, value: rt.avg, max: maxVal, color: .axAccentBlue)
+            latencyRow(label: L10n.Cerberus.Traffic.latencyMax, value: rt.max, max: maxVal, color: .axError)
         }
     }
 
@@ -486,7 +490,7 @@ struct CerberusTrafficView: View {
             Rectangle().fill(Color.axBorder.opacity(0.15)).frame(height: 1)
             domainDetailFooter
         }
-        .frame(width: 660, height: 500)
+        .frame(minWidth: 560, idealWidth: 660, maxWidth: 780, minHeight: 420, idealHeight: 500, maxHeight: 600)
         .background(Color.axBackground)
     }
 
@@ -565,7 +569,7 @@ struct CerberusTrafficView: View {
                     .fontWeight(.semibold)
                     .foregroundStyle(Color.axTextPrimary)
                 Spacer()
-                Text("\(entries.count) entries")
+                Text(L10n.Cerberus.Badge.entries(entries.count))
                     .font(AXTypography.caption2)
                     .foregroundStyle(Color.axTextMuted)
             }
@@ -703,10 +707,59 @@ struct CerberusTrafficView: View {
         .background(RoundedRectangle(cornerRadius: AXCornerRadius.sm).fill(Color.axSurface))
     }
 
+    private var paginatedAccessLog: [WAFAccessLogEntry] {
+        let start = accessLogPage * accessLogPageSize
+        let end = min(start + accessLogPageSize, filteredAccessLog.count)
+        guard start < end else { return [] }
+        return Array(filteredAccessLog[start..<end])
+    }
+
+    private var accessLogTotalPages: Int {
+        max(1, (filteredAccessLog.count + accessLogPageSize - 1) / accessLogPageSize)
+    }
+
     private var accessLogRows: some View {
-        ForEach(Array(filteredAccessLog.prefix(100).enumerated()), id: \.element.id) { idx, entry in
-            accessLogRow(entry: entry, isEven: idx.isMultiple(of: 2))
+        VStack(spacing: 0) {
+            ForEach(Array(paginatedAccessLog.enumerated()), id: \.element.id) { idx, entry in
+                accessLogRow(entry: entry, isEven: idx.isMultiple(of: 2))
+            }
+            if filteredAccessLog.count > accessLogPageSize {
+                accessLogPaginationBar
+            }
         }
+    }
+
+    private var accessLogPaginationBar: some View {
+        HStack(spacing: AXSpacing.md) {
+            Text(L10n.Cerberus.Pagination.showing(
+                accessLogPage * accessLogPageSize + 1,
+                min((accessLogPage + 1) * accessLogPageSize, filteredAccessLog.count),
+                filteredAccessLog.count
+            ))
+            .font(AXTypography.caption)
+            .foregroundStyle(Color.axTextMuted)
+            Spacer()
+            HStack(spacing: AXSpacing.xs) {
+                paginationButton(icon: "chevron.left", action: { accessLogPage -= 1 }, disabled: accessLogPage == 0)
+                Text(L10n.Cerberus.Pagination.page(accessLogPage + 1, accessLogTotalPages))
+                    .font(AXTypography.monoSm).foregroundStyle(Color.axTextSecondary)
+                paginationButton(icon: "chevron.right", action: { accessLogPage += 1 }, disabled: accessLogPage >= accessLogTotalPages - 1)
+            }
+        }
+        .padding(.horizontal, AXSpacing.sm).padding(.vertical, AXSpacing.sm)
+        .background(Color.axSurface)
+    }
+
+    private func paginationButton(icon: String, action: @escaping () -> Void, disabled: Bool) -> some View {
+        Button(action: action) {
+            Image(systemName: icon)
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundStyle(disabled ? Color.axTextMuted.opacity(0.4) : Color.axAccentBlue)
+                .frame(width: 26, height: 26)
+                .background(RoundedRectangle(cornerRadius: AXCornerRadius.sm).fill(Color.axSurface))
+        }
+        .buttonStyle(.plain)
+        .disabled(disabled)
     }
 
     private func accessLogRow(entry: WAFAccessLogEntry, isEven: Bool) -> some View {

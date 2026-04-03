@@ -328,7 +328,7 @@ private extension CerberusVisitorLogView {
 
     var paginationBar: some View {
         HStack(spacing: AXSpacing.md) {
-            Text(L10n.Cerberus.VisitorLog.showingEntries(
+            Text(L10n.Cerberus.Pagination.showing(
                 currentPage * pageSize + 1,
                 min((currentPage + 1) * pageSize, filteredEntries.count),
                 filteredEntries.count
@@ -342,7 +342,7 @@ private extension CerberusVisitorLogView {
                 pageButton(icon: "chevron.left.2", action: { currentPage = 0 }, disabled: currentPage == 0)
                 pageButton(icon: "chevron.left", action: { currentPage -= 1 }, disabled: currentPage == 0)
 
-                Text(L10n.Cerberus.VisitorLog.pageOf(currentPage + 1, totalPages))
+                Text(L10n.Cerberus.Pagination.page(currentPage + 1, totalPages))
                     .font(AXTypography.monoSm)
                     .foregroundStyle(Color.axTextSecondary)
 
@@ -507,24 +507,25 @@ private extension CerberusVisitorLogView {
             Spacer()
         }
         .padding(AXSpacing.xxl)
-        .frame(width: 500, height: 400)
+        .frame(minWidth: 420, idealWidth: 500, maxWidth: 600, minHeight: 340, idealHeight: 400, maxHeight: 500)
         .background(Color.axBackground)
     }
 
     func detailGrid(_ entry: WAFAccessLogEntry) -> some View {
+        let countryDisplay = entry.countryCode.isEmpty ? "—" : "\(flagEmoji(for: entry.countryCode)) \(Locale.current.localizedString(forRegionCode: entry.countryCode) ?? entry.country) (\(entry.countryCode))"
         let rows: [(String, String)] = [
-            ("IP", entry.ip),
-            ("Country", entry.countryCode.isEmpty ? "—" : "\(flagEmoji(for: entry.countryCode)) \(entry.country) (\(entry.countryCode))"),
-            ("Host", entry.host),
-            ("Method", entry.method),
-            ("Path", entry.path),
-            ("Status", "\(entry.statusCode)"),
-            ("Latency", String(format: "%.1fms", entry.latencyMs)),
-            ("Bytes In", "\(entry.bytesIn)"),
-            ("Bytes Out", "\(entry.bytesOut)"),
-            ("User-Agent", entry.userAgent),
-            ("Bot", entry.isBot ? "Yes" : "No"),
-            ("Timestamp", entry.timestamp),
+            (L10n.Cerberus.VisitorLog.colIP, entry.ip),
+            (L10n.Cerberus.VisitorLog.colCountry, countryDisplay),
+            (L10n.Cerberus.VisitorLog.detailHost, entry.host),
+            (L10n.Cerberus.VisitorLog.colMethod, entry.method),
+            (L10n.Cerberus.VisitorLog.colPath, entry.path),
+            (L10n.Cerberus.VisitorLog.colStatus, "\(entry.statusCode)"),
+            (L10n.Cerberus.VisitorLog.colLatency, String(format: "%.1fms", entry.latencyMs)),
+            (L10n.Cerberus.VisitorLog.detailBytesIn, "\(entry.bytesIn)"),
+            (L10n.Cerberus.VisitorLog.detailBytesOut, "\(entry.bytesOut)"),
+            (L10n.Cerberus.VisitorLog.detailUserAgent, entry.userAgent),
+            (L10n.Cerberus.VisitorLog.detailBot, entry.isBot ? L10n.Cerberus.VisitorLog.yes : L10n.Cerberus.VisitorLog.no),
+            (L10n.Cerberus.VisitorLog.detailTimestamp, entry.timestamp),
         ]
 
         return LazyVGrid(columns: [
@@ -620,15 +621,21 @@ private extension CerberusVisitorLogView {
         }
     }
 
+    private static let isoFmt: ISO8601DateFormatter = {
+        let f = ISO8601DateFormatter()
+        f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return f
+    }()
+    private static let isoFmtBasic = ISO8601DateFormatter()
+    private static let timeFmt: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "HH:mm:ss"
+        return f
+    }()
+
     func formatTime(_ iso: String) -> String {
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        guard let date = formatter.date(from: iso) ?? ISO8601DateFormatter().date(from: iso) else {
-            return iso
-        }
-        let display = DateFormatter()
-        display.dateFormat = "HH:mm:ss"
-        return display.string(from: date)
+        guard let date = Self.isoFmt.date(from: iso) ?? Self.isoFmtBasic.date(from: iso) else { return iso }
+        return Self.timeFmt.string(from: date)
     }
 
     func flagEmoji(for countryCode: String) -> String {

@@ -168,7 +168,7 @@ private extension CerberusComplianceView {
                 .font(AXTypography.headline)
                 .foregroundStyle(Color.axTextPrimary)
             Spacer()
-            Text("\(report.checks.count) total")
+            Text(L10n.Cerberus.Compliance.totalChecks(report.checks.count))
                 .font(AXTypography.caption)
                 .foregroundStyle(Color.axTextMuted)
         }
