@@ -186,6 +186,7 @@ struct RemoteFleetView: View {
                     servers: filteredServers,
                     selectedServer: $selectedServer,
                     showServerDashboard: $showServerDashboard,
+                    showPaywall: $showPaywall,
                     viewModel: viewModel,
                     onConnect: navigateToServer,
                     onEdit: { server in authenticatedEdit(server) },
@@ -196,6 +197,7 @@ struct RemoteFleetView: View {
                     servers: filteredServers,
                     selectedServer: $selectedServer,
                     showServerDashboard: $showServerDashboard,
+                    showPaywall: $showPaywall,
                     viewModel: viewModel,
                     onConnect: navigateToServer,
                     onEdit: { server in authenticatedEdit(server) },
@@ -296,6 +298,11 @@ struct RemoteFleetView: View {
     }
 
     private func navigateToServer(_ server: ServerViewModel) {
+        // Block navigation for locked servers — show paywall instead
+        if server.accessLevel == .readOnly || server.accessLevel == .none {
+            showPaywall = true
+            return
+        }
         selectedServer = serverViewModelToServer(server)
         showServerDashboard = true
     }

@@ -151,7 +151,9 @@ class AddServerViewModel: ObservableObject {
             username: request.username,
             password: request.authType == .password ? request.password ?? "" : "",
             privateKey: request.authType == .privateKey ? request.privateKey ?? "" : "",
-            passphrase: request.keyPassphrase ?? ""
+            passphrase: request.keyPassphrase ?? "",
+            catToken: "",
+            deviceFingerprint: ""
         )
         
         guard let rd = connectResult.data(using: .utf8),

@@ -130,11 +130,24 @@ class AppSettingsManager: ObservableObject {
     static let shared = AppSettingsManager()
 
     // MARK: - Security
+    // CRITICAL: requireAuthOnConnect/Edit/Delete are stored in Keychain, not UserDefaults.
+    // This prevents attackers from disabling biometric auth via `defaults write`.
     @AppStorage(SettingsKey.appLockEnabled) var appLockEnabled: Bool = true
     @AppStorage(SettingsKey.appLockMethod) var appLockMethod: String = "biometric"
-    @AppStorage(SettingsKey.requireAuthOnConnect) var requireAuthOnConnect: Bool = true
-    @AppStorage(SettingsKey.requireAuthOnEdit) var requireAuthOnEdit: Bool = true
-    @AppStorage(SettingsKey.requireAuthOnDelete) var requireAuthOnDelete: Bool = true
+
+    var requireAuthOnConnect: Bool {
+        get { SecureSettingsStore.shared.getBool(SettingsKey.requireAuthOnConnect, default: true) }
+        set { SecureSettingsStore.shared.setBool(SettingsKey.requireAuthOnConnect, value: newValue); objectWillChange.send() }
+    }
+    var requireAuthOnEdit: Bool {
+        get { SecureSettingsStore.shared.getBool(SettingsKey.requireAuthOnEdit, default: true) }
+        set { SecureSettingsStore.shared.setBool(SettingsKey.requireAuthOnEdit, value: newValue); objectWillChange.send() }
+    }
+    var requireAuthOnDelete: Bool {
+        get { SecureSettingsStore.shared.getBool(SettingsKey.requireAuthOnDelete, default: true) }
+        set { SecureSettingsStore.shared.setBool(SettingsKey.requireAuthOnDelete, value: newValue); objectWillChange.send() }
+    }
+
     @AppStorage(SettingsKey.autoLockTimeout) var autoLockTimeout: Int = 5
     @AppStorage(SettingsKey.lockOnSleep) var lockOnSleep: Bool = true
     @AppStorage(SettingsKey.clearClipboardOnExit) var clearClipboardOnExit: Bool = false
@@ -194,10 +207,23 @@ class AppSettingsManager: ObservableObject {
     @AppStorage(SettingsKey.connectionTimeout) var connectionTimeout: Int = 30
     @AppStorage(SettingsKey.maxRetries) var maxRetries: Int = 3
     @AppStorage(SettingsKey.keepAliveInterval) var keepAliveInterval: Int = 30
-    @AppStorage(SettingsKey.useProxy) var useProxy: Bool = false
-    @AppStorage(SettingsKey.proxyHost) var proxyHost: String = ""
-    @AppStorage(SettingsKey.proxyPort) var proxyPort: Int = 1080
-    @AppStorage(SettingsKey.proxyType) var proxyType: String = "SOCKS5"
+    // CRITICAL: Proxy settings in Keychain — prevents traffic redirect via `defaults write`.
+    var useProxy: Bool {
+        get { SecureSettingsStore.shared.getBool(SettingsKey.useProxy, default: false) }
+        set { SecureSettingsStore.shared.setBool(SettingsKey.useProxy, value: newValue); objectWillChange.send() }
+    }
+    var proxyHost: String {
+        get { SecureSettingsStore.shared.getString(SettingsKey.proxyHost, default: "") }
+        set { SecureSettingsStore.shared.setString(SettingsKey.proxyHost, value: newValue); objectWillChange.send() }
+    }
+    var proxyPort: Int {
+        get { SecureSettingsStore.shared.getInt(SettingsKey.proxyPort, default: 1080) }
+        set { SecureSettingsStore.shared.setInt(SettingsKey.proxyPort, value: newValue); objectWillChange.send() }
+    }
+    var proxyType: String {
+        get { SecureSettingsStore.shared.getString(SettingsKey.proxyType, default: "SOCKS5") }
+        set { SecureSettingsStore.shared.setString(SettingsKey.proxyType, value: newValue); objectWillChange.send() }
+    }
     @AppStorage(SettingsKey.sshCompression) var sshCompression: Bool = false
     @AppStorage(SettingsKey.strictHostKeyChecking) var strictHostKeyChecking: Bool = true
     @AppStorage(SettingsKey.autoDisconnectIdle) var autoDisconnectIdle: Bool = false

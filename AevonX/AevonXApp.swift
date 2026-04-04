@@ -26,6 +26,10 @@ struct AevonXApp: App {
         // Inject API fetcher + SSH service synchronously outside Task
         // (Moved to ContentView.task to eliminate race condition with ServerListViewModel.refresh)
         
+        // Migrate security data from UserDefaults to Keychain (one-time)
+        HostKeyStore.shared.migrateFromUserDefaults()
+        SecureSettingsStore.shared.migrateFromUserDefaults()
+
         // Setup app lifecycle notifications
         setupLifecycleNotifications()
     }

@@ -397,7 +397,9 @@ class ServerListViewModel: ObservableObject {
                 username: username,
                 password: password,
                 privateKey: privateKey,
-                passphrase: passphrase
+                passphrase: passphrase,
+                catToken: "",
+                deviceFingerprint: ""
             )
             
             guard let rd = connectResult.data(using: .utf8),

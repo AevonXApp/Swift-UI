@@ -86,6 +86,15 @@ class AuthViewModel: ObservableObject {
                 self.currentUser = decodeUser(from: userData) as User?
                 self.isAuthenticated = true
                 logBridge.info("[AuthVM] Auth check passed", module: "Auth")
+
+                // Load device keys for returning user
+                Task {
+                    let deviceFP = await DeviceIdentifier.shared.getDeviceID() ?? ""
+                    if !deviceFP.isEmpty {
+                        await DeviceKeyManager.shared.setDeviceFingerprint(deviceFP)
+                        await DeviceKeyManager.shared.fetchAndLoadKeys()
+                    }
+                }
                 
                 // Parse trial info from user data
                 if let remaining = userData["trial_remaining_days"] as? Int, remaining > 0 {
@@ -150,7 +159,17 @@ class AuthViewModel: ObservableObject {
         }
         self.isAuthenticated = true
         logBridge.info("[AuthVM] Login successful", module: "Auth")
-        
+
+        // Fetch per-device keys after login (non-blocking)
+        Task {
+            let deviceFP = await DeviceIdentifier.shared.getDeviceID() ?? ""
+            if !deviceFP.isEmpty {
+                await DeviceKeyManager.shared.setDeviceFingerprint(deviceFP)
+                let loaded = await DeviceKeyManager.shared.fetchAndLoadKeys(forceRefresh: true)
+                logBridge.info("[AuthVM] Loaded \(loaded) device keys", module: "Auth")
+            }
+        }
+
         // Trial status from response
         self.trialEndsAt = authData["trial_ends_at"] as? String
         

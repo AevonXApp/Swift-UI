@@ -10,6 +10,7 @@ struct RemoteFleetListView: View {
     let servers: [ServerViewModel]
     @Binding var selectedServer: Server?
     @Binding var showServerDashboard: Bool
+    @Binding var showPaywall: Bool
     @ObservedObject var viewModel: ServerListViewModel
     let onConnect: (ServerViewModel) -> Void
     let onEdit: (ServerViewModel) -> Void
@@ -34,7 +35,8 @@ struct RemoteFleetListView: View {
                     },
                     onDelete: {
                         onDelete(server)
-                    }
+                    },
+                    onUpgrade: { showPaywall = true }
                 )
 
                 if index < servers.count - 1 {

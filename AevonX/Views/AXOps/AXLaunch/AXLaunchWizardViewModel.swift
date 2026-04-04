@@ -340,7 +340,9 @@ class AXLaunchWizardViewModel: ObservableObject {
                 username: serverData.connectionDetails.username,
                 password: serverData.authentication.password ?? "",
                 privateKey: serverData.authentication.privateKey ?? "",
-                passphrase: serverData.authentication.keyPassphrase ?? ""
+                passphrase: serverData.authentication.keyPassphrase ?? "",
+                catToken: "",
+                deviceFingerprint: ""
             )
 
             // Parse result

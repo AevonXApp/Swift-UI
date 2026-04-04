@@ -12,7 +12,7 @@ struct DatabaseListView: View {
     @ObservedObject var viewModel: DatabaseManagementViewModel
     let onOpen: (DatabaseInfo) -> Void
     let onDelete: (DatabaseInfo) -> Void
-    
+
     var body: some View {
         Group {
             if viewModel.databaseViewMode == .grid {

@@ -78,6 +78,19 @@ struct ContentView: View {
             // Sync network settings to Go bridge on launch
             AppSettingsManager.shared.syncNetworkSettingsToCore()
 
+            // Configure device key manager and load cached keys
+            await DeviceKeyManager.shared.setApiFetcher { endpoint, deviceFP in
+                let baseURL = ConfigurationManager.shared.currentConfiguration.fullBaseURL
+                guard let token = await AuthService.shared.getToken() else { return "" }
+                return await APIBridge.shared.fetchDeviceKeysAsync(
+                    baseURL: baseURL, token: token, fingerprint: deviceFP
+                )
+            }
+            let cachedCount = await DeviceKeyManager.shared.loadCachedKeys()
+            if cachedCount > 0 {
+                print("🔑 Loaded \(cachedCount) cached device keys into Go Core")
+            }
+
             await checkEncryptionKey()
         }
     }

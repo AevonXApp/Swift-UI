@@ -16,18 +16,21 @@ struct RemoteServerCard: View {
     let onEdit: () -> Void
     let onDelete: () -> Void
     var onLaunch: (() -> Void)? = nil
+    var onUpgrade: (() -> Void)? = nil
 
     @EnvironmentObject var settings: AppSettingsManager
     @State private var isHovered = false
     @State private var showDeleteConfirmation = false
+
+    private var isLocked: Bool { server.accessLevel != .full }
     
     var body: some View {
         HStack(spacing: 0) {
             // ─── Left: Status indicator bar ─────────────────
             RoundedRectangle(cornerRadius: 2)
-                .fill(server.isAccessible ? Color.axSuccess : Color.axTextMuted.opacity(0.4))
+                .fill(isLocked ? Color.axTextMuted.opacity(0.3) : (server.isAccessible ? Color.axSuccess : Color.axTextMuted.opacity(0.4)))
                 .frame(width: 3, height: 36)
-                .shadow(color: server.isAccessible ? .axSuccess.opacity(0.4) : .clear, radius: 4)
+                .shadow(color: (!isLocked && server.isAccessible) ? .axSuccess.opacity(0.4) : .clear, radius: 4)
                 .padding(.trailing, AXSpacing.md)
             
             // ─── Icon ───────────────────────────────────────
@@ -45,10 +48,23 @@ struct RemoteServerCard: View {
                         RoundedRectangle(cornerRadius: 10)
                             .stroke(customColor.opacity(0.2), lineWidth: 1)
                     )
-                
+
                 Image(systemName: server.iconName)
                     .font(.system(size: 16, weight: .medium))
                     .foregroundColor(customColor)
+
+                // Lock badge for non-accessible servers
+                if isLocked {
+                    ZStack {
+                        Circle()
+                            .fill(.black.opacity(0.55))
+                            .frame(width: 18, height: 18)
+                        Image(systemName: "lock.fill")
+                            .font(.system(size: 9, weight: .bold))
+                            .foregroundColor(.white)
+                    }
+                    .offset(x: 14, y: 14)
+                }
             }
             .padding(.trailing, AXSpacing.md)
             
@@ -61,21 +77,37 @@ struct RemoteServerCard: View {
                         .lineLimit(1)
                     
                     // Status badge
-                    HStack(spacing: 3) {
-                        Circle()
-                            .fill(server.isAccessible ? Color.axSuccess : Color.axTextMuted)
-                            .frame(width: 5, height: 5)
-                        
-                        Text(server.isAccessible ? L10n.Fleet.statusOnline : L10n.Fleet.statusOffline)
-                            .font(.system(size: 9, weight: .semibold))
-                            .foregroundColor(server.isAccessible ? .axSuccess : .axTextMuted)
+                    if isLocked {
+                        HStack(spacing: 3) {
+                            Image(systemName: "crown.fill")
+                                .font(.system(size: 8))
+                            Text(L10n.Fleet.freeLimit)
+                                .font(.system(size: 9, weight: .semibold))
+                        }
+                        .foregroundColor(.axWarning)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(
+                            Capsule()
+                                .fill(Color.axWarning.opacity(0.12))
+                        )
+                    } else {
+                        HStack(spacing: 3) {
+                            Circle()
+                                .fill(server.isAccessible ? Color.axSuccess : Color.axTextMuted)
+                                .frame(width: 5, height: 5)
+
+                            Text(server.isAccessible ? L10n.Fleet.statusOnline : L10n.Fleet.statusOffline)
+                                .font(.system(size: 9, weight: .semibold))
+                                .foregroundColor(server.isAccessible ? .axSuccess : .axTextMuted)
+                        }
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(
+                            Capsule()
+                                .fill(server.isAccessible ? Color.axSuccess.opacity(0.1) : Color.axSurface)
+                        )
                     }
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 2)
-                    .background(
-                        Capsule()
-                            .fill(server.isAccessible ? Color.axSuccess.opacity(0.1) : Color.axSurface)
-                    )
                 }
                 
                 HStack(spacing: AXSpacing.md) {
@@ -137,37 +169,64 @@ struct RemoteServerCard: View {
             
             // ─── Actions ────────────────────────────────────
             HStack(spacing: AXSpacing.sm) {
-                // Connect button — compact
-                Button(action: {
-                    print("[RemoteServerCard] Connect → \(server.name)")
-                    onConnect()
-                }) {
-                    HStack(spacing: 5) {
-                        Image(systemName: "bolt.fill")
-                            .font(.system(size: 10, weight: .bold))
-                        Text(L10n.Button.connect)
-                            .font(.system(size: 11, weight: .semibold))
-                            .lineLimit(1)
-                            .fixedSize(horizontal: true, vertical: false)
-                    }
-                    .foregroundColor(.white)
-                    .padding(.horizontal, AXSpacing.md)
-                    .padding(.vertical, 7)
-                    .background(
-                        Capsule()
-                            .fill(
-                                LinearGradient(
-                                    colors: [Color.axAccentBlue, Color.axAccentBlue.opacity(0.85)],
-                                    startPoint: .leading,
-                                    endPoint: .trailing
+                if isLocked {
+                    // Locked: Upgrade button
+                    Button(action: { onUpgrade?() }) {
+                        HStack(spacing: AXSpacing.xs) {
+                            Image(systemName: "lock.fill")
+                                .font(.system(size: 10, weight: .semibold))
+                            Text(L10n.Button.upgrade)
+                                .font(.system(size: 11, weight: .semibold))
+                                .lineLimit(1)
+                                .fixedSize(horizontal: true, vertical: false)
+                        }
+                        .foregroundColor(.axAccentBlue)
+                        .padding(.horizontal, AXSpacing.md)
+                        .padding(.vertical, 7)
+                        .background(
+                            Capsule()
+                                .fill(Color.axAccentBlue.opacity(0.1))
+                                .overlay(
+                                    Capsule()
+                                        .stroke(Color.axAccentBlue.opacity(0.3), lineWidth: 1)
                                 )
-                            )
-                            .shadow(color: isHovered ? .axAccentBlue.opacity(0.35) : .clear, radius: 6, y: 2)
-                    )
+                        )
+                    }
+                    .buttonStyle(.plain)
+                    .fixedSize()
+                } else {
+                    // Connect button — compact
+                    Button(action: {
+                        print("[RemoteServerCard] Connect → \(server.name)")
+                        onConnect()
+                    }) {
+                        HStack(spacing: 5) {
+                            Image(systemName: "bolt.fill")
+                                .font(.system(size: 10, weight: .bold))
+                            Text(L10n.Button.connect)
+                                .font(.system(size: 11, weight: .semibold))
+                                .lineLimit(1)
+                                .fixedSize(horizontal: true, vertical: false)
+                        }
+                        .foregroundColor(.white)
+                        .padding(.horizontal, AXSpacing.md)
+                        .padding(.vertical, 7)
+                        .background(
+                            Capsule()
+                                .fill(
+                                    LinearGradient(
+                                        colors: [Color.axAccentBlue, Color.axAccentBlue.opacity(0.85)],
+                                        startPoint: .leading,
+                                        endPoint: .trailing
+                                    )
+                                )
+                                .shadow(color: isHovered ? .axAccentBlue.opacity(0.35) : .clear, radius: 6, y: 2)
+                        )
+                    }
+                    .buttonStyle(.plain)
+                    .fixedSize()
                 }
-                .buttonStyle(.plain)
-                .fixedSize()
-                
+
                 // Action menu — AX design system
                 AXActionMenu.serverActions(
                     onEdit: onEdit,
@@ -195,9 +254,16 @@ struct RemoteServerCard: View {
             radius: isHovered ? 8 : 2,
             y: isHovered ? 3 : 1
         )
+        .opacity(isLocked ? 0.55 : 1.0)
         .animation(.easeInOut(duration: 0.2), value: isHovered)
         .onHover { isHovered = $0 }
-        .onTapGesture { onTap() }
+        .onTapGesture {
+            if isLocked {
+                onUpgrade?()
+            } else {
+                onTap()
+            }
+        }
         .contextMenu {
             Button(action: onEdit) {
                 Label(L10n.Fleet.editServer, systemImage: "pencil")

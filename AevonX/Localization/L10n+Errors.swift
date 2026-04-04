@@ -16,6 +16,7 @@ extension L10n {
         static let alreadyConnected = s("error.alreadyConnected", "Already connected to this server.")
         static let authFailed = s("error.authFailed", "Authentication failed. Please try again.")
         static let sessionExpired = s("error.sessionExpired", "Your session has expired. Please log in again.")
+        static let connectionSessionExpired = s("error.connectionSessionExpired", "Your connection session has expired. Please reconnect.")
         static let invalidCredentials = s("error.invalidCredentials", "Invalid credentials. Please check your username and password.")
         static let authRequired = s("error.authRequired", "Authentication required. Please log in.")
         static let hostKeyChanged = s("error.hostKeyChanged", "Server identity has changed. This may indicate a security issue.")

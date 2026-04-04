@@ -13,9 +13,12 @@ struct RemoteServerRow: View {
     let onConnect: () -> Void
     let onEdit: () -> Void
     let onDelete: () -> Void
+    var onUpgrade: (() -> Void)? = nil
 
     @EnvironmentObject var settings: AppSettingsManager
     @State private var showDeleteConfirmation = false
+
+    private var isLocked: Bool { server.accessLevel != .full }
 
     var body: some View {
         HStack(spacing: AXSpacing.lg) {
@@ -28,14 +31,38 @@ struct RemoteServerRow: View {
                 Image(systemName: server.iconName)
                     .font(.system(size: 18))
                     .foregroundColor(customColor)
+
+                if isLocked {
+                    ZStack {
+                        Circle()
+                            .fill(.black.opacity(0.55))
+                            .frame(width: 18, height: 18)
+                        Image(systemName: "lock.fill")
+                            .font(.system(size: 9, weight: .bold))
+                            .foregroundColor(.white)
+                    }
+                    .offset(x: 14, y: 14)
+                }
             }
 
             // Server Info
             VStack(alignment: .leading, spacing: AXSpacing.xs) {
-                Text(server.name)
-                    .font(AXTypography.body)
-                    .fontWeight(.medium)
-                    .foregroundColor(.axTextPrimary)
+                HStack(spacing: AXSpacing.sm) {
+                    Text(server.name)
+                        .font(AXTypography.body)
+                        .fontWeight(.medium)
+                        .foregroundColor(isLocked ? .axTextMuted : .axTextPrimary)
+
+                    if isLocked {
+                        Text(L10n.Fleet.pro)
+                            .font(.system(size: 8, weight: .bold))
+                            .foregroundColor(.axAccentBlue)
+                            .padding(.horizontal, AXSpacing.xs)
+                            .padding(.vertical, 1)
+                            .background(Color.axAccentBlue.opacity(0.12))
+                            .cornerRadius(AXCornerRadius.xs)
+                    }
+                }
 
                 HStack(spacing: AXSpacing.sm) {
                     Text("\(maskedUsername)@\(maskedHost)")
@@ -43,23 +70,34 @@ struct RemoteServerRow: View {
                         .foregroundColor(.axTextTertiary)
                         .help(settings.showRealOnHover && isMasking ? "\(server.username)@\(server.host)" : "")
 
-                    // Status
-                    HStack(spacing: AXSpacing.xs) {
-                        Circle()
-                            .fill(statusColor)
-                            .frame(width: 6, height: 6)
-                        Text(statusText)
-                            .font(AXTypography.caption)
-                            .foregroundColor(.axTextSecondary)
-                    }
+                    if isLocked {
+                        // Free Limit badge
+                        HStack(spacing: AXSpacing.xxs) {
+                            Image(systemName: "crown.fill")
+                                .font(.system(size: 8))
+                            Text(L10n.Fleet.freeLimit)
+                                .font(.system(size: 9, weight: .semibold))
+                        }
+                        .foregroundColor(.axWarning)
+                    } else {
+                        // Status
+                        HStack(spacing: AXSpacing.xs) {
+                            Circle()
+                                .fill(statusColor)
+                                .frame(width: 6, height: 6)
+                            Text(statusText)
+                                .font(AXTypography.caption)
+                                .foregroundColor(.axTextSecondary)
+                        }
 
-                    // Access Level
-                    HStack(spacing: AXSpacing.xs) {
-                        Image(systemName: accessLevelIcon)
-                            .font(.caption2)
-                        Text(accessLevelText)
-                            .font(AXTypography.caption)
-                            .foregroundColor(.axTextSecondary)
+                        // Access Level
+                        HStack(spacing: AXSpacing.xs) {
+                            Image(systemName: accessLevelIcon)
+                                .font(.caption2)
+                            Text(accessLevelText)
+                                .font(AXTypography.caption)
+                                .foregroundColor(.axTextSecondary)
+                        }
                     }
                 }
             }
@@ -92,32 +130,58 @@ struct RemoteServerRow: View {
                 .foregroundColor(.axTextMuted)
                 .frame(width: 80)
 
-            // Connect Button
-            Button(action: {
-                print("[RemoteServerRow] Connect button tapped for: \(server.name)")
-                onConnect()
-            }) {
-                HStack(spacing: AXSpacing.xs) {
-                    Image(systemName: "bolt.fill")
-                        .font(.system(size: 10))
-                    Text(L10n.Button.connect)
-                        .font(AXTypography.caption2)
+            // Connect / Upgrade Button
+            if isLocked {
+                Button(action: { onUpgrade?() }) {
+                    HStack(spacing: AXSpacing.xs) {
+                        Image(systemName: "lock.fill")
+                            .font(.system(size: 10))
+                        Text(L10n.Button.upgrade)
+                            .font(AXTypography.caption2)
+                    }
+                    .foregroundColor(.axAccentBlue)
+                    .padding(.horizontal, AXSpacing.md)
+                    .padding(.vertical, AXSpacing.sm)
+                    .background(Color.axAccentBlue.opacity(0.1))
+                    .cornerRadius(AXCornerRadius.sm)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: AXCornerRadius.sm)
+                            .stroke(Color.axAccentBlue.opacity(0.3), lineWidth: 1)
+                    )
                 }
-                .foregroundColor(.axBackground)
-                .padding(.horizontal, AXSpacing.md)
-                .padding(.vertical, AXSpacing.sm)
-                .background(Color.axAccentBlue)
-                .cornerRadius(AXCornerRadius.sm)
+                .buttonStyle(.plain)
+            } else {
+                Button(action: {
+                    print("[RemoteServerRow] Connect button tapped for: \(server.name)")
+                    onConnect()
+                }) {
+                    HStack(spacing: AXSpacing.xs) {
+                        Image(systemName: "bolt.fill")
+                            .font(.system(size: 10))
+                        Text(L10n.Button.connect)
+                            .font(AXTypography.caption2)
+                    }
+                    .foregroundColor(.axBackground)
+                    .padding(.horizontal, AXSpacing.md)
+                    .padding(.vertical, AXSpacing.sm)
+                    .background(Color.axAccentBlue)
+                    .cornerRadius(AXCornerRadius.sm)
+                }
+                .buttonStyle(.plain)
             }
-            .buttonStyle(.plain)
 
             // Actions Menu
             Menu {
                 Button(action: {
-                    print("[RemoteServerRow] Menu Connect tapped for: \(server.name)")
-                    onConnect()
+                    if isLocked {
+                        onUpgrade?()
+                    } else {
+                        print("[RemoteServerRow] Menu Connect tapped for: \(server.name)")
+                        onConnect()
+                    }
                 }) {
-                    Label(L10n.Button.connect, systemImage: "bolt.fill")
+                    Label(isLocked ? L10n.Button.upgrade : L10n.Button.connect,
+                          systemImage: isLocked ? "lock.fill" : "bolt.fill")
                 }
 
                 Button(action: onEdit) {
@@ -149,6 +213,7 @@ struct RemoteServerRow: View {
         }
         .padding(.horizontal, AXSpacing.xxl)
         .padding(.vertical, AXSpacing.md)
+        .opacity(isLocked ? 0.55 : 1.0)
         .contentShape(Rectangle())
         .overlay {
             if showDeleteConfirmation {

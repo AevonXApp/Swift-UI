@@ -469,6 +469,16 @@ public class ServerConnectionViewModel: ObservableObject {
         connectionProgress = 0.1
 
         do {
+            // Step 0: Ensure device keys are loaded (needed for CAT verification in Go Core)
+            let keyCount = await DeviceKeyManager.shared.keyCount()
+            if keyCount == 0 {
+                let deviceFP = await DeviceIdentifier.shared.getDeviceID() ?? ""
+                if !deviceFP.isEmpty {
+                    await DeviceKeyManager.shared.setDeviceFingerprint(deviceFP)
+                    await DeviceKeyManager.shared.fetchAndLoadKeys(forceRefresh: true)
+                }
+            }
+
             // Step 1: Request signed CAT from backend (backend is blind issuer)
             let signedCATToken = try await requestCATFromBackend()
 
@@ -500,9 +510,12 @@ public class ServerConnectionViewModel: ObservableObject {
             connectionStage = .establishingSSH
             connectionProgress = 0.7
             let hostPort = "\(server.host):\(server.port)"
-            if let storedFP = UserDefaults.standard.string(forKey: "hostkey:\(hostPort)") {
+            if let storedFP = HostKeyStore.shared.get(hostPort: hostPort) {
                 SSHBridge.shared.trustHostKey(hostPort: hostPort, fingerprint: storedFP)
             }
+
+            // Get device fingerprint for CAT validation in Go Core
+            let deviceFP = await DeviceIdentifier.shared.getDeviceID() ?? ""
 
             let connectResult = await SSHBridge.shared.connectAsync(
                 serverID: serverId,
@@ -511,7 +524,9 @@ public class ServerConnectionViewModel: ObservableObject {
                 username: serverData.connectionDetails.username,
                 password: serverData.authentication.password ?? "",
                 privateKey: serverData.authentication.privateKey ?? "",
-                passphrase: serverData.authentication.keyPassphrase ?? ""
+                passphrase: serverData.authentication.keyPassphrase ?? "",
+                catToken: signedCATToken,
+                deviceFingerprint: deviceFP
             )
 
             // Check connection result — with auto-recovery for host key changes
@@ -529,8 +544,12 @@ public class ServerConnectionViewModel: ObservableObject {
                     )
 
                     // Clear stale key from both stores
-                    UserDefaults.standard.removeObject(forKey: "hostkey:\(hostPort)")
+                    HostKeyStore.shared.remove(hostPort: hostPort)
                     SSHBridge.shared.removeHostKey(hostPort: hostPort)
+
+                    // Need fresh CAT for retry (old one is consumed — single-use nonce)
+                    let retryCATToken = try await requestCATFromBackend()
+                    let _ = try await CATEncryption.shared.encrypt(signedToken: retryCATToken, serverId: serverId)
 
                     // Retry connection once (TOFU will accept the new key)
                     finalResult = await SSHBridge.shared.connectAsync(
@@ -540,7 +559,9 @@ public class ServerConnectionViewModel: ObservableObject {
                         username: serverData.connectionDetails.username,
                         password: serverData.authentication.password ?? "",
                         privateKey: serverData.authentication.privateKey ?? "",
-                        passphrase: serverData.authentication.keyPassphrase ?? ""
+                        passphrase: serverData.authentication.keyPassphrase ?? "",
+                        catToken: retryCATToken,
+                        deviceFingerprint: deviceFP
                     )
                 }
             }
@@ -554,7 +575,7 @@ public class ServerConnectionViewModel: ObservableObject {
 
             // Save host key fingerprint for future TOFU verification
             if let fp = (resultJSON["data"] as? [String: Any])?["fingerprint"] as? String, !fp.isEmpty {
-                UserDefaults.standard.set(fp, forKey: "hostkey:\(hostPort)")
+                HostKeyStore.shared.save(hostPort: hostPort, fingerprint: fp)
             }
 
             // Connection successful
@@ -1000,11 +1021,12 @@ public class ServerConnectionViewModel: ObservableObject {
                         return false
                     }
                     
-                    // Step 4: Decrypt and connect via Go SSH
+                    // Step 4: Decrypt and connect via Go SSH (with CAT authorization)
                     let serverData = try await ServerEncryptionService.shared.decryptServer(
                         EncryptedServerData.self,
                         from: serverPayload
                     )
+                    let reconnectDeviceFP = await DeviceIdentifier.shared.getDeviceID() ?? ""
                     let connectResult = await SSHBridge.shared.connectAsync(
                         serverID: serverId,
                         host: self.server.host,
@@ -1012,7 +1034,9 @@ public class ServerConnectionViewModel: ObservableObject {
                         username: serverData.connectionDetails.username,
                         password: serverData.authentication.password ?? "",
                         privateKey: serverData.authentication.privateKey ?? "",
-                        passphrase: serverData.authentication.keyPassphrase ?? ""
+                        passphrase: serverData.authentication.keyPassphrase ?? "",
+                        catToken: signedCATToken,
+                        deviceFingerprint: reconnectDeviceFP
                     )
                     guard let rd = connectResult.data(using: .utf8),
                           let rj = try? JSONSerialization.jsonObject(with: rd) as? [String: Any],

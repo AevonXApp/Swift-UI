@@ -10,6 +10,7 @@ struct RemoteFleetGridView: View {
     let servers: [ServerViewModel]
     @Binding var selectedServer: Server?
     @Binding var showServerDashboard: Bool
+    @Binding var showPaywall: Bool
     @ObservedObject var viewModel: ServerListViewModel
     @EnvironmentObject var settings: AppSettingsManager
     let onConnect: (ServerViewModel) -> Void
@@ -35,7 +36,8 @@ struct RemoteFleetGridView: View {
                         onConnect(server)
                     },
                     onEdit: { onEdit(server) },
-                    onDelete: { onDelete(server) }
+                    onDelete: { onDelete(server) },
+                    onUpgrade: { showPaywall = true }
                 )
             }
         }

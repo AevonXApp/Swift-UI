@@ -31,6 +31,9 @@ extension L10n {
         static let currentKeyKept = s("fleet.currentKeyKept", "• current key kept")
         static let statusOnline = s("fleet.statusOnline", "Online")
         static let statusOffline = s("fleet.statusOffline", "Offline")
+        static let freeLimit = s("fleet.freeLimit", "Free Limit")
+        static let upgradeToConnect = s("fleet.upgradeToConnect", "Upgrade to Connect")
+        static let pro = s("fleet.pro", "PRO")
 
         static func online(_ count: Int) -> String {
             let dv: String.LocalizationValue = "\(count) Online"
