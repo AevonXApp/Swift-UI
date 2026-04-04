@@ -57,7 +57,7 @@ public final class WebsiteManagementViewModel: ObservableObject {
     }
 
     /// Engines that are installed on this server (from Quick Install scan or PathResolver).
-    @Published public var installedEngines: Set<UUID> = []
+    @Published public var installedEngines: Set<String> = []
 
     /// Whether to show engine filter chips (only if 2+ engines installed).
     public var showEngineFilters: Bool {

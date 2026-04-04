@@ -206,6 +206,7 @@ struct ServerDashboardView: View {
                     }
                 )
             }
+
         }
         .animation(.spring(response: 0.4, dampingFraction: 0.8), value: viewModel.quickInstallVM != nil)
     }
