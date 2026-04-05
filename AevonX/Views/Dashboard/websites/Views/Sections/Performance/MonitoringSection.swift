@@ -113,7 +113,7 @@ struct MonitoringSection: View {
                     VStack(spacing: AXSpacing.xs) {
                         ForEach(viewModel.topIPs.prefix(10)) { entry in
                             HStack {
-                                Text(settings.maskServerInfo && settings.maskInDashboard && settings.maskIPAddresses ? PrivacyMask.ip(entry.ip) : entry.ip)
+                                Text(entry.ip)
                                     .font(AXTypography.monoMd)
                                     .foregroundColor(.axTextPrimary)
                                 Spacer()

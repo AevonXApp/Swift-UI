@@ -25,7 +25,7 @@ extension AdvancedUserSection {
                         Text(session.terminal)
                             .font(AXTypography.monoXs).foregroundColor(.axAccentBlue)
                             .frame(width: 55, alignment: .leading)
-                        Text(isMasking && settings.maskIPAddresses ? PrivacyMask.ip(session.fromIP) : session.fromIP)
+                        Text(session.fromIP)
                             .font(AXTypography.monoXs).foregroundColor(.axTextSecondary)
                             .frame(minWidth: 100, alignment: .leading)
                         Text(session.loginTime)

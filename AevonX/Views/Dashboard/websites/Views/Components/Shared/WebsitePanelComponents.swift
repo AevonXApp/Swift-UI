@@ -222,7 +222,7 @@ struct ConnectionRow: View {
                 .font(AXTypography.subheadline)
                 .foregroundColor(.axAccentBlue)
 
-            Text(settings.maskServerInfo && settings.maskInDashboard && settings.maskIPAddresses ? PrivacyMask.ip(connection.ip) : connection.ip)
+            Text(connection.ip)
                 .font(.system(.body, design: .monospaced))
                 .foregroundColor(.axTextPrimary)
 

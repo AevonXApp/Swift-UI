@@ -963,7 +963,7 @@ struct CerberusTrafficView: View {
     private func accessLogRow(entry: WAFAccessLogEntry, isEven: Bool) -> some View {
         HStack(spacing: AXSpacing.sm) {
             Text(formatTime(entry.timestamp)).font(AXTypography.monoXs).foregroundStyle(Color.axTextMuted).frame(width: 70)
-            Text(settings.maskServerInfo && settings.maskInDashboard && settings.maskIPAddresses ? PrivacyMask.ip(entry.ip) : entry.ip).font(AXTypography.monoXs).foregroundStyle(Color.axTextPrimary).frame(width: 115, alignment: .leading).lineLimit(1)
+            Text(entry.ip).font(AXTypography.monoXs).foregroundStyle(Color.axTextPrimary).frame(width: 115, alignment: .leading).lineLimit(1)
             Text(countryFlagEmoji( entry.countryCode)).frame(width: 25)
             Text(entry.method).font(AXTypography.monoXs).foregroundStyle(methodColor(entry.method)).frame(width: 50)
             Text(settings.maskServerInfo && settings.maskInDashboard ? PrivacyMask.hostname(entry.host) : entry.host).font(AXTypography.monoXs).foregroundStyle(Color.axTextSecondary).frame(width: 120, alignment: .leading).lineLimit(1)

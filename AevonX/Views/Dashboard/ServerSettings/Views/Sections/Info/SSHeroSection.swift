@@ -118,10 +118,10 @@ struct SSHeroSection: View {
     private var isMasking: Bool { settings.maskServerInfo && settings.maskInDashboard }
 
     private var maskedHost: String {
-        isMasking && settings.maskIPAddresses ? PrivacyMask.ip(server.host) : server.host
+        server.host
     }
 
     private func maskedIP(_ ip: String) -> String {
-        isMasking && settings.maskIPAddresses ? PrivacyMask.ip(ip) : ip
+        ip
     }
 }

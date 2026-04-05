@@ -64,7 +64,7 @@ extension Fail2BanSection {
                         .foregroundColor(.axTextMuted)
                     ForEach(jail.bannedIPs, id: \.self) { ip in
                         HStack {
-                            Text(isMasking && settings.maskIPAddresses ? PrivacyMask.ip(ip) : ip)
+                            Text(ip)
                                 .font(AXTypography.monoXs).foregroundColor(.axError)
                             Spacer()
                             Button(action: { Task { await vm.unbanIP(jail: jail.name, ip: ip) } }) {

@@ -94,6 +94,6 @@ struct ServerInfoSection: View {
     private var isMasking: Bool { settings.maskServerInfo && settings.maskInDashboard }
 
     private func maskedIP(_ ip: String) -> String {
-        isMasking && settings.maskIPAddresses ? PrivacyMask.ip(ip) : ip
+        ip
     }
 }

@@ -929,7 +929,7 @@ struct SSHSubTab: View {
                 }
                 .frame(width: 120, alignment: .leading)
 
-                Text(settings.maskServerInfo && settings.maskInDashboard && settings.maskIPAddresses ? PrivacyMask.ip(item.ip) : item.ip)
+                Text(item.ip)
                     .font(.system(size: 12, design: .monospaced))
                     .foregroundColor(item.isCurrentDevice ? .axAccentGreen : .axTextSecondary)
                     .frame(maxWidth: .infinity, alignment: .leading)

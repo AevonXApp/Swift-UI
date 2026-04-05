@@ -138,8 +138,7 @@ struct TerminalTab: View {
             Spacer()
 
             // Host (privacy-masked if enabled)
-            Text(settings.maskServerInfo && settings.maskInDashboard && settings.maskIPAddresses
-                 ? PrivacyMask.ip(server.host) : server.host)
+            Text(server.host)
                 .font(.system(size: 10, design: .monospaced))
                 .foregroundColor(.axTextMuted.opacity(0.55))
                 .padding(.trailing, 14)

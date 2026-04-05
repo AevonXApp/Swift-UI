@@ -370,7 +370,7 @@ struct CerberusAttacksView: View {
             rankBadge(rank, color: rankColor)
             Text(countryFlagEmoji( attacker.countryCode)).font(AXTypography.body)
             VStack(alignment: .leading, spacing: AXSpacing.xxxs) {
-                Text(settings.maskServerInfo && settings.maskInDashboard && settings.maskIPAddresses ? PrivacyMask.ip(attacker.ip) : attacker.ip).font(AXTypography.monoSm).foregroundStyle(Color.axTextPrimary)
+                Text(attacker.ip).font(AXTypography.monoSm).foregroundStyle(Color.axTextPrimary)
                 Text(attacker.country).font(AXTypography.caption).foregroundStyle(Color.axTextMuted)
             }
             Spacer()
@@ -739,7 +739,7 @@ struct CerberusAttacksView: View {
         HStack(spacing: AXSpacing.sm) {
             Text(formatTime(entry.timestamp)).font(AXTypography.monoXs)
                 .foregroundStyle(Color.axTextMuted).frame(width: 70)
-            Text(settings.maskServerInfo && settings.maskInDashboard && settings.maskIPAddresses ? PrivacyMask.ip(entry.ip) : entry.ip).font(AXTypography.monoXs).foregroundStyle(Color.axTextPrimary)
+            Text(entry.ip).font(AXTypography.monoXs).foregroundStyle(Color.axTextPrimary)
                 .frame(width: 120, alignment: .leading).lineLimit(1)
             Text(countryFlagEmoji( entry.countryCode)).frame(width: 40)
             Text(entry.method).font(AXTypography.monoXs).foregroundStyle(methodColor(entry.method))
@@ -785,7 +785,7 @@ struct CerberusAttacksView: View {
                     .font(.system(size: 22))
             }
             VStack(alignment: .leading, spacing: AXSpacing.xxxs) {
-                Text(settings.maskServerInfo && settings.maskInDashboard && settings.maskIPAddresses ? PrivacyMask.ip(attacker.ip) : attacker.ip)
+                Text(attacker.ip)
                     .font(AXTypography.monoMd)
                     .fontWeight(.bold)
                     .foregroundStyle(Color.axTextPrimary)

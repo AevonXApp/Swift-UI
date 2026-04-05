@@ -76,7 +76,7 @@ extension FirewallSection {
             Text(rule.port)
                 .font(AXTypography.monoXs).foregroundColor(.axTextPrimary)
                 .frame(width: 55, alignment: .leading)
-            Text(isMasking && settings.maskIPAddresses ? PrivacyMask.ip(rule.source) : rule.source)
+            Text(rule.source)
                 .font(AXTypography.caption2).foregroundColor(.axTextSecondary)
                 .lineLimit(1)
                 .frame(minWidth: 80, alignment: .leading)

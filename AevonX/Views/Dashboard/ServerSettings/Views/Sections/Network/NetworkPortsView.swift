@@ -16,7 +16,7 @@ extension NetworkManagementSection {
     }
 
     private func maskedPortAddress(_ addr: String) -> String {
-        isMasking && settings.maskIPAddresses ? PrivacyMask.ip(addr) : addr
+        addr
     }
 
     // MARK: - Listening Ports

@@ -68,7 +68,7 @@ struct ConnectionSection: View {
     // MARK: - Privacy
 
     private var isMasking: Bool { settings.maskServerInfo && settings.maskInDashboard }
-    private var maskedHost: String { isMasking && settings.maskIPAddresses ? PrivacyMask.ip(server.host) : server.host }
+    private var maskedHost: String { server.host }
     private var maskedUsername: String { isMasking && settings.maskUsernames ? PrivacyMask.username(server.username) : server.username }
     private var maskedPort: String { isMasking && settings.maskPortNumbers ? PrivacyMask.port(server.port) : "\(server.port)" }
 }

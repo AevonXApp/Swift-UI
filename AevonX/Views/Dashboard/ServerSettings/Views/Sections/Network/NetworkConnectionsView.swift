@@ -12,7 +12,7 @@ extension NetworkManagementSection {
     // MARK: - Connection Privacy Helpers
 
     private func maskedConnIP(_ ip: String) -> String {
-        isMasking && settings.maskIPAddresses ? PrivacyMask.ip(ip) : ip
+        ip
     }
 
     private func maskedConnPort(_ port: String) -> String {

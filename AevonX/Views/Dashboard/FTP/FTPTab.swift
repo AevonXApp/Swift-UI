@@ -228,7 +228,7 @@ struct FTPTab: View {
                 Text("FTP address:")
                     .font(.system(size: 12))
                     .foregroundColor(.axTextSecondary)
-                Text(settings.maskServerInfo && settings.maskInDashboard && settings.maskIPAddresses ? PrivacyMask.ip(vm.serverInfo.ftpAddress) : vm.serverInfo.ftpAddress)
+                Text(vm.serverInfo.ftpAddress)
                     .font(.system(size: 12, weight: .semibold, design: .monospaced))
                     .foregroundColor(.axTextPrimary)
                 

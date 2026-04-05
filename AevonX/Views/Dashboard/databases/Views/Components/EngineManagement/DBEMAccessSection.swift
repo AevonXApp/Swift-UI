@@ -78,7 +78,7 @@ struct DBEMAccessSection: View {
                                             .fontWeight(.semibold)
                                             .foregroundColor(.axTextPrimary)
 
-                                        Text("@\(settings.maskServerInfo && settings.maskInDashboard && settings.maskIPAddresses ? PrivacyMask.hostname(user.host) : user.host)")
+                                        Text("@\(user.host)")
                                             .font(AXTypography.caption)
                                             .foregroundColor(.axTextMuted)
                                     }

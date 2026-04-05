@@ -181,7 +181,7 @@ struct AISecuritySection: View {
                                 Circle()
                                     .fill(attackerColor(item.attacker.count))
                                     .frame(width: 6, height: 6)
-                                Text(settings.maskServerInfo && settings.maskInDashboard && settings.maskIPAddresses ? PrivacyMask.ip(item.attacker.ip) : item.attacker.ip)
+                                Text(item.attacker.ip)
                                     .font(.system(size: 12, weight: .medium, design: .monospaced))
                                     .foregroundColor(.axTextPrimary)
                             }

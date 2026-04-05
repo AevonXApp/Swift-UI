@@ -889,7 +889,7 @@ struct CerberusDashboardView: View {
     private func blockLogRowDetail(_ entry: WAFBlockLogEntry) -> some View {
         VStack(alignment: .leading, spacing: AXSpacing.xxxs) {
             HStack(spacing: AXSpacing.xs) {
-                Text(settings.maskServerInfo && settings.maskInDashboard && settings.maskIPAddresses ? PrivacyMask.ip(entry.ip) : entry.ip).font(AXTypography.monoXs).foregroundStyle(Color.axTextPrimary).lineLimit(1)
+                Text(entry.ip).font(AXTypography.monoXs).foregroundStyle(Color.axTextPrimary).lineLimit(1)
                 Spacer()
                 Text(entry.rule).font(AXTypography.monoXs).foregroundStyle(Color.axError).lineLimit(1)
             }

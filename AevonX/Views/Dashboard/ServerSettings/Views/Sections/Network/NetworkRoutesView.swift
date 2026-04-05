@@ -12,7 +12,7 @@ extension NetworkManagementSection {
     // MARK: - Route Privacy Helpers
 
     private func maskedRouteIP(_ ip: String) -> String {
-        isMasking && settings.maskIPAddresses ? PrivacyMask.ip(ip) : ip
+        ip
     }
 
     // MARK: - Routes

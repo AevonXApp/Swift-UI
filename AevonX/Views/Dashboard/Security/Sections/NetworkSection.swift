@@ -111,7 +111,7 @@ struct NetworkSection: View {
                     emptyTitle: "No connection data available"
                 ) { item, _ in
                     HStack(spacing: 0) {
-                        Text(settings.maskServerInfo && settings.maskInDashboard && settings.maskIPAddresses ? PrivacyMask.ip(item.connection.ip) : item.connection.ip)
+                        Text(item.connection.ip)
                             .font(.system(size: 12, weight: .medium, design: .monospaced))
                             .foregroundColor(.axTextPrimary)
                             .frame(maxWidth: .infinity, alignment: .leading)

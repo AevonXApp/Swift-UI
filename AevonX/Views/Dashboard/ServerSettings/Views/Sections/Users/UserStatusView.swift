@@ -111,7 +111,7 @@ extension AdvancedUserSection {
                             .font(AXTypography.monoXs).fontWeight(.medium)
                             .foregroundColor(.axTextPrimary)
                             .frame(width: 70, alignment: .leading)
-                        Text(isMasking && settings.maskIPAddresses ? PrivacyMask.ip(login.fromIP) : login.fromIP)
+                        Text(login.fromIP)
                             .font(AXTypography.monoXs).foregroundColor(.axAccentBlue)
                             .frame(minWidth: 100, alignment: .leading)
                         Text(login.terminal)
