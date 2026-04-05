@@ -197,7 +197,7 @@ struct CerberusAttacksView: View {
         HStack(spacing: AXSpacing.xxl) {
             threatMiniStat(value: viewModel.formatNumber(totalAttackCount), label: L10n.Cerberus.Attacks.attacks, color: .axError)
             threatMiniStat(value: "\(viewModel.topAttackers.count)", label: L10n.Cerberus.Attacks.sources, color: .axWarning)
-            threatMiniStat(value: "\(viewModel.attackTypes.count)", label: L10n.Cerberus.Attacks.vectors, color: .axAccentPurple)
+            threatMiniStat(value: "\(viewModel.attackTypes.count)", label: L10n.Cerberus.Attacks.vectors, color: .axAccentBlue)
             threatMiniStat(value: "\(viewModel.blockLog.count)", label: L10n.Cerberus.Attacks.blocks, color: .axAccentBlue)
         }
     }
@@ -247,7 +247,7 @@ struct CerberusAttacksView: View {
     private func attackTypeBarRow(item: AttackTypeStats, maxCount: Int, rank: Int) -> some View {
         let ratio = maxCount > 0 ? Double(item.count) / Double(maxCount) : 0
         let pct = totalAttackCount > 0 ? Double(item.count) / Double(totalAttackCount) * 100 : 0
-        let barColor: Color = rank <= 2 ? .axError : rank <= 4 ? .axWarning : .axAccentPurple
+        let barColor: Color = rank <= 2 ? .axError : rank <= 4 ? .axWarning : .axAccentBlue
         let isTop3 = rank <= 3
         return HStack(spacing: AXSpacing.sm) {
             rankBadge(rank, color: barColor)
@@ -284,10 +284,10 @@ struct CerberusAttacksView: View {
     // MARK: - Attack Vector Chart
 
     private var attackVectorChart: some View {
-        AXCard(accentColor: .axAccentPurple) {
+        AXCard(accentColor: .axError) {
             VStack(alignment: .leading, spacing: AXSpacing.md) {
                 HStack {
-                    Image(systemName: "chart.pie.fill").foregroundStyle(Color.axAccentPurple)
+                    Image(systemName: "chart.pie.fill").foregroundStyle(Color.axError)
                     Text(L10n.Cerberus.Attacks.distribution).font(AXTypography.headline).foregroundStyle(Color.axTextPrimary)
                     Spacer()
                 }
@@ -302,7 +302,7 @@ struct CerberusAttacksView: View {
 
     private var attackPieChart: some View {
         let top5 = Array(viewModel.attackTypes.prefix(5))
-        let colors: [Color] = [.axError, .axWarning, .axAccentPurple, .axAccentBlue, .axAccentGreen]
+        let colors: [Color] = [.axError, .axWarning, .axAccentBlue, .axAccentGreen, Color(red: 1.0, green: 0.55, blue: 0.1)]
         return VStack(spacing: AXSpacing.md) {
             Chart(top5) { item in
                 SectorMark(angle: .value("Count", item.count), innerRadius: .ratio(0.5), angularInset: 1.5)
@@ -365,10 +365,10 @@ struct CerberusAttacksView: View {
     }
 
     private func attackerRow(_ attacker: AttackerInfo, rank: Int) -> some View {
-        let rankColor: Color = rank == 1 ? .axError : rank == 2 ? .axWarning : rank == 3 ? .axAccentPurple : .axTextMuted
+        let rankColor: Color = rank == 1 ? .axError : rank == 2 ? .axWarning : rank == 3 ? .axWarning : .axTextMuted
         return HStack(spacing: AXSpacing.sm) {
             rankBadge(rank, color: rankColor)
-            Text(flagEmoji(for: attacker.countryCode)).font(AXTypography.body)
+            Text(countryFlagEmoji( attacker.countryCode)).font(AXTypography.body)
             VStack(alignment: .leading, spacing: AXSpacing.xxxs) {
                 Text(settings.maskServerInfo && settings.maskInDashboard && settings.maskIPAddresses ? PrivacyMask.ip(attacker.ip) : attacker.ip).font(AXTypography.monoSm).foregroundStyle(Color.axTextPrimary)
                 Text(attacker.country).font(AXTypography.caption).foregroundStyle(Color.axTextMuted)
@@ -466,7 +466,7 @@ struct CerberusAttacksView: View {
     // MARK: - Countries
 
     private var countriesSection: some View {
-        AXCard(accentColor: .axAccentPurple) {
+        AXCard(accentColor: .axWarning) {
             VStack(alignment: .leading, spacing: AXSpacing.md) {
                 countriesHeader
                 if viewModel.countries.isEmpty {
@@ -480,31 +480,35 @@ struct CerberusAttacksView: View {
 
     private var countriesHeader: some View {
         HStack {
-            Image(systemName: "map.fill").foregroundStyle(Color.axAccentPurple)
+            Image(systemName: "map.fill").foregroundStyle(Color.axWarning)
             Text(L10n.Cerberus.Attacks.attackOrigins).font(AXTypography.headline).foregroundStyle(Color.axTextPrimary)
             Spacer()
             if !viewModel.countries.isEmpty {
-                AXBadge(text: L10n.Cerberus.Badge.countries(viewModel.countries.count), color: .axAccentPurple, style: .soft)
+                AXBadge(text: L10n.Cerberus.Badge.countries(viewModel.countries.count), color: .axWarning, style: .soft)
             }
         }
     }
 
     private var countriesGrid: some View {
+        let top12 = Array(viewModel.countries.prefix(12))
         let maxCount = viewModel.countries.first?.count ?? 1
-        return LazyVGrid(
-            columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())],
-            spacing: AXSpacing.xs
-        ) {
-            ForEach(Array(viewModel.countries.prefix(12).enumerated()), id: \.element.id) { idx, country in
-                countryCell(country: country, maxCount: maxCount, rank: idx + 1)
+        return VStack(alignment: .leading, spacing: AXSpacing.sm) {
+            ContinentLegendView(countryCodes: top12.map(\.countryCode))
+            LazyVGrid(
+                columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())],
+                spacing: AXSpacing.xs
+            ) {
+                ForEach(Array(top12.enumerated()), id: \.element.id) { idx, country in
+                    countryCell(country: country, maxCount: maxCount, rank: idx + 1)
+                }
             }
         }
     }
 
     private func countryCell(country: CountryStats, maxCount: Int, rank: Int) -> some View {
-        let barColor: Color = rank == 1 ? .axError : rank <= 3 ? .axWarning : .axAccentPurple
+        let barColor = WAFContinent.from(countryCode: country.countryCode).color
         return HStack(spacing: AXSpacing.sm) {
-            Text(flagEmoji(for: country.countryCode)).font(AXTypography.title3)
+            Text(countryFlagEmoji( country.countryCode)).font(AXTypography.title3)
             VStack(alignment: .leading, spacing: AXSpacing.xxxs) {
                 Text(localizedCountryName(country))
                     .font(AXTypography.caption).foregroundStyle(Color.axTextPrimary).lineLimit(1)
@@ -624,7 +628,7 @@ struct CerberusAttacksView: View {
             blockLogStatCard(label: L10n.Cerberus.Attacks.totalBlocks, value: "\(blocks.count)", icon: "hand.raised.fill", color: .axError)
             blockLogStatCard(label: L10n.Cerberus.Attacks.critical, value: "\(critCount)", icon: "exclamationmark.octagon.fill", color: .axError)
             blockLogStatCard(label: L10n.Cerberus.Attacks.high, value: "\(highCount)", icon: "exclamationmark.triangle.fill", color: .axWarning)
-            blockLogStatCard(label: L10n.Cerberus.Attacks.uniqueIPs, value: "\(uniqueIPs)", icon: "person.2.fill", color: .axAccentPurple)
+            blockLogStatCard(label: L10n.Cerberus.Attacks.uniqueIPs, value: "\(uniqueIPs)", icon: "person.2.fill", color: .axAccentBlue)
         }
     }
 
@@ -737,7 +741,7 @@ struct CerberusAttacksView: View {
                 .foregroundStyle(Color.axTextMuted).frame(width: 70)
             Text(settings.maskServerInfo && settings.maskInDashboard && settings.maskIPAddresses ? PrivacyMask.ip(entry.ip) : entry.ip).font(AXTypography.monoXs).foregroundStyle(Color.axTextPrimary)
                 .frame(width: 120, alignment: .leading).lineLimit(1)
-            Text(flagEmoji(for: entry.countryCode)).frame(width: 40)
+            Text(countryFlagEmoji( entry.countryCode)).frame(width: 40)
             Text(entry.method).font(AXTypography.monoXs).foregroundStyle(methodColor(entry.method))
                 .frame(width: 50)
             Text(entry.path).font(AXTypography.monoXs).foregroundStyle(Color.axTextSecondary)
@@ -777,7 +781,7 @@ struct CerberusAttacksView: View {
                 Circle()
                     .stroke(Color.axError.opacity(0.2), lineWidth: 1)
                     .frame(width: 52, height: 52)
-                Text(flagEmoji(for: attacker.countryCode))
+                Text(countryFlagEmoji( attacker.countryCode))
                     .font(.system(size: 22))
             }
             VStack(alignment: .leading, spacing: AXSpacing.xxxs) {
@@ -808,8 +812,8 @@ struct CerberusAttacksView: View {
                 attackerField(label: L10n.Cerberus.Attacks.ipAddress, value: attacker.ip, icon: "network", color: .axAccentBlue)
                 attackerField(label: L10n.Cerberus.Attacks.totalAttacks, value: viewModel.formatNumber(attacker.attacks), icon: "exclamationmark.triangle.fill", color: .axError)
                 attackerField(label: L10n.Cerberus.Attacks.lastSeen, value: attacker.lastSeen, icon: "clock.fill", color: .axWarning)
-                attackerField(label: L10n.Cerberus.Attacks.country, value: "\(flagEmoji(for: attacker.countryCode)) \(attacker.country)", icon: "globe", color: .axAccentBlue)
-                attackerField(label: L10n.Cerberus.Attacks.countryCode, value: attacker.countryCode.uppercased(), icon: "mappin.circle.fill", color: .axAccentPurple)
+                attackerField(label: L10n.Cerberus.Attacks.country, value: "\(countryFlagEmoji( attacker.countryCode)) \(attacker.country)", icon: "globe", color: .axAccentBlue)
+                attackerField(label: L10n.Cerberus.Attacks.countryCode, value: attacker.countryCode.uppercased(), icon: "mappin.circle.fill", color: .axAccentBlue)
             }
             .padding(AXSpacing.lg)
         }
@@ -912,7 +916,7 @@ struct CerberusAttacksView: View {
         switch s.lowercased() {
         case "critical": return .axError
         case "high": return .axWarning
-        case "medium": return .axAccentPurple
+        case "medium": return .axWarning
         default: return .axAccentBlue
         }
     }
@@ -939,14 +943,6 @@ struct CerberusAttacksView: View {
         }
     }
 
-    private func flagEmoji(for code: String) -> String {
-        let base: UInt32 = 127397
-        var flag = ""
-        for scalar in code.uppercased().unicodeScalars {
-            if let s = Unicode.Scalar(base + scalar.value) { flag.append(String(s)) }
-        }
-        return flag.isEmpty ? "🏳️" : flag
-    }
 
     private func localizedCountryName(_ country: CountryStats) -> String {
         if !country.countryName.isEmpty { return country.countryName }

@@ -10,16 +10,28 @@ import AevonXCoreBridge
 
 struct FileGitToolbar: View {
     @ObservedObject var viewModel: FileManagerViewModel
+    @State private var isGitLocked = true
+    @State private var showPaywall = false
 
     var body: some View {
         VStack(spacing: 0) {
             HStack(spacing: AXSpacing.md) {
                 branchInfo
                 statusCounters
+
+                if isGitLocked {
+                    proBadge
+                }
+
                 Spacer()
-                lastCommitInfo
-                Divider().frame(height: 20)
-                actionButtons
+
+                if isGitLocked {
+                    lockedOverlay
+                } else {
+                    lastCommitInfo
+                    Divider().frame(height: 20)
+                    actionButtons
+                }
             }
             .padding(.horizontal, AXSpacing.md)
             .padding(.vertical, AXSpacing.xs)
@@ -36,6 +48,49 @@ struct FileGitToolbar: View {
                 operationBar(msg)
             }
         }
+        .onAppear { Task { await checkGitGate() } }
+        .overlay {
+            if showPaywall {
+                FeaturePaywallView(
+                    featureTitle: "Unlock Git Integration",
+                    featureDescription: "Upgrade to Pro to use Pull, Push, Commit, Branch management, Stash, Tags, and more.",
+                    isPresented: $showPaywall
+                )
+            }
+        }
+    }
+
+    private func checkGitGate() async {
+        let _ = try? await SubscriptionManager.shared.getSubscriptionStatus()
+        isGitLocked = !(await FeatureGateManager.shared.isFeatureEnabled(FeatureKey.git.rawValue))
+    }
+
+    private var proBadge: some View {
+        Text("PRO")
+            .font(.system(size: 8, weight: .black, design: .rounded))
+            .foregroundColor(.white)
+            .padding(.horizontal, 5)
+            .padding(.vertical, 2)
+            .background(Capsule().fill(Color.axAccentBlue))
+    }
+
+    private var lockedOverlay: some View {
+        Button {
+            showPaywall = true
+        } label: {
+            HStack(spacing: AXSpacing.xs) {
+                Image(systemName: "lock.fill")
+                    .font(.system(size: 10))
+                Text("Upgrade to unlock Git")
+                    .font(.system(size: 10, weight: .medium))
+            }
+            .foregroundColor(.axAccentBlue)
+            .padding(.horizontal, AXSpacing.md)
+            .padding(.vertical, AXSpacing.xxxs)
+            .background(Color.axAccentBlue.opacity(0.08))
+            .cornerRadius(AXCornerRadius.sm)
+        }
+        .buttonStyle(.plain)
     }
 
     // MARK: - Branch

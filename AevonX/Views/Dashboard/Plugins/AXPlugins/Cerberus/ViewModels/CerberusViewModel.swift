@@ -72,11 +72,11 @@ enum CerberusTab: String, CaseIterable {
         case .attacks:      return .axError
         case .traffic:      return .axAccentGreen
         case .domains:      return .mint
-        case .ipManagement: return .axAccentPurple
+        case .ipManagement: return .axAccentBlue
         case .modules:      return .indigo
         case .honeypot:     return .axWarning
         case .alerts:       return .axError
-        case .threatFeed:   return .axAccentPurple
+        case .threatFeed:   return .axWarning
         case .compliance:   return .axAccentGreen
         case .sessions:     return .cyan
         case .customRules:  return .axAccentBlue
@@ -218,6 +218,7 @@ class CerberusViewModel: ObservableObject {
     @Published var timeSeries: [WAFTimeSeriesBucket] = []
     @Published var timeSeriesLoading = false
     @Published var domainCountries: [CountryStats] = []
+    @Published var selectedTimeRange: WAFTimeRange = .hour24
 
     // MARK: - Module Config State
 
@@ -1334,6 +1335,15 @@ class CerberusViewModel: ObservableObject {
             GlobalToastManager.shared.showError(L10n.Cerberus.Toast.errorPrefix("TimeSeries", error.localizedDescription))
         }
         timeSeriesLoading = false
+    }
+
+    /// Convenience wrapper: computes ISO8601 start/end from a WAFTimeRange and loads time series data.
+    func loadTimeSeries(range: WAFTimeRange) async {
+        let fmt = ISO8601DateFormatter()
+        fmt.formatOptions = [.withInternetDateTime]
+        let start = fmt.string(from: range.startDate())
+        let end   = fmt.string(from: Date())
+        await loadTimeSeries(start: start, end: end, granularity: range.granularity)
     }
 
     // MARK: - Config Batch Update

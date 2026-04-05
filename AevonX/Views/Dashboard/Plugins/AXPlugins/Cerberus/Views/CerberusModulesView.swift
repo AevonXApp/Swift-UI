@@ -249,14 +249,14 @@ private extension CerberusModulesView {
 
     var dlpPanel: some View {
         configSection(icon: "doc.text.magnifyingglass", title: L10n.Cerberus.Modules.dlpScanner,
-                      color: .axAccentPurple, enabled: viewModel.dlpEnabled) {
+                      color: .axWarning, enabled: viewModel.dlpEnabled) {
             dlpModePicker
             configToggle(label: L10n.Cerberus.Modules.creditCards, sub: L10n.Cerberus.Modules.creditCardsDesc,
-                         value: $viewModel.dlpCreditCards, color: .axAccentPurple)
+                         value: $viewModel.dlpCreditCards, color: .axWarning)
             configToggle(label: L10n.Cerberus.Modules.apiKeys, sub: L10n.Cerberus.Modules.apiKeysDesc,
-                         value: $viewModel.dlpAPIKeys, color: .axAccentPurple)
+                         value: $viewModel.dlpAPIKeys, color: .axWarning)
             configToggle(label: L10n.Cerberus.Modules.stackTraces, sub: L10n.Cerberus.Modules.stackTracesDesc,
-                         value: $viewModel.dlpStackTraces, color: .axAccentPurple)
+                         value: $viewModel.dlpStackTraces, color: .axWarning)
             saveBtn(label: L10n.Cerberus.Modules.saveDLPConfig) { await viewModel.saveDLPConfig() }
         }
     }
@@ -308,7 +308,7 @@ private extension CerberusModulesView {
                             .padding(.vertical, AXSpacing.xs)
                             .background(
                                 RoundedRectangle(cornerRadius: AXCornerRadius.sm)
-                                    .fill(viewModel.dlpMode == mode ? Color.axAccentPurple.opacity(0.2) : Color.axSurface.opacity(0.5))
+                                    .fill(viewModel.dlpMode == mode ? Color.axWarning.opacity(0.2) : Color.axSurface.opacity(0.5))
                             )
                     }
                     .buttonStyle(.plain)
@@ -475,7 +475,7 @@ private extension CerberusModulesView {
                        description: L10n.Cerberus.Modules.credDesc,
                        enabled: viewModel.credentialEnabled),
         ModuleCardData(key: "dlp_enabled", name: L10n.Cerberus.Modules.dlpScanner, icon: "doc.text.magnifyingglass",
-                       color: .axAccentPurple, category: "Data", layer: "L7",
+                       color: .axWarning, category: "Data", layer: "L7",
                        description: L10n.Cerberus.Modules.dlpDesc,
                        enabled: viewModel.dlpEnabled),
         ModuleCardData(key: "ssrf_enabled", name: L10n.Cerberus.Modules.ssrfDetector, icon: "arrow.triangle.branch",
@@ -487,7 +487,7 @@ private extension CerberusModulesView {
                        description: L10n.Cerberus.Modules.alertDesc,
                        enabled: viewModel.alertsEnabled),
         ModuleCardData(key: "threat_feed_enabled", name: L10n.Cerberus.Modules.threatFeed, icon: "sensor.tag.radiowaves.forward.fill",
-                       color: .axAccentPurple, category: "Intelligence", layer: "L7",
+                       color: .axWarning, category: "Intelligence", layer: "L7",
                        description: L10n.Cerberus.Modules.threatFeedDesc,
                        enabled: viewModel.threatFeedEnabled),
         ModuleCardData(key: "api_sec_enabled", name: L10n.Cerberus.Modules.apiSecurity, icon: "lock.doc",

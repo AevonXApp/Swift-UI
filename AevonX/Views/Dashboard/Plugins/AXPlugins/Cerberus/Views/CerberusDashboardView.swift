@@ -14,6 +14,7 @@ import AevonXCoreBridge
 struct CerberusDashboardView: View {
     @ObservedObject var viewModel: CerberusViewModel
     @EnvironmentObject var settings: AppSettingsManager
+    @State private var hoveredTimelineHour: Int?
 
     var body: some View {
         ScrollView {
@@ -220,7 +221,7 @@ struct CerberusDashboardView: View {
         VStack(alignment: .trailing, spacing: AXSpacing.lg) {
             heroMetric(label: L10n.Cerberus.Dashboard.totalRequests, value: viewModel.formatNumber(viewModel.overview?.totalRequests ?? 0), color: .axAccentBlue)
             heroMetric(label: L10n.Cerberus.Dashboard.requestsPerSec, value: String(format: "%.1f", viewModel.currentQPS ?? viewModel.overview?.qps ?? 0.0), color: .axAccentGreen)
-            heroMetric(label: L10n.Cerberus.Dashboard.uptime, value: viewModel.formatUptime(viewModel.overview?.uptimeSeconds ?? 0), color: .axAccentPurple)
+            heroMetric(label: L10n.Cerberus.Dashboard.uptime, value: viewModel.formatUptime(viewModel.overview?.uptimeSeconds ?? 0), color: .axAccentGreen)
         }
     }
 
@@ -254,7 +255,7 @@ struct CerberusDashboardView: View {
                             subtitle: L10n.Cerberus.Dashboard.passedThrough)
             primaryStatCard(title: L10n.Cerberus.Dashboard.statQPS,
                             value: String(format: "%.1f", viewModel.currentQPS ?? viewModel.overview?.qps ?? 0.0),
-                            icon: "gauge.with.dots.needle.33percent", color: .axAccentPurple,
+                            icon: "gauge.with.dots.needle.33percent", color: .axAccentBlue,
                             subtitle: L10n.Cerberus.Dashboard.queriesSec)
         }
     }
@@ -404,67 +405,117 @@ struct CerberusDashboardView: View {
     }
 
     private var timelineAreaChart: some View {
-        Chart {
-            ForEach(viewModel.timeline) { entry in
-                AreaMark(
-                    x: .value("Hour", "\(entry.hour):00"),
-                    y: .value("Allowed", entry.allowed)
-                )
-                .foregroundStyle(
-                    LinearGradient(
-                        colors: [Color.axAccentGreen.opacity(0.4), Color.axAccentGreen.opacity(0.05)],
-                        startPoint: .top, endPoint: .bottom
+        ZStack {
+            Chart {
+                ForEach(viewModel.timeline) { entry in
+                    AreaMark(
+                        x: .value("Hour", "\(entry.hour):00"),
+                        y: .value("Allowed", entry.allowed)
                     )
-                )
-                .interpolationMethod(.catmullRom)
-
-                LineMark(
-                    x: .value("Hour", "\(entry.hour):00"),
-                    y: .value("Allowed", entry.allowed)
-                )
-                .foregroundStyle(Color.axAccentGreen.opacity(0.8))
-                .interpolationMethod(.catmullRom)
-                .lineStyle(StrokeStyle(lineWidth: 2))
-
-                AreaMark(
-                    x: .value("Hour", "\(entry.hour):00"),
-                    y: .value("Blocked", entry.blocked)
-                )
-                .foregroundStyle(
-                    LinearGradient(
-                        colors: [Color.axError.opacity(0.4), Color.axError.opacity(0.05)],
-                        startPoint: .top, endPoint: .bottom
+                    .foregroundStyle(
+                        LinearGradient(
+                            colors: [Color.axAccentGreen.opacity(0.5), Color.axAccentGreen.opacity(0.08)],
+                            startPoint: .top, endPoint: .bottom
+                        )
                     )
-                )
-                .interpolationMethod(.catmullRom)
+                    .interpolationMethod(.catmullRom)
 
-                LineMark(
-                    x: .value("Hour", "\(entry.hour):00"),
-                    y: .value("Blocked", entry.blocked)
-                )
-                .foregroundStyle(Color.axError.opacity(0.8))
-                .interpolationMethod(.catmullRom)
-                .lineStyle(StrokeStyle(lineWidth: 2))
+                    LineMark(
+                        x: .value("Hour", "\(entry.hour):00"),
+                        y: .value("Allowed", entry.allowed)
+                    )
+                    .foregroundStyle(Color.axAccentGreen.opacity(0.9))
+                    .interpolationMethod(.catmullRom)
+                    .lineStyle(StrokeStyle(lineWidth: 2))
+
+                    AreaMark(
+                        x: .value("Hour", "\(entry.hour):00"),
+                        y: .value("Blocked", entry.blocked)
+                    )
+                    .foregroundStyle(
+                        LinearGradient(
+                            colors: [Color.axError.opacity(0.4), Color.axError.opacity(0.06)],
+                            startPoint: .top, endPoint: .bottom
+                        )
+                    )
+                    .interpolationMethod(.catmullRom)
+
+                    LineMark(
+                        x: .value("Hour", "\(entry.hour):00"),
+                        y: .value("Blocked", entry.blocked)
+                    )
+                    .foregroundStyle(Color.axError.opacity(0.85))
+                    .interpolationMethod(.catmullRom)
+                    .lineStyle(StrokeStyle(lineWidth: 2))
+
+                    LineMark(
+                        x: .value("Hour", "\(entry.hour):00"),
+                        y: .value("Total", entry.total)
+                    )
+                    .foregroundStyle(Color.axAccentBlue)
+                    .interpolationMethod(.catmullRom)
+                    .lineStyle(StrokeStyle(lineWidth: 2.5))
+
+                    if let hoveredHour = hoveredTimelineHour, entry.hour == hoveredHour {
+                        RuleMark(x: .value("Hovered", "\(entry.hour):00"))
+                            .foregroundStyle(Color.axTextTertiary.opacity(0.2))
+                            .lineStyle(StrokeStyle(lineWidth: 1))
+                    }
+                }
+            }
+            .chartXAxis {
+                AxisMarks(values: .stride(by: 4)) {
+                    AxisGridLine().foregroundStyle(Color.axDivider.opacity(0.3))
+                    AxisValueLabel().foregroundStyle(Color.axTextTertiary)
+                }
+            }
+            .chartYAxis {
+                AxisMarks(position: .leading) {
+                    AxisGridLine().foregroundStyle(Color.axDivider.opacity(0.3))
+                    AxisValueLabel().foregroundStyle(Color.axTextTertiary)
+                }
+            }
+            .chartPlotStyle { plotArea in
+                plotArea
+                    .border(Color.axDivider.opacity(0.2), width: 1)
+                    .background(Color.axSurface.opacity(0.3))
+            }
+            .chartBackground { chartProxy in
+                Rectangle()
+                    .foregroundStyle(.clear)
+                    .contentShape(Rectangle())
+                    .onContinuousHover { phase in
+                        switch phase {
+                        case .active(let location):
+                            if let hourStr: String = chartProxy.value(atX: location.x),
+                               let hour = Int(hourStr.split(separator: ":")[0]) {
+                                hoveredTimelineHour = hour
+                            }
+                        case .ended:
+                            hoveredTimelineHour = nil
+                        }
+                    }
+            }
+
+            if let hoveredHour = hoveredTimelineHour,
+               let entry = viewModel.timeline.first(where: { $0.hour == hoveredHour }) {
+                let blockPct = entry.total > 0 ? (Double(entry.blocked) / Double(entry.total)) * 100 : 0
+                VStack {
+                    WAFChartTooltip(
+                        title: "\(hoveredHour):00",
+                        rows: [
+                            (label: "Total", value: "\(viewModel.formatNumber(entry.total))", color: Color.axAccentBlue),
+                            (label: "Blocked", value: "\(viewModel.formatNumber(entry.blocked)) (\(String(format: "%.1f%%", blockPct)))", color: Color.axError),
+                            (label: "Allowed", value: "\(viewModel.formatNumber(entry.allowed))", color: Color.axAccentGreen)
+                        ]
+                    )
+                    Spacer()
+                }
+                .frame(maxHeight: .infinity, alignment: .top)
+                .padding(.top, AXSpacing.lg)
             }
         }
-        .chartXAxis {
-            AxisMarks(values: .stride(by: 4)) {
-                AxisGridLine().foregroundStyle(Color.axDivider.opacity(0.3))
-                AxisValueLabel().foregroundStyle(Color.axTextTertiary)
-            }
-        }
-        .chartYAxis {
-            AxisMarks(position: .leading) {
-                AxisGridLine().foregroundStyle(Color.axDivider.opacity(0.3))
-                AxisValueLabel().foregroundStyle(Color.axTextTertiary)
-            }
-        }
-        .chartPlotStyle { plotArea in
-            plotArea
-                .border(Color.axDivider.opacity(0.2), width: 1)
-                .background(Color.axSurface.opacity(0.3))
-        }
-        .frame(height: 200)
+        .frame(height: 280)
     }
 
     private var timelineLegend: some View {
@@ -502,13 +553,13 @@ struct CerberusDashboardView: View {
             Image(systemName: "chart.bar").font(AXTypography.title3).foregroundStyle(Color.axTextMuted)
             Text(L10n.Cerberus.Dashboard.noTimelineData).font(AXTypography.caption).foregroundStyle(Color.axTextMuted)
         }
-        .frame(maxWidth: .infinity).frame(height: 200)
+        .frame(maxWidth: .infinity).frame(height: 280)
     }
 
     // MARK: - Top Countries Panel
 
     private var topCountriesCard: some View {
-        AXCard(accentColor: .axError) {
+        AXCard(accentColor: .axAccentBlue) {
             VStack(alignment: .leading, spacing: AXSpacing.md) {
                 countriesHeader
                 if viewModel.countries.isEmpty {
@@ -524,57 +575,66 @@ struct CerberusDashboardView: View {
 
     private var countriesHeader: some View {
         HStack {
-            gradientIconBox(icon: "globe.americas.fill", color: .axError, size: 26)
+            gradientIconBox(icon: "globe.americas.fill", color: .axAccentBlue, size: 26)
             Text(L10n.Cerberus.Dashboard.attackOrigins)
                 .font(AXTypography.headline)
                 .foregroundStyle(Color.axTextPrimary)
             Spacer()
             if !viewModel.countries.isEmpty {
-                AXBadge(text: "\(viewModel.countries.count)", color: .axError, style: .soft)
+                AXBadge(text: "\(viewModel.countries.count)", color: .axAccentBlue, style: .soft)
             }
         }
     }
 
     private var countriesListContent: some View {
         let maxCount = viewModel.countries.first?.count ?? 1
-        return VStack(spacing: AXSpacing.sm) {
-            ForEach(Array(viewModel.countries.prefix(8).enumerated()), id: \.element.id) { idx, country in
-                countryRow(country, maxCount: maxCount, rank: idx + 1)
+        let countryCodes = viewModel.countries.map { $0.countryCode }
+        return VStack(spacing: AXSpacing.md) {
+            VStack(spacing: AXSpacing.sm) {
+                ForEach(Array(viewModel.countries.prefix(8).enumerated()), id: \.element.id) { idx, country in
+                    countryRow(country, maxCount: maxCount, rank: idx + 1)
+                }
+            }
+            if !countryCodes.isEmpty {
+                Rectangle().fill(Color.axDivider.opacity(0.2)).frame(height: 1)
+                ContinentLegendView(countryCodes: countryCodes)
             }
         }
     }
 
     private func countryRow(_ country: CountryStats, maxCount: Int, rank: Int) -> some View {
-        HStack(spacing: AXSpacing.xs) {
+        let continentColor = WAFContinent.from(countryCode: country.countryCode).color
+        return HStack(spacing: AXSpacing.xs) {
             Text("\(rank)")
                 .font(AXTypography.monoXs)
-                .foregroundStyle(rank <= 3 ? Color.axError : Color.axTextMuted)
+                .foregroundStyle(rank <= 3 ? continentColor : Color.axTextMuted)
                 .frame(width: 14, alignment: .trailing)
-            Text(flagEmoji(for: country.countryCode))
+            Text(countryFlagEmoji(country.countryCode))
                 .font(AXTypography.caption)
-            countryRowDetail(country, maxCount: maxCount)
+            countryRowDetail(country, maxCount: maxCount, countryCode: country.countryCode)
         }
     }
 
-    private func countryRowDetail(_ country: CountryStats, maxCount: Int) -> some View {
-        VStack(alignment: .leading, spacing: AXSpacing.xxxs) {
+    private func countryRowDetail(_ country: CountryStats, maxCount: Int, countryCode: String) -> some View {
+        let continentColor = WAFContinent.from(countryCode: countryCode).color
+        return VStack(alignment: .leading, spacing: AXSpacing.xxxs) {
             HStack {
                 Text(localizedCountryName(country))
                     .font(AXTypography.caption).foregroundStyle(Color.axTextPrimary).lineLimit(1)
                 Spacer()
                 Text(viewModel.formatNumber(country.count))
-                    .font(AXTypography.monoXs).foregroundStyle(Color.axError)
+                    .font(AXTypography.monoXs).foregroundStyle(continentColor)
             }
-            countryBarGraph(country.count, maxCount: maxCount)
+            countryBarGraph(country.count, maxCount: maxCount, barColor: continentColor)
         }
     }
 
-    private func countryBarGraph(_ count: Int, maxCount: Int) -> some View {
+    private func countryBarGraph(_ count: Int, maxCount: Int, barColor: Color) -> some View {
         GeometryReader { geo in
             ZStack(alignment: .leading) {
-                RoundedRectangle(cornerRadius: AXCornerRadius.xs).fill(Color.axError.opacity(0.08))
+                RoundedRectangle(cornerRadius: AXCornerRadius.xs).fill(barColor.opacity(0.08))
                 RoundedRectangle(cornerRadius: AXCornerRadius.xs)
-                    .fill(LinearGradient(colors: [Color.axError.opacity(0.8), Color.axError.opacity(0.3)],
+                    .fill(LinearGradient(colors: [barColor.opacity(0.8), barColor.opacity(0.3)],
                                          startPoint: .leading, endPoint: .trailing))
                     .frame(width: geo.size.width * (Double(count) / Double(max(maxCount, 1))))
             }
@@ -594,7 +654,7 @@ struct CerberusDashboardView: View {
             liveIndicatorCard(label: L10n.Cerberus.Dashboard.botRequests, value: viewModel.formatNumber(viewModel.overview?.botRequests ?? 0),
                               icon: "cpu.fill", color: .axWarning, sub: botPercentLabel)
             liveIndicatorCard(label: L10n.Cerberus.Dashboard.uptime, value: viewModel.formatUptime(viewModel.overview?.uptimeSeconds ?? 0),
-                              icon: "clock.fill", color: .axAccentPurple, sub: L10n.Cerberus.Dashboard.continuous)
+                              icon: "clock.fill", color: .axAccentGreen, sub: L10n.Cerberus.Dashboard.continuous)
         }
     }
 
@@ -746,7 +806,7 @@ struct CerberusDashboardView: View {
                        value: "\(viewModel.overview?.credentialAttacksToday ?? 0)", color: .axError,
                        showBorder: true)
             moduleCell(icon: "doc.text.magnifyingglass", label: L10n.Cerberus.Dashboard.dlpLabel,
-                       value: "\(viewModel.overview?.dlpEventsToday ?? 0)", color: .axAccentPurple,
+                       value: "\(viewModel.overview?.dlpEventsToday ?? 0)", color: .axWarning,
                        showBorder: true)
             moduleCell(icon: "bell.badge.fill", label: L10n.Cerberus.Dashboard.alertsLabel,
                        value: "\(viewModel.recentAlerts.count)", color: .axAccentBlue,
@@ -812,7 +872,7 @@ struct CerberusDashboardView: View {
 
     private func blockLogRow(_ entry: WAFBlockLogEntry) -> some View {
         HStack(spacing: AXSpacing.sm) {
-            Text(flagEmoji(for: entry.countryCode)).font(AXTypography.caption)
+            Text(countryFlagEmoji( entry.countryCode)).font(AXTypography.caption)
             blockLogRowDetail(entry)
         }
         .padding(.vertical, AXSpacing.xs)
@@ -929,11 +989,6 @@ struct CerberusDashboardView: View {
         }
     }
 
-    private func flagEmoji(for code: String) -> String {
-        let base: UInt32 = 127397
-        return code.uppercased().unicodeScalars.compactMap { Unicode.Scalar(base + $0.value).map(String.init) }.joined()
-    }
-
     private func localizedCountryName(_ country: CountryStats) -> String {
         if !country.countryName.isEmpty { return country.countryName }
         return Locale.current.localizedString(forRegionCode: country.countryCode) ?? country.countryCode
@@ -943,7 +998,7 @@ struct CerberusDashboardView: View {
         switch s.lowercased() {
         case "critical": return .axError
         case "high": return .axWarning
-        case "medium": return .axAccentPurple
+        case "medium": return .axWarning
         default: return .axAccentBlue
         }
     }

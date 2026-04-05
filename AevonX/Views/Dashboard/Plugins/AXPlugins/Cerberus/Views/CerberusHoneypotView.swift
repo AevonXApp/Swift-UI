@@ -93,7 +93,7 @@ private extension CerberusHoneypotView {
             honeypotMiniStat(
                 value: "\(uniquePaths)",
                 label: L10n.Cerberus.Honeypot.trapPaths,
-                color: .axAccentPurple
+                color: .axWarning
             )
         }
     }

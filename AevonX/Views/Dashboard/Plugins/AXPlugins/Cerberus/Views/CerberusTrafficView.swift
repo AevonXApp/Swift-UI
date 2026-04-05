@@ -17,6 +17,8 @@ struct CerberusTrafficView: View {
     @State private var accessLogFilter = ""
     @State private var selectedDomainName: String?
     @State private var accessLogPage = 0
+    @State private var hoveredTimeSeriesTimestamp: String?
+    @State private var hoveredStatusCode: String?
     private let accessLogPageSize = 50
 
     enum TrafficSection: String, CaseIterable {
@@ -53,8 +55,12 @@ struct CerberusTrafficView: View {
             // to avoid SSH multiplexer contention.
             await viewModel.loadTrafficAnalytics()
             await viewModel.loadAccessLog()
+            await viewModel.loadTimeSeries(range: viewModel.selectedTimeRange)
         }
-        .onChange(of: accessLogFilter) { _ in accessLogPage = 0 }
+        .onChange(of: accessLogFilter) { accessLogPage = 0 }
+        .onChange(of: viewModel.selectedTimeRange) {
+            Task { await viewModel.loadTimeSeries(range: viewModel.selectedTimeRange) }
+        }
         .sheet(isPresented: Binding(get: { selectedDomainName != nil }, set: { if !$0 { selectedDomainName = nil } })) {
             if let domain = selectedDomainName { domainDetailSheet(domain) }
         }
@@ -110,6 +116,8 @@ struct CerberusTrafficView: View {
     private var analyticsContent: some View {
         VStack(spacing: AXSpacing.lg) {
             trafficSummaryRow
+            timeRangePickerRow
+            timeSeriesChartCard
             HStack(alignment: .top, spacing: AXSpacing.lg) {
                 responseTimesCard
                 VStack(spacing: AXSpacing.lg) {
@@ -121,6 +129,142 @@ struct CerberusTrafficView: View {
         }
     }
 
+    private var timeRangePickerRow: some View {
+        HStack {
+            Text("Time Range")
+                .font(AXTypography.caption)
+                .foregroundStyle(Color.axTextTertiary)
+            WAFTimeRangePicker(selected: $viewModel.selectedTimeRange)
+            Spacer()
+            if viewModel.timeSeriesLoading {
+                ProgressView().scaleEffect(0.6)
+            } else if !viewModel.timeSeries.isEmpty {
+                AXBadge(
+                    text: "\(viewModel.timeSeries.count) buckets",
+                    color: .axAccentBlue,
+                    style: .soft
+                )
+            }
+        }
+    }
+
+    // MARK: - Time Series Chart
+
+    private var timeSeriesChartCard: some View {
+        AXCard {
+            VStack(alignment: .leading, spacing: AXSpacing.md) {
+                HStack {
+                    Image(systemName: "chart.line.uptrend.xyaxis")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(Color.axAccentBlue)
+                    Text("Traffic Timeline")
+                        .font(AXTypography.headline)
+                        .foregroundStyle(Color.axTextPrimary)
+                    Spacer()
+                }
+                if viewModel.timeSeriesLoading {
+                    VStack {
+                        ProgressView()
+                            .frame(height: 240)
+                    }
+                } else if viewModel.timeSeries.isEmpty {
+                    VStack(spacing: AXSpacing.md) {
+                        Image(systemName: "chart.line.xaxis")
+                            .font(.system(size: 32))
+                            .foregroundStyle(Color.axTextMuted.opacity(0.3))
+                        Text("No data available for this time range")
+                            .font(AXTypography.caption)
+                            .foregroundStyle(Color.axTextMuted)
+                    }
+                    .frame(maxWidth: .infinity, minHeight: 240, alignment: .center)
+                } else {
+                    timeSeriesChart
+                }
+            }
+            .padding(AXSpacing.lg)
+        }
+    }
+
+    private var timeSeriesChart: some View {
+        ZStack {
+            Chart(viewModel.timeSeries, id: \.timestamp) { bucket in
+                AreaMark(
+                    x: .value("Time", bucket.timestamp),
+                    y: .value("Allowed", bucket.allowed)
+                )
+                .foregroundStyle(.green)
+                .opacity(0.4)
+
+                AreaMark(
+                    x: .value("Time", bucket.timestamp),
+                    y: .value("Total", bucket.total)
+                )
+                .foregroundStyle(.blue)
+                .opacity(0.3)
+
+                LineMark(
+                    x: .value("Time", bucket.timestamp),
+                    y: .value("Blocked", bucket.blocked)
+                )
+                .foregroundStyle(.red)
+                .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [4]))
+
+                if let hoveredTS = hoveredTimeSeriesTimestamp, bucket.timestamp == hoveredTS {
+                    RuleMark(x: .value("Hovered", bucket.timestamp))
+                        .foregroundStyle(Color.axTextTertiary.opacity(0.3))
+                        .lineStyle(StrokeStyle(lineWidth: 1))
+                }
+            }
+            .chartYAxis {
+                AxisMarks(position: .leading) {
+                    AxisGridLine().foregroundStyle(Color.axDivider.opacity(0.3))
+                    AxisValueLabel().foregroundStyle(Color.axTextTertiary).font(AXTypography.caption2)
+                }
+            }
+            .chartXAxis {
+                AxisMarks {
+                    AxisValueLabel()
+                        .foregroundStyle(Color.axTextTertiary)
+                        .font(AXTypography.caption2)
+                }
+            }
+            .chartBackground { chartProxy in
+                Rectangle()
+                    .foregroundStyle(.clear)
+                    .contentShape(Rectangle())
+                    .onContinuousHover { phase in
+                        switch phase {
+                        case .active(let location):
+                            if let xPosition: String = chartProxy.value(atX: location.x) {
+                                hoveredTimeSeriesTimestamp = xPosition
+                            }
+                        case .ended:
+                            hoveredTimeSeriesTimestamp = nil
+                        }
+                    }
+            }
+
+            if let hoveredTS = hoveredTimeSeriesTimestamp,
+               let bucket = viewModel.timeSeries.first(where: { $0.timestamp == hoveredTS }) {
+                let blockPct = bucket.total > 0 ? (Double(bucket.blocked) / Double(bucket.total)) * 100 : 0
+                VStack {
+                    WAFChartTooltip(
+                        title: bucket.timestamp,
+                        rows: [
+                            (label: "Total Requests", value: "\(viewModel.formatNumber(Int(bucket.total)))", color: Color.axAccentBlue),
+                            (label: "Blocked", value: "\(viewModel.formatNumber(Int(bucket.blocked))) (\(String(format: "%.1f%%", blockPct)))", color: Color.axError),
+                            (label: "Allowed", value: "\(viewModel.formatNumber(Int(bucket.allowed)))", color: Color.axAccentGreen)
+                        ]
+                    )
+                    Spacer()
+                }
+                .frame(maxHeight: .infinity, alignment: .top)
+                .padding(.top, AXSpacing.lg)
+            }
+        }
+        .frame(height: 240)
+    }
+
     // MARK: - Summary Row
 
     private var trafficSummaryRow: some View {
@@ -128,7 +272,7 @@ struct CerberusTrafficView: View {
             summaryStat(icon: "globe", value: "\(sortedDomains.count)", label: L10n.Cerberus.Traffic.domains, color: .axAccentBlue)
             summaryStat(icon: "arrow.up.arrow.down", value: viewModel.formatNumber(totalReqs), label: L10n.Cerberus.Traffic.requests, color: .axAccentGreen)
             summaryStat(icon: "clock", value: latencyLabel, label: L10n.Cerberus.Traffic.p95Latency, color: .axWarning)
-            summaryStat(icon: "cpu", value: botRateLabel, label: L10n.Cerberus.Traffic.botTraffic, color: .axAccentPurple)
+            summaryStat(icon: "cpu", value: botRateLabel, label: L10n.Cerberus.Traffic.botTraffic, color: .axWarning)
         }
     }
 
@@ -208,9 +352,9 @@ struct CerberusTrafficView: View {
 
     private func latencyChart(_ rt: WAFResponseTimes) -> some View {
         let data: [(String, Double, Color)] = [
-            ("P50", rt.p50, .axAccentGreen),
-            ("P95", rt.p95, .axWarning),
-            ("P99", rt.p99, .axError),
+            ("Typical", rt.p50, .axAccentGreen),
+            ("Peak Load", rt.p95, .axWarning),
+            ("Critical", rt.p99, .axError),
             (L10n.Cerberus.Traffic.latencyAvg, rt.avg, .axAccentBlue),
         ]
         return Chart(data, id: \.0) { label, value, color in
@@ -233,9 +377,9 @@ struct CerberusTrafficView: View {
     private func latencyBars(_ rt: WAFResponseTimes) -> some View {
         let maxVal = max(rt.max, 1)
         return VStack(spacing: AXSpacing.sm) {
-            latencyRow(label: "P50", value: rt.p50, max: maxVal, color: .axAccentGreen)
-            latencyRow(label: "P95", value: rt.p95, max: maxVal, color: .axWarning)
-            latencyRow(label: "P99", value: rt.p99, max: maxVal, color: .axError)
+            latencyRow(label: "Typical", value: rt.p50, max: maxVal, color: .axAccentGreen)
+            latencyRow(label: "Peak Load", value: rt.p95, max: maxVal, color: .axWarning)
+            latencyRow(label: "Critical", value: rt.p99, max: maxVal, color: .axError)
             latencyRow(label: L10n.Cerberus.Traffic.latencyAvg, value: rt.avg, max: maxVal, color: .axAccentBlue)
             latencyRow(label: L10n.Cerberus.Traffic.latencyMax, value: rt.max, max: maxVal, color: .axError)
         }
@@ -243,7 +387,7 @@ struct CerberusTrafficView: View {
 
     private func latencyRow(label: String, value: Double, max: Double, color: Color) -> some View {
         HStack(spacing: AXSpacing.sm) {
-            Text(label).font(AXTypography.monoXs).foregroundStyle(Color.axTextMuted).frame(width: 30, alignment: .leading)
+            Text(label).font(AXTypography.monoXs).foregroundStyle(Color.axTextMuted).frame(width: 62, alignment: .leading)
             GeometryReader { geo in
                 ZStack(alignment: .leading) {
                     RoundedRectangle(cornerRadius: AXCornerRadius.xs).fill(color.opacity(0.08)).frame(height: 8)
@@ -259,10 +403,10 @@ struct CerberusTrafficView: View {
     // MARK: - Bot Analysis Card
 
     private var botAnalysisCard: some View {
-        AXCard(accentColor: .axAccentPurple) {
+        AXCard(accentColor: .axWarning) {
             VStack(alignment: .leading, spacing: AXSpacing.md) {
                 HStack {
-                    Image(systemName: "cpu").foregroundStyle(Color.axAccentPurple)
+                    Image(systemName: "cpu").foregroundStyle(Color.axWarning)
                     Text(L10n.Cerberus.Traffic.botAnalysis).font(AXTypography.headline).foregroundStyle(Color.axTextPrimary)
                     Spacer()
                 }
@@ -299,9 +443,9 @@ struct CerberusTrafficView: View {
                 Text(viewModel.formatNumber(bd.totalHuman)).font(AXTypography.monoSm).foregroundStyle(Color.axAccentGreen)
             }
             HStack(spacing: AXSpacing.sm) {
-                Circle().fill(Color.axAccentPurple).frame(width: 6, height: 6)
+                Circle().fill(Color.axWarning).frame(width: 6, height: 6)
                 Text(L10n.Cerberus.Traffic.bot).font(AXTypography.caption).foregroundStyle(Color.axTextSecondary)
-                Text(viewModel.formatNumber(bd.totalBot)).font(AXTypography.monoSm).foregroundStyle(Color.axAccentPurple)
+                Text(viewModel.formatNumber(bd.totalBot)).font(AXTypography.monoSm).foregroundStyle(Color.axWarning)
             }
         }
     }
@@ -316,6 +460,7 @@ struct CerberusTrafficView: View {
                     emptyBox(icon: "number", text: L10n.Cerberus.Traffic.noStatusCodeData)
                 } else {
                     statusCodeBarChart
+                    statusCodesLegend
                 }
             }
         }
@@ -333,19 +478,72 @@ struct CerberusTrafficView: View {
     }
 
     private var statusCodeBarChart: some View {
-        Chart(viewModel.statusCodes.prefix(8)) { sc in
-            BarMark(x: .value("Code", "\(sc.code)"), y: .value("Count", sc.count))
-                .foregroundStyle(statusCodeColor(sc.code).opacity(0.8))
-                .cornerRadius(AXCornerRadius.xs)
-        }
-        .chartYAxis {
-            AxisMarks(position: .leading) {
-                AxisGridLine().foregroundStyle(Color.axDivider.opacity(0.3))
-                AxisValueLabel().foregroundStyle(Color.axTextTertiary)
+        ZStack {
+            Chart(viewModel.statusCodes.prefix(8)) { sc in
+                BarMark(x: .value("Code", "\(sc.code)"), y: .value("Count", sc.count))
+                    .foregroundStyle(statusCodeColor(sc.code).opacity(hoveredStatusCode == "\(sc.code)" ? 1.0 : 0.7))
+                    .cornerRadius(AXCornerRadius.xs)
+            }
+            .chartYAxis {
+                AxisMarks(position: .leading) {
+                    AxisGridLine().foregroundStyle(Color.axDivider.opacity(0.3))
+                    AxisValueLabel().foregroundStyle(Color.axTextTertiary)
+                }
+            }
+            .chartXAxis { AxisMarks { AxisValueLabel().foregroundStyle(Color.axTextTertiary) } }
+            .chartBackground { chartProxy in
+                Rectangle()
+                    .foregroundStyle(.clear)
+                    .contentShape(Rectangle())
+                    .onContinuousHover { phase in
+                        switch phase {
+                        case .active(let location):
+                            if let xValue: String = chartProxy.value(atX: location.x) {
+                                hoveredStatusCode = xValue
+                            }
+                        case .ended:
+                            hoveredStatusCode = nil
+                        }
+                    }
+            }
+
+            if let hoveredCode = hoveredStatusCode,
+               let statusCode = viewModel.statusCodes.first(where: { "\($0.code)" == hoveredCode }) {
+                VStack {
+                    WAFChartTooltip(
+                        title: "\(hoveredCode)",
+                        rows: [
+                            (label: "Count", value: "\(viewModel.formatNumber(statusCode.count))", color: statusCodeColor(statusCode.code))
+                        ]
+                    )
+                    Spacer()
+                }
+                .frame(maxHeight: .infinity, alignment: .top)
+                .padding(.top, AXSpacing.lg)
             }
         }
-        .chartXAxis { AxisMarks { AxisValueLabel().foregroundStyle(Color.axTextTertiary) } }
         .frame(height: 120)
+    }
+
+    private var statusCodesLegend: some View {
+        VStack(alignment: .leading, spacing: AXSpacing.sm) {
+            Rectangle().fill(Color.axDivider.opacity(0.2)).frame(height: 1)
+            HStack(spacing: AXSpacing.lg) {
+                statusCodeLegendItem(label: "2xx — Success", color: .axAccentGreen)
+                statusCodeLegendItem(label: "3xx — Redirect", color: .axAccentBlue)
+                statusCodeLegendItem(label: "4xx — Client Error", color: .axWarning)
+                statusCodeLegendItem(label: "5xx — Server Error", color: .axError)
+                Spacer()
+            }
+            .padding(.top, AXSpacing.xs)
+        }
+    }
+
+    private func statusCodeLegendItem(label: String, color: Color) -> some View {
+        HStack(spacing: AXSpacing.xs) {
+            Circle().fill(color).frame(width: 6, height: 6)
+            Text(label).font(AXTypography.caption2).foregroundStyle(Color.axTextMuted)
+        }
     }
 
     // MARK: - Domains List
@@ -460,7 +658,7 @@ struct CerberusTrafficView: View {
             statChip(L10n.Cerberus.Traffic.statBlocked, viewModel.formatNumber(stats.blockedRequests), .axError)
             statChip(L10n.Cerberus.Traffic.total, viewModel.formatNumber(stats.totalRequests - stats.blockedRequests), .axAccentGreen)
             statChip(L10n.Cerberus.Traffic.bytesIn, viewModel.formatBytes(stats.bytesIn), .axAccentBlue)
-            statChip(L10n.Cerberus.Traffic.bytesOut, viewModel.formatBytes(stats.bytesOut), .axAccentPurple)
+            statChip(L10n.Cerberus.Traffic.bytesOut, viewModel.formatBytes(stats.bytesOut), .axAccentBlue)
             Spacer()
         }
     }
@@ -534,7 +732,7 @@ struct CerberusTrafficView: View {
             domainMiniStat(L10n.Cerberus.Traffic.statBlocked, viewModel.formatNumber(stats.blockedRequests), "hand.raised.fill", .axError)
             domainMiniStat(L10n.Cerberus.Traffic.blockRate, String(format: "%.1f%%", blockedRate * 100), "chart.pie.fill", blockedRate > 0.1 ? .axError : .axAccentGreen)
             domainMiniStat(L10n.Cerberus.Traffic.bytesIn, viewModel.formatBytes(stats.bytesIn), "arrow.down.circle.fill", .axAccentBlue)
-            domainMiniStat(L10n.Cerberus.Traffic.bytesOut, viewModel.formatBytes(stats.bytesOut), "arrow.up.circle.fill", .axAccentPurple)
+            domainMiniStat(L10n.Cerberus.Traffic.bytesOut, viewModel.formatBytes(stats.bytesOut), "arrow.up.circle.fill", .axAccentBlue)
         }
         .padding(AXSpacing.md)
     }
@@ -661,7 +859,7 @@ struct CerberusTrafficView: View {
             logSummaryCard(label: L10n.Cerberus.Traffic.requests, value: "\(entries.count)", icon: "arrow.up.arrow.down", color: .axAccentBlue)
             logSummaryCard(label: L10n.Cerberus.Traffic.uniqueIPs, value: "\(uniqueIPs)", icon: "person.2.fill", color: .axAccentGreen)
             logSummaryCard(label: L10n.Cerberus.Traffic.bots, value: "\(botCount)", icon: "cpu.fill", color: .axWarning)
-            logSummaryCard(label: L10n.Cerberus.Traffic.avgLatency, value: String(format: "%.0fms", avgLatency), icon: "clock.fill", color: .axAccentPurple)
+            logSummaryCard(label: L10n.Cerberus.Traffic.avgLatency, value: String(format: "%.0fms", avgLatency), icon: "clock.fill", color: .axAccentBlue)
         }
     }
 
@@ -766,7 +964,7 @@ struct CerberusTrafficView: View {
         HStack(spacing: AXSpacing.sm) {
             Text(formatTime(entry.timestamp)).font(AXTypography.monoXs).foregroundStyle(Color.axTextMuted).frame(width: 70)
             Text(settings.maskServerInfo && settings.maskInDashboard && settings.maskIPAddresses ? PrivacyMask.ip(entry.ip) : entry.ip).font(AXTypography.monoXs).foregroundStyle(Color.axTextPrimary).frame(width: 115, alignment: .leading).lineLimit(1)
-            Text(flagEmoji(for: entry.countryCode)).frame(width: 25)
+            Text(countryFlagEmoji( entry.countryCode)).frame(width: 25)
             Text(entry.method).font(AXTypography.monoXs).foregroundStyle(methodColor(entry.method)).frame(width: 50)
             Text(settings.maskServerInfo && settings.maskInDashboard ? PrivacyMask.hostname(entry.host) : entry.host).font(AXTypography.monoXs).foregroundStyle(Color.axTextSecondary).frame(width: 120, alignment: .leading).lineLimit(1)
             Text(entry.path).font(AXTypography.monoXs).foregroundStyle(Color.axTextSecondary).frame(maxWidth: .infinity, alignment: .leading).lineLimit(1)
@@ -809,13 +1007,7 @@ struct CerberusTrafficView: View {
     }
 
     private func statusCodeColor(_ code: Int) -> Color {
-        switch code {
-        case 200..<300: return .axAccentGreen
-        case 300..<400: return .axAccentBlue
-        case 400..<500: return .axWarning
-        case 500..<600: return .axError
-        default: return .axTextMuted
-        }
+        return wafStatusCodeColor(code)
     }
 
     private func methodColor(_ method: String) -> Color {
@@ -837,15 +1029,6 @@ struct CerberusTrafficView: View {
             }.padding(.vertical, AXSpacing.xl)
             Spacer()
         }
-    }
-
-    private func flagEmoji(for code: String) -> String {
-        let base: UInt32 = 127397
-        var flag = ""
-        for scalar in code.uppercased().unicodeScalars {
-            if let s = Unicode.Scalar(base + scalar.value) { flag.append(String(s)) }
-        }
-        return flag.isEmpty ? "🏳️" : flag
     }
 
     private func formatTime(_ ts: String) -> String {

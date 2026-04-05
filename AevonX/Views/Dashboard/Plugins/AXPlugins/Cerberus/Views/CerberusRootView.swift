@@ -73,7 +73,7 @@ private extension CerberusContentView {
                 RoundedRectangle(cornerRadius: AXCornerRadius.md)
                     .fill(
                         LinearGradient(
-                            colors: [Color.axAccentBlue.opacity(0.2), Color.axAccentPurple.opacity(0.1)],
+                            colors: [Color.axAccentBlue.opacity(0.2), Color.axAccentBlue.opacity(0.55).opacity(0.1)],
                             startPoint: .topLeading, endPoint: .bottomTrailing
                         )
                     )
@@ -82,7 +82,7 @@ private extension CerberusContentView {
                     .font(AXTypography.headline)
                     .foregroundStyle(
                         LinearGradient(
-                            colors: [Color.axAccentBlue, Color.axAccentPurple],
+                            colors: [Color.axAccentBlue, Color.axAccentBlue.opacity(0.55)],
                             startPoint: .topLeading, endPoint: .bottomTrailing
                         )
                     )
@@ -204,7 +204,7 @@ private extension CerberusContentView {
                 RoundedRectangle(cornerRadius: 6)
                     .fill(
                         LinearGradient(
-                            colors: [Color.axAccentBlue.opacity(0.15), Color.axAccentPurple.opacity(0.1)],
+                            colors: [Color.axAccentBlue.opacity(0.15), Color.axAccentBlue.opacity(0.55).opacity(0.1)],
                             startPoint: .topLeading, endPoint: .bottomTrailing
                         )
                     )
@@ -213,7 +213,7 @@ private extension CerberusContentView {
                     .font(.system(size: 11, weight: .bold))
                     .foregroundStyle(
                         LinearGradient(
-                            colors: [Color.axAccentBlue, Color.axAccentPurple],
+                            colors: [Color.axAccentBlue, Color.axAccentBlue.opacity(0.55)],
                             startPoint: .topLeading, endPoint: .bottomTrailing
                         )
                     )

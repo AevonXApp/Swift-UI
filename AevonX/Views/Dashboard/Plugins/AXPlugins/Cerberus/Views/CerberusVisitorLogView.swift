@@ -427,7 +427,7 @@ private extension CerberusVisitorLogView {
     func countryCell(_ entry: WAFAccessLogEntry) -> some View {
         HStack(spacing: AXSpacing.xxxs) {
             if !entry.countryCode.isEmpty {
-                Text(flagEmoji(for: entry.countryCode))
+                Text(countryFlagEmoji( entry.countryCode))
                     .font(.system(size: 12))
                 Text(entry.countryCode)
             } else {
@@ -512,7 +512,7 @@ private extension CerberusVisitorLogView {
     }
 
     func detailGrid(_ entry: WAFAccessLogEntry) -> some View {
-        let countryDisplay = entry.countryCode.isEmpty ? "—" : "\(flagEmoji(for: entry.countryCode)) \(Locale.current.localizedString(forRegionCode: entry.countryCode) ?? entry.country) (\(entry.countryCode))"
+        let countryDisplay = entry.countryCode.isEmpty ? "—" : "\(countryFlagEmoji( entry.countryCode)) \(Locale.current.localizedString(forRegionCode: entry.countryCode) ?? entry.country) (\(entry.countryCode))"
         let rows: [(String, String)] = [
             (L10n.Cerberus.VisitorLog.colIP, entry.ip),
             (L10n.Cerberus.VisitorLog.colCountry, countryDisplay),
@@ -638,12 +638,4 @@ private extension CerberusVisitorLogView {
         return Self.timeFmt.string(from: date)
     }
 
-    func flagEmoji(for countryCode: String) -> String {
-        let base: UInt32 = 127397
-        var flag = ""
-        for scalar in countryCode.uppercased().unicodeScalars {
-            if let s = Unicode.Scalar(base + scalar.value) { flag.append(String(s)) }
-        }
-        return flag.isEmpty ? "🏳️" : flag
-    }
 }

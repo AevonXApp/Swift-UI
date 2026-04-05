@@ -483,7 +483,7 @@ private extension CerberusSettingsView {
     }
 
     var rawConfigHeader: some View {
-        AXCard(accentColor: .axAccentPurple) {
+        AXCard(accentColor: .axAccentBlue) {
             HStack(spacing: AXSpacing.md) {
                 VStack(alignment: .leading, spacing: AXSpacing.xxxs) {
                     Text(L10n.Cerberus.Settings.rawConfigTitle)
@@ -497,7 +497,7 @@ private extension CerberusSettingsView {
                 Spacer()
                 AXBadge(
                     text: "\(rawConfigPairs.count) keys",
-                    color: .axAccentPurple, style: .soft
+                    color: .axAccentBlue, style: .soft
                 )
             }
         }

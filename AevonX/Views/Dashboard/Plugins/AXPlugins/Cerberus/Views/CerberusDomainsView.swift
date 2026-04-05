@@ -68,7 +68,7 @@ private extension CerberusDomainsView {
                 Circle()
                     .fill(
                         LinearGradient(
-                            colors: [.axAccentBlue.opacity(0.2), .axAccentPurple.opacity(0.15)],
+                            colors: [.axAccentBlue.opacity(0.2), .axAccentBlue.opacity(0.06)],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         )
@@ -77,7 +77,7 @@ private extension CerberusDomainsView {
                 Circle()
                     .strokeBorder(
                         LinearGradient(
-                            colors: [.axAccentBlue.opacity(0.4), .axAccentPurple.opacity(0.2)],
+                            colors: [.axAccentBlue.opacity(0.4), .axAccentBlue.opacity(0.1)],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         ),
@@ -88,7 +88,7 @@ private extension CerberusDomainsView {
                     .font(.system(size: 20, weight: .medium))
                     .foregroundStyle(
                         LinearGradient(
-                            colors: [.axAccentBlue, .axAccentPurple],
+                            colors: [.axAccentBlue, .axAccentBlue.opacity(0.55)],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         )
@@ -170,7 +170,7 @@ private extension CerberusDomainsView {
                     RoundedRectangle(cornerRadius: AXCornerRadius.lg)
                         .fill(
                             LinearGradient(
-                                colors: [.axAccentBlue.opacity(0.15), .axAccentPurple.opacity(0.1)],
+                                colors: [.axAccentBlue.opacity(0.15), .axAccentBlue.opacity(0.06)],
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
                             )
@@ -365,7 +365,7 @@ private extension CerberusDomainsView {
                 icon: "chart.bar.fill",
                 value: DomainFormatHelper.formatNumber(totalRequests),
                 label: L10n.Cerberus.Domains.requests,
-                color: .axAccentPurple
+                color: .axAccentBlue
             )
         }
     }

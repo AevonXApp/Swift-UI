@@ -198,7 +198,7 @@ private extension CerberusComplianceView {
                 Spacer(minLength: 0)
                 AXBadge(
                     text: check.category,
-                    color: .axAccentPurple,
+                    color: .axAccentBlue,
                     style: .soft
                 )
             }

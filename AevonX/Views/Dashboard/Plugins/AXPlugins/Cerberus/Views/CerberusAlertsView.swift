@@ -447,7 +447,7 @@ private extension CerberusAlertsView {
                     alertDetailField(label: L10n.Cerberus.Alerts.timestamp, value: alert.timestamp, icon: "clock.fill", color: .axAccentBlue)
                     if let details = alert.details {
                         ForEach(details.sorted(by: { $0.key < $1.key }), id: \.key) { key, value in
-                            alertDetailField(label: key.replacingOccurrences(of: "_", with: " ").capitalized, value: value, icon: "info.circle.fill", color: .axAccentPurple)
+                            alertDetailField(label: key.replacingOccurrences(of: "_", with: " ").capitalized, value: value, icon: "info.circle.fill", color: .axAccentBlue)
                         }
                     }
                 }

@@ -36,20 +36,6 @@ enum DomainDetailTab: String, CaseIterable {
     }
 }
 
-// MARK: - Time Filter
-
-enum DomainTimeFilter: String, CaseIterable {
-    case today, week, month
-
-    var label: String {
-        switch self {
-        case .today: return L10n.Cerberus.DomainDetail.today
-        case .week:  return L10n.Cerberus.DomainDetail.week
-        case .month: return L10n.Cerberus.DomainDetail.month
-        }
-    }
-}
-
 // MARK: - Main View
 
 struct CerberusDomainDetailView: View {
@@ -57,7 +43,9 @@ struct CerberusDomainDetailView: View {
     let domain: WAFDomainInfo
     var onBack: () -> Void
     @State private var selectedTab: DomainDetailTab = .overview
-    @State private var timeFilter: DomainTimeFilter = .today
+    @State private var domainTimeRange: WAFTimeRange = .hour24
+    @State private var hoveredHour: Int? = nil
+    @State private var tooltipOffsetX: CGFloat = 0
 
     var body: some View {
         VStack(spacing: 0) {
@@ -285,14 +273,15 @@ private extension CerberusDomainDetailView {
                 value: DomainFormatHelper.formatNumber(total),
                 icon: "arrow.up.arrow.down",
                 color: .axAccentBlue,
-                gradientEnd: .axAccentPurple
+                gradientEnd: .axAccentBlue.opacity(0.5)
             )
             DetailMetricCard(
                 title: L10n.Cerberus.DomainDetail.blocked,
                 value: DomainFormatHelper.formatNumber(blocked),
                 icon: "hand.raised.fill",
                 color: .axError,
-                gradientEnd: .axWarning
+                gradientEnd: .axWarning,
+                subtitle: "Blocked automatically by WAF"
             )
             DetailMetricCard(
                 title: L10n.Cerberus.DomainDetail.blockRate,
@@ -312,41 +301,10 @@ private extension CerberusDomainDetailView {
     }
 
     var timeFilterBar: some View {
-        HStack(spacing: AXSpacing.xs) {
-            ForEach(DomainTimeFilter.allCases, id: \.self) { filter in
-                Button {
-                    withAnimation(.spring(response: 0.25, dampingFraction: 0.85)) { timeFilter = filter }
-                } label: {
-                    Text(filter.label)
-                        .font(AXTypography.caption)
-                        .fontWeight(timeFilter == filter ? .bold : .regular)
-                        .foregroundStyle(timeFilter == filter ? .white : Color.axTextSecondary)
-                        .padding(.horizontal, AXSpacing.lg)
-                        .padding(.vertical, AXSpacing.xs)
-                        .background(
-                            timeFilter == filter
-                                ? AnyShapeStyle(
-                                    LinearGradient(
-                                        colors: [.axAccentBlue, .axAccentPurple.opacity(0.8)],
-                                        startPoint: .leading,
-                                        endPoint: .trailing
-                                    )
-                                )
-                                : AnyShapeStyle(Color.axSurface)
-                        )
-                        .clipShape(RoundedRectangle(cornerRadius: AXCornerRadius.md))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: AXCornerRadius.md)
-                                .strokeBorder(
-                                    timeFilter == filter ? Color.clear : Color.axBorder.opacity(0.4),
-                                    lineWidth: 1
-                                )
-                        )
-                }
-                .buttonStyle(.plain)
+        WAFTimeRangePicker(selected: $domainTimeRange)
+            .onChange(of: domainTimeRange) {
+                Task { await viewModel.loadDomainDetail(domain: domain.domain) }
             }
-            Spacer()
-        }
     }
 }
 
@@ -361,7 +319,7 @@ private extension CerberusDomainDetailView {
                     RoundedRectangle(cornerRadius: AXCornerRadius.sm)
                         .fill(
                             LinearGradient(
-                                colors: [Color.axAccentBlue.opacity(0.15), Color.axAccentPurple.opacity(0.08)],
+                                colors: [Color.axAccentBlue.opacity(0.15), Color.axAccentBlue.opacity(0.05)],
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
                             )
@@ -413,36 +371,17 @@ private extension CerberusDomainDetailView {
     }
 
     var timelineChart: some View {
-        Chart {
-            ForEach(viewModel.selectedDomainTimeline, id: \.hour) { entry in
-                AreaMark(
-                    x: .value("Hour", entry.hour),
-                    y: .value("Total", entry.total)
-                )
-                .foregroundStyle(
-                    LinearGradient(
-                        colors: [Color.axAccentBlue.opacity(0.25), Color.axAccentBlue.opacity(0.02)],
-                        startPoint: .top, endPoint: .bottom
-                    )
-                )
-                .interpolationMethod(.catmullRom)
-
-                LineMark(
-                    x: .value("Hour", entry.hour),
-                    y: .value("Total", entry.total)
-                )
-                .foregroundStyle(Color.axAccentBlue)
-                .interpolationMethod(.catmullRom)
-                .lineStyle(StrokeStyle(lineWidth: 2))
-
-                if entry.blocked > 0 {
+        let data = viewModel.selectedDomainTimeline
+        return ZStack(alignment: .topLeading) {
+            Chart {
+                ForEach(data, id: \.hour) { entry in
                     AreaMark(
                         x: .value("Hour", entry.hour),
-                        y: .value("Blocked", entry.blocked)
+                        y: .value("Total", entry.total)
                     )
                     .foregroundStyle(
                         LinearGradient(
-                            colors: [Color.axError.opacity(0.2), Color.axError.opacity(0.01)],
+                            colors: [Color.axAccentBlue.opacity(0.25), Color.axAccentBlue.opacity(0.02)],
                             startPoint: .top, endPoint: .bottom
                         )
                     )
@@ -450,41 +389,112 @@ private extension CerberusDomainDetailView {
 
                     LineMark(
                         x: .value("Hour", entry.hour),
-                        y: .value("Blocked", entry.blocked)
+                        y: .value("Total", entry.total)
                     )
-                    .foregroundStyle(Color.axError.opacity(0.8))
+                    .foregroundStyle(Color.axAccentBlue)
                     .interpolationMethod(.catmullRom)
-                    .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [4, 3]))
-                }
-            }
-        }
-        .chartXAxis {
-            AxisMarks(values: .stride(by: 4)) { value in
-                AxisValueLabel {
-                    if let v = value.as(Int.self) {
-                        Text(String(format: "%02d:00", v))
-                            .font(AXTypography.caption2)
-                            .foregroundStyle(Color.axTextMuted)
+                    .lineStyle(StrokeStyle(lineWidth: 2))
+
+                    if entry.blocked > 0 {
+                        AreaMark(
+                            x: .value("Hour", entry.hour),
+                            y: .value("Blocked", entry.blocked)
+                        )
+                        .foregroundStyle(
+                            LinearGradient(
+                                colors: [Color.axError.opacity(0.2), Color.axError.opacity(0.01)],
+                                startPoint: .top, endPoint: .bottom
+                            )
+                        )
+                        .interpolationMethod(.catmullRom)
+
+                        LineMark(
+                            x: .value("Hour", entry.hour),
+                            y: .value("Blocked", entry.blocked)
+                        )
+                        .foregroundStyle(Color.axError.opacity(0.8))
+                        .interpolationMethod(.catmullRom)
+                        .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [4, 3]))
+                    }
+
+                    if let h = hoveredHour, h == entry.hour {
+                        RuleMark(x: .value("Hour", h))
+                            .foregroundStyle(Color.axTextMuted.opacity(0.3))
+                            .lineStyle(StrokeStyle(lineWidth: 1, dash: [4]))
                     }
                 }
-                AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5, dash: [3]))
-                    .foregroundStyle(Color.axDivider.opacity(0.5))
             }
-        }
-        .chartYAxis {
-            AxisMarks(position: .leading) { value in
-                AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5, dash: [3]))
-                    .foregroundStyle(Color.axDivider.opacity(0.5))
-                AxisValueLabel {
-                    if let v = value.as(Int.self) {
-                        Text(DomainFormatHelper.formatNumber(v))
-                            .font(AXTypography.caption2)
-                            .foregroundStyle(Color.axTextMuted)
+            .chartXAxis {
+                AxisMarks(values: .stride(by: 4)) { value in
+                    AxisValueLabel {
+                        if let v = value.as(Int.self) {
+                            Text(String(format: "%02d:00", v))
+                                .font(AXTypography.caption2)
+                                .foregroundStyle(Color.axTextMuted)
+                        }
+                    }
+                    AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5, dash: [3]))
+                        .foregroundStyle(Color.axDivider.opacity(0.5))
+                }
+            }
+            .chartYAxis {
+                AxisMarks(position: .leading) { value in
+                    AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5, dash: [3]))
+                        .foregroundStyle(Color.axDivider.opacity(0.5))
+                    AxisValueLabel {
+                        if let v = value.as(Int.self) {
+                            Text(DomainFormatHelper.formatNumber(v))
+                                .font(AXTypography.caption2)
+                                .foregroundStyle(Color.axTextMuted)
+                        }
                     }
                 }
             }
+            .chartOverlay { proxy in
+                GeometryReader { geo in
+                    Rectangle()
+                        .fill(.clear)
+                        .contentShape(Rectangle())
+                        .onContinuousHover { phase in
+                            switch phase {
+                            case .active(let loc):
+                                let plotOrigin = geo[proxy.plotAreaFrame].origin
+                                let relX = loc.x - plotOrigin.x
+                                if let hour: Int = proxy.value(atX: relX) {
+                                    let clamped = max(0, min(23, hour))
+                                    hoveredHour = clamped
+                                    if let posX = proxy.position(forX: clamped) {
+                                        let raw = posX + plotOrigin.x
+                                        tooltipOffsetX = min(max(raw - 60, 0), geo.size.width - 130)
+                                    }
+                                }
+                            case .ended:
+                                hoveredHour = nil
+                            }
+                        }
+                }
+            }
+            .frame(height: 220)
+
+            // Tooltip
+            if let h = hoveredHour,
+               let entry = data.first(where: { $0.hour == h }) {
+                let blockPct = entry.total > 0 ? Double(entry.blocked) / Double(entry.total) * 100 : 0
+                WAFChartTooltip(
+                    title: String(format: "%02d:00", h),
+                    rows: [
+                        (L10n.Cerberus.DomainDetail.requests, "\(entry.total)", .axAccentBlue),
+                        (L10n.Cerberus.DomainDetail.blocked,  "\(entry.blocked)", .axError),
+                        ("Allowed",  "\(entry.allowed)",  .axAccentGreen),
+                        ("Block%",   String(format: "%.1f%%", blockPct), blockPct > 20 ? .axError : .axTextMuted),
+                    ]
+                )
+                .offset(x: tooltipOffsetX, y: 4)
+                .transition(.opacity.combined(with: .scale(scale: 0.95)))
+                .zIndex(10)
+            }
         }
-        .frame(height: 220)
+        .animation(.easeInOut(duration: 0.1), value: hoveredHour)
     }
 }
 
@@ -500,7 +510,7 @@ private extension CerberusDomainDetailView {
                         RoundedRectangle(cornerRadius: AXCornerRadius.sm)
                             .fill(
                                 LinearGradient(
-                                    colors: [Color.axAccentPurple.opacity(0.15), Color.axAccentBlue.opacity(0.08)],
+                                    colors: [Color.axAccentBlue.opacity(0.10), Color.axAccentBlue.opacity(0.05)],
                                     startPoint: .topLeading,
                                     endPoint: .bottomTrailing
                                 )
@@ -508,7 +518,7 @@ private extension CerberusDomainDetailView {
                             .frame(width: 26, height: 26)
                         Image(systemName: "globe.americas.fill")
                             .font(.system(size: 11, weight: .semibold))
-                            .foregroundStyle(Color.axAccentPurple)
+                            .foregroundStyle(Color.axAccentBlue)
                     }
                     Text(L10n.Cerberus.DomainDetail.topCountries)
                         .font(AXTypography.subheadline)
@@ -517,7 +527,7 @@ private extension CerberusDomainDetailView {
                     Spacer()
                     AXBadge(
                         text: "\(viewModel.selectedDomainCountries.count)",
-                        color: .axAccentPurple,
+                        color: .axAccentBlue,
                         style: .soft
                     )
                 }
@@ -525,6 +535,7 @@ private extension CerberusDomainDetailView {
                 if viewModel.selectedDomainCountries.isEmpty {
                     DomainEmptyMini(icon: "globe", text: L10n.Cerberus.DomainDetail.noCountries)
                 } else {
+                    ContinentLegendView(countryCodes: viewModel.selectedDomainCountries.prefix(6).map(\.countryCode))
                     ForEach(viewModel.selectedDomainCountries.prefix(6), id: \.countryCode) { country in
                         countryRow(country)
                     }
@@ -540,9 +551,10 @@ private extension CerberusDomainDetailView {
         let name = country.countryName.isEmpty
             ? (Locale.current.localizedString(forRegionCode: country.countryCode) ?? country.countryCode)
             : country.countryName
+        let barColor = WAFContinent.from(countryCode: country.countryCode).color
 
         return HStack(spacing: AXSpacing.sm) {
-            Text(flagEmoji(for: country.countryCode))
+            Text(countryFlagEmoji( country.countryCode))
                 .font(.system(size: 14))
                 .frame(width: 22)
             Text(name)
@@ -552,15 +564,10 @@ private extension CerberusDomainDetailView {
                 .frame(minWidth: 60, alignment: .leading)
             GeometryReader { geo in
                 RoundedRectangle(cornerRadius: AXCornerRadius.xs)
-                    .fill(
-                        LinearGradient(
-                            colors: [.axAccentBlue.opacity(0.4), .axAccentPurple.opacity(0.2)],
-                            startPoint: .leading, endPoint: .trailing
-                        )
-                    )
+                    .fill(barColor.opacity(0.35))
                     .frame(width: max(geo.size.width * ratio, 4))
             }
-            .frame(height: 12)
+            .frame(height: 10)
             Text(DomainFormatHelper.formatNumber(country.count))
                 .font(AXTypography.monoSm)
                 .fontWeight(.medium)
@@ -791,7 +798,7 @@ private extension CerberusDomainDetailView {
                     DomainEmptyTabState(
                         icon: "globe",
                         title: L10n.Cerberus.DomainDetail.noCountries,
-                        color: .axAccentPurple
+                        color: .axAccentBlue
                     )
                 } else {
                     countriesBarChart
@@ -803,12 +810,14 @@ private extension CerberusDomainDetailView {
     }
 
     var countriesBarChart: some View {
-        AXCard {
+        let top10 = Array(viewModel.selectedDomainCountries.prefix(10))
+        let codes = top10.map(\.countryCode)
+        return AXCard {
             VStack(alignment: .leading, spacing: AXSpacing.md) {
                 HStack {
                     Image(systemName: "chart.bar.fill")
                         .font(.system(size: 12, weight: .medium))
-                        .foregroundStyle(Color.axAccentPurple)
+                        .foregroundStyle(Color.axAccentBlue)
                     Text(L10n.Cerberus.DomainDetail.topCountries)
                         .font(AXTypography.subheadline)
                         .fontWeight(.semibold)
@@ -816,18 +825,16 @@ private extension CerberusDomainDetailView {
                     Spacer()
                 }
 
+                ContinentLegendView(countryCodes: codes)
+
                 Chart {
-                    ForEach(viewModel.selectedDomainCountries.prefix(10), id: \.countryCode) { country in
+                    ForEach(top10, id: \.countryCode) { country in
+                        let continent = WAFContinent.from(countryCode: country.countryCode)
                         BarMark(
-                            x: .value("Country", country.countryCode),
+                            x: .value("Country", "\(countryFlagEmoji( country.countryCode)) \(country.countryCode)"),
                             y: .value("Count", country.count)
                         )
-                        .foregroundStyle(
-                            LinearGradient(
-                                colors: [.axAccentBlue, .axAccentPurple],
-                                startPoint: .bottom, endPoint: .top
-                            )
-                        )
+                        .foregroundStyle(continent.color.opacity(0.85))
                         .cornerRadius(AXCornerRadius.xs)
                     }
                 }
@@ -843,6 +850,9 @@ private extension CerberusDomainDetailView {
                             }
                         }
                     }
+                }
+                .chartXAxis {
+                    AxisMarks { AxisValueLabel().foregroundStyle(Color.axTextTertiary) }
                 }
                 .frame(height: 220)
             }
@@ -868,6 +878,7 @@ private struct DetailMetricCard: View {
     let icon: String
     let color: Color
     var gradientEnd: Color = .clear
+    var subtitle: String? = nil
 
     private var endColor: Color { gradientEnd == .clear ? color : gradientEnd }
 
@@ -903,6 +914,11 @@ private struct DetailMetricCard: View {
                 Text(title)
                     .font(AXTypography.caption)
                     .foregroundStyle(Color.axTextTertiary)
+                if let subtitle {
+                    Text(subtitle)
+                        .font(AXTypography.caption2)
+                        .foregroundStyle(Color.axTextMuted)
+                }
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -966,7 +982,7 @@ private struct DomainEmptyChart: View {
                     Circle()
                         .fill(
                             LinearGradient(
-                                colors: [Color.axAccentBlue.opacity(0.12), Color.axAccentPurple.opacity(0.06)],
+                                colors: [Color.axAccentBlue.opacity(0.12), Color.axAccentBlue.opacity(0.04)],
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
                             )
@@ -975,7 +991,7 @@ private struct DomainEmptyChart: View {
                     Circle()
                         .strokeBorder(
                             LinearGradient(
-                                colors: [Color.axAccentBlue.opacity(0.2), Color.axAccentPurple.opacity(0.1)],
+                                colors: [Color.axAccentBlue.opacity(0.2), Color.axAccentBlue.opacity(0.08)],
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
                             ),
@@ -986,7 +1002,7 @@ private struct DomainEmptyChart: View {
                         .font(.system(size: 24, weight: .light))
                         .foregroundStyle(
                             LinearGradient(
-                                colors: [.axAccentBlue.opacity(0.6), .axAccentPurple.opacity(0.4)],
+                                colors: [.axAccentBlue.opacity(0.6), .axAccentBlue.opacity(0.25)],
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
                             )
@@ -1139,12 +1155,4 @@ extension CerberusDomainDetailView {
             .clipShape(RoundedRectangle(cornerRadius: AXCornerRadius.xs))
     }
 
-    func flagEmoji(for countryCode: String) -> String {
-        let base: UInt32 = 127397
-        var flag = ""
-        for scalar in countryCode.uppercased().unicodeScalars {
-            if let s = Unicode.Scalar(base + scalar.value) { flag.append(String(s)) }
-        }
-        return flag.isEmpty ? "🏳️" : flag
-    }
 }

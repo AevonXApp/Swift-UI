@@ -15,6 +15,22 @@ extension CerberusDomainDetailView {
     var blockingTab: some View {
         ScrollView {
             VStack(spacing: AXSpacing.lg) {
+                HStack(spacing: AXSpacing.sm) {
+                    Image(systemName: "info.circle.fill").foregroundStyle(Color.axAccentBlue)
+                    VStack(alignment: .leading, spacing: AXSpacing.xxs) {
+                        Text("Manual IP Blocking")
+                            .font(AXTypography.caption)
+                            .fontWeight(.semibold)
+                            .foregroundStyle(Color.axTextPrimary)
+                        Text("IPs listed here are permanently banned. Requests auto-blocked by WAF rules are logged in the Attacks tab.")
+                            .font(AXTypography.caption2)
+                            .foregroundStyle(Color.axTextSecondary)
+                    }
+                    Spacer()
+                }
+                .padding(AXSpacing.md)
+                .background(RoundedRectangle(cornerRadius: AXCornerRadius.md).fill(Color.axAccentBlue.opacity(0.06)))
+
                 blockedIPsSection
                 blockedCountriesSection
             }
@@ -57,15 +73,23 @@ private struct DomainBlockIPSection: View {
                     .font(.system(size: 12, weight: .medium))
                     .foregroundStyle(Color.axError)
             }
-            Text(L10n.Cerberus.DomainDetail.blockedIPs)
-                .font(AXTypography.subheadline)
-                .fontWeight(.semibold)
-                .foregroundStyle(Color.axTextPrimary)
-            AXBadge(
-                text: "\(viewModel.selectedDomainBlockedIPs.count)",
-                color: .axError,
-                style: .soft
-            )
+            VStack(alignment: .leading, spacing: AXSpacing.xxxs) {
+                HStack(spacing: AXSpacing.sm) {
+                    Text("Blocked IPs — Manual Rules")
+                        .font(AXTypography.subheadline)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(Color.axTextPrimary)
+                    Spacer()
+                    AXBadge(
+                        text: "\(viewModel.selectedDomainBlockedIPs.count)",
+                        color: .axError,
+                        style: .soft
+                    )
+                }
+                Text("Permanently banned IPs — added manually by you")
+                    .font(AXTypography.caption2)
+                    .foregroundStyle(Color.axTextMuted)
+            }
             Spacer()
             Button {
                 withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) { showAddForm.toggle() }
@@ -307,7 +331,7 @@ private struct DomainBlockCountrySection: View {
                 Circle()
                     .fill(
                         LinearGradient(
-                            colors: [Color.axAccentBlue.opacity(0.08), Color.axAccentPurple.opacity(0.03)],
+                            colors: [Color.axAccentBlue.opacity(0.08), Color.axAccentBlue.opacity(0.02)],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         )
@@ -320,7 +344,7 @@ private struct DomainBlockCountrySection: View {
                     .font(.system(size: 22, weight: .light))
                     .foregroundStyle(
                         LinearGradient(
-                            colors: [Color.axAccentBlue.opacity(0.4), Color.axAccentPurple.opacity(0.3)],
+                            colors: [Color.axAccentBlue.opacity(0.4), Color.axAccentBlue.opacity(0.15)],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         )
@@ -338,7 +362,7 @@ private struct DomainBlockCountrySection: View {
         VStack(spacing: AXSpacing.xs) {
             ForEach(viewModel.selectedDomainBlockedCountries, id: \.self) { code in
                 HStack(spacing: AXSpacing.sm) {
-                    Text(flagEmoji(for: code))
+                    Text(countryFlagEmoji( code))
                         .font(.system(size: 14))
                     Text(Locale.current.localizedString(forRegionCode: code) ?? code)
                         .font(AXTypography.caption)
@@ -364,14 +388,6 @@ private struct DomainBlockCountrySection: View {
         }
     }
 
-    private func flagEmoji(for countryCode: String) -> String {
-        let base: UInt32 = 127397
-        var flag = ""
-        for scalar in countryCode.uppercased().unicodeScalars {
-            if let s = Unicode.Scalar(base + scalar.value) { flag.append(String(s)) }
-        }
-        return flag.isEmpty ? "🏳️" : flag
-    }
 }
 
 // MARK: - Bridge to main view

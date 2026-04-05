@@ -228,7 +228,7 @@ struct CerberusCustomRulesView: View {
                 HStack(spacing: AXSpacing.sm) {
                     Image(systemName: "chevron.left.forwardslash.chevron.right")
                         .font(.system(size: 12, weight: .semibold))
-                        .foregroundStyle(Color.axAccentPurple)
+                        .foregroundStyle(Color.axAccentBlue)
                     Text(L10n.Cerberus.Rules.syntaxReference)
                         .font(AXTypography.caption)
                         .fontWeight(.semibold)
@@ -372,11 +372,11 @@ struct CerberusCustomRulesView: View {
                 HStack(spacing: AXSpacing.xs) {
                     Image(systemName: "lightbulb.fill")
                         .font(.system(size: 10))
-                        .foregroundStyle(Color.axAccentPurple)
+                        .foregroundStyle(Color.axAccentBlue)
                     Text(L10n.Cerberus.Rules.syntaxExample)
                         .font(AXTypography.caption)
                         .fontWeight(.semibold)
-                        .foregroundStyle(Color.axAccentPurple)
+                        .foregroundStyle(Color.axAccentBlue)
                 }
                 Text(L10n.Cerberus.Rules.syntaxHint)
                     .font(AXTypography.monoXs)
@@ -387,7 +387,7 @@ struct CerberusCustomRulesView: View {
                     .clipShape(RoundedRectangle(cornerRadius: AXCornerRadius.sm))
             }
             .padding(AXSpacing.md)
-            .background(Color.axAccentPurple.opacity(0.04))
+            .background(Color.axAccentBlue.opacity(0.04))
             .clipShape(RoundedRectangle(cornerRadius: AXCornerRadius.md))
         }
         .padding(AXSpacing.xl)

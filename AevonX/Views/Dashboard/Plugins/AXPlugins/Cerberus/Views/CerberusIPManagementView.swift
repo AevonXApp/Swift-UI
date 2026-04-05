@@ -85,7 +85,7 @@ private extension CerberusIPManagementView {
 private extension CerberusIPManagementView {
 
     var ipHeroSection: some View {
-        AXGlassCard(accentColor: .axAccentPurple) {
+        AXGlassCard(accentColor: .axAccentBlue) {
             HStack(spacing: AXSpacing.xxl) {
                 ipHeroIcon
                 ipHeroTitle
@@ -100,17 +100,17 @@ private extension CerberusIPManagementView {
             Circle()
                 .fill(
                     RadialGradient(
-                        colors: [Color.axAccentPurple.opacity(0.2), Color.axAccentPurple.opacity(0.04)],
+                        colors: [Color.axAccentBlue.opacity(0.2), Color.axAccentBlue.opacity(0.04)],
                         center: .center, startRadius: 0, endRadius: 26
                     )
                 )
                 .frame(width: 48, height: 48)
             Circle()
-                .stroke(Color.axAccentPurple.opacity(0.25), lineWidth: 1)
+                .stroke(Color.axAccentBlue.opacity(0.25), lineWidth: 1)
                 .frame(width: 48, height: 48)
             Image(systemName: "network.badge.shield.half.filled")
                 .font(AXTypography.title3)
-                .foregroundStyle(Color.axAccentPurple)
+                .foregroundStyle(Color.axAccentBlue)
         }
     }
 
@@ -132,7 +132,7 @@ private extension CerberusIPManagementView {
             Divider().frame(height: 36)
             heroStat(icon: "checkmark.shield.fill", value: "\(viewModel.allowedIPs.count)", label: L10n.Cerberus.IP.statAllowed, color: .axAccentGreen)
             Divider().frame(height: 36)
-            heroStat(icon: "globe.badge.chevron.backward", value: "\(viewModel.blockedCountries.count)", label: L10n.Cerberus.IP.statCountries, color: .axAccentPurple)
+            heroStat(icon: "globe.badge.chevron.backward", value: "\(viewModel.blockedCountries.count)", label: L10n.Cerberus.IP.statCountries, color: .axAccentBlue)
             Divider().frame(height: 36)
             heroStat(icon: "shield.checkered", value: "\(totalRules)", label: L10n.Cerberus.IP.totalRules, color: .axAccentBlue)
         }
@@ -573,7 +573,7 @@ private extension CerberusIPManagementView {
 private extension CerberusIPManagementView {
 
     var geoIPSection: some View {
-        AXCard(accentColor: .axAccentPurple) {
+        AXCard(accentColor: .axAccentBlue) {
             VStack(alignment: .leading, spacing: AXSpacing.md) {
                 geoIPHeader
                 Text(L10n.Cerberus.IP.geoIPDesc)
@@ -596,11 +596,11 @@ private extension CerberusIPManagementView {
 
     var geoIPHeader: some View {
         HStack {
-            Image(systemName: "globe.badge.chevron.backward").foregroundStyle(Color.axAccentPurple)
+            Image(systemName: "globe.badge.chevron.backward").foregroundStyle(Color.axAccentBlue)
             Text(L10n.Cerberus.IP.countryBlocking).font(AXTypography.headline).foregroundStyle(Color.axTextPrimary)
             Spacer()
-            AXBadge(text: "\(viewModel.blockedCountries.count)", color: .axAccentPurple, style: .soft)
-            addToggleBtn(color: .axAccentPurple, isExpanded: $showAddCountryForm) {
+            AXBadge(text: "\(viewModel.blockedCountries.count)", color: .axAccentBlue, style: .soft)
+            addToggleBtn(color: .axAccentBlue, isExpanded: $showAddCountryForm) {
                 showAddBlockForm = false
                 showAddAllowForm = false
             }
@@ -618,7 +618,7 @@ private extension CerberusIPManagementView {
     func countryChip(_ code: String) -> some View {
         let name = Locale.current.localizedString(forRegionCode: code) ?? code
         return HStack(spacing: AXSpacing.xs) {
-            Text(flagEmoji(for: code))
+            Text(countryFlagEmoji( code))
             Text(name)
                 .font(AXTypography.caption)
                 .foregroundStyle(Color.axTextPrimary)
@@ -639,7 +639,7 @@ private extension CerberusIPManagementView {
         }
         .padding(.vertical, AXSpacing.xs)
         .padding(.horizontal, AXSpacing.sm)
-        .background(RoundedRectangle(cornerRadius: AXCornerRadius.sm).fill(Color.axAccentPurple.opacity(0.06)))
+        .background(RoundedRectangle(cornerRadius: AXCornerRadius.sm).fill(Color.axAccentBlue.opacity(0.06)))
     }
 }
 
@@ -658,14 +658,14 @@ private extension CerberusIPManagementView {
         }
 
         return VStack(spacing: AXSpacing.md) {
-            Divider().background(Color.axAccentPurple.opacity(0.3))
+            Divider().background(Color.axAccentBlue.opacity(0.3))
 
             // Search
             AXTextField(
                 placeholder: L10n.Cerberus.IP.searchCountry,
                 text: $countrySearch,
                 icon: "magnifyingglass",
-                accentColor: .axAccentPurple
+                accentColor: .axAccentBlue
             )
 
             // Country list — scrollable within the card
@@ -693,16 +693,16 @@ private extension CerberusIPManagementView {
                     Text(L10n.Button.done)
                         .font(AXTypography.caption)
                         .fontWeight(.semibold)
-                        .foregroundStyle(Color.axAccentPurple)
+                        .foregroundStyle(Color.axAccentBlue)
                         .padding(.horizontal, AXSpacing.lg)
                         .padding(.vertical, AXSpacing.xs)
-                        .background(Color.axAccentPurple.opacity(0.1))
+                        .background(Color.axAccentBlue.opacity(0.1))
                         .clipShape(RoundedRectangle(cornerRadius: AXCornerRadius.md))
                 }
                 .buttonStyle(.plain)
             }
 
-            Divider().background(Color.axAccentPurple.opacity(0.3))
+            Divider().background(Color.axAccentBlue.opacity(0.3))
         }
         .padding(.vertical, AXSpacing.xs)
     }
@@ -712,7 +712,7 @@ private extension CerberusIPManagementView {
             Task { await viewModel.blockCountry(entry.code) }
         } label: {
             HStack(spacing: AXSpacing.sm) {
-                Text(flagEmoji(for: entry.code))
+                Text(countryFlagEmoji( entry.code))
                     .font(.system(size: 18))
                 Text(entry.name)
                     .font(AXTypography.subheadline)
@@ -723,7 +723,7 @@ private extension CerberusIPManagementView {
                     .foregroundStyle(Color.axTextTertiary)
                 Image(systemName: "hand.raised.fill")
                     .font(.system(size: 10))
-                    .foregroundStyle(Color.axAccentPurple.opacity(0.5))
+                    .foregroundStyle(Color.axAccentBlue.opacity(0.5))
             }
             .padding(.vertical, AXSpacing.sm)
             .padding(.horizontal, AXSpacing.sm)
@@ -755,14 +755,6 @@ private extension CerberusIPManagementView {
         return viewModel.allowedIPs.filter { $0.localizedCaseInsensitiveContains(searchQuery) }
     }
 
-    func flagEmoji(for countryCode: String) -> String {
-        let base: UInt32 = 127397
-        var flag = ""
-        for scalar in countryCode.uppercased().unicodeScalars {
-            if let s = Unicode.Scalar(base + scalar.value) { flag.append(String(s)) }
-        }
-        return flag.isEmpty ? "🏳️" : flag
-    }
 }
 
 // MARK: - IP Validation

@@ -35,7 +35,7 @@ struct CerberusSessionView: View {
 private extension CerberusSessionView {
 
     func heroSection(_ status: WAFSessionStatus) -> some View {
-        AXGlassCard(accentColor: .axAccentPurple) {
+        AXGlassCard(accentColor: .axAccentBlue) {
             HStack(spacing: AXSpacing.lg) {
                 heroIcon
                 heroTitleBlock(status)
@@ -51,7 +51,7 @@ private extension CerberusSessionView {
                 .fill(
                     RadialGradient(
                         colors: [
-                            Color.axAccentPurple.opacity(0.3),
+                            Color.axAccentBlue.opacity(0.3),
                             Color.axAccentBlue.opacity(0.1)
                         ],
                         center: .center,
@@ -62,7 +62,7 @@ private extension CerberusSessionView {
                 .frame(width: 56, height: 56)
             Image(systemName: "shield.checkered")
                 .font(.system(size: 24, weight: .semibold))
-                .foregroundStyle(Color.axAccentPurple)
+                .foregroundStyle(Color.axAccentBlue)
         }
     }
 
@@ -222,7 +222,7 @@ private extension CerberusSessionView {
         HStack(spacing: AXSpacing.sm) {
             Image(systemName: "lock.shield.fill")
                 .font(.system(size: 14, weight: .semibold))
-                .foregroundStyle(Color.axAccentPurple)
+                .foregroundStyle(Color.axAccentBlue)
             Text(L10n.Cerberus.Sessions.sessionSecurity)
                 .font(AXTypography.headline)
                 .foregroundStyle(Color.axTextPrimary)
@@ -281,7 +281,7 @@ private extension CerberusSessionView {
             icon: "person.2.slash",
             title: L10n.Cerberus.Sessions.disabledTitle,
             description: L10n.Cerberus.Sessions.disabledDesc,
-            accentColor: .axAccentPurple
+            accentColor: .axAccentBlue
         )
     }
 

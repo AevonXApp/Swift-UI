@@ -47,14 +47,14 @@ struct CerberusThreatFeedView: View {
             icon: "antenna.radiowaves.left.and.right",
             title: L10n.Cerberus.ThreatFeed.disabledTitle,
             description: L10n.Cerberus.ThreatFeed.disabledDesc,
-            accentColor: .axAccentPurple
+            accentColor: .axWarning
         )
     }
 
     // MARK: - Hero Card
 
     private func heroCard(_ status: WAFThreatFeedStatus) -> some View {
-        AXGlassCard(accentColor: .axAccentPurple) {
+        AXGlassCard(accentColor: .axWarning) {
             VStack(spacing: AXSpacing.lg) {
                 heroTopRow(status)
                 heroDivider
@@ -77,7 +77,7 @@ struct CerberusThreatFeedView: View {
             Circle()
                 .fill(
                     RadialGradient(
-                        colors: [Color.axAccentPurple.opacity(0.3), Color.axAccentBlue.opacity(0.1)],
+                        colors: [Color.axWarning.opacity(0.3), Color.axAccentBlue.opacity(0.1)],
                         center: .center,
                         startRadius: 2,
                         endRadius: 28
@@ -86,7 +86,7 @@ struct CerberusThreatFeedView: View {
                 .frame(width: 52, height: 52)
             Image(systemName: "antenna.radiowaves.left.and.right")
                 .font(.system(size: 22, weight: .semibold))
-                .foregroundStyle(Color.axAccentPurple)
+                .foregroundStyle(Color.axWarning)
         }
     }
 
@@ -192,14 +192,14 @@ struct CerberusThreatFeedView: View {
         HStack(spacing: AXSpacing.sm) {
             Image(systemName: "square.stack.3d.up.fill")
                 .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(Color.axAccentPurple)
+                .foregroundStyle(Color.axWarning)
             Text(L10n.Cerberus.ThreatFeed.sourceBreakdown)
                 .font(AXTypography.subheadline)
                 .fontWeight(.semibold)
                 .foregroundStyle(Color.axTextPrimary)
             AXBadge(
                 text: L10n.Cerberus.Badge.sources(resolvedSources(status).count),
-                color: .axAccentPurple, style: .soft
+                color: .axWarning, style: .soft
             )
             Spacer()
         }
@@ -225,12 +225,12 @@ struct CerberusThreatFeedView: View {
     private func sourceIconLabel(_ source: WAFThreatSource) -> some View {
         HStack(spacing: AXSpacing.sm) {
             RoundedRectangle(cornerRadius: AXCornerRadius.sm)
-                .fill(Color.axAccentPurple.opacity(0.12))
+                .fill(Color.axWarning.opacity(0.12))
                 .frame(width: 28, height: 28)
                 .overlay(
                     Image(systemName: "shield.checkerboard")
                         .font(.system(size: 12, weight: .semibold))
-                        .foregroundStyle(Color.axAccentPurple)
+                        .foregroundStyle(Color.axWarning)
                 )
             VStack(alignment: .leading, spacing: AXSpacing.xxxs) {
                 Text(source.name)
@@ -262,7 +262,7 @@ struct CerberusThreatFeedView: View {
                 RoundedRectangle(cornerRadius: AXCornerRadius.xs)
                     .fill(
                         LinearGradient(
-                            colors: [.axAccentPurple, .axAccentBlue],
+                            colors: [.axWarning, .axAccentBlue],
                             startPoint: .leading, endPoint: .trailing
                         )
                     )
