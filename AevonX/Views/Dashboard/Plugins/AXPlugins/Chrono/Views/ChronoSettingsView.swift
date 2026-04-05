@@ -34,9 +34,7 @@ struct ChronoSettingsView: View {
                 }
             }
             .padding(AXSpacing.xxl)
-            .frame(maxWidth: 700, alignment: .leading)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
         .overlay(alignment: .bottom) { toastOverlay }
         .task {
             await viewModel.loadConfig()

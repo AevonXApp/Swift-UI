@@ -11,20 +11,23 @@ struct ChronoProjectsView: View {
     @ObservedObject var viewModel: ChronoViewModel
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: AXSpacing.xl) {
-                header
-                projectsList
+        Group {
+            if viewModel.showProjectDetail {
+                ChronoProjectDetailView(viewModel: viewModel)
+            } else {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: AXSpacing.xl) {
+                        header
+                        projectsList
+                    }
+                    .padding(AXSpacing.xl)
+                }
             }
-            .padding(AXSpacing.xl)
         }
         .task { await viewModel.loadProjects() }
         .sheet(isPresented: $viewModel.showAddProject) {
             ChronoAddProjectSheet(viewModel: viewModel)
                 .frame(minWidth: 500, minHeight: 500)
-        }
-        .sheet(isPresented: $viewModel.showProjectDetail) {
-            ChronoProjectDetailView(viewModel: viewModel)
         }
     }
 

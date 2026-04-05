@@ -9,12 +9,11 @@ import SwiftUI
 
 struct ChronoProjectDetailView: View {
     @ObservedObject var viewModel: ChronoViewModel
-    @Environment(\.dismiss) private var dismiss
 
     var body: some View {
         if let project = viewModel.detailProject {
             VStack(spacing: 0) {
-                sheetHeader(project)
+                detailHeader(project)
                 Divider().background(Color.axBorder)
                 ScrollView {
                     VStack(alignment: .leading, spacing: AXSpacing.xl) {
@@ -27,14 +26,27 @@ struct ChronoProjectDetailView: View {
                 }
             }
             .background(Color.axBackground)
-            .frame(minWidth: 620, minHeight: 560)
         }
     }
 
     // MARK: - Header
 
-    private func sheetHeader(_ project: ChronoProject) -> some View {
+    private func detailHeader(_ project: ChronoProject) -> some View {
         HStack(spacing: AXSpacing.md) {
+            Button {
+                viewModel.showProjectDetail = false
+                viewModel.detailProject = nil
+            } label: {
+                HStack(spacing: AXSpacing.xs) {
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 12, weight: .semibold))
+                    Text(L10n.Chrono.Projects.title)
+                        .font(AXTypography.caption)
+                }
+                .foregroundColor(.axAccentBlue)
+            }
+            .buttonStyle(.plain)
+
             Image(systemName: "folder.badge.gearshape")
                 .font(.system(size: 16))
                 .foregroundColor(.axAccentBlue)
@@ -49,15 +61,6 @@ struct ChronoProjectDetailView: View {
             }
             Spacer()
             detailHealthBadge(project)
-            Button { dismiss() } label: {
-                Image(systemName: "xmark")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundColor(.axTextSecondary)
-                    .frame(width: 28, height: 28)
-                    .background(Color.axSurface)
-                    .clipShape(Circle())
-            }
-            .buttonStyle(.plain)
         }
         .padding(AXSpacing.xl)
     }
