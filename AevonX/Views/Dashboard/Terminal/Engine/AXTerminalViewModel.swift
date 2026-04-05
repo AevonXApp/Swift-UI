@@ -260,16 +260,21 @@ final class AXTerminalViewModel: ObservableObject {
     private func startReadLoop() {
         readTask?.cancel()
         readTask = Task { [weak self] in
+            var idleCount: UInt64 = 0
             while !Task.isCancelled {
                 guard let self = self, self.isConnected else { break }
 
                 if let data = PTYBridge.shared.read(sessionID: self.ptySessionID, maxBytes: 8192),
                    let output = String(data: data, encoding: .utf8), !output.isEmpty {
+                    idleCount = 0
                     await MainActor.run {
                         self.handleOutput(output)
                     }
                 } else {
-                    try? await Task.sleep(nanoseconds: 20_000_000) // 20ms
+                    // Adaptive backoff: 10ms → 20ms → 50ms (idle cap)
+                    idleCount += 1
+                    let delay: UInt64 = min(50_000_000, 10_000_000 * min(idleCount, 5))
+                    try? await Task.sleep(nanoseconds: delay)
                 }
             }
         }

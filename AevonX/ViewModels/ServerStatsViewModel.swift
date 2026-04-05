@@ -151,6 +151,9 @@ public class ServerStatsViewModel: ObservableObject {
 
     /// Whether the app is in foreground
     private var isInForeground: Bool = true
+
+    /// Whether the overview tab is currently visible (controls polling speed)
+    var isOverviewVisible: Bool = true
     
     // MARK: - Initialization
     
@@ -179,13 +182,19 @@ public class ServerStatsViewModel: ObservableObject {
         pollingTask = Task { [weak self] in
             while !Task.isCancelled {
                 guard let self = self, self.isInForeground else {
-                    try? await Task.sleep(nanoseconds: 1_000_000_000)
+                    // Sleep longer when backgrounded to save energy
+                    try? await Task.sleep(nanoseconds: 30_000_000_000) // 30s when background
                     continue
                 }
-                
+
+                // Adaptive: poll at normal rate when overview visible, 4x slower otherwise
+                let interval = self.isOverviewVisible
+                    ? self.pollingInterval
+                    : self.pollingInterval * 4
+
                 await self.refreshStats()
-                
-                try? await Task.sleep(nanoseconds: UInt64(self.pollingInterval * 1_000_000_000))
+
+                try? await Task.sleep(nanoseconds: UInt64(interval * 1_000_000_000))
             }
         }
     }

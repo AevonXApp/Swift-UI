@@ -184,7 +184,7 @@ class AppSettingsManager: ObservableObject {
     @AppStorage(SettingsKey.showQuickVitals) var showQuickVitals: Bool = true
     @AppStorage(SettingsKey.showQuickActions) var showQuickActions: Bool = true
     @AppStorage(SettingsKey.showInventory) var showInventory: Bool = true
-    @AppStorage(SettingsKey.statsRefreshInterval) var statsRefreshInterval: Int = 5
+    @AppStorage(SettingsKey.statsRefreshInterval) var statsRefreshInterval: Int = 10
     @AppStorage(SettingsKey.showFreshServerBanner) var showFreshServerBanner: Bool = true
     @AppStorage(SettingsKey.enableReconnection) var enableReconnection: Bool = true
     @AppStorage(SettingsKey.maxReconnectAttempts) var maxReconnectAttempts: Int = 3

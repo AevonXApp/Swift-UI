@@ -553,7 +553,7 @@ private struct AppCard3D: View {
                                             )
                                     )
 
-                                Image(systemName: app.icon)
+                                Image(systemName: app.icon.isEmpty ? "app" : app.icon)
                                     .font(.system(size: 17, weight: .bold))
                                     .foregroundStyle(
                                         LinearGradient(
@@ -708,7 +708,7 @@ private struct AvailableAppRow: View {
                     .fill(accentColor.opacity(0.07))
                     .frame(width: 36, height: 36)
                     .overlay(RoundedRectangle(cornerRadius: 9).stroke(accentColor.opacity(0.12), lineWidth: 1))
-                Image(systemName: app.icon)
+                Image(systemName: app.icon.isEmpty ? "app" : app.icon)
                     .font(.system(size: 15, weight: .medium))
                     .foregroundColor(accentColor.opacity(0.55))
             }

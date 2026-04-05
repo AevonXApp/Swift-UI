@@ -112,6 +112,7 @@ final class AppUpdateService: ObservableObject {
         TimeInterval(checkIntervalHours) * 60 * 60
     }
     private var lastCheckDate: Date?
+    private var periodicCheckTask: Task<Void, Never>?
     private var downloadTask: URLSessionDownloadTask?
     private var downloadDelegate: DownloadDelegate?
 
@@ -357,14 +358,20 @@ final class AppUpdateService: ObservableObject {
     // MARK: - Periodic Check
 
     func startPeriodicCheck() {
+        periodicCheckTask?.cancel()
         guard autoCheck else { return }
-        Task {
+        periodicCheckTask = Task {
             while !Task.isCancelled {
                 try? await Task.sleep(for: .seconds(checkInterval))
-                guard autoCheck else { continue }
+                guard !Task.isCancelled, autoCheck else { continue }
                 await checkForUpdate(silent: true)
             }
         }
+    }
+
+    func stopPeriodicCheck() {
+        periodicCheckTask?.cancel()
+        periodicCheckTask = nil
     }
 
     // MARK: - Helpers

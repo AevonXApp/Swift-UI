@@ -498,7 +498,7 @@ public struct AXStepInstallerView: View {
     
     private func stepIconName(_ step: AXInstallStep) -> String {
         switch step.status {
-        case .pending: return step.icon
+        case .pending: return step.icon.isEmpty ? "circle.dotted" : step.icon
         case .running: return "arrow.trianglehead.2.counterclockwise"
         case .completed: return "checkmark"
         case .failed: return "xmark"

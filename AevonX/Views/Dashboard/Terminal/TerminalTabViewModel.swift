@@ -171,21 +171,26 @@ final class TerminalTabViewModel: ObservableObject, Identifiable {
         }
     }
 
-    // MARK: - PTY Read Loop (5ms)
+    // MARK: - PTY Read Loop (adaptive backoff)
 
     private func startReadLoop() {
         readTask?.cancel()
         readTask = Task { [weak self] in
+            var idleCount: UInt64 = 0
             while !Task.isCancelled {
                 guard let self, self.isConnected else { break }
                 if let data = PTYBridge.shared.read(sessionID: self.ptyID, maxBytes: 65536),
                    !data.isEmpty {
+                    idleCount = 0
                     await MainActor.run {
                         self.onData?(data)
                         self.hasUnread = true
                     }
                 } else {
-                    try? await Task.sleep(nanoseconds: 5_000_000)
+                    // Adaptive backoff: 5ms → 10ms → 20ms → 50ms (idle cap)
+                    idleCount += 1
+                    let delay: UInt64 = min(50_000_000, 5_000_000 * min(idleCount, 10))
+                    try? await Task.sleep(nanoseconds: delay)
                 }
             }
         }

@@ -14,67 +14,88 @@ final class HostKeyStore {
 
     static let shared = HostKeyStore()
     private let servicePrefix = "com.aevonx.hostkeys."
+    private static let keychainQueue = DispatchQueue(label: "com.aevonx.hostkeys.keychain", qos: .userInitiated)
 
     private init() {}
+
+    /// Runs a block guaranteed off the main thread to avoid Security framework runtime warnings.
+    @discardableResult
+    private func offMainThread<T>(_ work: @escaping () -> T) -> T {
+        guard Thread.isMainThread else { return work() }
+        var result: T!
+        let group = DispatchGroup()
+        group.enter()
+        Self.keychainQueue.async {
+            result = work()
+            group.leave()
+        }
+        group.wait()
+        return result
+    }
 
     // MARK: - Public API
 
     /// Save a host key fingerprint to Keychain.
     func save(hostPort: String, fingerprint: String) {
-        let key = servicePrefix + hostPort
-        let data = Data(fingerprint.utf8)
+        offMainThread {
+            let key = self.servicePrefix + hostPort
+            let data = Data(fingerprint.utf8)
 
-        // Delete existing entry first (update = delete + add)
-        let deleteQuery: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: key,
-        ]
-        SecItemDelete(deleteQuery as CFDictionary)
+            let deleteQuery: [String: Any] = [
+                kSecClass as String: kSecClassGenericPassword,
+                kSecAttrService as String: key,
+            ]
+            SecItemDelete(deleteQuery as CFDictionary)
 
-        let addQuery: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: key,
-            kSecValueData as String: data,
-            kSecAttrAccessible as String: kSecAttrAccessibleWhenUnlockedThisDeviceOnly,
-        ]
+            let addQuery: [String: Any] = [
+                kSecClass as String: kSecClassGenericPassword,
+                kSecAttrService as String: key,
+                kSecValueData as String: data,
+                kSecAttrAccessible as String: kSecAttrAccessibleWhenUnlockedThisDeviceOnly,
+            ]
 
-        let status = SecItemAdd(addQuery as CFDictionary, nil)
-        if status != errSecSuccess {
-            // Non-fatal — log but don't crash
+            let status = SecItemAdd(addQuery as CFDictionary, nil)
+            if status != errSecSuccess {
+                // Non-fatal — log but don't crash
+            }
         }
     }
 
     /// Get a host key fingerprint from Keychain.
     func get(hostPort: String) -> String? {
-        let key = servicePrefix + hostPort
+        offMainThread {
+            let key = self.servicePrefix + hostPort
 
-        let query: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: key,
-            kSecReturnData as String: true,
-            kSecMatchLimit as String: kSecMatchLimitOne,
-        ]
+            let query: [String: Any] = [
+                kSecClass as String: kSecClassGenericPassword,
+                kSecAttrService as String: key,
+                kSecReturnData as String: true,
+                kSecMatchLimit as String: kSecMatchLimitOne,
+            ]
 
-        var result: AnyObject?
-        let status = SecItemCopyMatching(query as CFDictionary, &result)
+            var result: AnyObject?
+            let status = SecItemCopyMatching(query as CFDictionary, &result)
 
-        guard status == errSecSuccess,
-              let data = result as? Data,
-              let fingerprint = String(data: data, encoding: .utf8) else {
-            return nil
+            guard status == errSecSuccess,
+                  let data = result as? Data,
+                  let fingerprint = String(data: data, encoding: .utf8) else {
+                return nil
+            }
+
+            return fingerprint
         }
-
-        return fingerprint
     }
 
     /// Remove a host key fingerprint from Keychain.
     func remove(hostPort: String) {
-        let key = servicePrefix + hostPort
-        let query: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: key,
-        ]
-        SecItemDelete(query as CFDictionary)
+        offMainThread {
+            let key = self.servicePrefix + hostPort
+            let query: [String: Any] = [
+                kSecClass as String: kSecClassGenericPassword,
+                kSecAttrService as String: key,
+            ]
+            SecItemDelete(query as CFDictionary)
+        }
     }
 
     // MARK: - Migration

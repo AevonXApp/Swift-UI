@@ -285,7 +285,9 @@ public class ServerConnectionViewModel: ObservableObject {
     // MARK: - Published Properties - UI State
     
     /// Currently selected dashboard tab
-    @Published var selectedTab: DashboardTab = .overview
+    @Published var selectedTab: DashboardTab = .overview {
+        didSet { stats.isOverviewVisible = (selectedTab == .overview) }
+    }
 
     /// Currently selected plugin-injected sidebar tab (nil = no plugin tab selected)
     @Published var selectedPluginTab: AevonXCoreBridge.HookPluginDefinition? = nil
