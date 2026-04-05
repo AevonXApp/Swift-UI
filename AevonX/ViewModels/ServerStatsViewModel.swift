@@ -277,13 +277,13 @@ public class ServerStatsViewModel: ObservableObject {
             serviceCount = services
         }
 
-        // Update RAM totals
-        if let ramTotal = stats["ram_total_mb"] as? Int { totalRAMMB = ramTotal }
-        if let ramUsed = stats["ram_used_mb"] as? Int { usedRAMMB = ramUsed }
+        // Update RAM totals — only accept non-zero values (Swift SSH may have set valid data)
+        if let ramTotal = stats["ram_total_mb"] as? Int, ramTotal > 0 { totalRAMMB = ramTotal }
+        if let ramUsed = stats["ram_used_mb"] as? Int, ramUsed > 0 { usedRAMMB = ramUsed }
 
-        // Update Disk totals
-        if let diskTotal = stats["disk_total_gb"] as? Double { totalDiskGB = diskTotal }
-        if let diskUsed = stats["disk_used_gb"] as? Double { usedDiskGB = diskUsed }
+        // Update Disk totals — only accept non-zero values
+        if let diskTotal = stats["disk_total_gb"] as? Double, diskTotal > 0 { totalDiskGB = diskTotal }
+        if let diskUsed = stats["disk_used_gb"] as? Double, diskUsed > 0 { usedDiskGB = diskUsed }
 
         // Update CPU Cores
         if let cores = stats["cpu_cores"] as? Int { cpuCores = cores }
@@ -300,8 +300,8 @@ public class ServerStatsViewModel: ObservableObject {
         if let tx = stats["net_tx_mb"] as? Double, tx > 0 { netTxGB = tx }
 
         // Update RAM detail from Go stats
-        if let avail = stats["ram_avail_mb"] as? Int { ramAvailableMB = avail }
-        if let buffcache = stats["ram_buff_cache_mb"] as? Int { ramBuffCacheMB = buffcache }
+        if let avail = stats["ram_avail_mb"] as? Int, avail > 0 { ramAvailableMB = avail }
+        if let buffcache = stats["ram_buff_cache_mb"] as? Int, buffcache > 0 { ramBuffCacheMB = buffcache }
 
         // Update CPU model from Go stats
         if let model = stats["cpu_model"] as? String, !model.isEmpty { cpuModelName = model }
