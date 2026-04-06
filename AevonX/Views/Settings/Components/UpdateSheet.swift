@@ -52,11 +52,11 @@ struct UpdateSheet: View {
 
                 if let version = updateService.availableVersion {
                     HStack(spacing: AXSpacing.sm) {
-                        versionPill(label: "Current", version: currentVersion, color: .axTextMuted)
+                        versionPill(label: L10n.Update.versionCurrent, version: currentVersion, color: .axTextMuted)
                         Image(systemName: "arrow.right")
                             .font(.system(size: 10))
                             .foregroundColor(.axTextMuted)
-                        versionPill(label: "New", version: version.version, color: .axAccentBlue)
+                        versionPill(label: L10n.Update.versionNew, version: version.version, color: .axAccentBlue)
                     }
                 }
             }
@@ -96,14 +96,14 @@ struct UpdateSheet: View {
 
                     // Download info
                     HStack(spacing: AXSpacing.xl) {
-                        infoItem(icon: "arrow.down.circle", label: "Size", value: updateService.formattedDownloadSize)
-                        infoItem(icon: "calendar", label: "Released", value: formattedDate(version.releasedAt))
+                        infoItem(icon: "arrow.down.circle", label: L10n.Update.infoSize, value: updateService.formattedDownloadSize)
+                        infoItem(icon: "calendar", label: L10n.Update.infoReleased, value: formattedDate(version.releasedAt))
 
                         if updateService.isForceUpdate {
                             HStack(spacing: AXSpacing.xs) {
                                 Image(systemName: "exclamationmark.triangle.fill")
                                     .font(.system(size: 10))
-                                Text("Required Update")
+                                Text(L10n.Update.badgeRequired)
                                     .font(.system(size: 10, weight: .bold))
                             }
                             .foregroundColor(.axWarning)
@@ -272,12 +272,12 @@ struct UpdateSheet: View {
 
     private var titleText: String {
         switch updateService.state {
-        case .updateAvailable: return "Update Available"
-        case .downloading: return "Downloading Update"
-        case .downloaded: return "Ready to Install"
-        case .installing: return "Installing Update"
-        case .error: return "Update Error"
-        default: return "Update"
+        case .updateAvailable: return L10n.Update.titleAvailable
+        case .downloading: return L10n.Update.titleDownloading
+        case .downloaded: return L10n.Update.titleReady
+        case .installing: return L10n.Update.titleInstalling
+        case .error: return L10n.Update.titleError
+        default: return L10n.Update.titleGeneric
         }
     }
 

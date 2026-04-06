@@ -880,7 +880,7 @@ public class ServerConnectionViewModel: ObservableObject {
     
     /// Gets encrypted server payload from Core or Go HTTP fallback
     private func getServerPayload() async throws -> EncryptedServerPayload? {
-        print("[ServerConnection] getServerPayload called for serverId: \(serverId)")
+        debugLog("[ServerConnection] getServerPayload called for serverId: \(serverId)")
         
         // Try to get from serverListViewModel first (already in memory)
         if let serverListVM = serverListViewModel {
@@ -910,7 +910,7 @@ public class ServerConnectionViewModel: ObservableObject {
               let metadataDict = responseData["encryption_metadata"] as? [String: Any],
               let metadataJSON = try? JSONSerialization.data(withJSONObject: metadataDict),
               let metadata = try? JSONDecoder().decode(EncryptionMetadata.self, from: metadataJSON) else {
-            print("[ServerConnection] ERROR: Failed to fetch server from Go API")
+            debugLog("[ServerConnection] ERROR: Failed to fetch server from Go API")
             return nil
         }
         

@@ -48,7 +48,13 @@ struct SidebarView: View {
     @State private var isLogoHovered = true
     
     private var appVersion: String {
-        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0.0"
+        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0.0"
+        let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1"
+        // "1.0.0-beta.1" → "1.0.0 beta1"
+        return version
+            .replacingOccurrences(of: "-beta.", with: " beta")
+            .replacingOccurrences(of: "-alpha.", with: " alpha")
+            .replacingOccurrences(of: "-rc.", with: " rc")
     }
     
     private var currentPlanLabel: String {
@@ -168,7 +174,7 @@ struct SidebarView: View {
                         )
                     
                     HStack(spacing: 4) {
-                        Text("v\(appVersion)")
+                        Text(appVersion)
                             .font(.system(size: 10, weight: .semibold, design: .monospaced))
                             .foregroundColor(.axAccentBlue.opacity(0.8))
                         
@@ -398,7 +404,7 @@ struct SidebarView: View {
                 
                 Spacer()
                 
-                Text("v\(appVersion)")
+                Text(appVersion)
                     .font(.system(size: 10, weight: .medium, design: .monospaced))
                     .foregroundColor(.axTextMuted)
                     .padding(.horizontal, 6)

@@ -661,36 +661,49 @@ class VaultSetupViewModel: ObservableObject {
     
     func determineMode() async {
         isLoading = true
-        
+
         // 1. Check if key already exists locally
         let hasKey = EncryptionKeyStore.shared.hasKey()
-        
+
         if hasKey {
             self.mode = .success
             self.isComplete = true
             isLoading = false
             return
         }
-        
-        // 2. No local key — check server for key hash via Go HTTP
+
+        // 2. No local key — check server for key hash via Go HTTP (with timeout)
         let token = await AuthService.shared.getToken() ?? ""
         let baseURL = AevonXCoreBridge.ConfigurationManager.shared.currentConfiguration.fullBaseURL
-        let resultJSON = await APIBridge.shared.checkRecoveryKeyStatusAsync(baseURL: baseURL, token: token)
-        
+
+        let resultJSON: String = await withTaskGroup(of: String.self) { group in
+            group.addTask {
+                await APIBridge.shared.checkRecoveryKeyStatusAsync(baseURL: baseURL, token: token)
+            }
+            group.addTask {
+                try? await Task.sleep(for: .seconds(10))
+                return "" // timeout
+            }
+            let first = await group.next() ?? ""
+            group.cancelAll()
+            return first
+        }
+
         if let data = resultJSON.data(using: .utf8),
            let result = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
            result["success"] as? Bool == true,
            let respData = result["data"] as? [String: Any],
-           let hasKey = respData["has_recovery_key"] as? Bool {
-            if hasKey {
+           let serverHasKey = respData["has_recovery_key"] as? Bool {
+            if serverHasKey {
                 self.mode = .recover
             } else {
                 self.mode = .generate
                 await generateKey()
             }
         } else {
-            // Fallback to recover — safer to ask for existing key
-            self.mode = .recover
+            // API failed or timed out — generate new key (user can sign out if they have existing account)
+            self.mode = .generate
+            await generateKey()
         }
         isLoading = false
     }
@@ -735,13 +748,13 @@ class VaultSetupViewModel: ObservableObject {
                 
                 self.mode = .success
                 self.isComplete = true
-                print("[VaultSetup] SUCCESS - Key verified and saved to Keychain")
+                debugLog("[VaultSetup] SUCCESS - Key verified and saved to Keychain")
             } else {
                 errorMessage = "Encryption key is incorrect. Please try again."
             }
         } catch {
             errorMessage = "Verification failed: \(error.localizedDescription)"
-            print("[VaultSetup] FAILED - \(error.localizedDescription)")
+            debugLog("[VaultSetup] FAILED - \(error.localizedDescription)")
         }
         
         isLoading = false
@@ -790,11 +803,11 @@ class VaultSetupViewModel: ObservableObject {
             
             self.mode = .success
             isComplete = true
-            print("[VaultSetup] SUCCESS - Key saved and registered")
+            debugLog("[VaultSetup] SUCCESS - Key saved and registered")
             
         } catch {
             errorMessage = "Failed to setup encryption: \(error.localizedDescription)"
-            print("[VaultSetup] FAILED - \(error.localizedDescription)")
+            debugLog("[VaultSetup] FAILED - \(error.localizedDescription)")
         }
         
         isLoading = false

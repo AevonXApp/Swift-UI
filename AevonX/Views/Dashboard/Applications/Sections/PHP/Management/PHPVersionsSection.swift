@@ -195,40 +195,40 @@ struct PHPVersionsSection: View {
     // MARK: - Install via Quick Install
 
     private func installViaQuickInstall(version: String) {
-        print("[PHP-INSTALL] 🔵 installViaQuickInstall called for version: \(version)")
+        debugLog("[PHP-INSTALL] 🔵 installViaQuickInstall called for version: \(version)")
 
         // Get or create QuickInstallViewModel
         let qi: QuickInstallViewModel
         if let existing = connectionViewModel.quickInstallVM {
-            print("[PHP-INSTALL] ♻️ Reusing existing QuickInstallViewModel (isInstalling: \(existing.isInstalling))")
+            debugLog("[PHP-INSTALL] ♻️ Reusing existing QuickInstallViewModel (isInstalling: \(existing.isInstalling))")
             qi = existing
         } else {
-            print("[PHP-INSTALL] 🆕 Creating new QuickInstallViewModel (hasProfile: \(connectionViewModel.serverProfile != nil))")
+            debugLog("[PHP-INSTALL] 🆕 Creating new QuickInstallViewModel (hasProfile: \(connectionViewModel.serverProfile != nil))")
             qi = QuickInstallViewModel(serverId: serverId, profile: connectionViewModel.serverProfile)
             connectionViewModel.quickInstallVM = qi
         }
 
         // Log catalog info
-        print("[PHP-INSTALL] 📦 QI catalog has \(qi.bridgePackages.count) packages")
+        debugLog("[PHP-INSTALL] 📦 QI catalog has \(qi.bridgePackages.count) packages")
         for pkg in qi.bridgePackages {
-            print("[PHP-INSTALL]   - \(pkg.id): \(pkg.name) (\(pkg.versions.count) versions)")
+            debugLog("[PHP-INSTALL]   - \(pkg.id): \(pkg.name) (\(pkg.versions.count) versions)")
         }
 
         // Find PHP package in QI catalog
         guard let phpPkg = qi.bridgePackages.first(where: { $0.id == "php" }) else {
-            print("[PHP-INSTALL] ❌ PHP package NOT FOUND in QI catalog!")
+            debugLog("[PHP-INSTALL] ❌ PHP package NOT FOUND in QI catalog!")
             toast.showError("PHP package not found in Quick Install catalog")
             return
         }
 
-        print("[PHP-INSTALL] ✅ Found PHP package: \(phpPkg.name), versions: \(phpPkg.versions.map { "\($0.id)(\($0.label))" }.joined(separator: ", "))")
+        debugLog("[PHP-INSTALL] ✅ Found PHP package: \(phpPkg.name), versions: \(phpPkg.versions.map { "\($0.id)(\($0.label))" }.joined(separator: ", "))")
 
         // Find matching version
         let matchedVersion = phpPkg.versions.first(where: {
             $0.id.contains(version) || $0.label.contains(version)
         })
         let versionId = matchedVersion?.id ?? version
-        print("[PHP-INSTALL] 🎯 Version match: requested=\(version), matched=\(matchedVersion?.id ?? "NONE"), using versionId=\(versionId)")
+        debugLog("[PHP-INSTALL] 🎯 Version match: requested=\(version), matched=\(matchedVersion?.id ?? "NONE"), using versionId=\(versionId)")
 
         // Set selection
         let selection = BridgeQISelection(
@@ -238,17 +238,17 @@ struct PHPVersionsSection: View {
             version_label: version
         )
         qi.selections = [selection]
-        print("[PHP-INSTALL] 📋 Selection set: package=\(selection.package_id), version=\(selection.version_id), label=\(selection.version_label)")
+        debugLog("[PHP-INSTALL] 📋 Selection set: package=\(selection.package_id), version=\(selection.version_id), label=\(selection.version_label)")
 
         qi.isVisible = true
         qi.isMinimized = false
 
         Task {
-            print("[PHP-INSTALL] 🚀 Calling qi.beginInstallation()...")
+            debugLog("[PHP-INSTALL] 🚀 Calling qi.beginInstallation()...")
             await qi.beginInstallation()
-            print("[PHP-INSTALL] ✅ beginInstallation() returned — isComplete: \(qi.isComplete), isFailed: \(qi.isFailed)")
+            debugLog("[PHP-INSTALL] ✅ beginInstallation() returned — isComplete: \(qi.isComplete), isFailed: \(qi.isFailed)")
             await onRefresh()
-            print("[PHP-INSTALL] 🔄 Versions refreshed after install")
+            debugLog("[PHP-INSTALL] 🔄 Versions refreshed after install")
         }
     }
 
@@ -273,7 +273,7 @@ struct PHPVersionsSection: View {
         actionInProgress = version
         // Extract major.minor (e.g., 8.3 from 8.3.30) — the server binary is /usr/bin/php8.3
         let shortVersion = majorMinor(version)
-        print("[PHP-SWITCH] Setting default: full=\(version), short=\(shortVersion)")
+        debugLog("[PHP-SWITCH] Setting default: full=\(version), short=\(shortVersion)")
         toast.showSuccess("Setting PHP \(shortVersion) as default...")
         let json = await bridge.switchVersion(serverID: serverId, appID: "php-fpm", version: shortVersion)
         if let d = json.data(using: .utf8),

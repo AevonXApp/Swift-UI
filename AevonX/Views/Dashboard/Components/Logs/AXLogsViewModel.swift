@@ -199,7 +199,7 @@ public final class AXLogsViewModel: ObservableObject {
                 self.errorLogs = []
             }
         } catch {
-            print("Failed to load logs: \(error)")
+            debugLog("Failed to load logs: \(error)")
         }
 
         isLoading = false

@@ -29,10 +29,20 @@ struct ContentView: View {
     /// Encryption key gate state
     @State private var hasEncryptionKey = false
     @State private var isCheckingKey = true
-    
+
     var body: some View {
         Group {
-            if isCheckingKey {
+            if authViewModel.isCheckingAuth {
+                // Show loading while checking Keychain token on launch
+                Color.axBackground
+                    .overlay(ProgressView())
+            } else if AppLocationService.shared.shouldPrompt {
+                // First: prompt to move to /Applications (from DMG or Downloads)
+                MoveToApplicationsView()
+            } else if !authViewModel.isAuthenticated {
+                // Not logged in — show profile view with login/register
+                ProfileView()
+            } else if isCheckingKey {
                 // Brief loading while checking Keychain
                 Color.axBackground
                     .overlay(ProgressView())
@@ -70,10 +80,10 @@ struct ContentView: View {
                 await APIBridge.shared.fetchSubscriptionStatusAsync(baseURL: baseURL, token: token)
             }
             await SystemControlService.shared.setSSHService(SSHBridge.shared)
-            
+
             // Initialize Go Core engine
             CoreBridge.shared.initialize()
-            print("🟢 Go Core v\(CoreBridge.shared.version()) initialized")
+            debugLog("🟢 Go Core v\(CoreBridge.shared.version()) initialized")
 
             // Sync network settings to Go bridge on launch
             AppSettingsManager.shared.syncNetworkSettingsToCore()
@@ -88,23 +98,36 @@ struct ContentView: View {
             }
             let cachedCount = await DeviceKeyManager.shared.loadCachedKeys()
             if cachedCount > 0 {
-                print("🔑 Loaded \(cachedCount) cached device keys into Go Core")
+                debugLog("🔑 Loaded \(cachedCount) cached device keys into Go Core")
             }
 
             await checkEncryptionKey()
         }
+        .onChange(of: authViewModel.isAuthenticated) { _, isAuth in
+            if isAuth {
+                Task { await checkEncryptionKey() }
+            }
+        }
+        // Listen for menu bar navigation commands (⌘1, ⌘2, ⌘,)
+        .onReceive(NotificationCenter.default.publisher(for: .navigateToItem)) { notification in
+            if let item = notification.object as? NavigationItem {
+                withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                    selectedNavigation = item
+                }
+            }
+        }
     }
-    
+
     // MARK: - Encryption Key Check
-    
+
     private func checkEncryptionKey() async {
         isCheckingKey = true
         hasEncryptionKey = EncryptionKeyStore.shared.hasKey()
         isCheckingKey = false
     }
-    
+
     // MARK: - Main Content
-    
+
     private var mainContentView: some View {
         NavigationStack {
             HStack(spacing: 0) {
@@ -113,10 +136,10 @@ struct ContentView: View {
                     selectedItem: $selectedNavigation,
                     selectedServer: $selectedServer
                 )
-                
+
                 Divider()
                     .background(Color.axBorder)
-                
+
                 // Main Content Area
                 Group {
                     switch selectedNavigation {
@@ -137,10 +160,10 @@ struct ContentView: View {
                                     serverListViewModel: serverListViewModel
                                 )
                                 .onAppear {
-                                    print("[ContentView] Presenting ServerDashboardView for: \(server.name)")
+                                    debugLog("[ContentView] Presenting ServerDashboardView for: \(server.name)")
                                 }
                                 .onDisappear {
-                                    print("[ContentView] ServerDashboardView disappeared")
+                                    debugLog("[ContentView] ServerDashboardView disappeared")
                                     selectedServer = nil
                                 }
                             } else {
@@ -148,10 +171,10 @@ struct ContentView: View {
                                 EmptyView()
                             }
                         }
-                        
+
                     case .userProfile:
                         ProfileView()
-                        
+
                     case .settings:
                         SettingsView()
                     }
@@ -181,6 +204,12 @@ struct ContentView: View {
     }
 }
 
+// MARK: - Navigation Notification
+
+extension Notification.Name {
+    static let navigateToItem = Notification.Name("AevonXNavigateToItem")
+}
+
 // MARK: - Encryption Gate View
 
 /// Full-screen blocking view shown when no encryption key exists.
@@ -188,7 +217,7 @@ struct ContentView: View {
 struct EncryptionGateView: View {
     var onComplete: () -> Void
     var onSignOut: () -> Void
-    
+
     var body: some View {
         VaultSetupView(
             onComplete: onComplete,
@@ -205,4 +234,3 @@ struct EncryptionGateView: View {
         .environmentObject(AuthViewModel())
         .frame(width: 1400, height: 900)
 }
-

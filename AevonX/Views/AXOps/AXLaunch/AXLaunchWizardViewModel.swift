@@ -658,17 +658,17 @@ class AXLaunchWizardViewModel: ObservableObject {
 
         do {
             let config = buildConfig()
-            print("[AXLaunch] Starting launch — serverID: \(serverID), framework: \(config.framework), localPath: \(config.localPath), remotePath: \(config.remotePath)")
+            debugLog("[AXLaunch] Starting launch — serverID: \(serverID), framework: \(config.framework), localPath: \(config.localPath), remotePath: \(config.remotePath)")
             let id = if isUpdate {
                 try await service.startUpdate(serverID: serverID, config: config)
             } else {
                 try await service.startLaunch(serverID: serverID, config: config)
             }
-            print("[AXLaunch] Launch started — launchID: \(id)")
+            debugLog("[AXLaunch] Launch started — launchID: \(id)")
             launchID = id
             startPolling(id: id)
         } catch {
-            print("[AXLaunch] Launch FAILED — error: \(error)")
+            debugLog("[AXLaunch] Launch FAILED — error: \(error)")
             launchFailed = true
             launchError = error.localizedDescription
             isLaunching = false
@@ -710,7 +710,7 @@ class AXLaunchWizardViewModel: ObservableObject {
             while !Task.isCancelled {
                 guard let self else { return }
                 let progress = await self.service.getProgress(launchID: id)
-                print("[AXLaunch] Poll — status: \(progress.status), step: \(progress.stepName), percent: \(progress.percent), log: \(progress.log)")
+                debugLog("[AXLaunch] Poll — status: \(progress.status), step: \(progress.stepName), percent: \(progress.percent), log: \(progress.log)")
                 self.launchProgress = progress
 
                 let logsResult = await self.service.getLogs(launchID: id, fromIndex: logIndex)

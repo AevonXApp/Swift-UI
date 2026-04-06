@@ -129,7 +129,7 @@ struct ConnectionProgressPopup: View {
                     // Cancel button (shown while connecting)
                     if viewModel.isConnecting {
                         Button(action: {
-                            print("[ConnectionProgressPopup] Cancel button tapped")
+                            debugLog("[ConnectionProgressPopup] Cancel button tapped")
                             Task {
                                 await viewModel.disconnect()
                                 onCancel()
@@ -150,7 +150,7 @@ struct ConnectionProgressPopup: View {
                     // Retry button (shown on failure)
                     if !viewModel.isConnecting && !viewModel.isConnected && viewModel.connectionError != nil {
                         Button(action: {
-                            print("[ConnectionProgressPopup] Retry button tapped")
+                            debugLog("[ConnectionProgressPopup] Retry button tapped")
                             Task {
                                 await viewModel.connect()
                             }
@@ -170,7 +170,7 @@ struct ConnectionProgressPopup: View {
                     // Open Dashboard button (shown on success)
                     if viewModel.isConnected {
                         Button(action: {
-                            print("[ConnectionProgressPopup] Open Dashboard button tapped")
+                            debugLog("[ConnectionProgressPopup] Open Dashboard button tapped")
                             onSuccess()
                         }) {
                             HStack(spacing: AXSpacing.sm) {
@@ -212,7 +212,7 @@ struct ConnectionProgressPopup: View {
             .animation(.spring(response: 0.3, dampingFraction: 0.8), value: showContent)
         }
         .onAppear {
-            print("[ConnectionProgressPopup] Appeared for server: \(serverName)")
+            debugLog("[ConnectionProgressPopup] Appeared for server: \(serverName)")
             showContent = true
             progressAnimation = viewModel.connectionProgress
             
@@ -221,12 +221,12 @@ struct ConnectionProgressPopup: View {
             // The popup just shows the connection progress/status
         }
         .onChange(of: viewModel.connectionProgress) { _, newProgress in
-            print("[ConnectionProgressPopup] Progress updated: \(Int(newProgress * 100))%")
+            debugLog("[ConnectionProgressPopup] Progress updated: \(Int(newProgress * 100))%")
             progressAnimation = newProgress
         }
         .onChange(of: viewModel.isConnected) { _, isConnected in
             if isConnected {
-                print("[ConnectionProgressPopup] Connection successful!")
+                debugLog("[ConnectionProgressPopup] Connection successful!")
                 // Auto-open dashboard after a short delay
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                     onSuccess()
@@ -235,7 +235,7 @@ struct ConnectionProgressPopup: View {
         }
         .onChange(of: viewModel.connectionError) { _, error in
             if let error = error {
-                print("[ConnectionProgressPopup] Connection failed: \(error)")
+                debugLog("[ConnectionProgressPopup] Connection failed: \(error)")
             }
         }
     }

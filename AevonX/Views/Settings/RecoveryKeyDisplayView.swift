@@ -264,7 +264,7 @@ class RecoveryKeyDisplayViewModel: ObservableObject {
         
         let key = await EncryptionKeyStore.shared.generateKey()
         self.recoveryKey = key
-        print("[RecoveryKeyDisplayView] ENCRYPTION: SUCCESS - Encryption key generated")
+        debugLog("[RecoveryKeyDisplayView] ENCRYPTION: SUCCESS - Encryption key generated")
         
         isLoading = false
     }
@@ -281,7 +281,7 @@ class RecoveryKeyDisplayViewModel: ObservableObject {
         #endif
         
         copied = true
-        print("[RecoveryKeyDisplayView] INFO: Encryption key copied to clipboard")
+        debugLog("[RecoveryKeyDisplayView] INFO: Encryption key copied to clipboard")
         
         try? await Task.sleep(nanoseconds: 2_000_000_000)
         copied = false

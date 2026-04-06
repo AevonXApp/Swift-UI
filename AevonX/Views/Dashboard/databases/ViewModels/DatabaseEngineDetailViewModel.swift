@@ -334,7 +334,7 @@ public final class DatabaseEngineDetailViewModel: ObservableObject {
             serverOSInfo = try await DatabaseResourceService.shared.getServerOSInfo(serverId: serverId)
             serverResources = try await DatabaseResourceService.shared.getServerResources(serverId: serverId)
         } catch {
-            print("[DatabaseEngineDetailViewModel] Could not load server info: \(error.localizedDescription)")
+            debugLog("[DatabaseEngineDetailViewModel] Could not load server info: \(error.localizedDescription)")
         }
     }
     
@@ -355,7 +355,7 @@ public final class DatabaseEngineDetailViewModel: ObservableObject {
         do {
             metrics = try await DatabaseMetricsService.shared.getMetrics(type: databaseType, serverId: serverId)
         } catch {
-            print("[DatabaseEngineDetailViewModel] Could not load metrics: \(error.localizedDescription)")
+            debugLog("[DatabaseEngineDetailViewModel] Could not load metrics: \(error.localizedDescription)")
         }
     }
     
@@ -364,7 +364,7 @@ public final class DatabaseEngineDetailViewModel: ObservableObject {
         do {
             performanceStats = try await DatabaseMetricsService.shared.getPerformanceStats(type: databaseType, serverId: serverId)
         } catch {
-            print("[DatabaseEngineDetailViewModel] Could not load performance stats: \(error.localizedDescription)")
+            debugLog("[DatabaseEngineDetailViewModel] Could not load performance stats: \(error.localizedDescription)")
         }
     }
     

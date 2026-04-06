@@ -218,7 +218,7 @@ private struct AboutHeroCard: View {
 private struct AboutSocialGrid: View {
     var body: some View {
         VStack(alignment: .leading, spacing: AXSpacing.md) {
-            sectionLabel("Connect", icon: "link.circle.fill")
+            sectionLabel(L10n.About.connect, icon: "link.circle.fill")
 
             LazyVGrid(columns: [
                 GridItem(.flexible(), spacing: AXSpacing.md),
@@ -254,6 +254,13 @@ private struct AboutSocialGrid: View {
                     url: AppURLs.docs
                 )
                 SocialCard(
+                    sfIcon: "bubble.left.and.text.bubble.right.fill",
+                    title: "Reddit",
+                    subtitle: "r/AevonXApp",
+                    color: .orange,
+                    url: AppURLs.reddit
+                )
+                SocialCard(
                     sfIcon: "megaphone.fill",
                     title: "Changelog",
                     subtitle: "What's new",
@@ -265,7 +272,7 @@ private struct AboutSocialGrid: View {
                     title: "Issues",
                     subtitle: "Report a bug",
                     color: .axWarning,
-                    url: URL(string: "\(AppURLs.github.absoluteString)/issues")!
+                    url: AppURLs.contact
                 )
             }
         }
@@ -363,13 +370,13 @@ private struct SocialCard: View {
 private struct AboutLegalStrip: View {
     var body: some View {
         VStack(alignment: .leading, spacing: AXSpacing.md) {
-            sectionLabel("Legal", icon: "doc.text.fill")
+            sectionLabel(L10n.About.legal, icon: "doc.text.fill")
 
             HStack(spacing: AXSpacing.md) {
                 LegalPill("Privacy", icon: "hand.raised.fill", url: AppURLs.privacy)
                 LegalPill("Terms", icon: "doc.plaintext", url: AppURLs.terms)
                 LegalPill("License", icon: "checkmark.seal.fill", url: AppURLs.license)
-                LegalPill("OSS", icon: "heart.fill", url: URL(string: "\(AppURLs.base)/oss")!)
+                LegalPill("OSS", icon: "heart.fill", url: AppURLs.oss)
             }
         }
     }
@@ -432,22 +439,22 @@ private struct AboutDebugSection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: AXSpacing.md) {
-            sectionLabel("Debug & Support", icon: "ladybug.fill")
+            sectionLabel(L10n.About.debugSupport, icon: "ladybug.fill")
 
             AXCard {
                 VStack(spacing: AXSpacing.md) {
                     SettingsButtonRow(
-                        title: "Copy Debug Info",
-                        subtitle: "Copy diagnostic information to clipboard",
+                        title: L10n.About.copyDebugInfo,
+                        subtitle: L10n.About.copyDebugInfoSub,
                         icon: "doc.on.doc",
-                        buttonLabel: "Copy",
+                        buttonLabel: L10n.About.copyButton,
                         action: { copyDebugInfo(updateChannel: updateChannel) }
                     )
                     SettingsButtonRow(
-                        title: "Open Logs Directory",
-                        subtitle: "View application log files",
+                        title: L10n.About.openLogs,
+                        subtitle: L10n.About.openLogsSub,
                         icon: "folder",
-                        buttonLabel: "Open",
+                        buttonLabel: L10n.About.openButton,
                         action: {
                             if let logDir = FileManager.default.urls(for: .libraryDirectory, in: .userDomainMask).first?.appendingPathComponent("Logs/AevonX") {
                                 NSWorkspace.shared.open(logDir)
@@ -455,10 +462,10 @@ private struct AboutDebugSection: View {
                         }
                     )
                     SettingsButtonRow(
-                        title: "Check for Updates",
+                        title: L10n.About.checkUpdates,
                         subtitle: updateStatusText,
                         icon: "arrow.triangle.2.circlepath",
-                        buttonLabel: updateService.state == .checking ? "Checking..." : "Check Now",
+                        buttonLabel: updateService.state == .checking ? L10n.About.checking : L10n.About.checkNow,
                         action: { Task { await updateService.checkForUpdate() } }
                     )
                 }
@@ -468,10 +475,10 @@ private struct AboutDebugSection: View {
 
     private var updateStatusText: String? {
         switch updateService.state {
-        case .upToDate: return "You're up to date"
-        case .updateAvailable: return "Version \(updateService.availableVersion?.version ?? "") available"
+        case .upToDate: return L10n.About.upToDate
+        case .updateAvailable: return L10n.About.versionAvailable(updateService.availableVersion?.version ?? "")
         case .downloading: return L10n.Update.downloading
-        case .downloaded: return "Ready to install"
+        case .downloaded: return L10n.About.readyToInstall
         case .error(let msg): return msg
         default: return nil
         }

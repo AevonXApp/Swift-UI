@@ -90,3 +90,85 @@
 
 /* Required reason */
 "update.requiredReason" = "This update is required for security and compatibility.";
+
+/* ── Update Sheet Titles ── */
+
+/* Update available title */
+"update.titleAvailable" = "Update Available";
+
+/* Downloading title */
+"update.titleDownloading" = "Downloading Update";
+
+/* Ready to install title */
+"update.titleReady" = "Ready to Install";
+
+/* Installing title */
+"update.titleInstalling" = "Installing Update";
+
+/* Error title */
+"update.titleError" = "Update Error";
+
+/* Generic title */
+"update.titleGeneric" = "Update";
+
+/* ── Version & Info Labels ── */
+
+/* Current version pill */
+"update.versionCurrent" = "Current";
+
+/* New version pill */
+"update.versionNew" = "New";
+
+/* Download size label */
+"update.infoSize" = "Size";
+
+/* Release date label */
+"update.infoReleased" = "Released";
+
+/* Required badge */
+"update.badgeRequired" = "Required Update";
+
+/* ── Move to Applications ── */
+
+/* Move prompt title */
+"update.moveTitle" = "Move to Applications";
+
+/* Move prompt description */
+"update.moveDescription" = "For the best experience, move AevonX to your Applications folder. This enables automatic updates and Launch at Login.";
+
+/* Move button */
+"update.moveButton" = "Move to Applications";
+
+/* Keep current location button */
+"update.moveKeep" = "Keep Current Location";
+
+/* DMG warning */
+"update.moveDMGWarning" = "Running from a disk image is not supported. Please move AevonX to Applications to continue.";
+
+/* Move footer */
+"update.moveFooter" = "You can always move the app later by dragging it to Applications.";
+
+/* ═══ About ═══ */
+
+/* Section headers */
+"about.connect" = "Connect";
+"about.legal" = "Legal";
+"about.debugSupport" = "Debug & Support";
+
+/* Copy debug info */
+"about.copyDebugInfo" = "Copy Debug Info";
+"about.copyDebugInfoSub" = "Copy diagnostic information to clipboard";
+"about.copyButton" = "Copy";
+
+/* Open logs */
+"about.openLogs" = "Open Logs Directory";
+"about.openLogsSub" = "View application log files";
+"about.openButton" = "Open";
+
+/* Check for updates */
+"about.checkUpdates" = "Check for Updates";
+"about.checking" = "Checking...";
+"about.checkNow" = "Check Now";
+"about.upToDate" = "You're up to date";
+"about.readyToInstall" = "Ready to install";
+"about.versionAvailable" = "Version %@ available";

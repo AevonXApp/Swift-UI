@@ -13,8 +13,8 @@ import Security
 final class HostKeyStore {
 
     static let shared = HostKeyStore()
-    private let servicePrefix = "com.aevonx.hostkeys."
-    private static let keychainQueue = DispatchQueue(label: "com.aevonx.hostkeys.keychain", qos: .userInitiated)
+    private let servicePrefix = "app.aevonx.hostkeys."
+    private static let keychainQueue = DispatchQueue(label: "app.aevonx.hostkeys.keychain", qos: .userInitiated)
 
     private init() {}
 

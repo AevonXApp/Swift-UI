@@ -114,7 +114,7 @@ class ProfileAPIService: ObservableObject {
 
     func updateProfile(name: String) async throws {
         let token = try await getToken()
-        var req = URLRequest(url: URL(string: "\(baseURL)/user/profile")!)
+        var req = URLRequest(url: try endpoint("/user/profile"))
         req.httpMethod = "PATCH"
         req.setValue("application/json", forHTTPHeaderField: "Content-Type")
         req.setValue("application/json", forHTTPHeaderField: "Accept")
@@ -127,7 +127,7 @@ class ProfileAPIService: ObservableObject {
 
     func changePassword(current: String, new: String) async throws {
         let token = try await getToken()
-        var req = URLRequest(url: URL(string: "\(baseURL)/user/password")!)
+        var req = URLRequest(url: try endpoint("/user/password"))
         req.httpMethod = "POST"
         req.setValue("application/json", forHTTPHeaderField: "Content-Type")
         req.setValue("application/json", forHTTPHeaderField: "Accept")
@@ -144,7 +144,7 @@ class ProfileAPIService: ObservableObject {
 
     func fetchSessions() async throws -> [UserSession] {
         let token = try await getToken()
-        var req = URLRequest(url: URL(string: "\(baseURL)/user/sessions")!)
+        var req = URLRequest(url: try endpoint("/user/sessions"))
         req.httpMethod = "GET"
         req.setValue("application/json", forHTTPHeaderField: "Accept")
         req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
@@ -155,7 +155,7 @@ class ProfileAPIService: ObservableObject {
 
     func deleteSession(id: Int) async throws {
         let token = try await getToken()
-        var req = URLRequest(url: URL(string: "\(baseURL)/user/sessions/\(id)")!)
+        var req = URLRequest(url: try endpoint("/user/sessions/\(id)"))
         req.httpMethod = "DELETE"
         req.setValue("application/json", forHTTPHeaderField: "Accept")
         req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
@@ -164,7 +164,7 @@ class ProfileAPIService: ObservableObject {
 
     func deleteAllSessions() async throws {
         let token = try await getToken()
-        var req = URLRequest(url: URL(string: "\(baseURL)/user/sessions")!)
+        var req = URLRequest(url: try endpoint("/user/sessions"))
         req.httpMethod = "DELETE"
         req.setValue("application/json", forHTTPHeaderField: "Accept")
         req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
@@ -175,7 +175,7 @@ class ProfileAPIService: ObservableObject {
 
     func fetchActivity(limit: Int = 30) async throws -> [ActivityLogEntry] {
         let token = try await getToken()
-        var req = URLRequest(url: URL(string: "\(baseURL)/user/activity?limit=\(limit)")!)
+        var req = URLRequest(url: try endpoint("/user/activity?limit=\(limit)"))
         req.httpMethod = "GET"
         req.setValue("application/json", forHTTPHeaderField: "Accept")
         req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
@@ -185,6 +185,13 @@ class ProfileAPIService: ObservableObject {
     }
 
     // MARK: - Private Helpers
+
+    private func endpoint(_ path: String) throws -> URL {
+        guard let url = URL(string: "\(baseURL)\(path)") else {
+            throw URLError(.badURL)
+        }
+        return url
+    }
 
     private func getToken() async throws -> String {
         guard let token = await AuthService.shared.getToken() else {
@@ -223,7 +230,7 @@ class ProfileAPIService: ObservableObject {
         Task { @MainActor in
             do {
                 let token = try await self.getToken()
-                var req = URLRequest(url: URL(string: "\(self.baseURL)/user/activity")!)
+                var req = URLRequest(url: try self.endpoint("/user/activity"))
                 req.httpMethod = "POST"
                 req.setValue("application/json", forHTTPHeaderField: "Content-Type")
                 req.setValue("application/json", forHTTPHeaderField: "Accept")

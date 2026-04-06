@@ -190,7 +190,7 @@ private class AIInstallationViewModel: ObservableObject {
             )
         } catch {
             self.errorMessage = error.localizedDescription
-            print("Installation failed: \(error.localizedDescription)")
+            debugLog("Installation failed: \(error.localizedDescription)")
             // Error handled by service listener
         }
     }

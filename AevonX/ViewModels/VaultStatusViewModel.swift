@@ -54,13 +54,13 @@ class VaultStatusViewModel: ObservableObject {
                     isVaultInitialized = false
                 }
             } else {
-                print("[VaultStatus] API Check failed via Go")
+                debugLog("[VaultStatus] API Check failed via Go")
                 state = .recoveryRequired
                 isVaultInitialized = false
             }
         }
         
-        print("[VaultStatus] Detected state: \(state)")
+        debugLog("[VaultStatus] Detected state: \(state)")
         isLoading = false
     }
     

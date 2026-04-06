@@ -28,11 +28,11 @@ struct RemoteFleetGridView: View {
                     server: server,
                     connectionProgress: viewModel.connectionProgress[server.id],
                     onTap: {
-                        print("[RemoteFleetGridView] Card tapped for: \(server.name)")
+                        debugLog("[RemoteFleetGridView] Card tapped for: \(server.name)")
                         onConnect(server)
                     },
                     onConnect: {
-                        print("[RemoteFleetGridView] Connect tapped for: \(server.name)")
+                        debugLog("[RemoteFleetGridView] Connect tapped for: \(server.name)")
                         onConnect(server)
                     },
                     onEdit: { onEdit(server) },
@@ -45,7 +45,7 @@ struct RemoteFleetGridView: View {
     }
     
     private func navigateToServer(_ server: ServerViewModel) async {
-        print("[RemoteFleet] navigateToServer called for: \(server.name)")
+        debugLog("[RemoteFleet] navigateToServer called for: \(server.name)")
         
         // Create full Server model from decrypted info
         let fullServer = Server(
@@ -66,13 +66,13 @@ struct RemoteFleetGridView: View {
             uptime: nil
         )
         
-        print("[RemoteFleet] Created Server model: id=\(fullServer.id), name=\(fullServer.name)")
+        debugLog("[RemoteFleet] Created Server model: id=\(fullServer.id), name=\(fullServer.name)")
         
         await MainActor.run {
-            print("[RemoteFleet] Setting selectedServer and showServerDashboard=true")
+            debugLog("[RemoteFleet] Setting selectedServer and showServerDashboard=true")
             selectedServer = fullServer
             showServerDashboard = true
-            print("[RemoteFleet] showServerDashboard is now: \(showServerDashboard)")
+            debugLog("[RemoteFleet] showServerDashboard is now: \(showServerDashboard)")
         }
     }
 }

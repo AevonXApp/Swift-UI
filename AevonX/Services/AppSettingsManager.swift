@@ -121,6 +121,7 @@ enum SettingsKey {
     static let autoDownloadUpdates = "settings.general.autoDownloadUpdates"
     static let skippedVersion = "settings.general.skippedVersion"
     static let updateCheckInterval = "settings.general.updateCheckInterval"
+    static let didPromptMoveToApplications = "settings.general.didPromptMoveToApplications"
 }
 
 // MARK: - AppSettingsManager

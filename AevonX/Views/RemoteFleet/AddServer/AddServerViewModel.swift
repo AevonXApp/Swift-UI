@@ -134,7 +134,6 @@ class AddServerViewModel: ObservableObject {
             return
         }
         
-        let serverId = "test-\(UUID().uuidString)"
         let startTime = Date()
         
         connectionProgress = ConnectionProgress(
@@ -143,39 +142,31 @@ class AddServerViewModel: ObservableObject {
             percentComplete: 0.5
         )
         
-        // Connect via Go SSH Bridge
-        let connectResult = await SSHBridge.shared.connectAsync(
-            serverID: serverId,
+        // Test connection via Go SSH Bridge (no CAT required — server not registered yet)
+        let connectResult = await SSHBridge.shared.testConnectAsync(
             host: request.host,
             port: Int32(request.port),
             username: request.username,
             password: request.authType == .password ? request.password ?? "" : "",
             privateKey: request.authType == .privateKey ? request.privateKey ?? "" : "",
-            passphrase: request.keyPassphrase ?? "",
-            catToken: "",
-            deviceFingerprint: ""
+            passphrase: request.keyPassphrase ?? ""
         )
-        
+
+        let latencyMs = Date().timeIntervalSince(startTime) * 1000
+
         guard let rd = connectResult.data(using: .utf8),
               let rj = try? JSONSerialization.jsonObject(with: rd) as? [String: Any],
               rj["success"] as? Bool == true else {
-            let errorMsg = connectResult.contains("\"error\"") ? "SSH authentication failed" : "Connection failed"
+            // Extract actual error message from Go response
+            var errorMsg = "Connection failed"
+            if let rd = connectResult.data(using: .utf8),
+               let rj = try? JSONSerialization.jsonObject(with: rd) as? [String: Any],
+               let errStr = rj["error"] as? String {
+                errorMsg = errStr
+            }
             testResult = ConnectionTestResult(success: false, message: errorMsg, stage: .failed)
             return
         }
-        
-        connectionProgress = ConnectionProgress(
-            stage: .testing,
-            message: "Testing...",
-            percentComplete: 0.8
-        )
-        
-        // Quick test command
-        let _ = await SSHBridge.shared.executeAsync(serverID: serverId, command: "echo 1")
-        let latencyMs = Date().timeIntervalSince(startTime) * 1000
-        
-        // Disconnect test session
-        SSHBridge.shared.disconnect(serverID: serverId)
         
         connectionProgress = ConnectionProgress(
             stage: .complete,

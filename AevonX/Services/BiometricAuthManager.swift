@@ -24,7 +24,7 @@ class BiometricAuthManager {
         if hasAuthenticatedThisSession,
            let lastAuth = lastAuthenticationTime,
            Date().timeIntervalSince(lastAuth) < authenticationValidityDuration {
-            print("[BiometricAuthManager] Skipping biometric auth - already authenticated within validity period")
+            debugLog("[BiometricAuthManager] Skipping biometric auth - already authenticated within validity period")
             return
         }
         
@@ -34,7 +34,7 @@ class BiometricAuthManager {
         // Update state
         hasAuthenticatedThisSession = true
         lastAuthenticationTime = Date()
-        print("[BiometricAuthManager] Biometric authentication successful")
+        debugLog("[BiometricAuthManager] Biometric authentication successful")
     }
     
     /// Force authentication regardless of previous state
@@ -44,14 +44,14 @@ class BiometricAuthManager {
         // Update state
         hasAuthenticatedThisSession = true
         lastAuthenticationTime = Date()
-        print("[BiometricAuthManager] Forced biometric authentication successful")
+        debugLog("[BiometricAuthManager] Forced biometric authentication successful")
     }
     
     /// Reset authentication state (e.g., on logout or app background)
     func resetAuthenticationState() {
         hasAuthenticatedThisSession = false
         lastAuthenticationTime = nil
-        print("[BiometricAuthManager] Authentication state reset")
+        debugLog("[BiometricAuthManager] Authentication state reset")
     }
     
     /// Check if authentication is still valid

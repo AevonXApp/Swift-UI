@@ -43,9 +43,58 @@ extension L10n {
         static let installingUpdate = s("update.installingUpdate", "Installing update...")
         static let requiredReason = s("update.requiredReason", "This update is required for security and compatibility.")
 
+        // Update sheet titles
+        static let titleAvailable = s("update.titleAvailable", "Update Available")
+        static let titleDownloading = s("update.titleDownloading", "Downloading Update")
+        static let titleReady = s("update.titleReady", "Ready to Install")
+        static let titleInstalling = s("update.titleInstalling", "Installing Update")
+        static let titleError = s("update.titleError", "Update Error")
+        static let titleGeneric = s("update.titleGeneric", "Update")
+
+        // Version pills & info
+        static let versionCurrent = s("update.versionCurrent", "Current")
+        static let versionNew = s("update.versionNew", "New")
+        static let infoSize = s("update.infoSize", "Size")
+        static let infoReleased = s("update.infoReleased", "Released")
+        static let badgeRequired = s("update.badgeRequired", "Required Update")
+
+        // Move to Applications
+        static let moveTitle = s("update.moveTitle", "Move to Applications")
+        static let moveDescription = s("update.moveDescription", "For the best experience, move AevonX to your Applications folder. This enables automatic updates and Launch at Login.")
+        static let moveButton = s("update.moveButton", "Move to Applications")
+        static let moveKeep = s("update.moveKeep", "Keep Current Location")
+        static let moveDMGWarning = s("update.moveDMGWarning", "Running from a disk image is not supported. Please move AevonX to Applications to continue.")
+        static let moveFooter = s("update.moveFooter", "You can always move the app later by dragging it to Applications.")
+
         static func versionRequired(_ version: String) -> String {
             let dv: String.LocalizationValue = "AevonX \(version) is required to continue."
             return String(localized: "update.versionRequired", defaultValue: dv, table: table)
+        }
+    }
+
+    // MARK: - About (Settings.strings)
+    enum About {
+        private static let table = "Settings"
+        private static func s(_ k: StaticString, _ v: String.LocalizationValue) -> String { String(localized: k, defaultValue: v, table: table) }
+
+        static let connect = s("about.connect", "Connect")
+        static let legal = s("about.legal", "Legal")
+        static let debugSupport = s("about.debugSupport", "Debug & Support")
+        static let copyDebugInfo = s("about.copyDebugInfo", "Copy Debug Info")
+        static let copyDebugInfoSub = s("about.copyDebugInfoSub", "Copy diagnostic information to clipboard")
+        static let copyButton = s("about.copyButton", "Copy")
+        static let openLogs = s("about.openLogs", "Open Logs Directory")
+        static let openLogsSub = s("about.openLogsSub", "View application log files")
+        static let openButton = s("about.openButton", "Open")
+        static let checkUpdates = s("about.checkUpdates", "Check for Updates")
+        static let checking = s("about.checking", "Checking...")
+        static let checkNow = s("about.checkNow", "Check Now")
+        static let upToDate = s("about.upToDate", "You're up to date")
+        static let readyToInstall = s("about.readyToInstall", "Ready to install")
+
+        static func versionAvailable(_ version: String) -> String {
+            let dv: String.LocalizationValue = "Version \(version) available"
+            return String(localized: "about.versionAvailable", defaultValue: dv, table: table)
         }
     }
 }

@@ -23,11 +23,11 @@ struct RemoteFleetListView: View {
                     server: server,
                     connectionProgress: viewModel.connectionProgress[server.id],
                     onTap: {
-                        print("[RemoteFleetListView] Row tapped for: \(server.name)")
+                        debugLog("[RemoteFleetListView] Row tapped for: \(server.name)")
                         onConnect(server)
                     },
                     onConnect: {
-                        print("[RemoteFleetListView] Connect tapped for: \(server.name)")
+                        debugLog("[RemoteFleetListView] Connect tapped for: \(server.name)")
                         onConnect(server)
                     },
                     onEdit: {

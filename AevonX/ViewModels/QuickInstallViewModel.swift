@@ -528,30 +528,30 @@ public final class QuickInstallViewModel: ObservableObject {
             while !Task.isCancelled {
                 do {
                     let result = try await SSHBridge.shared.execute(pollCmd, serverId: self.serverId)
-                    print("[QI-POLL] Raw stdout (first 200): \(String(result.stdout.prefix(200)))")
+                    debugLog("[QI-POLL] Raw stdout (first 200): \(String(result.stdout.prefix(200)))")
 
                     // Parse state via Go Core
                     let stateJSON = self.bridge.queueParseState(raw: result.stdout)
                     guard let stateData = stateJSON.data(using: .utf8),
                           let stateResp = try? JSONDecoder().decode(BridgeResponse<BridgeQueueState>.self, from: stateData),
                           let state = stateResp.data else {
-                        print("[QI-POLL] ⚠️ Failed to parse state JSON")
+                        debugLog("[QI-POLL] ⚠️ Failed to parse state JSON")
                         continue
                     }
 
                     let stepsSummary = (state.steps ?? []).map { "\($0.id)=\($0.status)" }.joined(separator: ", ")
-                    print("[QI-POLL] 📊 Steps: [\(stepsSummary)] | current: \(state.current_step_id ?? "nil") | done: \(state.is_done) | errors: \(state.is_done_with_errors)")
+                    debugLog("[QI-POLL] 📊 Steps: [\(stepsSummary)] | current: \(state.current_step_id ?? "nil") | done: \(state.is_done) | errors: \(state.is_done_with_errors)")
                     if let output = state.recent_output, !output.isEmpty {
-                        print("[QI-POLL] 📝 Output: \(String(output.prefix(150)))")
+                        debugLog("[QI-POLL] 📝 Output: \(String(output.prefix(150)))")
                     }
 
                     consecutiveErrors = 0
                     self.applyQueueState(state, vm: vm, stepIdToIndex: stepIdToIndex)
-                    print("[QI-POLL] 📈 Progress: \(Int(vm.overallProgress * 100))%")
+                    debugLog("[QI-POLL] 📈 Progress: \(Int(vm.overallProgress * 100))%")
 
                     if state.is_done {
                         let hasFails = state.is_done_with_errors
-                        print("[QI-POLL] ✅ INSTALL DONE — hasFails: \(hasFails)")
+                        debugLog("[QI-POLL] ✅ INSTALL DONE — hasFails: \(hasFails)")
                         AevonXCoreBridge.CoreLogger.shared.info("Install done — hasFails: \(hasFails)", module: "QuickInstall")
                         self.isInstalling = false
                         self.isComplete = !hasFails

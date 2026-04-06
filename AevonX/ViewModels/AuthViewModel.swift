@@ -15,6 +15,7 @@ import Combine
 @MainActor
 class AuthViewModel: ObservableObject {
     @Published var isAuthenticated = false
+    @Published var isCheckingAuth = true   // true until first auth check completes
     @Published var isLoading = false
     @Published var errorMessage: String?
     @Published var currentUser: User?
@@ -43,10 +44,11 @@ class AuthViewModel: ObservableObject {
     func initializeIfNeeded() {
         guard !hasInitialized else { return }
         hasInitialized = true
-        
+
         Task {
             await checkTrialEligibility()
             await checkAuthStatus()
+            isCheckingAuth = false
         }
     }
     
@@ -86,6 +88,10 @@ class AuthViewModel: ObservableObject {
                 self.currentUser = decodeUser(from: userData) as User?
                 self.isAuthenticated = true
                 logBridge.info("[AuthVM] Auth check passed", module: "Auth")
+
+                // Push auth context to silent error reporter
+                let deviceFPForReporter = await DeviceIdentifier.shared.getDeviceID() ?? ""
+                CoreBridge.shared.setReporterContext(baseURL: baseURL, token: token, deviceID: deviceFPForReporter)
 
                 // Load device keys for returning user
                 Task {
@@ -151,8 +157,12 @@ class AuthViewModel: ObservableObject {
         // Step 3: Save token to Keychain (Swift-only)
         if let token = authData["token"] as? String {
             _ = await authService.saveToken(token)
+
+            // Push auth context to silent error reporter
+            let deviceFPForReporter = await DeviceIdentifier.shared.getDeviceID() ?? ""
+            CoreBridge.shared.setReporterContext(baseURL: baseURL, token: token, deviceID: deviceFPForReporter)
         }
-        
+
         // Step 4: Parse user
         if let userData = authData["user"] as? [String: Any] {
             self.currentUser = decodeUser(from: userData) as User?
@@ -241,8 +251,12 @@ class AuthViewModel: ObservableObject {
         // Step 3: Save token to Keychain
         if let token = authData["token"] as? String {
             _ = await authService.saveToken(token)
+
+            // Push auth context to silent error reporter
+            let deviceFPForReporter = await DeviceIdentifier.shared.getDeviceID() ?? ""
+            CoreBridge.shared.setReporterContext(baseURL: baseURL, token: token, deviceID: deviceFPForReporter)
         }
-        
+
         // Step 4: Parse user
         if let userData = authData["user"] as? [String: Any] {
             self.currentUser = decodeUser(from: userData) as User?
@@ -296,19 +310,32 @@ class AuthViewModel: ObservableObject {
     func logout() async {
         isLoading = true
         logBridge.info("[AuthVM] Logout initiated", module: "Auth")
-        
+
         let token = await authService.getToken() ?? ""
-        
-        // Go HTTP logout
-        let _ = await apiBridge.logoutAsync(baseURL: baseURL, token: token)
-        
-        // Always clear local state
+
+        // Clear local state FIRST — logout must work even if server is unreachable
         _ = await authService.deleteToken()
         self.currentUser = nil
         self.isAuthenticated = false
-        
-        logBridge.info("[AuthVM] Logout complete", module: "Auth")
         isLoading = false
+
+        // Clear error reporter auth context
+        CoreBridge.shared.setReporterContext(baseURL: baseURL, token: "", deviceID: "")
+
+        logBridge.info("[AuthVM] Local state cleared", module: "Auth")
+
+        // Notify lifecycle cleanup
+        NotificationCenter.default.post(name: .init("AevonXUserDidLogout"), object: nil)
+
+        // Best-effort server logout (don't block on it)
+        if !token.isEmpty {
+            Task.detached {
+                let _ = await APIBridge.shared.logoutAsync(
+                    baseURL: ConfigurationManager.shared.currentConfiguration.fullBaseURL,
+                    token: token
+                )
+            }
+        }
     }
     
     // MARK: - Go Core Bridge Helpers

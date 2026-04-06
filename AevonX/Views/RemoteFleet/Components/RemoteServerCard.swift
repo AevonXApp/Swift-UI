@@ -197,7 +197,7 @@ struct RemoteServerCard: View {
                 } else {
                     // Connect button — compact
                     Button(action: {
-                        print("[RemoteServerCard] Connect → \(server.name)")
+                        debugLog("[RemoteServerCard] Connect → \(server.name)")
                         onConnect()
                     }) {
                         HStack(spacing: 5) {

@@ -152,7 +152,7 @@ struct RemoteServerRow: View {
                 .buttonStyle(.plain)
             } else {
                 Button(action: {
-                    print("[RemoteServerRow] Connect button tapped for: \(server.name)")
+                    debugLog("[RemoteServerRow] Connect button tapped for: \(server.name)")
                     onConnect()
                 }) {
                     HStack(spacing: AXSpacing.xs) {
@@ -176,7 +176,7 @@ struct RemoteServerRow: View {
                     if isLocked {
                         onUpgrade?()
                     } else {
-                        print("[RemoteServerRow] Menu Connect tapped for: \(server.name)")
+                        debugLog("[RemoteServerRow] Menu Connect tapped for: \(server.name)")
                         onConnect()
                     }
                 }) {

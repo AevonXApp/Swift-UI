@@ -17,18 +17,16 @@ struct AppVersionInfo: Codable, Identifiable {
     let version: String
     let buildNumber: Int
     let changelog: String
-    let downloadURL: String
-    let downloadHash: String
-    let downloadSize: Int64
+    let downloadSize: Int64?
+    let downloadHash: String?
     let isMandatory: Bool
     let releasedAt: String
 
     enum CodingKeys: String, CodingKey {
         case id, version, changelog
         case buildNumber = "build_number"
-        case downloadURL = "download_url"
-        case downloadHash = "download_hash"
         case downloadSize = "download_size"
+        case downloadHash = "download_hash"
         case isMandatory = "is_mandatory"
         case releasedAt = "released_at"
     }
@@ -108,6 +106,10 @@ final class AppUpdateService: ObservableObject {
 
     @AppStorage(SettingsKey.updateCheckInterval) private var checkIntervalHours: Int = 6
 
+    /// Pending update report — saved before app terminates for install, sent on next launch
+    @AppStorage("update.pendingReportVersionId") private var pendingReportVersionId = ""
+    @AppStorage("update.pendingReportVersion") private var pendingReportVersion = ""
+
     private var checkInterval: TimeInterval {
         TimeInterval(checkIntervalHours) * 60 * 60
     }
@@ -135,7 +137,11 @@ final class AppUpdateService: ObservableObject {
 
         do {
             let token = try await getToken()
-            var request = URLRequest(url: URL(string: "\(baseURL)/app/check-update")!)
+            guard let url = URL(string: "\(baseURL)/app/check-update") else {
+                if !silent { state = .error("Invalid server URL.") }
+                return
+            }
+            var request = URLRequest(url: url)
             request.httpMethod = "GET"
             request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
             request.setValue("application/json", forHTTPHeaderField: "Accept")
@@ -144,6 +150,7 @@ final class AppUpdateService: ObservableObject {
             request.setValue("macos", forHTTPHeaderField: "X-Platform")
             request.setValue(ProcessInfo.processInfo.operatingSystemVersionString, forHTTPHeaderField: "X-OS-Version")
             request.setValue(channel, forHTTPHeaderField: "X-Channel")
+            request.setValue(Locale.current.language.languageCode?.identifier ?? "en", forHTTPHeaderField: "Accept-Language")
 
             let (data, response) = try await URLSession.shared.data(for: request)
 
@@ -185,7 +192,11 @@ final class AppUpdateService: ObservableObject {
 
         do {
             let token = try await getToken()
-            var request = URLRequest(url: URL(string: "\(baseURL)/app/download-update/\(version.id)")!)
+            guard let url = URL(string: "\(baseURL)/app/download-update/\(version.id)") else {
+                state = .error("Invalid download URL.")
+                return
+            }
+            var request = URLRequest(url: url)
             request.httpMethod = "POST"
             request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
             request.setValue("application/json", forHTTPHeaderField: "Accept")
@@ -226,10 +237,18 @@ final class AppUpdateService: ObservableObject {
             }
             try FileManager.default.moveItem(at: localURL, to: destURL)
 
-            // Verify hash
+            // Verify hash (streaming — constant ~1MB memory regardless of file size)
             let expectedHash = downloadInfo.hash.replacingOccurrences(of: "sha256:", with: "")
-            let fileData = try Data(contentsOf: destURL)
-            let computedHash = SHA256.hash(data: fileData)
+            let handle = try FileHandle(forReadingFrom: destURL)
+            var hasher = SHA256()
+            while autoreleasepool(invoking: {
+                let chunk = handle.readData(ofLength: 1_048_576)
+                guard !chunk.isEmpty else { return false }
+                hasher.update(data: chunk)
+                return true
+            }) {}
+            handle.closeFile()
+            let computedHash = hasher.finalize()
                 .compactMap { String(format: "%02x", $0) }
                 .joined()
 
@@ -325,8 +344,9 @@ final class AppUpdateService: ObservableObject {
             updater.standardError = nil
             try updater.run()
 
-            // Report and quit
-            await reportUpdate(versionId: version.id, status: "installing")
+            // Save pending report for next launch (async calls during terminate are unreliable)
+            pendingReportVersionId = version.id
+            pendingReportVersion = version.version
             NSApplication.shared.terminate(nil)
 
         } catch {
@@ -348,6 +368,18 @@ final class AppUpdateService: ObservableObject {
     // MARK: - Auto-Check on Launch
 
     func checkOnLaunchIfNeeded() {
+        // Send pending update report from previous install (if any)
+        if !pendingReportVersionId.isEmpty {
+            let versionId = pendingReportVersionId
+            let expectedVersion = pendingReportVersion
+            pendingReportVersionId = ""
+            pendingReportVersion = ""
+
+            // If current version matches what was installed, report success
+            let status = (currentVersion == expectedVersion) ? "success" : "failed"
+            Task { await reportUpdate(versionId: versionId, status: status) }
+        }
+
         guard autoCheck else { return }
         if let last = lastCheckDate, Date().timeIntervalSince(last) < checkInterval {
             return
@@ -386,7 +418,8 @@ final class AppUpdateService: ObservableObject {
     private func reportUpdate(versionId: String, status: String) async {
         do {
             let token = try await getToken()
-            var request = URLRequest(url: URL(string: "\(baseURL)/app/report-update")!)
+            guard let url = URL(string: "\(baseURL)/app/report-update") else { return }
+            var request = URLRequest(url: url)
             request.httpMethod = "POST"
             request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
             request.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -406,8 +439,8 @@ final class AppUpdateService: ObservableObject {
     }
 
     var formattedDownloadSize: String {
-        guard let version = availableVersion else { return "" }
-        let mb = Double(version.downloadSize) / 1_048_576
+        guard let version = availableVersion, let size = version.downloadSize else { return "" }
+        let mb = Double(size) / 1_048_576
         return String(format: "%.1f MB", mb)
     }
 }

@@ -62,7 +62,7 @@ struct GeneralSettingsSection: View {
                 try SMAppService.mainApp.unregister()
             }
         } catch {
-            print("[GeneralSettings] Failed to \(enabled ? "register" : "unregister") login item: \(error)")
+            debugLog("[GeneralSettings] Failed to \(enabled ? "register" : "unregister") login item: \(error)")
         }
     }
 

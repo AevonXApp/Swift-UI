@@ -13,8 +13,8 @@ import Security
 final class SecureSettingsStore {
 
     static let shared = SecureSettingsStore()
-    private let service = "com.aevonx.secure-settings"
-    private static let keychainQueue = DispatchQueue(label: "com.aevonx.secure-settings.keychain", qos: .userInitiated)
+    private let service = "app.aevonx.secure-settings"
+    private static let keychainQueue = DispatchQueue(label: "app.aevonx.secure-settings.keychain", qos: .userInitiated)
 
     private init() {}
 

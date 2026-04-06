@@ -271,13 +271,13 @@ public final class DatabaseDetailViewModel: ObservableObject {
 
     public func loadTableData() async {
         guard let serverId = serverId, let table = selectedTable else {
-            print("[DBDetailVM] loadTableData: no serverId or selectedTable")
+            debugLog("[DBDetailVM] loadTableData: no serverId or selectedTable")
             return
         }
 
         isLoading = true
         do {
-            print("[DBDetailVM] loadTableData: browsing \(database.name).\(table.name) page=\(currentPage) pageSize=\(pageSize)")
+            debugLog("[DBDetailVM] loadTableData: browsing \(database.name).\(table.name) page=\(currentPage) pageSize=\(pageSize)")
             browseResult = try await DatabaseRowService.shared.browseRows(
                 database: database.name,
                 table: table.name,
@@ -288,9 +288,9 @@ public final class DatabaseDetailViewModel: ObservableObject {
                 orderBy: sortColumn ?? "",
                 ascending: sortAscending
             )
-            print("[DBDetailVM] loadTableData: browseResult rows=\(browseResult?.rows.count ?? -1) columns=\(browseResult?.columns.count ?? -1)")
+            debugLog("[DBDetailVM] loadTableData: browseResult rows=\(browseResult?.rows.count ?? -1) columns=\(browseResult?.columns.count ?? -1)")
         } catch {
-            print("[DBDetailVM] loadTableData ERROR: \(error)")
+            debugLog("[DBDetailVM] loadTableData ERROR: \(error)")
             GlobalToastManager.shared.showError("\(L10n.Database.loadDataFailed): \(error.localizedDescription)")
         }
         isLoading = false
