@@ -404,11 +404,66 @@ struct PluginDetailSheet: View {
         VStack(alignment: .leading, spacing: AXSpacing.md) {
             sectionHeader(L10n.Plugin.Detail.about, icon: "doc.text")
 
-            Text(plugin.description.isEmpty ? L10n.Plugin.Detail.noDescription : plugin.description)
-                .font(AXTypography.body)
-                .foregroundColor(.axTextSecondary)
-                .fixedSize(horizontal: false, vertical: true)
+            if plugin.description.isEmpty {
+                Text(L10n.Plugin.Detail.noDescription)
+                    .font(AXTypography.body)
+                    .foregroundColor(.axTextSecondary)
+            } else {
+                markdownDescription
+            }
         }
+    }
+
+    @ViewBuilder
+    private var markdownDescription: some View {
+        let lines = plugin.description.components(separatedBy: "\n")
+        VStack(alignment: .leading, spacing: AXSpacing.sm) {
+            ForEach(Array(lines.enumerated()), id: \.offset) { _, line in
+                if line.hasPrefix("## ") {
+                    Text(line.dropFirst(3))
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundColor(.axTextPrimary.opacity(0.85))
+                        .padding(.top, AXSpacing.sm)
+                } else if line.hasPrefix("- **") {
+                    let parsed = parseListItem(String(line.dropFirst(2)))
+                    HStack(alignment: .top, spacing: AXSpacing.sm) {
+                        Circle()
+                            .fill(Color.axAccentBlue)
+                            .frame(width: 5, height: 5)
+                            .padding(.top, 6)
+                        Text(parsed)
+                            .font(AXTypography.body)
+                            .foregroundColor(.axTextSecondary)
+                    }
+                } else if !line.trimmingCharacters(in: .whitespaces).isEmpty {
+                    Text(parseBold(line))
+                        .font(AXTypography.body)
+                        .foregroundColor(.axTextSecondary)
+                }
+            }
+        }
+        .fixedSize(horizontal: false, vertical: true)
+    }
+
+    private func parseListItem(_ text: String) -> AttributedString {
+        parseBold(text)
+    }
+
+    private func parseBold(_ text: String) -> AttributedString {
+        var result = AttributedString()
+        let pattern = /\*\*(.+?)\*\*/
+        var remaining = text[...]
+        while let match = remaining.firstMatch(of: pattern) {
+            let before = String(remaining[remaining.startIndex..<match.range.lowerBound])
+            if !before.isEmpty { result.append(AttributedString(before)) }
+            var bold = AttributedString(String(match.1))
+            bold.font = .system(size: 13, weight: .semibold)
+            bold.foregroundColor = .white.opacity(0.6)
+            result.append(bold)
+            remaining = remaining[match.range.upperBound...]
+        }
+        if !remaining.isEmpty { result.append(AttributedString(String(remaining))) }
+        return result
     }
 
     // MARK: - What's New

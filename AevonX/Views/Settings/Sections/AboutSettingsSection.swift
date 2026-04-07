@@ -376,7 +376,6 @@ private struct AboutLegalStrip: View {
                 LegalPill("Privacy", icon: "hand.raised.fill", url: AppURLs.privacy)
                 LegalPill("Terms", icon: "doc.plaintext", url: AppURLs.terms)
                 LegalPill("License", icon: "checkmark.seal.fill", url: AppURLs.license)
-                LegalPill("OSS", icon: "heart.fill", url: AppURLs.oss)
             }
         }
     }

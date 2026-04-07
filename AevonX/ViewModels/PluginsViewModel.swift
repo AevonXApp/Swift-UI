@@ -288,13 +288,13 @@ class PluginsViewModel: ObservableObject {
         } catch let error as PluginInstallError {
             let totalDuration = CFAbsoluteTimeGetCurrent() - startTime
             log.error("[PluginInstall] ✖ FAILED after \(String(format: "%.1f", totalDuration))s: \(error.userMessage)", module: "PluginsVM")
-            errorMessage = error.userMessage
+            GlobalToastManager.shared.showError(error.userMessage)
             installationStatus[plugin.id] = "Failed"
             installationProgress.removeValue(forKey: plugin.id)
         } catch {
             let totalDuration = CFAbsoluteTimeGetCurrent() - startTime
             log.error("[PluginInstall] ✖ FAILED after \(String(format: "%.1f", totalDuration))s: \(error.localizedDescription)", module: "PluginsVM")
-            errorMessage = "Installation failed. Please try again later."
+            GlobalToastManager.shared.showError(L10n.Cerberus.Gate.installFailed)
             installationStatus[plugin.id] = "Failed"
             installationProgress.removeValue(forKey: plugin.id)
         }
