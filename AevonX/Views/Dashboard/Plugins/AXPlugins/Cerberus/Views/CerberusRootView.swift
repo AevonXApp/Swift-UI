@@ -12,7 +12,7 @@ struct CerberusRootView: View {
     let serverId: String
 
     var body: some View {
-        AXPluginGateView(slug: "axcerberus-waf", serverId: serverId) {
+        AXPluginGateView(slug: "axcerberus", serverId: serverId) {
             CerberusContentView(serverId: serverId)
         }
     }

@@ -53,6 +53,7 @@ extension L10n {
         static let invalidConfig = s("error.invalidConfig", "Invalid configuration.")
         static let configUpdateFailed = s("error.configUpdateFailed", "Failed to update configuration.")
         static let installFailed = s("error.installFailed", "Installation failed. Please try again.")
+        static let serverNotConnected = s("error.serverNotConnected", "Server is not connected. Please reconnect first.")
         static let uninstallFailed = s("error.uninstallFailed", "Uninstall failed.")
         static let installCancelled = s("error.installCancelled", "Installation was cancelled.")
         static let extractFailed = s("error.extractFailed", "Failed to extract package.")

@@ -9,7 +9,7 @@
 //    - Not installed (paid) → shows purchase prompt
 //
 //  Usage:
-//    AXPluginGateView(slug: "axcerberus-waf", serverId: serverId) {
+//    AXPluginGateView(slug: "axcerberus", serverId: serverId) {
 //        CerberusRootView(serverId: serverId)
 //    }
 //
@@ -59,29 +59,42 @@ struct AXPluginGateView<Content: View>: View {
     // MARK: - Not Installed
 
     private var notInstalledView: some View {
-        VStack(spacing: AXSpacing.xxl) {
-            Spacer()
+        ScrollView {
+            VStack(spacing: AXSpacing.xxl) {
+                Spacer(minLength: AXSpacing.xxxxl)
 
-            pluginIcon
+                pluginIcon
 
-            Text(gate.pluginInfo?.name ?? slug)
-                .font(AXTypography.title2)
-                .foregroundStyle(Color.axTextPrimary)
+                Text(gate.pluginInfo?.name ?? slug)
+                    .font(AXTypography.title2)
+                    .foregroundStyle(Color.axTextPrimary)
 
-            Text(gate.pluginInfo?.description ?? L10n.Cerberus.Gate.notInstalled)
+                pluginDescriptionView
+
+                pricingBadge
+
+                installAction
+
+                Spacer(minLength: AXSpacing.xxxxl)
+            }
+            .frame(maxWidth: .infinity)
+        }
+        .background(Color.axBackground)
+    }
+
+    @ViewBuilder
+    private var pluginDescriptionView: some View {
+        if let desc = gate.pluginInfo?.description, !desc.isEmpty {
+            PluginMarkdownView(markdown: desc)
+                .frame(maxWidth: 560)
+                .padding(.horizontal, AXSpacing.xl)
+        } else {
+            Text(L10n.Cerberus.Gate.notInstalled)
                 .font(AXTypography.body)
                 .foregroundStyle(Color.axTextSecondary)
                 .multilineTextAlignment(.center)
                 .frame(maxWidth: 400)
-
-            pricingBadge
-
-            installAction
-
-            Spacer()
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color.axBackground)
     }
 
     private var pluginIcon: some View {

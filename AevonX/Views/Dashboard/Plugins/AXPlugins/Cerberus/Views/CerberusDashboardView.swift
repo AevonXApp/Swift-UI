@@ -35,13 +35,7 @@ struct CerberusDashboardView: View {
             .padding(AXSpacing.xl)
         }
         .task {
-            // Load core dashboard first (6 SSH calls), then supplementary (3 SSH calls)
-            // to avoid overwhelming the SSH multiplexer with 9+ concurrent commands.
-            await viewModel.loadDashboard()
-            async let blog: () = viewModel.loadBlockLog()
-            async let qps:  () = viewModel.loadQPS()
-            async let anom: () = viewModel.loadAnomalyStatus()
-            _ = await (blog, qps, anom)
+            await viewModel.loadDashboard() // Single SSH call fetches all dashboard data
         }
     }
 

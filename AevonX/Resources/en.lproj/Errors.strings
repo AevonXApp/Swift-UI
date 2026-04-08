@@ -159,6 +159,9 @@
 /* Installation failed */
 "error.installFailed" = "Installation failed. Please try again.";
 
+/* Server not connected */
+"error.serverNotConnected" = "Server is not connected. Please reconnect first.";
+
 /* Uninstall failed */
 "error.uninstallFailed" = "Uninstall failed.";
 

@@ -33,6 +33,10 @@ class PluginsViewModel: ObservableObject {
     @Published var isCheckingUpdates = false
     @Published var updateProgress: [String: Double] = [:] // slug: progress
     @Published var updateStatus: [String: String] = [:]   // slug: status message
+    @Published var isShowingCachedData = false              // true when SSH failed and showing last-known-good
+
+    /// Last-known-good installed slugs — used as fallback when SSH fails
+    private var lastKnownInstalledSlugs: [String] = []
 
     private let apiService = PluginAPIService.shared   // only for downloadPluginFile
     private let pluginManager = PluginManager.shared
@@ -124,6 +128,13 @@ class PluginsViewModel: ObservableObject {
         installationProgress[plugin.id] = 0.1
 
         do {
+            // ── Pre-check: Verify SSH connection is active ──
+            let sshConnected = SSHBridge.shared.isConnected(serverID: serverId)
+            if !sshConnected {
+                log.error("[PluginInstall] SSH not connected to \(serverId) — aborting install", module: "PluginsVM")
+                throw PluginInstallError(userMessage: L10n.Error.serverNotConnected)
+            }
+
             // ── Step 0: Check axsecurity readiness ──
             installationStatus[plugin.id] = "Checking server security..."
             log.info("[PluginInstall] Step 0: Checking axsecurity readiness on server \(serverId)...", module: "PluginsVM")
@@ -311,13 +322,30 @@ class PluginsViewModel: ObservableObject {
                 await loadMarketplace()
             }
 
-            async let slugsTask   = pluginManager.listInstalledPluginSlugs(on: serverId)
-            async let sourcesTask = pluginManager.listInstalledSources(on: serverId)
+            // Load slugs and sources independently so one failure doesn't lose the other
+            var installedSlugs: [String]
+            do {
+                installedSlugs = try await pluginManager.listInstalledPluginSlugs(on: serverId)
+            } catch {
+                log.error("[InstalledPlugins] SSH slugs failed: \(error.localizedDescription) — using cached", module: "PluginsVM")
+                if !lastKnownInstalledSlugs.isEmpty {
+                    installedSlugs = lastKnownInstalledSlugs
+                    isShowingCachedData = true
+                } else {
+                    throw error
+                }
+            }
 
-            let (installedSlugs, sources) = try await (slugsTask, sourcesTask)
-            self.installSources = sources
-            log.info("[InstalledPlugins] Found \(installedSlugs.count) installed slugs: \(installedSlugs.joined(separator: ", "))", module: "PluginsVM")
-            
+            // Sources are non-critical — use previous on failure
+            do {
+                let sources = try await pluginManager.listInstalledSources(on: serverId)
+                self.installSources = sources
+            } catch {
+                log.error("[InstalledPlugins] SSH sources failed: \(error.localizedDescription) — keeping previous", module: "PluginsVM")
+            }
+
+            log.info("[InstalledPlugins] Found \(installedSlugs.count) installed slugs: \(installedSlugs.joined(separator: ", "))\(isShowingCachedData ? " (cached)" : "")", module: "PluginsVM")
+
             var matchedPlugins: [Plugin] = []
             for slug in installedSlugs {
                 if let existing = plugins.first(where: { $0.slug == slug }) {
@@ -348,14 +376,20 @@ class PluginsViewModel: ObservableObject {
                     AevonXCoreBridge.CoreLogger.shared.info("Installed plugin \(slug) not in marketplace — showing as dev build.", module: "PluginsViewModel")
                 }
             }
-            
+
             self.installedPlugins = matchedPlugins
+            // Cache successful result for future fallback
+            if !isShowingCachedData {
+                self.lastKnownInstalledSlugs = installedSlugs
+                self.isShowingCachedData = false
+            }
             let duration = CFAbsoluteTimeGetCurrent() - start
             log.info("[InstalledPlugins] ✓ Loaded \(matchedPlugins.count) installed plugins in \(String(format: "%.2f", duration))s", module: "PluginsVM")
 
         } catch {
             let duration = CFAbsoluteTimeGetCurrent() - start
             log.error("[InstalledPlugins] ✖ Failed after \(String(format: "%.2f", duration))s: \(error.localizedDescription)", module: "PluginsVM")
+            // Do NOT clear installedPlugins — keep showing last known state
         }
     }
     
