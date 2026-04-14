@@ -75,7 +75,7 @@ struct ContentView: View {
             UpdateSheet(updateService: updateService)
         }
         .task {
-            // Inject API fetcher + SSH BEFORE anything else (eliminates race condition)
+            // Inject API fetcher + SSH BEFORE anything else
             await SubscriptionManager.shared.setApiFetcher { baseURL, token in
                 await APIBridge.shared.fetchSubscriptionStatusAsync(baseURL: baseURL, token: token)
             }
@@ -87,6 +87,11 @@ struct ContentView: View {
 
             // Sync network settings to Go bridge on launch
             AppSettingsManager.shared.syncNetworkSettingsToCore()
+
+            // Set device fingerprint early so key refresh works from any code path
+            if let deviceFP = await DeviceIdentifier.shared.getDeviceID() {
+                await DeviceKeyManager.shared.setDeviceFingerprint(deviceFP)
+            }
 
             // Configure device key manager and load cached keys
             await DeviceKeyManager.shared.setApiFetcher { endpoint, deviceFP in

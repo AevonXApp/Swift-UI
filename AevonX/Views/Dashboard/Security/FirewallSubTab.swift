@@ -44,6 +44,7 @@ struct FirewallSubTab: View {
     @State private var isTogglingICMP = false
     @State private var showTemplates = false
     @State private var isApplyingTemplate = false
+    @State private var ruleError: String?
 
     private let securityManager = SecurityManager.shared
 
@@ -87,38 +88,50 @@ struct FirewallSubTab: View {
             PortRuleSheet(
                 title: "Add Port Rule",
                 onSave: { newRule in
-                    Task { await addRule(newRule) }
-                    showAddRule = false
+                    Task {
+                        await addRule(newRule)
+                        await MainActor.run { showAddRule = false }
+                    }
                 }
             )
         }
         .task { await loadFirewallData() }
+        .onAppear { Task { await refreshRules() } }
+        .alert("Firewall Error", isPresented: Binding(
+            get: { ruleError != nil },
+            set: { if !$0 { ruleError = nil } }
+        )) {
+            Button("OK", role: .cancel) { ruleError = nil }
+        } message: {
+            Text(ruleError ?? "")
+        }
     }
 
     // MARK: - Load Data
 
     private func loadFirewallData() async {
-        isLoading = true
-        defer { Task { @MainActor in isLoading = false } }
-
-        // Firewall status (from Core)
         let fwActive = await securityManager.firewallStatus(serverId: serverId)
         await MainActor.run { firewallEnabled = fwActive }
-
-        // List rules
         await refreshRules()
     }
 
     private func refreshRules() async {
-        // From Core: typed [FirewallRule] and [OpenPort]
+        await MainActor.run { isLoading = true }
+
         let coreRules = await securityManager.listFirewallRules(serverId: serverId)
         let corePorts = await securityManager.listeningPorts(serverId: serverId)
 
         await MainActor.run {
             rules = coreRules.map { r in
-                FirewallRule(
+                let normalizedStrategy: String
+                switch r.target.uppercased() {
+                case "ALLOW": normalizedStrategy = "ACCEPT"
+                case "DENY", "REJECT": normalizedStrategy = "DROP"
+                default: normalizedStrategy = r.target
+                }
+                return FirewallRule(
                     protocolType: r.proto, port: r.port,
-                    strategy: r.target, direction: r.chain, sourceIP: r.source
+                    strategy: normalizedStrategy, direction: r.chain, sourceIP: r.source
                 )
             }
             listeningPorts = corePorts.map { p in
@@ -127,6 +140,7 @@ struct FirewallSubTab: View {
                     process: p.service, state: "LISTEN"
                 )
             }
+            isLoading = false
         }
     }
 
@@ -181,7 +195,7 @@ struct FirewallSubTab: View {
     }
 
     private func addRule(_ rule: FirewallRule) async {
-        let _ = await securityManager.addFirewallRule(
+        let (success, output) = await securityManager.addFirewallRule(
             proto: rule.protocolType.lowercased(),
             port: rule.port,
             strategy: rule.strategy,
@@ -189,16 +203,24 @@ struct FirewallSubTab: View {
             sourceIP: rule.sourceIP,
             serverId: serverId
         )
+        if !success {
+            let detail = output.isEmpty ? "No response from server" : output
+            await MainActor.run { ruleError = "Failed to add rule for port \(rule.port): \(detail)" }
+        }
         await refreshRules()
     }
 
     private func deleteRule(_ rule: FirewallRule) async {
-        let _ = await securityManager.deleteFirewallRule(
+        let (success, output) = await securityManager.deleteFirewallRule(
             proto: rule.protocolType.lowercased(),
             port: rule.port,
             direction: rule.direction,
             serverId: serverId
         )
+        if !success {
+            let detail = output.isEmpty ? "No response from server" : output
+            await MainActor.run { ruleError = "Failed to delete rule for port \(rule.port): \(detail)" }
+        }
         await refreshRules()
     }
 
@@ -619,7 +641,10 @@ struct FirewallSubTab: View {
 
     /// Check if a listening port has a matching firewall rule
     private func firewallRuleForPort(_ port: ListeningPort) -> FirewallRule? {
-        rules.first(where: { $0.port == port.port && $0.protocolType == port.protocolType })
+        rules.first(where: {
+            let rulePort = $0.port.components(separatedBy: "/").first ?? $0.port
+            return rulePort == port.port && ($0.protocolType.isEmpty || $0.protocolType == port.protocolType)
+        })
     }
 
     @ViewBuilder

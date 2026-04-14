@@ -416,7 +416,7 @@ struct SSHSubTab: View {
                     Task { await applySSHPort() }
                 }
             } message: {
-                Text("Changing SSH port to \(pendingPort) will restart the SSH service. Your current connection may be interrupted. Make sure you can connect on the new port before changing.")
+                Text("This will change the SSH port to \(pendingPort) and restart the SSH service.\n\nThe new port will be automatically opened in the firewall. Your current connection will be interrupted.\n\nMake sure you can reconnect on port \(pendingPort) before proceeding.")
             }
 
             // Root Login

@@ -347,12 +347,49 @@ struct PluginConfigurationView: View {
                             .stroke(Color.axBorder, lineWidth: 1)
                     )
                     .frame(width: 220)
+
+                case .action:
+                    actionButton(for: field)
                 }
             }
         }
         .padding(.vertical, 4)
     }
-    
+
+    @State private var executingActionKey: String?
+
+    @ViewBuilder
+    private func actionButton(for field: ConfigField) -> some View {
+        let style = field.actionStyle ?? "primary"
+        let isExecuting = executingActionKey == field.key
+
+        Button(action: {
+            guard let action = field.action, !action.isEmpty else { return }
+            executingActionKey = field.key
+            Task {
+                await viewModel.executeAction(command: action)
+                executingActionKey = nil
+            }
+        }) {
+            if isExecuting {
+                ProgressView()
+                    .scaleEffect(0.7)
+                    .frame(width: 80)
+            } else {
+                Label(field.displayTitle, systemImage: style == "danger" ? "exclamationmark.triangle" : "bolt.fill")
+                    .font(AXTypography.caption)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.white)
+                    .padding(.horizontal, AXSpacing.md)
+                    .padding(.vertical, AXSpacing.sm)
+                    .background(style == "danger" ? Color.axError : (style == "warning" ? Color.axWarning : themeColor))
+                    .cornerRadius(AXCornerRadius.sm)
+            }
+        }
+        .buttonStyle(PlainButtonStyle())
+        .disabled(isExecuting)
+    }
+
     private func updateField(sectionId: String, fieldId: String, value: ConfigValue) {
         if let sectionIndex = viewModel.config.configSchema.firstIndex(where: { $0.id == sectionId }),
            let fieldIndex = viewModel.config.configSchema[sectionIndex].fields.firstIndex(where: { $0.id == fieldId }) {

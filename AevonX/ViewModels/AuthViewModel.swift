@@ -93,14 +93,10 @@ class AuthViewModel: ObservableObject {
                 let deviceFPForReporter = await DeviceIdentifier.shared.getDeviceID() ?? ""
                 CoreBridge.shared.setReporterContext(baseURL: baseURL, token: token, deviceID: deviceFPForReporter)
 
-                // Load device keys for returning user
-                Task {
-                    let deviceFP = await DeviceIdentifier.shared.getDeviceID() ?? ""
-                    if !deviceFP.isEmpty {
-                        await DeviceKeyManager.shared.setDeviceFingerprint(deviceFP)
-                        await DeviceKeyManager.shared.fetchAndLoadKeys()
-                    }
-                }
+                // Device keys are loaded from Keychain cache by ContentView.task on startup.
+                // Fresh keys are fetched on-demand before SSH connections (ServerConnectionViewModel).
+                // DO NOT fetch here — concurrent ECDH handshake with subscription check
+                // causes session overwrite race condition that breaks response verification.
                 
                 // Parse trial info from user data
                 if let remaining = userData["trial_remaining_days"] as? Int, remaining > 0 {

@@ -102,6 +102,11 @@ class ServerListViewModel: ObservableObject {
         isAuthenticated = true
         let baseURL = AevonXCoreBridge.ConfigurationManager.shared.currentConfiguration.fullBaseURL
 
+        // Pre-establish ECDH secure channel before any concurrent secure API calls.
+        // This prevents a race condition where concurrent handshakes overwrite
+        // each other's session keys, causing response signature verification failures.
+        let _ = await APIBridge.shared.securityHandshakeAsync(baseURL: baseURL, token: token!)
+
         // 1. Fetch subscription status (separate error handling)
         do {
             let status = try await SubscriptionManager.shared.getSubscriptionStatus(forceRefresh: true)

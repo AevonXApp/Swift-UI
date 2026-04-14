@@ -481,6 +481,12 @@ public class ServerConnectionViewModel: ObservableObject {
                 }
             }
 
+            // Verify keys are loaded before proceeding
+            let verifiedKeyCount = await DeviceKeyManager.shared.keyCount()
+            if verifiedKeyCount == 0 {
+                throw ConnectionError.deviceKeysNotAvailable
+            }
+
             // Step 1: Request signed CAT from backend (backend is blind issuer)
             let signedCATToken = try await requestCATFromBackend()
 
@@ -1374,7 +1380,8 @@ enum ConnectionError: Error, LocalizedError {
     case deviceIdentificationFailed
     case authenticationRequired
     case sshConnectionFailed(String)
-    
+    case deviceKeysNotAvailable
+
     var errorDescription: String? {
         switch self {
         case .serverPayloadNotFound:
@@ -1385,6 +1392,8 @@ enum ConnectionError: Error, LocalizedError {
             return "Authentication required. Please log in."
         case .sshConnectionFailed(let detail):
             return "SSH connection failed: \(detail)"
+        case .deviceKeysNotAvailable:
+            return "Device verification keys not available. Please check your connection and try again."
         }
     }
 }
