@@ -239,22 +239,12 @@ struct MySQLOptimizationSection: View {
             return
         }
 
-        let result = await bridge.saveOptimization(serverID: serverId, appID: "mysql", settingsJSON: jsonStr)
-
-        if let data = result.data(using: .utf8),
-           let resp = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-           resp["success"] as? Bool == true {
-            toast.showSuccess("Optimization settings saved — mysql config updated")
-        } else {
-            var errMsg = "Failed to save optimization settings"
-            if let data = result.data(using: .utf8),
-               let resp = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-               let err = resp["error"] as? String {
-                errMsg = err
-            }
-            toast.showError(errMsg)
-        }
+        let raw = await bridge.saveOptimization(serverID: serverId, appID: "mysql", settingsJSON: jsonStr)
+        let outcome = parseOptSaveResponse(raw)
+        showOptSaveToast(outcome, appTitle: "MySQL", rawEnvelope: raw)
 
         isSaving = false
+        if case .failed = outcome { return }
+        await loadSettings()
     }
 }

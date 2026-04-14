@@ -126,20 +126,12 @@ struct ApacheOptimizationSection: View {
             return
         }
 
-        let result = await bridge.saveOptimization(serverID: serverId, appID: "apache", settingsJSON: jsonStr)
-
-        if let data = result.data(using: .utf8),
-           let resp = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-           resp["success"] as? Bool == true {
-            toast.showSuccess("Apache optimization saved")
-        } else {
-            var errMsg = "Failed to save optimization settings"
-            if let data = result.data(using: .utf8),
-               let resp = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-               let err = resp["error"] as? String { errMsg = err }
-            toast.showError(errMsg)
-        }
+        let raw = await bridge.saveOptimization(serverID: serverId, appID: "apache", settingsJSON: jsonStr)
+        let outcome = parseOptSaveResponse(raw)
+        showOptSaveToast(outcome, appTitle: "Apache", rawEnvelope: raw)
 
         isSaving = false
+        if case .failed = outcome { return }
+        await loadSettings()
     }
 }

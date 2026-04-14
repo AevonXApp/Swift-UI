@@ -126,14 +126,12 @@ struct LiteSpeedOptimizationSection: View {
               let jsonStr = String(data: jsonData, encoding: .utf8) else {
             toast.showError("Failed to encode settings"); isSaving = false; return
         }
-        let json = await bridge.saveOptimization(serverID: serverId, appID: "litespeed", settingsJSON: jsonStr)
-        if let data = json.data(using: .utf8),
-           let resp = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-           resp["success"] as? Bool == true {
-            toast.showSuccess("Optimization settings saved")
-        } else {
-            toast.showError("Failed to save optimization settings")
-        }
+        let raw = await bridge.saveOptimization(serverID: serverId, appID: "litespeed", settingsJSON: jsonStr)
+        let outcome = parseOptSaveResponse(raw)
+        showOptSaveToast(outcome, appTitle: "LiteSpeed", rawEnvelope: raw)
+
         isSaving = false
+        if case .failed = outcome { return }
+        await loadSettings()
     }
 }

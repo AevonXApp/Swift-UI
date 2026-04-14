@@ -192,6 +192,9 @@ struct ContentView: View {
         .overlay(alignment: .topTrailing) {
             GlobalToastOverlay()
         }
+        .overlay {
+            AXConfirmDialogOverlay()
+        }
         .preferredColorScheme(ThemeEngine.shared.colorScheme)
         .onChange(of: serverListViewModel.needsLogin) { _, needsLogin in
             if needsLogin {

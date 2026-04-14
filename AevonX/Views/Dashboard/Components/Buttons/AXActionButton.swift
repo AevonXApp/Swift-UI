@@ -98,10 +98,19 @@ struct AXActionButton: View {
     var size: AXButtonSize = .regular
     var isLoading: Bool = false
     var fullWidth: Bool = false
+    /// Optional override for the fill color. When set, replaces the style's
+    /// default `backgroundColor` (used for per-plugin theming and category tints).
+    /// Ghost buttons remain transparent regardless.
+    var tint: Color? = nil
     let action: () -> Void
-    
+
     @State private var isHovered = false
-    
+
+    private var resolvedFill: Color {
+        if style == .ghost { return .clear }
+        return tint ?? style.backgroundColor
+    }
+
     var body: some View {
         Button(action: action) {
             HStack(spacing: AXSpacing.xxs) {
@@ -113,7 +122,7 @@ struct AXActionButton: View {
                     Image(systemName: icon)
                         .font(.system(size: size.iconSize))
                 }
-                
+
                 Text(label)
                     .font(.system(size: size.fontSize, weight: .medium))
             }
@@ -123,7 +132,7 @@ struct AXActionButton: View {
             .padding(.vertical, size.verticalPadding)
             .background(
                 RoundedRectangle(cornerRadius: AXCornerRadius.sm)
-                    .fill(isHovered ? style.backgroundColor.opacity(0.9) : style.backgroundColor)
+                    .fill(isHovered ? resolvedFill.opacity(0.9) : resolvedFill)
                     .overlay(
                         RoundedRectangle(cornerRadius: AXCornerRadius.sm)
                             .stroke(style.borderColor, lineWidth: style.hasBorder ? 1 : 0)

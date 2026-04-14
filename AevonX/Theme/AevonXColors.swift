@@ -28,6 +28,13 @@ extension Color {
     public static var axAccentGreenDimmed: Color { ThemeEngine.shared.accentSecondary.opacity(0.6) }
     public static var axAccentPurple: Color { ThemeEngine.shared.accentPurple }
 
+    // Brand-fixed accents (do not change with theme — used by per-plugin tints
+    // and by buttons that need a guaranteed hue regardless of the active theme).
+    public static let axEmerald = Color(hex: "10B981")        // setup / positive actions
+    public static let axEmeraldDimmed = Color(hex: "10B981").opacity(0.6)
+    public static let axCyan = Color(hex: "06B6D4")           // connection / sparkle
+    public static let axCyanDimmed = Color(hex: "06B6D4").opacity(0.6)
+
     // Status Colors
     public static var axSuccess: Color { ThemeEngine.shared.success }
     public static var axWarning: Color { ThemeEngine.shared.warning }

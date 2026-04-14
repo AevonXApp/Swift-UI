@@ -93,13 +93,18 @@ struct PluginsTab: View {
                         .buttonStyle(PlainButtonStyle())
                         .help("Apply to become an AevonX plugin developer")
                         
-                        Picker("", selection: $selectedTab) {
-                            ForEach(PluginViewType.allCases) { type in
-                                Text(type.rawValue).tag(type)
-                            }
-                        }
-                        .pickerStyle(SegmentedPickerStyle())
-                        .frame(width: LayoutConstants.Input.medium)
+                        AXSegmentedControl(
+                            selection: $selectedTab,
+                            options: PluginViewType.allCases.map { type in
+                                (
+                                    type,
+                                    type.rawValue,
+                                    type == .marketplace ? "bag.fill" : "checkmark.seal.fill"
+                                )
+                            },
+                            tint: .axAccentBlue
+                        )
+                        .frame(width: 240)
                     }
                     .padding(.horizontal, AXSpacing.xl)
                     .padding(.vertical, AXSpacing.lg)

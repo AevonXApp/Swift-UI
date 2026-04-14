@@ -8,11 +8,15 @@
 import SwiftUI
 import ServiceManagement
 import UniformTypeIdentifiers
+import AevonXCoreBridge
 
 struct GeneralSettingsSection: View {
     @EnvironmentObject var settings: AppSettingsManager
 
     @State private var showResetConfirmation = false
+
+    @AppStorage(PluginPermissionValidator.unrestrictedHooksKey)
+    private var unrestrictedHooks: Bool = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: AXSpacing.xl) {
@@ -23,6 +27,7 @@ struct GeneralSettingsSection: View {
             )
 
             startupSection
+            developerSection
             dataSection
         }
         .onChange(of: settings.launchAtLogin) { _, newValue in
@@ -63,6 +68,18 @@ struct GeneralSettingsSection: View {
             }
         } catch {
             debugLog("[GeneralSettings] Failed to \(enabled ? "register" : "unregister") login item: \(error)")
+        }
+    }
+
+    // MARK: - Developer
+
+    private var developerSection: some View {
+        SettingsSection(title: "Developer", icon: "hammer") {
+            SettingsToggleRow(
+                title: "Unrestricted plugin hooks",
+                subtitle: "Skip the per-plugin allowed_actions whitelist when invoking action buttons. Only enable while building or debugging a plugin.",
+                isOn: $unrestrictedHooks
+            )
         }
     }
 

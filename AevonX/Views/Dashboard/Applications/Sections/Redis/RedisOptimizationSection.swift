@@ -99,15 +99,12 @@ struct RedisOptimizationSection: View {
         ]
         guard let jsonData = try? JSONSerialization.data(withJSONObject: settings),
               let jsonStr = String(data: jsonData, encoding: .utf8) else { toast.showError("Failed to encode settings"); isSaving = false; return }
-        let result = await bridge.saveOptimization(serverID: serverId, appID: "redis", settingsJSON: jsonStr)
-        if let data = result.data(using: .utf8), let resp = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-           resp["success"] as? Bool == true { toast.showSuccess("Optimization saved — redis.conf updated") }
-        else {
-            var errMsg = "Failed to save optimization settings"
-            if let data = result.data(using: .utf8), let resp = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-               let err = resp["error"] as? String { errMsg = err }
-            toast.showError(errMsg)
-        }
+        let raw = await bridge.saveOptimization(serverID: serverId, appID: "redis", settingsJSON: jsonStr)
+        let outcome = parseOptSaveResponse(raw)
+        showOptSaveToast(outcome, appTitle: "Redis", rawEnvelope: raw)
+
         isSaving = false
+        if case .failed = outcome { return }
+        await loadSettings()
     }
 }

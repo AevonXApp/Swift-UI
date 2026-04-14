@@ -88,43 +88,45 @@ struct PluginConfigurationView: View {
                     }
                     
                     if let info = viewModel.config.configInfo {
-                        HStack(spacing: AXSpacing.sm) {
+                        HStack(spacing: AXSpacing.xs) {
+                            if let website = info.websiteUrl, let url = URL(string: website) {
+                                AXLinkChip(label: "Website", icon: "globe", url: url, tint: themeColor)
+                            }
                             if let docs = info.docsUrl, let url = URL(string: docs) {
-                                Link(destination: url) {
-                                    Label(L10n.Plugin.docs, systemImage: "book.fill")
-                                        .font(.caption2)
-                                }
-                                .buttonStyle(AXLinkButtonStyle())
+                                AXLinkChip(label: L10n.Plugin.docs, icon: "book.fill", url: url, tint: themeColor)
                             }
                             if let github = info.githubUrl, let url = URL(string: github) {
-                                Link(destination: url) {
-                                    Label(L10n.Plugin.github, systemImage: "chevron.left.forwardslash.chevron.right")
-                                        .font(.caption2)
-                                }
-                                .buttonStyle(AXLinkButtonStyle())
+                                AXLinkChip(label: L10n.Plugin.github, icon: "chevron.left.forwardslash.chevron.right", url: url, tint: themeColor)
                             }
                             if let discord = info.discordUrl, let url = URL(string: discord) {
-                                Link(destination: url) {
-                                    Label(L10n.Plugin.discord, systemImage: "bubble.left.and.bubble.right.fill")
-                                        .font(.caption2)
-                                }
-                                .buttonStyle(AXLinkButtonStyle())
+                                AXLinkChip(label: L10n.Plugin.discord, icon: "bubble.left.and.bubble.right.fill", url: url, tint: themeColor)
                             }
                         }
-                        .padding(.top, 2)
+                        .padding(.top, AXSpacing.xxs)
                     }
                 }
-                
-                Spacer()
-                
-                Picker("", selection: $editMode) {
-                    Text(L10n.Plugin.configure).tag(ConfigEditMode.keyValue)
-                    Text(L10n.Plugin.editRawFile).tag(ConfigEditMode.raw)
-                }
-                .pickerStyle(SegmentedPickerStyle())
-                .frame(width: 160)
-                
-                Button(action: {
+
+                Spacer(minLength: AXSpacing.xl)
+
+                AXSegmentedControl(
+                    selection: $editMode,
+                    options: [
+                        (ConfigEditMode.keyValue, L10n.Plugin.configure, nil),
+                        (ConfigEditMode.raw, L10n.Plugin.editRawFile, nil)
+                    ],
+                    tint: themeColor,
+                    size: .compact
+                )
+                .frame(width: 240)
+
+                AXActionButton(
+                    label: L10n.Button.saveChanges,
+                    icon: "checkmark.circle.fill",
+                    style: .primary,
+                    size: .regular,
+                    isLoading: viewModel.isSaving,
+                    tint: themeColor
+                ) {
                     Task {
                         if editMode == .keyValue {
                             await viewModel.saveConfig()
@@ -132,23 +134,7 @@ struct PluginConfigurationView: View {
                             await viewModel.saveRawConfig()
                         }
                     }
-                }) {
-                    if viewModel.isSaving {
-                        ProgressView()
-                            .scaleEffect(0.8)
-                            .frame(width: 60)
-                    } else {
-                        Text(L10n.Button.saveChanges)
-                            .font(AXTypography.caption)
-                            .fontWeight(.semibold)
-                            .foregroundColor(.white)
-                            .padding(.horizontal, AXSpacing.md)
-                            .padding(.vertical, AXSpacing.sm)
-                            .background(themeColor)
-                            .cornerRadius(AXCornerRadius.sm)
-                    }
                 }
-                .buttonStyle(PlainButtonStyle())
                 .disabled(viewModel.isLoading || viewModel.isSaving)
             }
             .padding(AXSpacing.xl)
@@ -185,12 +171,35 @@ struct PluginConfigurationView: View {
         .task {
             await viewModel.loadConfig()
         }
+        // Native SwiftUI confirmation — fires from the View hierarchy itself,
+        // unlike the custom overlay singleton which the user reported never
+        // appearing. The `pendingConfirmField` state acts as the trigger.
+        .confirmationDialog(
+            pendingConfirmField?.displayTitle ?? "",
+            isPresented: Binding(
+                get: { pendingConfirmField != nil },
+                set: { if !$0 { pendingConfirmField = nil } }
+            ),
+            titleVisibility: .visible,
+            presenting: pendingConfirmField
+        ) { field in
+            Button(field.actionStyle == "destructive" || field.actionStyle == "danger" ? "Remove" : "Run",
+                   role: (field.actionStyle == "destructive" || field.actionStyle == "danger") ? .destructive : nil) {
+                fire(field)
+                pendingConfirmField = nil
+            }
+            Button("Cancel", role: .cancel) {
+                pendingConfirmField = nil
+            }
+        } message: { field in
+            Text(field.confirmMessage ?? "")
+        }
     }
     
     @ViewBuilder
     private var keyValueEditor: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: AXSpacing.xl) {
+            VStack(alignment: .leading, spacing: AXSpacing.xxl) {
                 if viewModel.config.configSchema.isEmpty {
                     VStack(spacing: AXSpacing.md) {
                         Image(systemName: "slider.horizontal.3")
@@ -357,37 +366,151 @@ struct PluginConfigurationView: View {
     }
 
     @State private var executingActionKey: String?
+    @State private var pendingConfirmField: ConfigField? = nil
 
+    private func categoryTint(_ raw: String?) -> Color {
+        switch raw {
+        case "destructive", "danger": return .axError
+        case "warning":                return .axWarning
+        case "connection":             return .axCyan
+        case "setup":                  return .axEmerald
+        case "ghost":                  return .axSurfaceActive
+        default:                       return themeColor
+        }
+    }
+
+    private func categoryIcon(_ raw: String?) -> String {
+        switch raw {
+        case "destructive", "danger": return "trash.fill"
+        case "warning":                return "exclamationmark.triangle.fill"
+        case "connection":             return "antenna.radiowaves.left.and.right"
+        case "setup":                  return "sparkles"
+        case "ghost":                  return "info.circle.fill"
+        default:                       return "bolt.fill"
+        }
+    }
+
+    /// Plain SwiftUI Button — NO custom AXActionButton wrapper, NO custom
+    /// AXConfirmDialog overlay, NO ViewModel layer for the tap handler.
+    /// Pipeline: tap → SSHBridge.executeAsyncJSON → toast. That's it.
     @ViewBuilder
     private func actionButton(for field: ConfigField) -> some View {
-        let style = field.actionStyle ?? "primary"
         let isExecuting = executingActionKey == field.key
+        let tint = categoryTint(field.actionStyle)
+        let icon = categoryIcon(field.actionStyle)
 
-        Button(action: {
-            guard let action = field.action, !action.isEmpty else { return }
-            executingActionKey = field.key
-            Task {
-                await viewModel.executeAction(command: action)
+        Button {
+            // The tap is processed synchronously by SwiftUI; whatever happens
+            // inside MUST be observable so the user sees that the tap landed.
+            if let confirm = field.confirmMessage, !confirm.isEmpty {
+                pendingConfirmField = field
+            } else {
+                fire(field)
+            }
+        } label: {
+            HStack(spacing: AXSpacing.xs) {
+                if isExecuting {
+                    ProgressView()
+                        .scaleEffect(0.6)
+                        .frame(width: 12, height: 12)
+                } else {
+                    Image(systemName: icon)
+                        .font(.system(size: 11, weight: .semibold))
+                }
+                Text(field.displayTitle)
+                    .font(.system(size: 12, weight: .semibold))
+            }
+            .foregroundColor(.white)
+            .padding(.horizontal, AXSpacing.md)
+            .padding(.vertical, AXSpacing.sm)
+            .background(
+                RoundedRectangle(cornerRadius: AXCornerRadius.md)
+                    .fill(tint)
+            )
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .disabled(isExecuting)
+    }
+
+    /// Direct path: UI tap → CGo `SSHBridge.executeAsyncJSON` → command on
+    /// the remote server. No PluginManager, no HookCommandDispatcher, no
+    /// validator. Whatever JSON Core returns lands in the toast.
+    private func fire(_ field: ConfigField) {
+        guard let cmd = field.action, !cmd.isEmpty else {
+            GlobalToastManager.shared.showError(
+                "\(field.displayTitle) — empty command",
+                details: "Field '\(field.key)' has no action in config.avx",
+                detailsTitle: field.displayTitle
+            )
+            return
+        }
+
+        let title = field.displayTitle
+        let serverId = viewModel.serverId
+
+        // INSTANT visible feedback — the user sees a toast appear before SSH
+        // even starts, so they always know the tap registered.
+        let loadingId = GlobalToastManager.shared.showProgress("\(title)…")
+        executingActionKey = field.key
+
+        Task {
+            let json = await SSHBridge.shared.executeAsyncJSON(
+                serverID: serverId,
+                command: cmd
+            )
+
+            await MainActor.run {
+                GlobalToastManager.shared.dismiss(id: loadingId)
+
+                let (msg, isError) = parseCoreJSON(json, fallbackTitle: title)
+                let details = """
+                Command: \(cmd)
+                Server: \(serverId)
+
+                ── Core JSON envelope ──
+                \(json)
+                """
+                if isError {
+                    GlobalToastManager.shared.showError(msg, details: details, detailsTitle: title)
+                } else {
+                    GlobalToastManager.shared.showSuccess(msg, details: details, detailsTitle: title)
+                }
                 executingActionKey = nil
             }
-        }) {
-            if isExecuting {
-                ProgressView()
-                    .scaleEffect(0.7)
-                    .frame(width: 80)
-            } else {
-                Label(field.displayTitle, systemImage: style == "danger" ? "exclamationmark.triangle" : "bolt.fill")
-                    .font(AXTypography.caption)
-                    .fontWeight(.semibold)
-                    .foregroundColor(.white)
-                    .padding(.horizontal, AXSpacing.md)
-                    .padding(.vertical, AXSpacing.sm)
-                    .background(style == "danger" ? Color.axError : (style == "warning" ? Color.axWarning : themeColor))
-                    .cornerRadius(AXCornerRadius.sm)
-            }
         }
-        .buttonStyle(PlainButtonStyle())
-        .disabled(isExecuting)
+    }
+
+    /// Parses Core's SSH envelope:
+    ///   {"success": Bool, "data": {"stdout": String, "stderr": String, "exit_code": Int}}
+    /// then inspects stdout for a plugin-shaped {"status": "ok"|"error", "message": ...}.
+    private func parseCoreJSON(_ raw: String, fallbackTitle: String) -> (message: String, isError: Bool) {
+        guard let data = raw.data(using: .utf8),
+              let outer = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            return ("\(fallbackTitle) — no response from Core", true)
+        }
+        let coreOk = (outer["success"] as? Bool) ?? false
+        let inner = outer["data"] as? [String: Any] ?? [:]
+        let stdout = (inner["stdout"] as? String ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        let exitCode = inner["exit_code"] as? Int ?? -1
+
+        if !coreOk {
+            let coreError = (outer["error"] as? String) ?? "SSH failed"
+            return ("\(fallbackTitle) — \(coreError)", true)
+        }
+
+        if let stdoutData = stdout.data(using: .utf8),
+           let pluginJSON = try? JSONSerialization.jsonObject(with: stdoutData) as? [String: Any],
+           let status = pluginJSON["status"] as? String {
+            let pluginMsg = (pluginJSON["message"] as? String) ?? fallbackTitle
+            let pluginErr = !(status == "ok" || status == "success")
+            return (pluginMsg, pluginErr)
+        }
+
+        if exitCode == 0 {
+            return (stdout.isEmpty ? "\(fallbackTitle) completed" : stdout, false)
+        }
+        return ("\(fallbackTitle) failed (exit \(exitCode))", true)
     }
 
     private func updateField(sectionId: String, fieldId: String, value: ConfigValue) {

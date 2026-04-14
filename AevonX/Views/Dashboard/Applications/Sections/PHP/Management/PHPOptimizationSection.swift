@@ -98,17 +98,21 @@ struct PHPOptimizationSection: View {
 
     private func saveSettings() async {
         isSaving = true
-        if let jsonData = try? JSONSerialization.data(withJSONObject: settings),
-           let jsonStr = String(data: jsonData, encoding: .utf8) {
-            let result = await bridge.saveOptimization(serverID: serverId, appID: "php-fpm", settingsJSON: jsonStr)
-            if let d = result.data(using: .utf8),
-               let r = try? JSONSerialization.jsonObject(with: d) as? [String: Any],
-               r["success"] as? Bool == true {
-                toast.showSuccess("PHP optimization settings saved")
-            } else {
-                toast.showError("Failed to save settings")
-            }
+        defer { isSaving = false }
+
+        guard let jsonData = try? JSONSerialization.data(withJSONObject: settings),
+              let jsonStr = String(data: jsonData, encoding: .utf8) else {
+            toast.showError("Invalid settings payload")
+            return
         }
-        isSaving = false
+
+        let raw = await bridge.saveOptimization(serverID: serverId, appID: "php-fpm", settingsJSON: jsonStr)
+        let outcome = parseOptSaveResponse(raw)
+        showOptSaveToast(outcome, appTitle: "PHP-FPM", rawEnvelope: raw)
+
+        // On any successful persistence (with or without restart) re-read
+        // from the server so the UI reflects reality, not the user's edits.
+        if case .failed = outcome { return }
+        await loadSettings()
     }
 }

@@ -45,6 +45,11 @@ public struct ToastItem: Identifiable, Equatable {
     public let type: ToastType
     public let timestamp: Date
     public var autoDismiss: Bool
+    /// Optional raw payload (JSON, stderr, command output) shown behind a
+    /// "View Details" button. Use for developer-facing feedback.
+    public let details: String?
+    /// Title shown in the detail sheet header (defaults to message).
+    public let detailsTitle: String?
 
     public static func == (lhs: ToastItem, rhs: ToastItem) -> Bool {
         lhs.id == rhs.id
@@ -63,14 +68,17 @@ public final class GlobalToastManager: ObservableObject {
 
     private init() {}
 
-    public func show(_ message: String, type: ToastType, duration: TimeInterval = 3.0) {
+    public func show(_ message: String, type: ToastType, duration: TimeInterval = 3.0,
+                     details: String? = nil, detailsTitle: String? = nil) {
         let id = UUID().uuidString
         let toast = ToastItem(
             id: id,
             message: message,
             type: type,
             timestamp: Date(),
-            autoDismiss: type != .loading
+            autoDismiss: type != .loading,
+            details: details,
+            detailsTitle: detailsTitle
         )
 
         withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
@@ -84,24 +92,30 @@ public final class GlobalToastManager: ObservableObject {
         }
 
         if toast.autoDismiss {
-            scheduleDismiss(id: id, after: duration)
+            // Stretch dismiss when the user might want to read details.
+            let effective = details != nil ? max(duration, 6.0) : duration
+            scheduleDismiss(id: id, after: effective)
         }
     }
 
-    public func showSuccess(_ message: String, duration: TimeInterval = 3.0) {
-        show(message, type: .success, duration: duration)
+    public func showSuccess(_ message: String, duration: TimeInterval = 3.0,
+                            details: String? = nil, detailsTitle: String? = nil) {
+        show(message, type: .success, duration: duration, details: details, detailsTitle: detailsTitle)
     }
 
-    public func showError(_ message: String, duration: TimeInterval = 8.0) {
-        show(message, type: .error, duration: duration)
+    public func showError(_ message: String, duration: TimeInterval = 8.0,
+                          details: String? = nil, detailsTitle: String? = nil) {
+        show(message, type: .error, duration: duration, details: details, detailsTitle: detailsTitle)
     }
 
-    public func showWarning(_ message: String, duration: TimeInterval = 5.0) {
-        show(message, type: .warning, duration: duration)
+    public func showWarning(_ message: String, duration: TimeInterval = 5.0,
+                            details: String? = nil, detailsTitle: String? = nil) {
+        show(message, type: .warning, duration: duration, details: details, detailsTitle: detailsTitle)
     }
 
-    public func showInfo(_ message: String, duration: TimeInterval = 4.0) {
-        show(message, type: .info, duration: duration)
+    public func showInfo(_ message: String, duration: TimeInterval = 4.0,
+                         details: String? = nil, detailsTitle: String? = nil) {
+        show(message, type: .info, duration: duration, details: details, detailsTitle: detailsTitle)
     }
 
     @discardableResult
@@ -112,7 +126,9 @@ public final class GlobalToastManager: ObservableObject {
             message: message,
             type: .loading,
             timestamp: Date(),
-            autoDismiss: false
+            autoDismiss: false,
+            details: nil,
+            detailsTitle: nil
         )
         withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
             toasts.append(toast)
@@ -132,7 +148,9 @@ public final class GlobalToastManager: ObservableObject {
                 message: message,
                 type: .loading,
                 timestamp: toasts[idx].timestamp,
-                autoDismiss: false
+                autoDismiss: false,
+                details: toasts[idx].details,
+                detailsTitle: toasts[idx].detailsTitle
             )
         }
     }
@@ -167,6 +185,7 @@ public final class GlobalToastManager: ObservableObject {
 
 struct GlobalToastOverlay: View {
     @ObservedObject private var manager = GlobalToastManager.shared
+    @State private var detailsToast: ToastItem? = nil
 
     var body: some View {
         VStack(alignment: .trailing, spacing: AXSpacing.sm) {
@@ -181,40 +200,72 @@ struct GlobalToastOverlay: View {
         .padding(.top, AXSpacing.xl)
         .padding(.trailing, AXSpacing.lg)
         .animation(.spring(response: 0.3, dampingFraction: 0.8), value: manager.toasts.count)
+        .sheet(item: $detailsToast) { toast in
+            ToastDetailSheet(
+                title: toast.detailsTitle ?? toast.message,
+                tint: toast.type.color,
+                payload: toast.details ?? ""
+            )
+        }
     }
 
     private func toastCard(_ toast: ToastItem) -> some View {
-        HStack(spacing: AXSpacing.sm) {
-            if toast.type == .loading {
-                ProgressView()
-                    .scaleEffect(0.6)
-                    .frame(width: 16, height: 16)
-            } else {
-                Image(systemName: toast.type.icon)
-                    .font(.system(size: 14))
+        VStack(alignment: .leading, spacing: AXSpacing.xs) {
+            HStack(spacing: AXSpacing.sm) {
+                if toast.type == .loading {
+                    ProgressView()
+                        .scaleEffect(0.6)
+                        .frame(width: 16, height: 16)
+                } else {
+                    Image(systemName: toast.type.icon)
+                        .font(.system(size: 14))
+                        .foregroundColor(toast.type.color)
+                }
+
+                Text(toast.message)
+                    .font(AXTypography.subheadline)
+                    .foregroundColor(.axTextPrimary)
+                    .lineLimit(2)
+
+                Spacer(minLength: AXSpacing.sm)
+
+                Button {
+                    manager.dismiss(id: toast.id)
+                } label: {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 9, weight: .bold))
+                        .foregroundColor(.axTextMuted)
+                        .frame(width: 18, height: 18)
+                        .background(Color.axTextMuted.opacity(0.15))
+                        .cornerRadius(9)
+                }
+                .buttonStyle(.plain)
+            }
+
+            if let details = toast.details, !details.isEmpty {
+                Button {
+                    detailsToast = toast
+                } label: {
+                    HStack(spacing: AXSpacing.xxs) {
+                        Image(systemName: "doc.text.magnifyingglass")
+                            .font(.system(size: 9, weight: .semibold))
+                        Text("View Details")
+                            .font(.system(size: 10, weight: .semibold))
+                    }
                     .foregroundColor(toast.type.color)
+                    .padding(.horizontal, AXSpacing.sm)
+                    .padding(.vertical, AXSpacing.xxs)
+                    .background(
+                        Capsule().fill(toast.type.color.opacity(0.12))
+                    )
+                }
+                .buttonStyle(.plain)
+                .padding(.leading, 22) // align under the message text
             }
-
-            Text(toast.message)
-                .font(AXTypography.subheadline)
-                .foregroundColor(.axTextPrimary)
-                .lineLimit(2)
-
-            Button {
-                manager.dismiss(id: toast.id)
-            } label: {
-                Image(systemName: "xmark")
-                    .font(.system(size: 9, weight: .bold))
-                    .foregroundColor(.axTextMuted)
-                    .frame(width: 18, height: 18)
-                    .background(Color.axTextMuted.opacity(0.15))
-                    .cornerRadius(9)
-            }
-            .buttonStyle(.plain)
         }
         .padding(.horizontal, AXSpacing.lg)
         .padding(.vertical, AXSpacing.md)
-        .frame(maxWidth: 400, alignment: .leading)
+        .frame(maxWidth: 420, alignment: .leading)
         .background(
             RoundedRectangle(cornerRadius: AXCornerRadius.md)
                 .fill(.ultraThinMaterial)
