@@ -24,36 +24,8 @@ struct DockerConnectDomainSheet: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            // Header
-            HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                    HStack(spacing: 6) {
-                        Image(systemName: "globe")
-                            .foregroundColor(existingDomain != nil && !showChangeForm ? .axSuccess : .axAccentBlue)
-                            .font(.system(size: 16))
-                        Text(existingDomain != nil && !showChangeForm ? "Manage Domain" : "Connect Domain")
-                            .font(AXTypography.headline)
-                            .foregroundColor(.axTextPrimary)
-                    }
-                    Text(existingDomain != nil && !showChangeForm ? "Domain connected to \(container.names)" : "Route a domain to \(container.names)")
-                        .font(AXTypography.caption)
-                        .foregroundColor(.axTextSecondary)
-                }
-                Spacer()
-                Button(action: { dismiss() }) {
-                    Image(systemName: "xmark")
-                        .foregroundColor(.axTextSecondary)
-                        .frame(width: 28, height: 28)
-                        .background(Color.axSurface)
-                        .cornerRadius(6)
-                }
-                .buttonStyle(.plain)
-            }
-            .padding(AXSpacing.lg)
-            .background(Color.axSurface)
-            
+            sheetHeader
             Divider()
-            
             if isConnecting || isDisconnecting {
                 // Progress / Result view
                 VStack(spacing: AXSpacing.lg) {
@@ -482,6 +454,38 @@ struct DockerConnectDomainSheet: View {
         .onAppear { detectPorts() }
     }
     
+    // MARK: - Extracted Sections
+
+    @ViewBuilder
+    private var sheetHeader: some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(spacing: 6) {
+                    Image(systemName: "globe")
+                        .foregroundColor(existingDomain != nil && !showChangeForm ? .axSuccess : .axAccentBlue)
+                        .font(.system(size: 16))
+                    Text(existingDomain != nil && !showChangeForm ? "Manage Domain" : "Connect Domain")
+                        .font(AXTypography.headline).foregroundColor(.axTextPrimary)
+                }
+                Text(existingDomain != nil && !showChangeForm
+                     ? "Domain connected to \(container.names)"
+                     : "Route a domain to \(container.names)")
+                    .font(AXTypography.caption).foregroundColor(.axTextSecondary)
+            }
+            Spacer()
+            Button(action: { dismiss() }) {
+                Image(systemName: "xmark")
+                    .foregroundColor(.axTextSecondary)
+                    .frame(width: 28, height: 28)
+                    .background(Color.axSurface)
+                    .cornerRadius(6)
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(AXSpacing.lg)
+        .background(Color.axSurface)
+    }
+
     private var canConnect: Bool {
         !domain.isEmpty && !selectedPort.isEmpty && domain.contains(".")
     }

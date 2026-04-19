@@ -13,12 +13,12 @@ struct PrivacyMask {
         // IPv6
         if ip.contains(":") {
             let parts = ip.split(separator: ":", omittingEmptySubsequences: false)
-            guard parts.count > 2 else { return ip }
-            var masked = [String(parts.first!)]
+            guard parts.count > 2, let first = parts.first, let last = parts.last else { return ip }
+            var masked = [String(first)]
             for i in 1..<(parts.count - 1) {
                 masked.append(parts[i].isEmpty ? "" : "***")
             }
-            masked.append(String(parts.last!))
+            masked.append(String(last))
             return masked.joined(separator: ":")
         }
 
@@ -30,9 +30,9 @@ struct PrivacyMask {
 
     /// Masks a username: root -> r**t, admin -> a***n
     static func username(_ username: String) -> String {
-        guard username.count > 2 else { return String(repeating: "*", count: username.count) }
-        let first = username.first!
-        let last = username.last!
+        guard username.count > 2, let first = username.first, let last = username.last else {
+            return String(repeating: "*", count: username.count)
+        }
         let middle = String(repeating: "*", count: username.count - 2)
         return "\(first)\(middle)\(last)"
     }
@@ -68,8 +68,7 @@ struct PrivacyMask {
     // MARK: - Private
 
     private static func maskWord(_ word: String) -> String {
-        guard word.count > 1 else { return "*" }
-        let first = word.first!
+        guard word.count > 1, let first = word.first else { return "*" }
         let rest = String(repeating: "*", count: word.count - 1)
         return "\(first)\(rest)"
     }

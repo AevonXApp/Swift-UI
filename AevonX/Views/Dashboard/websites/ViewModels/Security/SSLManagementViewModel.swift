@@ -337,8 +337,9 @@ public final class SSLManagementViewModel: ObservableObject {
         // Validate PEM format
         let errors = upload.validate()
         guard errors.isEmpty else {
-            error = errors.joined(separator: "\n")
-            toastManager.showError(error!)
+            let errorMessage = errors.joined(separator: "\n")
+            error = errorMessage
+            toastManager.showError(errorMessage)
             return
         }
 

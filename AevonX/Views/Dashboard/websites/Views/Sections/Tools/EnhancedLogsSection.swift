@@ -128,7 +128,7 @@ struct EnhancedLogsSection: View {
 
             if !viewModel.logFiles.isEmpty {
                 Picker("Log File", selection: Binding(
-                    get: { viewModel.selectedLog ?? viewModel.logFiles.first! },
+                    get: { viewModel.selectedLog ?? viewModel.logFiles[0] },
                     set: { viewModel.selectedLog = $0; Task { await viewModel.loadLogLines() } }
                 )) {
                     ForEach(viewModel.logFiles) { log in

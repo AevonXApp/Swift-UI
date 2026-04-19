@@ -915,255 +915,172 @@ struct PortRuleSheet: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            // Header
-            HStack {
-                HStack(spacing: AXSpacing.sm) {
-                    Image(systemName: "shield.lefthalf.filled")
-                        .font(.system(size: 18))
-                        .foregroundColor(.axAccentBlue)
-                    Text(title)
-                        .font(AXTypography.title2)
-                        .foregroundColor(.axTextPrimary)
-                }
-
-                Spacer()
-
-                Button(action: { dismiss() }) {
-                    Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: 20))
-                        .foregroundColor(.axTextMuted)
-                }
-                .buttonStyle(PlainButtonStyle())
-            }
-            .padding(AXSpacing.xl)
-            .background(Color.axBackgroundTertiary.opacity(0.5))
-
+            ruleSheetHeader
             Divider().background(Color.axBorder)
-
-            // Form
             VStack(spacing: AXSpacing.xl) {
-                // Protocol
-                VStack(alignment: .leading, spacing: AXSpacing.sm) {
-                    Text("Protocol")
-                        .font(AXTypography.caption)
-                        .fontWeight(.semibold)
-                        .foregroundColor(.axTextMuted)
-                        .textCase(.uppercase)
-
-                    HStack(spacing: AXSpacing.sm) {
-                        ForEach(protocols, id: \.self) { proto in
-                            Button(action: { protocolType = proto }) {
-                                Text(proto.uppercased())
-                                    .font(.system(size: 13, weight: .semibold))
-                                    .foregroundColor(protocolType == proto ? .white : .axTextSecondary)
-                                    .frame(maxWidth: .infinity)
-                                    .padding(.vertical, AXSpacing.sm)
-                                    .background(
-                                        RoundedRectangle(cornerRadius: AXCornerRadius.md)
-                                            .fill(protocolType == proto ? Color.axAccentBlue : Color.axSurface)
-                                            .overlay(
-                                                RoundedRectangle(cornerRadius: AXCornerRadius.md)
-                                                    .stroke(protocolType == proto ? Color.axAccentBlue : Color.axBorder, lineWidth: 1)
-                                            )
-                                    )
-                            }
-                            .buttonStyle(PlainButtonStyle())
-                        }
-                    }
-                }
-
-                // Port
-                VStack(alignment: .leading, spacing: AXSpacing.sm) {
-                    Text(L10n.Field.port)
-                        .font(AXTypography.caption)
-                        .fontWeight(.semibold)
-                        .foregroundColor(.axTextMuted)
-                        .textCase(.uppercase)
-
-                    TextField("e.g. 80, 443 or 8000-9000", text: $port)
-                        .textFieldStyle(.plain)
-                        .font(.system(size: 14, weight: .medium, design: .monospaced))
-                        .padding(AXSpacing.md)
-                        .background(
-                            RoundedRectangle(cornerRadius: AXCornerRadius.md)
-                                .fill(Color.axBackgroundTertiary)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: AXCornerRadius.md)
-                                        .stroke(portError != nil ? Color.axError : Color.axBorder, lineWidth: 1)
-                                )
-                        )
-                        .onChange(of: port) { _, newValue in
-                            // Only allow: ASCII digits 0-9, comma, hyphen, colon
-                            let filtered = newValue.filter { char in
-                                char.isASCII && (char.isNumber || char == "," || char == "-" || char == ":")
-                            }
-                            if filtered != newValue {
-                                port = filtered
-                                portError = "Only English digits (0-9), commas, and hyphens allowed"
-                            } else {
-                                portError = nil
-                            }
-                        }
-
-                    if let error = portError {
-                        Text(error)
-                            .font(AXTypography.caption2)
-                            .foregroundColor(.axError)
-                    }
-                }
-
-                // Source IP
-                VStack(alignment: .leading, spacing: AXSpacing.sm) {
-                    Text("Source IP")
-                        .font(AXTypography.caption)
-                        .fontWeight(.semibold)
-                        .foregroundColor(.axTextMuted)
-                        .textCase(.uppercase)
-
-                    HStack(spacing: AXSpacing.sm) {
-                        ForEach(["All", "Specific IP"], id: \.self) { opt in
-                            Button(action: { sourceIP = opt }) {
-                                Text(opt)
-                                    .font(.system(size: 13, weight: .medium))
-                                    .foregroundColor(sourceIP == opt ? .white : .axTextSecondary)
-                                    .frame(maxWidth: .infinity)
-                                    .padding(.vertical, AXSpacing.sm)
-                                    .background(
-                                        RoundedRectangle(cornerRadius: AXCornerRadius.md)
-                                            .fill(sourceIP == opt ? Color.axAccentBlue : Color.axSurface)
-                                            .overlay(
-                                                RoundedRectangle(cornerRadius: AXCornerRadius.md)
-                                                    .stroke(sourceIP == opt ? Color.axAccentBlue : Color.axBorder, lineWidth: 1)
-                                            )
-                                    )
-                            }
-                            .buttonStyle(PlainButtonStyle())
-                        }
-                    }
-
-                    if sourceIP == "Specific IP" {
-                        TextField("Enter IP address", text: $specificIP)
-                            .textFieldStyle(.plain)
-                            .font(.system(size: 13, design: .monospaced))
-                            .padding(AXSpacing.md)
-                            .background(
-                                RoundedRectangle(cornerRadius: AXCornerRadius.md)
-                                    .fill(Color.axBackgroundTertiary)
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: AXCornerRadius.md)
-                                            .stroke(Color.axBorder, lineWidth: 1)
-                                    )
-                            )
-                    }
-                }
-
-                // Strategy
-                VStack(alignment: .leading, spacing: AXSpacing.sm) {
-                    Text("Strategy")
-                        .font(AXTypography.caption)
-                        .fontWeight(.semibold)
-                        .foregroundColor(.axTextMuted)
-                        .textCase(.uppercase)
-
-                    HStack(spacing: AXSpacing.sm) {
-                        ForEach(strategies, id: \.self) { s in
-                            Button(action: { strategy = s }) {
-                                HStack(spacing: AXSpacing.xs) {
-                                    Image(systemName: s == "ACCEPT" ? "checkmark.circle" : "xmark.circle")
-                                        .font(.system(size: 12))
-                                    Text(s == "ACCEPT" ? "Allow" : "Deny")
-                                        .font(.system(size: 13, weight: .semibold))
-                                }
-                                .foregroundColor(strategy == s ? .white : .axTextSecondary)
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, AXSpacing.sm)
-                                .background(
-                                    RoundedRectangle(cornerRadius: AXCornerRadius.md)
-                                        .fill(strategy == s ? (s == "ACCEPT" ? Color.axAccentGreen : Color.axError) : Color.axSurface)
-                                        .overlay(
-                                            RoundedRectangle(cornerRadius: AXCornerRadius.md)
-                                                .stroke(strategy == s ? Color.clear : Color.axBorder, lineWidth: 1)
-                                        )
-                                )
-                            }
-                            .buttonStyle(PlainButtonStyle())
-                        }
-                    }
-                }
-
-                // Direction
-                VStack(alignment: .leading, spacing: AXSpacing.sm) {
-                    Text("Direction")
-                        .font(AXTypography.caption)
-                        .fontWeight(.semibold)
-                        .foregroundColor(.axTextMuted)
-                        .textCase(.uppercase)
-
-                    HStack(spacing: AXSpacing.sm) {
-                        ForEach(directions, id: \.self) { d in
-                            Button(action: { direction = d }) {
-                                HStack(spacing: AXSpacing.xs) {
-                                    Image(systemName: d == "INPUT" ? "arrow.down.to.line" : "arrow.up.to.line")
-                                        .font(.system(size: 12))
-                                    Text(d == "INPUT" ? "Inbound" : "Outbound")
-                                        .font(.system(size: 13, weight: .semibold))
-                                }
-                                .foregroundColor(direction == d ? .white : .axTextSecondary)
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, AXSpacing.sm)
-                                .background(
-                                    RoundedRectangle(cornerRadius: AXCornerRadius.md)
-                                        .fill(direction == d ? Color.axAccentBlue : Color.axSurface)
-                                        .overlay(
-                                            RoundedRectangle(cornerRadius: AXCornerRadius.md)
-                                                .stroke(direction == d ? Color.axAccentBlue : Color.axBorder, lineWidth: 1)
-                                        )
-                                )
-                            }
-                            .buttonStyle(PlainButtonStyle())
-                        }
-                    }
-                }
+                protocolPicker
+                portField
+                sourceIPField
+                strategyPicker
+                directionPicker
             }
             .padding(AXSpacing.xl)
-
             Spacer()
-
             Divider().background(Color.axBorder)
-
-            // Footer
-            HStack {
-                // Hint
-                Label("Supports ranges like 8000-9000", systemImage: "info.circle")
-                    .font(AXTypography.caption)
-                    .foregroundColor(.axTextMuted)
-
-                Spacer()
-
-                Button(L10n.Button.cancel) { dismiss() }
-                    .buttonStyle(PlainButtonStyle())
-                    .foregroundColor(.axTextSecondary)
-                    .padding(.horizontal, AXSpacing.xl)
-                    .padding(.vertical, AXSpacing.sm)
-
-                Button(action: saveRule) {
-                    Text(L10n.Button.confirm)
-                        .font(AXTypography.headline)
-                        .foregroundColor(.white)
-                        .padding(.horizontal, AXSpacing.xxl)
-                        .padding(.vertical, AXSpacing.sm)
-                        .background(
-                            RoundedRectangle(cornerRadius: AXCornerRadius.md)
-                                .fill(isValid ? Color.axAccentGreen : Color.axTextMuted)
-                        )
-                }
-                .buttonStyle(PlainButtonStyle())
-                .disabled(!isValid)
-            }
-            .padding(AXSpacing.xl)
+            ruleSheetFooter
         }
         .frame(width: 460, height: 620)
         .background(Color.axBackgroundSecondary)
+    }
+
+    // MARK: - Header & Footer
+
+    @ViewBuilder private var ruleSheetHeader: some View {
+        HStack {
+            HStack(spacing: AXSpacing.sm) {
+                Image(systemName: "shield.lefthalf.filled").font(.system(size: 18)).foregroundColor(.axAccentBlue)
+                Text(title).font(AXTypography.title2).foregroundColor(.axTextPrimary)
+            }
+            Spacer()
+            Button(action: { dismiss() }) {
+                Image(systemName: "xmark.circle.fill").font(.system(size: 20)).foregroundColor(.axTextMuted)
+            }
+            .buttonStyle(PlainButtonStyle())
+        }
+        .padding(AXSpacing.xl)
+        .background(Color.axBackgroundTertiary.opacity(0.5))
+    }
+
+    @ViewBuilder private var ruleSheetFooter: some View {
+        HStack {
+            Label("Supports ranges like 8000-9000", systemImage: "info.circle").font(AXTypography.caption).foregroundColor(.axTextMuted)
+            Spacer()
+            Button(L10n.Button.cancel) { dismiss() }
+                .buttonStyle(PlainButtonStyle()).foregroundColor(.axTextSecondary)
+                .padding(.horizontal, AXSpacing.xl).padding(.vertical, AXSpacing.sm)
+            Button(action: saveRule) {
+                Text(L10n.Button.confirm).font(AXTypography.headline).foregroundColor(.white)
+                    .padding(.horizontal, AXSpacing.xxl).padding(.vertical, AXSpacing.sm)
+                    .background(RoundedRectangle(cornerRadius: AXCornerRadius.md).fill(isValid ? Color.axAccentGreen : Color.axTextMuted))
+            }
+            .buttonStyle(PlainButtonStyle()).disabled(!isValid)
+        }
+        .padding(AXSpacing.xl)
+    }
+
+    // MARK: - Form Fields
+
+    @ViewBuilder private var protocolPicker: some View {
+        formSection("Protocol") {
+            HStack(spacing: AXSpacing.sm) {
+                ForEach(protocols, id: \.self) { proto in
+                    Button(action: { protocolType = proto }) {
+                        Text(proto.uppercased()).font(.system(size: 13, weight: .semibold))
+                            .foregroundColor(protocolType == proto ? .white : .axTextSecondary)
+                            .frame(maxWidth: .infinity).padding(.vertical, AXSpacing.sm)
+                            .background(segmentBackground(selected: protocolType == proto))
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                }
+            }
+        }
+    }
+
+    @ViewBuilder private var portField: some View {
+        formSection(L10n.Field.port) {
+            VStack(alignment: .leading, spacing: AXSpacing.xs) {
+                TextField("e.g. 80, 443 or 8000-9000", text: $port)
+                    .textFieldStyle(.plain).font(.system(size: 14, weight: .medium, design: .monospaced))
+                    .padding(AXSpacing.md)
+                    .background(RoundedRectangle(cornerRadius: AXCornerRadius.md).fill(Color.axBackgroundTertiary)
+                        .overlay(RoundedRectangle(cornerRadius: AXCornerRadius.md).stroke(portError != nil ? Color.axError : Color.axBorder, lineWidth: 1)))
+                    .onChange(of: port) { _, newValue in
+                        let filtered = newValue.filter { $0.isASCII && ($0.isNumber || $0 == "," || $0 == "-" || $0 == ":") }
+                        if filtered != newValue { port = filtered; portError = "Only English digits (0-9), commas, and hyphens allowed" }
+                        else { portError = nil }
+                    }
+                if let error = portError { Text(error).font(AXTypography.caption2).foregroundColor(.axError) }
+            }
+        }
+    }
+
+    @ViewBuilder private var sourceIPField: some View {
+        formSection("Source IP") {
+            VStack(alignment: .leading, spacing: AXSpacing.sm) {
+                HStack(spacing: AXSpacing.sm) {
+                    ForEach(["All", "Specific IP"], id: \.self) { opt in
+                        Button(action: { sourceIP = opt }) {
+                            Text(opt).font(.system(size: 13, weight: .medium))
+                                .foregroundColor(sourceIP == opt ? .white : .axTextSecondary)
+                                .frame(maxWidth: .infinity).padding(.vertical, AXSpacing.sm)
+                                .background(segmentBackground(selected: sourceIP == opt))
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                    }
+                }
+                if sourceIP == "Specific IP" {
+                    TextField("Enter IP address", text: $specificIP)
+                        .textFieldStyle(.plain).font(.system(size: 13, design: .monospaced)).padding(AXSpacing.md)
+                        .background(RoundedRectangle(cornerRadius: AXCornerRadius.md).fill(Color.axBackgroundTertiary)
+                            .overlay(RoundedRectangle(cornerRadius: AXCornerRadius.md).stroke(Color.axBorder, lineWidth: 1)))
+                }
+            }
+        }
+    }
+
+    @ViewBuilder private var strategyPicker: some View {
+        formSection("Strategy") {
+            HStack(spacing: AXSpacing.sm) {
+                ForEach(strategies, id: \.self) { s in
+                    Button(action: { strategy = s }) {
+                        HStack(spacing: AXSpacing.xs) {
+                            Image(systemName: s == "ACCEPT" ? "checkmark.circle" : "xmark.circle").font(.system(size: 12))
+                            Text(s == "ACCEPT" ? "Allow" : "Deny").font(.system(size: 13, weight: .semibold))
+                        }
+                        .foregroundColor(strategy == s ? .white : .axTextSecondary)
+                        .frame(maxWidth: .infinity).padding(.vertical, AXSpacing.sm)
+                        .background(RoundedRectangle(cornerRadius: AXCornerRadius.md)
+                            .fill(strategy == s ? (s == "ACCEPT" ? Color.axAccentGreen : Color.axError) : Color.axSurface)
+                            .overlay(RoundedRectangle(cornerRadius: AXCornerRadius.md).stroke(strategy == s ? Color.clear : Color.axBorder, lineWidth: 1)))
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                }
+            }
+        }
+    }
+
+    @ViewBuilder private var directionPicker: some View {
+        formSection("Direction") {
+            HStack(spacing: AXSpacing.sm) {
+                ForEach(directions, id: \.self) { d in
+                    Button(action: { direction = d }) {
+                        HStack(spacing: AXSpacing.xs) {
+                            Image(systemName: d == "INPUT" ? "arrow.down.to.line" : "arrow.up.to.line").font(.system(size: 12))
+                            Text(d == "INPUT" ? "Inbound" : "Outbound").font(.system(size: 13, weight: .semibold))
+                        }
+                        .foregroundColor(direction == d ? .white : .axTextSecondary)
+                        .frame(maxWidth: .infinity).padding(.vertical, AXSpacing.sm)
+                        .background(segmentBackground(selected: direction == d))
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                }
+            }
+        }
+    }
+
+    // MARK: - Helpers
+
+    @ViewBuilder private func formSection<Content: View>(_ label: String, @ViewBuilder content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: AXSpacing.sm) {
+            Text(label).font(AXTypography.caption).fontWeight(.semibold).foregroundColor(.axTextMuted).textCase(.uppercase)
+            content()
+        }
+    }
+
+    private func segmentBackground(selected: Bool) -> some View {
+        RoundedRectangle(cornerRadius: AXCornerRadius.md)
+            .fill(selected ? Color.axAccentBlue : Color.axSurface)
+            .overlay(RoundedRectangle(cornerRadius: AXCornerRadius.md).stroke(selected ? Color.axAccentBlue : Color.axBorder, lineWidth: 1))
     }
 
     private func saveRule() {

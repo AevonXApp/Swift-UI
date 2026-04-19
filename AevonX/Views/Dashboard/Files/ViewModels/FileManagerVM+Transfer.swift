@@ -131,9 +131,10 @@ extension FileManagerViewModel {
             return
         }
         
-        let name = fileName?.trimmingCharacters(in: .whitespaces).isEmpty == false
-            ? fileName!
-            : url.lastPathComponent.isEmpty ? "downloaded_file" : url.lastPathComponent
+        let trimmed = fileName?.trimmingCharacters(in: .whitespaces) ?? ""
+        let name = trimmed.isEmpty
+            ? (url.lastPathComponent.isEmpty ? "downloaded_file" : url.lastPathComponent)
+            : trimmed
         
         let destPath = currentPath.hasSuffix("/") ? "\(currentPath)\(name)" : "\(currentPath)/\(name)"
         

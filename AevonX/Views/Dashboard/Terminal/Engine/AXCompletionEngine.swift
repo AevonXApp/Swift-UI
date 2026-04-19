@@ -199,7 +199,7 @@ actor AXCompletionEngine {
             let freqBonus = Double(min(entry.executionCount, 10)) * 2
             let score = recencyBonus + freqBonus
 
-            if bestMatch == nil || score > bestMatch!.score {
+            if bestMatch == nil || score > (bestMatch?.score ?? -1) {
                 bestMatch = (entry.command, score)
             }
         }

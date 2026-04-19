@@ -25,196 +25,14 @@ struct DockerAutoUpdateSheet: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            // Header
-            HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(L10n.Docker.autoUpdate)
-                        .font(AXTypography.title2)
-                        .foregroundColor(.axTextPrimary)
-                    Text(container.names)
-                        .font(AXTypography.caption)
-                        .foregroundColor(.axTextSecondary)
-                }
-                Spacer()
-                Button { dismiss() } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: 20))
-                        .foregroundColor(.axTextMuted)
-                }
-                .buttonStyle(.plain)
-            }
-            .padding()
-            .background(Color.axSurface)
-            
+            sheetHeader
             Divider()
-            
             ScrollView {
                 VStack(spacing: AXSpacing.md) {
-                    // Update Check
-                    AXCard {
-                        VStack(alignment: .leading, spacing: 12) {
-                            Label("Update Status", systemImage: "arrow.triangle.2.circlepath")
-                                .font(AXTypography.headline)
-                                .foregroundColor(.axTextPrimary)
-                            
-                            if isChecking {
-                                HStack {
-                                    ProgressView().scaleEffect(0.7)
-                                    Text("Checking for updates...")
-                                        .font(AXTypography.caption)
-                                        .foregroundColor(.axTextSecondary)
-                                }
-                            } else if let status = updateStatus {
-                                HStack(spacing: AXSpacing.md) {
-                                    Image(systemName: status.isOutdated ? "exclamationmark.triangle.fill" : "checkmark.circle.fill")
-                                        .font(.system(size: 24))
-                                        .foregroundColor(status.isOutdated ? .axWarning : .axSuccess)
-                                    
-                                    VStack(alignment: .leading, spacing: 4) {
-                                        Text(status.isOutdated ? "Update Available" : "Up to Date")
-                                            .font(AXTypography.body)
-                                            .foregroundColor(.axTextPrimary)
-                                            .fontWeight(.medium)
-                                        Text("Image: \(status.imageName)")
-                                            .font(AXTypography.caption)
-                                            .foregroundColor(.axTextSecondary)
-                                    }
-                                    
-                                    Spacer()
-                                    
-                                    if status.isOutdated {
-                                        Button {
-                                            updateNow()
-                                        } label: {
-                                            if isUpdating {
-                                                ProgressView().scaleEffect(0.6)
-                                            } else {
-                                                Label("Update", systemImage: "arrow.down.circle")
-                                                    .font(AXTypography.caption)
-                                                    .fontWeight(.semibold)
-                                            }
-                                        }
-                                        .buttonStyle(.plain)
-                                        .padding(.horizontal, 12)
-                                        .padding(.vertical, 8)
-                                        .background(Color.axWarning)
-                                        .foregroundColor(.white)
-                                        .cornerRadius(AXCornerRadius.sm)
-                                        .disabled(isUpdating)
-                                    }
-                                }
-                                
-                                Toggle("Create rollback snapshot before update", isOn: $createSnapshot)
-                                    .font(AXTypography.caption)
-                                    .toggleStyle(.switch)
-                                    .controlSize(.small)
-                            } else {
-                                Text("Could not determine update status")
-                                    .font(AXTypography.caption)
-                                    .foregroundColor(.axTextMuted)
-                            }
-                        }
-                    }
-                    
-                    // Progress
-                    if isUpdating {
-                        VStack(spacing: AXSpacing.sm) {
-                            ProgressView(value: progressValue)
-                                .progressViewStyle(.linear)
-                            Text(progressMessage)
-                                .font(AXTypography.caption)
-                                .foregroundColor(.axTextSecondary)
-                        }
-                        .padding()
-                        .background(Color.axSurface)
-                        .cornerRadius(AXCornerRadius.sm)
-                    }
-                    
-                    // Messages
-                    if let error = errorMessage {
-                        Text(error)
-                            .font(AXTypography.caption)
-                            .foregroundColor(.axError)
-                            .padding()
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .background(Color.axError.opacity(0.1))
-                            .cornerRadius(AXCornerRadius.sm)
-                    }
-                    
-                    if let success = successMessage {
-                        Text(success)
-                            .font(AXTypography.caption)
-                            .foregroundColor(.axSuccess)
-                            .padding()
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .background(Color.axSuccess.opacity(0.1))
-                            .cornerRadius(AXCornerRadius.sm)
-                    }
-                    
-                    // Watchtower Section
-                    AXCard {
-                        VStack(alignment: .leading, spacing: 12) {
-                            HStack {
-                                Label("Watchtower (Auto-Update Agent)", systemImage: "clock.arrow.2.circlepath")
-                                    .font(AXTypography.headline)
-                                    .foregroundColor(.axTextPrimary)
-                                
-                                Spacer()
-                                
-                                Circle()
-                                    .fill(watchtowerRunning ? Color.axSuccess : Color.axTextMuted)
-                                    .frame(width: 8, height: 8)
-                                Text(watchtowerRunning ? L10n.Status.running : "Not Running")
-                                    .font(AXTypography.caption2)
-                                    .foregroundColor(watchtowerRunning ? .axSuccess : .axTextMuted)
-                            }
-                            
-                            Text("Watchtower monitors your containers and automatically updates them when new images are available.")
-                                .font(AXTypography.caption)
-                                .foregroundColor(.axTextSecondary)
-                            
-                            Toggle("Notify only (don't auto-update)", isOn: $watchtowerNotifyOnly)
-                                .font(AXTypography.caption)
-                                .toggleStyle(.switch)
-                                .controlSize(.small)
-                            
-                            HStack {
-                                if watchtowerRunning {
-                                    Button {
-                                        removeWatchtower()
-                                    } label: {
-                                        Label(L10n.Button.remove, systemImage: "trash")
-                                            .font(AXTypography.caption)
-                                    }
-                                    .buttonStyle(.plain)
-                                    .padding(.horizontal, 10)
-                                    .padding(.vertical, 6)
-                                    .background(Color.axError.opacity(0.15))
-                                    .foregroundColor(.axError)
-                                    .cornerRadius(AXCornerRadius.sm)
-                                } else {
-                                    Button {
-                                        deployWatchtower()
-                                    } label: {
-                                        if isDeployingWatchtower {
-                                            ProgressView().scaleEffect(0.6)
-                                        } else {
-                                            Label("Deploy Watchtower", systemImage: "play.fill")
-                                                .font(AXTypography.caption)
-                                                .fontWeight(.semibold)
-                                        }
-                                    }
-                                    .buttonStyle(.plain)
-                                    .padding(.horizontal, 10)
-                                    .padding(.vertical, 6)
-                                    .background(Color.axAccentBlue)
-                                    .foregroundColor(.white)
-                                    .cornerRadius(AXCornerRadius.sm)
-                                    .disabled(isDeployingWatchtower)
-                                }
-                            }
-                        }
-                    }
+                    updateStatusCard
+                    progressSection
+                    messagesSection
+                    watchtowerCard
                 }
                 .padding()
             }
@@ -222,6 +40,165 @@ struct DockerAutoUpdateSheet: View {
         .frame(minWidth: 550, minHeight: 450)
         .background(Color.axBackground)
         .onAppear { checkUpdate(); checkWatchtower() }
+    }
+
+    // MARK: - Header
+
+    @ViewBuilder private var sheetHeader: some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(L10n.Docker.autoUpdate)
+                    .font(AXTypography.title2)
+                    .foregroundColor(.axTextPrimary)
+                Text(container.names)
+                    .font(AXTypography.caption)
+                    .foregroundColor(.axTextSecondary)
+            }
+            Spacer()
+            Button { dismiss() } label: {
+                Image(systemName: "xmark.circle.fill")
+                    .font(.system(size: 20))
+                    .foregroundColor(.axTextMuted)
+            }
+            .buttonStyle(.plain)
+        }
+        .padding()
+        .background(Color.axSurface)
+    }
+
+    // MARK: - Update Status Card
+
+    @ViewBuilder private var updateStatusCard: some View {
+        AXCard {
+            VStack(alignment: .leading, spacing: 12) {
+                Label("Update Status", systemImage: "arrow.triangle.2.circlepath")
+                    .font(AXTypography.headline)
+                    .foregroundColor(.axTextPrimary)
+
+                if isChecking {
+                    HStack {
+                        ProgressView().scaleEffect(0.7)
+                        Text("Checking for updates...")
+                            .font(AXTypography.caption)
+                            .foregroundColor(.axTextSecondary)
+                    }
+                } else if let status = updateStatus {
+                    updateStatusRow(status)
+                    Toggle("Create rollback snapshot before update", isOn: $createSnapshot)
+                        .font(AXTypography.caption)
+                        .toggleStyle(.switch)
+                        .controlSize(.small)
+                } else {
+                    Text("Could not determine update status")
+                        .font(AXTypography.caption)
+                        .foregroundColor(.axTextMuted)
+                }
+            }
+        }
+    }
+
+    @ViewBuilder private func updateStatusRow(_ status: ImageUpdateStatus) -> some View {
+        HStack(spacing: AXSpacing.md) {
+            Image(systemName: status.isOutdated ? "exclamationmark.triangle.fill" : "checkmark.circle.fill")
+                .font(.system(size: 24))
+                .foregroundColor(status.isOutdated ? .axWarning : .axSuccess)
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(status.isOutdated ? "Update Available" : "Up to Date")
+                    .font(AXTypography.body).foregroundColor(.axTextPrimary).fontWeight(.medium)
+                Text("Image: \(status.imageName)")
+                    .font(AXTypography.caption).foregroundColor(.axTextSecondary)
+            }
+
+            Spacer()
+
+            if status.isOutdated {
+                Button { updateNow() } label: {
+                    if isUpdating { ProgressView().scaleEffect(0.6) }
+                    else { Label("Update", systemImage: "arrow.down.circle").font(AXTypography.caption).fontWeight(.semibold) }
+                }
+                .buttonStyle(.plain)
+                .padding(.horizontal, 12).padding(.vertical, 8)
+                .background(Color.axWarning).foregroundColor(.white)
+                .cornerRadius(AXCornerRadius.sm)
+                .disabled(isUpdating)
+            }
+        }
+    }
+
+    // MARK: - Progress & Messages
+
+    @ViewBuilder private var progressSection: some View {
+        if isUpdating {
+            VStack(spacing: AXSpacing.sm) {
+                ProgressView(value: progressValue).progressViewStyle(.linear)
+                Text(progressMessage).font(AXTypography.caption).foregroundColor(.axTextSecondary)
+            }
+            .padding()
+            .background(Color.axSurface)
+            .cornerRadius(AXCornerRadius.sm)
+        }
+    }
+
+    @ViewBuilder private var messagesSection: some View {
+        if let error = errorMessage {
+            Text(error).font(AXTypography.caption).foregroundColor(.axError)
+                .padding().frame(maxWidth: .infinity, alignment: .leading)
+                .background(Color.axError.opacity(0.1)).cornerRadius(AXCornerRadius.sm)
+        }
+        if let success = successMessage {
+            Text(success).font(AXTypography.caption).foregroundColor(.axSuccess)
+                .padding().frame(maxWidth: .infinity, alignment: .leading)
+                .background(Color.axSuccess.opacity(0.1)).cornerRadius(AXCornerRadius.sm)
+        }
+    }
+
+    // MARK: - Watchtower Card
+
+    @ViewBuilder private var watchtowerCard: some View {
+        AXCard {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    Label("Watchtower (Auto-Update Agent)", systemImage: "clock.arrow.2.circlepath")
+                        .font(AXTypography.headline).foregroundColor(.axTextPrimary)
+                    Spacer()
+                    Circle().fill(watchtowerRunning ? Color.axSuccess : Color.axTextMuted).frame(width: 8, height: 8)
+                    Text(watchtowerRunning ? L10n.Status.running : "Not Running")
+                        .font(AXTypography.caption2)
+                        .foregroundColor(watchtowerRunning ? .axSuccess : .axTextMuted)
+                }
+
+                Text("Watchtower monitors your containers and automatically updates them when new images are available.")
+                    .font(AXTypography.caption).foregroundColor(.axTextSecondary)
+
+                Toggle("Notify only (don't auto-update)", isOn: $watchtowerNotifyOnly)
+                    .font(AXTypography.caption).toggleStyle(.switch).controlSize(.small)
+
+                watchtowerActionButton
+            }
+        }
+    }
+
+    @ViewBuilder private var watchtowerActionButton: some View {
+        if watchtowerRunning {
+            Button { removeWatchtower() } label: {
+                Label(L10n.Button.remove, systemImage: "trash").font(AXTypography.caption)
+            }
+            .buttonStyle(.plain)
+            .padding(.horizontal, 10).padding(.vertical, 6)
+            .background(Color.axError.opacity(0.15)).foregroundColor(.axError)
+            .cornerRadius(AXCornerRadius.sm)
+        } else {
+            Button { deployWatchtower() } label: {
+                if isDeployingWatchtower { ProgressView().scaleEffect(0.6) }
+                else { Label("Deploy Watchtower", systemImage: "play.fill").font(AXTypography.caption).fontWeight(.semibold) }
+            }
+            .buttonStyle(.plain)
+            .padding(.horizontal, 10).padding(.vertical, 6)
+            .background(Color.axAccentBlue).foregroundColor(.white)
+            .cornerRadius(AXCornerRadius.sm)
+            .disabled(isDeployingWatchtower)
+        }
     }
     
     private func checkUpdate() {

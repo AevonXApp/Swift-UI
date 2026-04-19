@@ -32,98 +32,98 @@ class WebsiteSectionFactory: ObservableObject {
 
     private var _siteConfigVM: SiteConfigViewModel?
     var siteConfigVM: SiteConfigViewModel {
-        if _siteConfigVM == nil {
-            _siteConfigVM = SiteConfigViewModel(serverId: serverId, domain: domain, engine: engine)
-        }
-        return _siteConfigVM!
+        if let vm = _siteConfigVM { return vm }
+        let vm = SiteConfigViewModel(serverId: serverId, domain: domain, engine: engine)
+        _siteConfigVM = vm
+        return vm
     }
 
     private var _cacheVM: CacheViewModel?
     var cacheVM: CacheViewModel {
-        if _cacheVM == nil {
-            _cacheVM = CacheViewModel(serverId: serverId, domain: domain, engine: engine)
-        }
-        return _cacheVM!
+        if let vm = _cacheVM { return vm }
+        let vm = CacheViewModel(serverId: serverId, domain: domain, engine: engine)
+        _cacheVM = vm
+        return vm
     }
 
     private var _backupVM: BackupViewModel?
     var backupVM: BackupViewModel {
-        if _backupVM == nil {
-            _backupVM = BackupViewModel(serverId: serverId, domain: domain, docRoot: docRoot)
-        }
-        return _backupVM!
+        if let vm = _backupVM { return vm }
+        let vm = BackupViewModel(serverId: serverId, domain: domain, docRoot: docRoot)
+        _backupVM = vm
+        return vm
     }
 
     private var _monitoringVM: MonitoringViewModel?
     var monitoringVM: MonitoringViewModel {
-        if _monitoringVM == nil {
-            _monitoringVM = MonitoringViewModel(serverId: serverId, domain: domain)
-        }
-        return _monitoringVM!
+        if let vm = _monitoringVM { return vm }
+        let vm = MonitoringViewModel(serverId: serverId, domain: domain)
+        _monitoringVM = vm
+        return vm
     }
 
     private var _securityVM: SiteSecurityViewModel?
     var securityVM: SiteSecurityViewModel {
-        if _securityVM == nil {
-            _securityVM = SiteSecurityViewModel(serverId: serverId, domain: domain, docRoot: docRoot, engine: engine)
-        }
-        return _securityVM!
+        if let vm = _securityVM { return vm }
+        let vm = SiteSecurityViewModel(serverId: serverId, domain: domain, docRoot: docRoot, engine: engine)
+        _securityVM = vm
+        return vm
     }
 
     private var _headersVM: HeadersViewModel?
     var headersVM: HeadersViewModel {
-        if _headersVM == nil {
-            _headersVM = HeadersViewModel(serverId: serverId, domain: domain, engine: engine)
-        }
-        return _headersVM!
+        if let vm = _headersVM { return vm }
+        let vm = HeadersViewModel(serverId: serverId, domain: domain, engine: engine)
+        _headersVM = vm
+        return vm
     }
 
     private var _logsVM: EnhancedLogsViewModel?
     var logsVM: EnhancedLogsViewModel {
-        if _logsVM == nil {
-            _logsVM = EnhancedLogsViewModel(serverId: serverId, domain: domain, engine: engine)
-        }
-        return _logsVM!
+        if let vm = _logsVM { return vm }
+        let vm = EnhancedLogsViewModel(serverId: serverId, domain: domain, engine: engine)
+        _logsVM = vm
+        return vm
     }
 
     private var _quickActionsVM: QuickActionsViewModel?
     var quickActionsVM: QuickActionsViewModel {
-        if _quickActionsVM == nil {
-            _quickActionsVM = QuickActionsViewModel(serverId: serverId, domain: domain, docRoot: docRoot, runtime: runtime, engine: engine)
-        }
-        return _quickActionsVM!
+        if let vm = _quickActionsVM { return vm }
+        let vm = QuickActionsViewModel(serverId: serverId, domain: domain, docRoot: docRoot, runtime: runtime, engine: engine)
+        _quickActionsVM = vm
+        return vm
     }
 
     private var _advancedDomainVM: AdvancedDomainViewModel?
     var advancedDomainVM: AdvancedDomainViewModel {
-        if _advancedDomainVM == nil {
-            _advancedDomainVM = AdvancedDomainViewModel(serverId: serverId, domain: domain, docRoot: docRoot, engine: engine)
-        }
-        return _advancedDomainVM!
+        if let vm = _advancedDomainVM { return vm }
+        let vm = AdvancedDomainViewModel(serverId: serverId, domain: domain, docRoot: docRoot, engine: engine)
+        _advancedDomainVM = vm
+        return vm
     }
 
     private var _performanceTuningVM: PerformanceTuningViewModel?
     var performanceTuningVM: PerformanceTuningViewModel {
-        if _performanceTuningVM == nil {
-            _performanceTuningVM = PerformanceTuningViewModel(serverId: serverId, domain: domain, engine: engine)
-        }
-        return _performanceTuningVM!
+        if let vm = _performanceTuningVM { return vm }
+        let vm = PerformanceTuningViewModel(serverId: serverId, domain: domain, engine: engine)
+        _performanceTuningVM = vm
+        return vm
     }
 
     private var _siteCloningVM: SiteCloningViewModel?
     var siteCloningVM: SiteCloningViewModel {
-        if _siteCloningVM == nil {
-            _siteCloningVM = SiteCloningViewModel(serverId: serverId, domain: domain, docRoot: docRoot, engine: engine)
-        }
-        return _siteCloningVM!
+        if let vm = _siteCloningVM { return vm }
+        let vm = SiteCloningViewModel(serverId: serverId, domain: domain, docRoot: docRoot, engine: engine)
+        _siteCloningVM = vm
+        return vm
     }
 
     private var _scheduledBackupVM: ScheduledBackupViewModel?
     var scheduledBackupVM: ScheduledBackupViewModel {
-        if _scheduledBackupVM == nil {
-            _scheduledBackupVM = ScheduledBackupViewModel(serverId: serverId, domain: domain, docRoot: docRoot)
-        }
-        return _scheduledBackupVM!
+        if let vm = _scheduledBackupVM { return vm }
+        let vm = ScheduledBackupViewModel(serverId: serverId, domain: domain, docRoot: docRoot)
+        _scheduledBackupVM = vm
+        return vm
     }
 
     // MARK: - Reset

@@ -33,17 +33,20 @@ struct AevonXApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
-                .environmentObject(authViewModel)
-                .environmentObject(settingsManager)
-                .environmentObject(updateService)
-                .onAppear {
-                    // Initialize auth state when app appears (deferred from init)
-                    authViewModel.initializeIfNeeded()
-                    // Auto-check for updates on launch
-                    updateService.checkOnLaunchIfNeeded()
-                    updateService.startPeriodicCheck()
-                }
+            ZStack(alignment: .bottom) {
+                ContentView()
+                    .environmentObject(authViewModel)
+                    .environmentObject(settingsManager)
+                    .environmentObject(updateService)
+                    .onAppear {
+                        authViewModel.initializeIfNeeded()
+                        updateService.checkOnLaunchIfNeeded()
+                        updateService.startPeriodicCheck()
+                    }
+                HookToastOverlay()
+                    .ignoresSafeArea()
+                    .allowsHitTesting(false)
+            }
         }
         .windowStyle(.titleBar)
         .windowResizability(.contentSize)

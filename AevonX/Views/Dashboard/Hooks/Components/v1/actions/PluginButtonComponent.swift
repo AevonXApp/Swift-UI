@@ -87,7 +87,10 @@ public struct PluginButtonComponent: View {
     }
 
     private func executeCommand() {
-        guard let command = plugin.command else { return }
+        guard let command = plugin.command else {
+            HookToastManager.shared.error("No command configured for this button")
+            return
+        }
         Task {
             await vm.execute(
                 command: command,

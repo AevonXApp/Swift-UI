@@ -7,8 +7,8 @@
 //
 
 import SwiftUI
-import AevonXCoreBridge
 import Combine
+import AevonXCoreBridge
 
 struct RecoveryKeyDisplayView: View {
     @Environment(\.dismiss) private var dismiss
@@ -73,11 +73,11 @@ struct RecoveryKeyDisplayView: View {
                 
                 // Recovery Key Display
                 VStack(spacing: AXSpacing.md) {
-                    if viewModel.recoveryKey != nil {
+                    if let recoveryKey = viewModel.recoveryKey {
                         // Key display box
                         VStack(spacing: AXSpacing.sm) {
                             if showKey {
-                                Text(viewModel.recoveryKey!)
+                                Text(recoveryKey)
                                     .font(.system(size: 18, design: .monospaced))
                                     .foregroundColor(.axAccentBlue)
                                     .lineLimit(nil)

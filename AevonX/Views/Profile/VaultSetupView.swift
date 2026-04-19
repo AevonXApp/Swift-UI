@@ -6,8 +6,8 @@
 //
 
 import SwiftUI
-import AevonXCoreBridge
 import Combine
+import AevonXCoreBridge
 
 struct VaultSetupView: View {
     @Environment(\.dismiss) private var dismiss

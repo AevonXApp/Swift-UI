@@ -8,9 +8,9 @@
 //
 
 import SwiftUI
+import Combine
 import AevonXCoreBridge
 
-import Combine
 
 @MainActor
 class AuthViewModel: ObservableObject {

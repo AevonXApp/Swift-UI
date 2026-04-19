@@ -7,9 +7,9 @@
 //
 
 import SwiftUI
+import Combine
 import AevonXCoreBridge
 
-import Combine
 
 /// View model for server list management with real-time status updates
 @MainActor
@@ -93,8 +93,7 @@ class ServerListViewModel: ObservableObject {
         defer { isLoading = false }
 
         // Check authentication first
-        let token = await AevonXCoreBridge.AuthService.shared.getToken()
-        if token == nil {
+        guard let token = await AevonXCoreBridge.AuthService.shared.getToken() else {
             isAuthenticated = false
             needsLogin = true
             return
@@ -105,7 +104,7 @@ class ServerListViewModel: ObservableObject {
         // Pre-establish ECDH secure channel before any concurrent secure API calls.
         // This prevents a race condition where concurrent handshakes overwrite
         // each other's session keys, causing response signature verification failures.
-        let _ = await APIBridge.shared.securityHandshakeAsync(baseURL: baseURL, token: token!)
+        let _ = await APIBridge.shared.securityHandshakeAsync(baseURL: baseURL, token: token)
 
         // 1. Fetch subscription status (separate error handling)
         do {
@@ -119,7 +118,7 @@ class ServerListViewModel: ObservableObject {
 
         // 2. Fetch servers (always runs regardless of subscription check)
         do {
-            let resultJSON = await APIBridge.shared.fetchServersAsync(baseURL: baseURL, token: token!)
+            let resultJSON = await APIBridge.shared.fetchServersAsync(baseURL: baseURL, token: token)
             guard let serversData = parseGoServers(resultJSON) else {
                 errorMessage = extractGoError(resultJSON)
                 showError = true

@@ -7,9 +7,9 @@
 //
 
 import Foundation
+import Combine
 import SwiftUI
 import AevonXCoreBridge
-import Combine
 import AppKit
 import UniformTypeIdentifiers
 
@@ -345,7 +345,10 @@ public final class DatabaseDetailViewModel: ObservableObject {
                     try await Task.sleep(nanoseconds: UInt64(timeout) * 1_000_000_000)
                     throw DatabaseServiceError.invalidResponse("Query timed out after \(timeout)s")
                 }
-                let result = try await group.next()!
+                guard let result = try await group.next() else {
+                    group.cancelAll()
+                    throw DatabaseServiceError.invalidResponse("No result returned")
+                }
                 group.cancelAll()
                 return result
             }
@@ -458,6 +461,7 @@ public final class DatabaseDetailViewModel: ObservableObject {
     }
 
     public func dropTable(_ tableName: String) async {
+        guard let sId = serverId else { return }
         await loggedAction(
             action: "Drop Table",
             detail: "Table '\(tableName)' from '\(database.name)'",
@@ -465,7 +469,7 @@ public final class DatabaseDetailViewModel: ObservableObject {
             execute: {
                 try await DatabaseTableService.shared.dropTable(
                     database: database.name, table: tableName,
-                    type: database.type, serverId: serverId!
+                    type: database.type, serverId: sId
                 )
             },
             onSuccess: {
@@ -476,6 +480,7 @@ public final class DatabaseDetailViewModel: ObservableObject {
     }
 
     public func truncateTable(_ tableName: String) async {
+        guard let sId = serverId else { return }
         await loggedAction(
             action: "Truncate Table",
             detail: "Table '\(tableName)'",
@@ -483,7 +488,7 @@ public final class DatabaseDetailViewModel: ObservableObject {
             execute: {
                 try await DatabaseTableService.shared.truncateTable(
                     database: database.name, table: tableName,
-                    type: database.type, serverId: serverId!
+                    type: database.type, serverId: sId
                 )
             },
             onSuccess: {
@@ -494,6 +499,7 @@ public final class DatabaseDetailViewModel: ObservableObject {
     }
 
     public func optimizeTable(_ tableName: String) async {
+        guard let sId = serverId else { return }
         await loggedAction(
             action: "Optimize Table",
             detail: "Table '\(tableName)'",
@@ -501,13 +507,14 @@ public final class DatabaseDetailViewModel: ObservableObject {
             execute: {
                 _ = try await DatabaseTableService.shared.optimizeTable(
                     database: database.name, table: tableName,
-                    type: database.type, serverId: serverId!
+                    type: database.type, serverId: sId
                 )
             }
         )
     }
 
     public func analyzeTable(_ tableName: String) async {
+        guard let sId = serverId else { return }
         await loggedAction(
             action: "Analyze Table",
             detail: "Table '\(tableName)'",
@@ -515,7 +522,7 @@ public final class DatabaseDetailViewModel: ObservableObject {
             execute: {
                 _ = try await DatabaseTableService.shared.analyzeTable(
                     database: database.name, table: tableName,
-                    type: database.type, serverId: serverId!
+                    type: database.type, serverId: sId
                 )
             }
         )
@@ -552,7 +559,7 @@ public final class DatabaseDetailViewModel: ObservableObject {
     @Published public var showRenameTable = false
 
     public func addColumn(_ column: CreateTableColumnDefinition, afterColumn: String?) async {
-        guard let table = selectedTable else { return }
+        guard let table = selectedTable, let sId = serverId else { return }
         await loggedAction(
             action: "Add Column",
             detail: "Column '\(column.name)' (\(column.type)) to table '\(table.name)'",
@@ -570,7 +577,7 @@ public final class DatabaseDetailViewModel: ObservableObject {
                     defaultValue: column.defaultValue,
                     afterColumn: afterColumn ?? "",
                     engineType: database.type.rawValue,
-                    serverId: serverId!
+                    serverId: sId
                 )
             },
             onSuccess: {
@@ -581,7 +588,7 @@ public final class DatabaseDetailViewModel: ObservableObject {
     }
 
     public func dropColumn(_ columnName: String) async {
-        guard let table = selectedTable else { return }
+        guard let table = selectedTable, let sId = serverId else { return }
         await loggedAction(
             action: "Drop Column",
             detail: "Column '\(columnName)' from table '\(table.name)'",
@@ -590,7 +597,7 @@ public final class DatabaseDetailViewModel: ObservableObject {
                 try await DatabaseTableService.shared.dropColumn(
                     database: database.name, table: table.name,
                     column: columnName,
-                    type: database.type, serverId: serverId!
+                    type: database.type, serverId: sId
                 )
             },
             onSuccess: { await self.loadTableStructure() }

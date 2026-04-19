@@ -7,8 +7,8 @@
 //
 
 import Foundation
-import SwiftUI
 import Combine
+import SwiftUI
 import AevonXCoreBridge
 
 // MARK: - Add Website ViewModel

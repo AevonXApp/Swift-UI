@@ -144,8 +144,10 @@ public struct PluginFormComponent: View {
                 passwordField(field)
             case .textarea:
                 textareaField(field)
-            case .select, .multiselect:
+            case .select:
                 selectField(field)
+            case .multiselect:
+                multiSelectField(field)
             case .toggle:
                 toggleField(field)
             case .date:
@@ -277,6 +279,44 @@ public struct PluginFormComponent: View {
         .menuStyle(.borderlessButton)
     }
 
+    private func multiSelectField(_ field: HookFormField) -> some View {
+        let options = field.options ?? []
+        let selectedValues: [String] = {
+            guard let raw = fieldValues[field.key],
+                  let data = raw.data(using: .utf8),
+                  let decoded = try? JSONDecoder().decode([String].self, from: data) else { return [] }
+            return decoded
+        }()
+
+        return ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: AXSpacing.sm) {
+                ForEach(options, id: \.value) { option in
+                    let isSelected = selectedValues.contains(option.value)
+                    Button(action: {
+                        var updated = selectedValues
+                        if isSelected { updated.removeAll { $0 == option.value } }
+                        else { updated.append(option.value) }
+                        if let encoded = try? JSONEncoder().encode(updated) {
+                            fieldValues[field.key] = String(data: encoded, encoding: .utf8) ?? ""
+                        }
+                    }) {
+                        Text(option.label).font(.system(size: 11, weight: .medium))
+                            .foregroundColor(isSelected ? .white : .axTextSecondary)
+                            .padding(.horizontal, AXSpacing.sm).padding(.vertical, AXSpacing.xs)
+                            .background(isSelected ? Color.axAccentBlue : Color.axSurface)
+                            .cornerRadius(AXCornerRadius.sm)
+                            .overlay(RoundedRectangle(cornerRadius: AXCornerRadius.sm).stroke(isSelected ? Color.axAccentBlue.opacity(0.5) : Color.axBorder, lineWidth: 1))
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(.horizontal, AXSpacing.md)
+        }
+        .frame(height: 36)
+        .background(Color.axBackground).cornerRadius(AXCornerRadius.sm)
+        .overlay(RoundedRectangle(cornerRadius: AXCornerRadius.sm).stroke(Color.axBorder, lineWidth: 1))
+    }
+
     private func toggleField(_ field: HookFormField) -> some View {
         let isOn = Binding<Bool>(
             get: { toggleValues[field.key] ?? (field.defaultValue?.stringValue == "true") },
@@ -382,9 +422,7 @@ public struct PluginFormComponent: View {
                     guard validateForm() else { return }
                     Task {
                         var mergedContext = context
-                        for (key, value) in fieldValues {
-                            mergedContext[key] = value
-                        }
+                        for (key, value) in fieldValues { mergedContext[key] = value }
                         await vm.execute(
                             command: command,
                             pluginId: plugin.id,
@@ -396,29 +434,25 @@ public struct PluginFormComponent: View {
                 }) {
                     HStack(spacing: AXSpacing.xs) {
                         if vm.isLoading {
-                            ProgressView()
-                                .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                                .scaleEffect(0.7)
+                            ProgressView().progressViewStyle(CircularProgressViewStyle(tint: .white)).scaleEffect(0.7)
                         } else if vm.isSuccess {
-                            Image(systemName: "checkmark")
-                                .font(.system(size: 12, weight: .bold))
+                            Image(systemName: "checkmark").font(.system(size: 12, weight: .bold))
                         } else if let icon = plugin.icon {
-                            Image(systemName: icon)
-                                .font(.system(size: 12))
+                            Image(systemName: icon).font(.system(size: 12))
                         }
-                        Text(vm.isSuccess ? "Done!" : (plugin.label ?? "Submit"))
-                            .font(.system(size: 13, weight: .semibold))
+                        Text(vm.isSuccess ? "Done!" : (plugin.label ?? "Submit")).font(.system(size: 13, weight: .semibold))
                     }
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 10)
-                    .background(
-                        RoundedRectangle(cornerRadius: AXCornerRadius.md)
-                            .fill(vm.isSuccess ? Color.axSuccess : Color.axAccentBlue)
-                    )
+                    .foregroundColor(.white).frame(maxWidth: .infinity).padding(.vertical, 10)
+                    .background(RoundedRectangle(cornerRadius: AXCornerRadius.md).fill(vm.isSuccess ? Color.axSuccess : Color.axAccentBlue))
                 }
-                .buttonStyle(.plain)
-                .disabled(vm.isLoading)
+                .buttonStyle(.plain).disabled(vm.isLoading)
+            } else {
+                HStack(spacing: AXSpacing.xs) {
+                    Image(systemName: "exclamationmark.circle").foregroundColor(.axWarning)
+                    Text("No action configured for this form").font(.system(size: 12)).foregroundColor(.axTextSecondary)
+                }
+                .frame(maxWidth: .infinity).padding(.vertical, 10)
+                .background(Color.axWarning.opacity(0.08)).cornerRadius(AXCornerRadius.md)
             }
         }
     }

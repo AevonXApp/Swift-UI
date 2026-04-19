@@ -7,9 +7,9 @@
 //
 
 import Foundation
+import Combine
 import SwiftUI
 import AevonXCoreBridge
-import Combine
 
 @MainActor
 public final class AddDatabaseViewModel: ObservableObject {

@@ -604,7 +604,10 @@ struct PluginDataTableComponent: View {
     }
 
     private func executeRowAction(_ action: HookRowActionButton, row: [String: String]) {
-        guard let command = action.command else { return }
+        guard let command = action.command else {
+            HookToastManager.shared.error("No command configured for this action")
+            return
+        }
         var mergedContext = context
         for (key, value) in row { mergedContext[key] = value }
         let interpolatedAction = interpolateTemplate(command.action, row: row)
@@ -613,14 +616,25 @@ struct PluginDataTableComponent: View {
             type: command.type, action: interpolatedAction, payload: interpolatedPayload,
             timeout: command.timeout, retries: command.retries, onSuccess: command.onSuccess, onError: command.onError
         )
+        // Capture current table state before refresh
+        let savedSort = sortColumn
+        let savedSortAsc = sortAscending
+        let savedPage = currentPage
+        let savedFilters = activeFilters
         Task {
             await actionVM.execute(command: interpolatedCommand, pluginId: plugin.id, serverId: serverId, context: mergedContext, namespace: plugin.namespace)
             if actionVM.isSuccess {
-                let msg = command.onSuccess ?? "\(action.label) completed"
-                HookToastManager.shared.success(interpolateTemplate(msg, row: row))
+                // HookPluginViewModel already fires onSuccess toast — only send default if not set
+                if command.onSuccess == nil || command.onSuccess!.isEmpty {
+                    HookToastManager.shared.success(interpolateTemplate("\(action.label) completed", row: row))
+                }
                 await vm.load(plugin: plugin, serverId: serverId, context: context)
-            } else if let error = actionVM.errorMessage {
-                HookToastManager.shared.error(command.onError ?? error)
+                // Restore table state after reload
+                sortColumn = savedSort
+                sortAscending = savedSortAsc
+                activeFilters = savedFilters
+                let totalPages = max(1, Int(ceil(Double(filteredRows.count) / Double(plugin.dataSource?.pageSize ?? 50))))
+                currentPage = min(savedPage, totalPages - 1)
             }
         }
     }
@@ -823,9 +837,13 @@ final class PluginDataTableViewModel: ObservableObject {
                 action: ds.action, payload: ds.payload, format: ds.format ?? .json, rowsPath: ds.rowsPath,
                 serverId: serverId, context: context, type: ds.type, namespace: plugin.namespace, transform: ds.transform, keyColumn: ds.keyColumn
             )
-            rows = result; lastUpdated = Date(); hasLoadedOnce = true
+            rows = result; lastUpdated = Date(); hasLoadedOnce = true; errorMessage = nil
         } catch {
-            if !hasLoadedOnce { errorMessage = error.localizedDescription }
+            if !hasLoadedOnce {
+                errorMessage = error.localizedDescription
+            } else {
+                HookToastManager.shared.warning("Data refresh failed: \(error.localizedDescription)")
+            }
         }
         isLoading = false; isRefreshing = false
         if let interval = ds.refreshInterval, interval > 0 {

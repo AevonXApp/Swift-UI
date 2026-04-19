@@ -40,9 +40,10 @@ struct RightClickHandler: NSViewRepresentable {
             guard let window = self.window else { return }
             let windowPoint = event.locationInWindow
             // Convert from bottom-left origin to top-left origin
+            let viewHeight = window.contentView?.frame.height ?? window.frame.height
             let flipped = CGPoint(
                 x: windowPoint.x,
-                y: window.contentView!.frame.height - windowPoint.y
+                y: viewHeight - windowPoint.y
             )
             onRightClick?(flipped)
         }

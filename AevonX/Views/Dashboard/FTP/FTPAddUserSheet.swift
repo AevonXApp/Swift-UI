@@ -30,366 +30,11 @@ struct FTPAddUserSheet: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            // Header
-            HStack {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(isEditing ? L10n.FTP.editUser : L10n.FTP.addUser)
-                        .font(.system(size: 18, weight: .bold))
-                        .foregroundColor(.axTextPrimary)
-                    Text("Configure FTP access credentials and permissions")
-                        .font(.system(size: 12))
-                        .foregroundColor(.axTextTertiary)
-                }
-                Spacer()
-                Button(action: { dismiss() }) {
-                    Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: 20))
-                        .foregroundColor(.axTextMuted)
-                }
-                .buttonStyle(PlainButtonStyle())
-            }
-            .padding(AXSpacing.xl)
-            
+            sheetHeader
             Divider().background(Color.axBorder)
-            
-            // Form
-            ScrollView {
-                VStack(spacing: AXSpacing.xl) {
-                    // Username
-                    VStack(alignment: .leading, spacing: AXSpacing.sm) {
-                        formLabel(L10n.FTP.username)
-                        TextField("FTP username", text: $username)
-                            .font(.system(size: 13))
-                            .textFieldStyle(PlainTextFieldStyle())
-                            .padding(AXSpacing.sm)
-                            .background(Color.axBackgroundTertiary)
-                            .overlay(RoundedRectangle(cornerRadius: AXCornerRadius.sm).stroke(Color.axBorder, lineWidth: 1))
-                            .cornerRadius(AXCornerRadius.sm)
-                            .disabled(isEditing)
-                            .opacity(isEditing ? 0.6 : 1)
-                    }
-                    
-                    // Password
-                    VStack(alignment: .leading, spacing: AXSpacing.sm) {
-                        formLabel(L10n.FTP.password)
-                        HStack(spacing: AXSpacing.sm) {
-                            TextField(L10n.FTP.password, text: $password)
-                                .font(.system(size: 13, design: .monospaced))
-                                .textFieldStyle(PlainTextFieldStyle())
-                                .padding(AXSpacing.sm)
-                                .background(Color.axBackgroundTertiary)
-                                .overlay(RoundedRectangle(cornerRadius: AXCornerRadius.sm).stroke(Color.axBorder, lineWidth: 1))
-                                .cornerRadius(AXCornerRadius.sm)
-                            
-                            Button(action: { password = vm.generatePassword() }) {
-                                Image(systemName: "arrow.clockwise")
-                                    .font(.system(size: 12, weight: .medium))
-                                    .foregroundColor(.axAccentBlue)
-                                    .frame(width: 32, height: 32)
-                                    .background(Color.axAccentBlue.opacity(0.1))
-                                    .overlay(RoundedRectangle(cornerRadius: AXCornerRadius.sm).stroke(Color.axAccentBlue.opacity(0.2), lineWidth: 1))
-                                    .cornerRadius(AXCornerRadius.sm)
-                            }
-                            .buttonStyle(PlainButtonStyle())
-                            .help("Generate Password")
-                            
-                            Button(action: {
-                                #if os(macOS)
-                                NSPasteboard.general.clearContents()
-                                NSPasteboard.general.setString(password, forType: .string)
-                                #endif
-                                showPasswordCopied = true
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { showPasswordCopied = false }
-                            }) {
-                                Image(systemName: showPasswordCopied ? "checkmark" : "doc.on.doc")
-                                    .font(.system(size: 12, weight: .medium))
-                                    .foregroundColor(showPasswordCopied ? .axSuccess : .axTextSecondary)
-                                    .frame(width: 32, height: 32)
-                                    .background((showPasswordCopied ? Color.axSuccess : Color.axTextSecondary).opacity(0.1))
-                                    .overlay(RoundedRectangle(cornerRadius: AXCornerRadius.sm).stroke((showPasswordCopied ? Color.axSuccess : Color.axBorder).opacity(0.3), lineWidth: 1))
-                                    .cornerRadius(AXCornerRadius.sm)
-                            }
-                            .buttonStyle(PlainButtonStyle())
-                            .help("Copy Password")
-                        }
-                        
-                        // Password strength hint
-                        HStack(spacing: AXSpacing.xs) {
-                            Image(systemName: "shield.checkered")
-                                .font(.system(size: 10))
-                            Text("Use the generate button for a secure random password")
-                                .font(.system(size: 10))
-                        }
-                        .foregroundColor(.axTextTertiary)
-                    }
-                    
-                    // Document Root
-                    VStack(alignment: .leading, spacing: AXSpacing.sm) {
-                        formLabel("Document Root")
-                        
-                        if showDirBrowser {
-                            // Directory browser
-                            VStack(spacing: 0) {
-                                // Breadcrumb path bar
-                                HStack(spacing: AXSpacing.xs) {
-                                    Image(systemName: "folder.fill")
-                                        .font(.system(size: 11))
-                                        .foregroundColor(.axAccentBlue)
-                                    Text(currentBrowsePath)
-                                        .font(.system(size: 11, design: .monospaced))
-                                        .foregroundColor(.axTextPrimary)
-                                        .lineLimit(1)
-                                    
-                                    Spacer()
-                                    
-                                    if isLoadingDirs {
-                                        ProgressView().scaleEffect(0.5)
-                                    }
-                                    
-                                    // Go up
-                                    if currentBrowsePath != "/" {
-                                        Button(action: {
-                                            let parent = (currentBrowsePath as NSString).deletingLastPathComponent
-                                            currentBrowsePath = parent.isEmpty ? "/" : parent
-                                            Task { await browseDirs() }
-                                        }) {
-                                            HStack(spacing: 2) {
-                                                Image(systemName: "arrow.up").font(.system(size: 9, weight: .bold))
-                                                Text("Up").font(.system(size: 10, weight: .medium))
-                                            }
-                                            .foregroundColor(.axAccentBlue)
-                                            .padding(.horizontal, 6)
-                                            .padding(.vertical, 3)
-                                            .background(Color.axAccentBlue.opacity(0.08))
-                                            .cornerRadius(4)
-                                        }
-                                        .buttonStyle(PlainButtonStyle())
-                                    }
-                                }
-                                .padding(.horizontal, AXSpacing.sm)
-                                .padding(.vertical, 6)
-                                .background(Color.axBackgroundTertiary)
-                                
-                                Divider().background(Color.axBorder)
-                                
-                                // Directory list
-                                ScrollView {
-                                    VStack(spacing: 0) {
-                                        if directories.isEmpty && !isLoadingDirs {
-                                            Text("Empty directory")
-                                                .font(.system(size: 11))
-                                                .foregroundColor(.axTextTertiary)
-                                                .padding(AXSpacing.lg)
-                                        } else {
-                                            ForEach(directories, id: \.self) { dir in
-                                                Button(action: {
-                                                    let newPath = currentBrowsePath == "/"
-                                                        ? "/\(dir)"
-                                                        : "\(currentBrowsePath)/\(dir)"
-                                                    currentBrowsePath = newPath
-                                                    Task { await browseDirs() }
-                                                }) {
-                                                    HStack(spacing: AXSpacing.sm) {
-                                                        Image(systemName: "folder")
-                                                            .font(.system(size: 12))
-                                                            .foregroundColor(.axAccentBlue)
-                                                        Text(dir)
-                                                            .font(.system(size: 12))
-                                                            .foregroundColor(.axTextPrimary)
-                                                        Spacer()
-                                                        Image(systemName: "chevron.right")
-                                                            .font(.system(size: 9))
-                                                            .foregroundColor(.axTextMuted)
-                                                    }
-                                                    .padding(.horizontal, AXSpacing.sm)
-                                                    .padding(.vertical, 6)
-                                                    .background(Color.clear)
-                                                    .contentShape(Rectangle())
-                                                }
-                                                .buttonStyle(PlainButtonStyle())
-                                                
-                                                if dir != directories.last {
-                                                    Divider().background(Color.axBorder.opacity(0.5))
-                                                        .padding(.leading, 32)
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                                .frame(height: 140)
-                                
-                                Divider().background(Color.axBorder)
-                                
-                                // Select / Cancel
-                                HStack {
-                                    Button(action: { showDirBrowser = false }) {
-                                        Text(L10n.Button.cancel)
-                                            .font(.system(size: 11, weight: .medium))
-                                            .foregroundColor(.axTextSecondary)
-                                            .padding(.horizontal, AXSpacing.md)
-                                            .padding(.vertical, 5)
-                                    }
-                                    .buttonStyle(PlainButtonStyle())
-                                    
-                                    Spacer()
-                                    
-                                    Text(currentBrowsePath)
-                                        .font(.system(size: 10, design: .monospaced))
-                                        .foregroundColor(.axTextTertiary)
-                                        .lineLimit(1)
-                                    
-                                    Spacer()
-                                    
-                                    Button(action: {
-                                        documentRoot = currentBrowsePath
-                                        showDirBrowser = false
-                                    }) {
-                                        HStack(spacing: 4) {
-                                            Image(systemName: "checkmark").font(.system(size: 10, weight: .bold))
-                                            Text(L10n.Button.select).font(.system(size: 11, weight: .semibold))
-                                        }
-                                        .foregroundColor(.white)
-                                        .padding(.horizontal, AXSpacing.md)
-                                        .padding(.vertical, 5)
-                                        .background(Color.axAccentBlue)
-                                        .cornerRadius(AXCornerRadius.sm)
-                                    }
-                                    .buttonStyle(PlainButtonStyle())
-                                }
-                                .padding(.horizontal, AXSpacing.sm)
-                                .padding(.vertical, 6)
-                            }
-                            .overlay(
-                                RoundedRectangle(cornerRadius: AXCornerRadius.sm)
-                                    .stroke(Color.axAccentBlue.opacity(0.3), lineWidth: 1)
-                            )
-                            .cornerRadius(AXCornerRadius.sm)
-                        } else {
-                            HStack(spacing: AXSpacing.sm) {
-                                TextField("/path/to/directory", text: $documentRoot)
-                                    .font(.system(size: 13, design: .monospaced))
-                                    .textFieldStyle(PlainTextFieldStyle())
-                                    .padding(AXSpacing.sm)
-                                    .background(Color.axBackgroundTertiary)
-                                    .overlay(RoundedRectangle(cornerRadius: AXCornerRadius.sm).stroke(Color.axBorder, lineWidth: 1))
-                                    .cornerRadius(AXCornerRadius.sm)
-                                
-                                Button(action: {
-                                    showDirBrowser = true
-                                    currentBrowsePath = documentRoot.isEmpty ? "/" : documentRoot
-                                    Task { await browseDirs() }
-                                }) {
-                                    HStack(spacing: 4) {
-                                        Image(systemName: "folder.badge.questionmark")
-                                            .font(.system(size: 12, weight: .medium))
-                                        Text("Browse")
-                                            .font(.system(size: 11, weight: .medium))
-                                    }
-                                    .foregroundColor(.axAccentBlue)
-                                    .padding(.horizontal, AXSpacing.md)
-                                    .padding(.vertical, 8)
-                                    .background(Color.axAccentBlue.opacity(0.1))
-                                    .overlay(RoundedRectangle(cornerRadius: AXCornerRadius.sm).stroke(Color.axAccentBlue.opacity(0.2), lineWidth: 1))
-                                    .cornerRadius(AXCornerRadius.sm)
-                                }
-                                .buttonStyle(PlainButtonStyle())
-                                .help("Browse Server Directories")
-                            }
-                        }
-                        
-                        // Common paths
-                        if !showDirBrowser {
-                            HStack(spacing: AXSpacing.sm) {
-                                Text("Quick:")
-                                    .font(.system(size: 10))
-                                    .foregroundColor(.axTextTertiary)
-                                ForEach(["/www/wwwroot", "/home", "/var/www"], id: \.self) { path in
-                                    Button(action: { documentRoot = path }) {
-                                        Text(path)
-                                            .font(.system(size: 10, design: .monospaced))
-                                            .foregroundColor(documentRoot == path ? .axAccentBlue : .axTextTertiary)
-                                            .padding(.horizontal, 6)
-                                            .padding(.vertical, 2)
-                                            .background(documentRoot == path ? Color.axAccentBlue.opacity(0.08) : Color.axBackgroundTertiary)
-                                            .cornerRadius(3)
-                                    }
-                                    .buttonStyle(PlainButtonStyle())
-                                }
-                            }
-                        }
-                    }
-                    
-                    // Quota + Note side by side
-                    HStack(spacing: AXSpacing.lg) {
-                        VStack(alignment: .leading, spacing: AXSpacing.sm) {
-                            formLabel("Quota")
-                            HStack(spacing: 0) {
-                                TextField("0 = Unlimited", text: $quota)
-                                    .font(.system(size: 13))
-                                    .textFieldStyle(PlainTextFieldStyle())
-                                    .padding(AXSpacing.sm)
-                                
-                                Text("MB")
-                                    .font(.system(size: 11, weight: .medium))
-                                    .foregroundColor(.axTextTertiary)
-                                    .padding(.trailing, AXSpacing.sm)
-                            }
-                            .background(Color.axBackgroundTertiary)
-                            .overlay(RoundedRectangle(cornerRadius: AXCornerRadius.sm).stroke(Color.axBorder, lineWidth: 1))
-                            .cornerRadius(AXCornerRadius.sm)
-                        }
-                        
-                        VStack(alignment: .leading, spacing: AXSpacing.sm) {
-                            formLabel("Note")
-                            TextField("Optional note", text: $note)
-                                .font(.system(size: 13))
-                                .textFieldStyle(PlainTextFieldStyle())
-                                .padding(AXSpacing.sm)
-                                .background(Color.axBackgroundTertiary)
-                                .overlay(RoundedRectangle(cornerRadius: AXCornerRadius.sm).stroke(Color.axBorder, lineWidth: 1))
-                                .cornerRadius(AXCornerRadius.sm)
-                        }
-                    }
-                }
-                .padding(AXSpacing.xl)
-            }
-            
+            formScrollView
             Divider().background(Color.axBorder)
-            
-            // Footer
-            HStack {
-                Button(L10n.Button.cancel) { dismiss() }
-                    .buttonStyle(PlainButtonStyle())
-                    .foregroundColor(.axTextSecondary)
-                    .padding(.horizontal, AXSpacing.xl)
-                    .padding(.vertical, AXSpacing.sm)
-                
-                Spacer()
-                
-                Button(action: save) {
-                    HStack(spacing: AXSpacing.xs) {
-                        if isSaving {
-                            ProgressView()
-                                .scaleEffect(0.6)
-                                .frame(width: 14, height: 14)
-                        } else {
-                            Image(systemName: "checkmark")
-                                .font(.system(size: 12, weight: .bold))
-                        }
-                        Text(isEditing ? L10n.Button.saveChanges : "Create User")
-                            .font(.system(size: 13, weight: .semibold))
-                    }
-                    .foregroundColor(.white)
-                    .padding(.horizontal, AXSpacing.xl)
-                    .padding(.vertical, AXSpacing.sm)
-                    .background(Color.axAccentBlue)
-                    .cornerRadius(AXCornerRadius.md)
-                }
-                .buttonStyle(PlainButtonStyle())
-                .disabled(username.isEmpty || password.isEmpty || isSaving)
-                .opacity(username.isEmpty || password.isEmpty ? 0.5 : 1)
-            }
-            .padding(AXSpacing.xl)
+            footerButtons
         }
         .frame(width: 600, height: showDirBrowser ? 640 : 520)
         .background(Color.axBackground)
@@ -405,6 +50,271 @@ struct FTPAddUserSheet: View {
                 password = vm.generatePassword()
             }
         }
+    }
+
+    // MARK: - Header
+
+    @ViewBuilder
+    private var sheetHeader: some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(isEditing ? L10n.FTP.editUser : L10n.FTP.addUser)
+                    .font(.system(size: 18, weight: .bold)).foregroundColor(.axTextPrimary)
+                Text("Configure FTP access credentials and permissions")
+                    .font(.system(size: 12)).foregroundColor(.axTextTertiary)
+            }
+            Spacer()
+            Button(action: { dismiss() }) {
+                Image(systemName: "xmark.circle.fill").font(.system(size: 20)).foregroundColor(.axTextMuted)
+            }
+            .buttonStyle(PlainButtonStyle())
+        }
+        .padding(AXSpacing.xl)
+    }
+
+    // MARK: - Form
+
+    @ViewBuilder
+    private var formScrollView: some View {
+        ScrollView {
+            VStack(spacing: AXSpacing.xl) {
+                usernameField
+                passwordField
+                documentRootField
+                quotaAndNoteRow
+            }
+            .padding(AXSpacing.xl)
+        }
+    }
+
+    @ViewBuilder private var usernameField: some View {
+        VStack(alignment: .leading, spacing: AXSpacing.sm) {
+            formLabel(L10n.FTP.username)
+            TextField("FTP username", text: $username)
+                .font(.system(size: 13)).textFieldStyle(PlainTextFieldStyle())
+                .padding(AXSpacing.sm).background(Color.axBackgroundTertiary)
+                .overlay(RoundedRectangle(cornerRadius: AXCornerRadius.sm).stroke(Color.axBorder, lineWidth: 1))
+                .cornerRadius(AXCornerRadius.sm).disabled(isEditing).opacity(isEditing ? 0.6 : 1)
+        }
+    }
+
+    @ViewBuilder private var passwordField: some View {
+        VStack(alignment: .leading, spacing: AXSpacing.sm) {
+            formLabel(L10n.FTP.password)
+            HStack(spacing: AXSpacing.sm) {
+                TextField(L10n.FTP.password, text: $password)
+                    .font(.system(size: 13, design: .monospaced)).textFieldStyle(PlainTextFieldStyle())
+                    .padding(AXSpacing.sm).background(Color.axBackgroundTertiary)
+                    .overlay(RoundedRectangle(cornerRadius: AXCornerRadius.sm).stroke(Color.axBorder, lineWidth: 1))
+                    .cornerRadius(AXCornerRadius.sm)
+                Button(action: { password = vm.generatePassword() }) {
+                    Image(systemName: "arrow.clockwise").font(.system(size: 12, weight: .medium))
+                        .foregroundColor(.axAccentBlue).frame(width: 32, height: 32)
+                        .background(Color.axAccentBlue.opacity(0.1))
+                        .overlay(RoundedRectangle(cornerRadius: AXCornerRadius.sm).stroke(Color.axAccentBlue.opacity(0.2), lineWidth: 1))
+                        .cornerRadius(AXCornerRadius.sm)
+                }
+                .buttonStyle(PlainButtonStyle()).help("Generate Password")
+                Button(action: {
+                    #if os(macOS)
+                    NSPasteboard.general.clearContents()
+                    NSPasteboard.general.setString(password, forType: .string)
+                    #endif
+                    showPasswordCopied = true
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { showPasswordCopied = false }
+                }) {
+                    Image(systemName: showPasswordCopied ? "checkmark" : "doc.on.doc")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(showPasswordCopied ? .axSuccess : .axTextSecondary)
+                        .frame(width: 32, height: 32)
+                        .background((showPasswordCopied ? Color.axSuccess : Color.axTextSecondary).opacity(0.1))
+                        .overlay(RoundedRectangle(cornerRadius: AXCornerRadius.sm).stroke((showPasswordCopied ? Color.axSuccess : Color.axBorder).opacity(0.3), lineWidth: 1))
+                        .cornerRadius(AXCornerRadius.sm)
+                }
+                .buttonStyle(PlainButtonStyle()).help("Copy Password")
+            }
+            HStack(spacing: AXSpacing.xs) {
+                Image(systemName: "shield.checkered").font(.system(size: 10))
+                Text("Use the generate button for a secure random password").font(.system(size: 10))
+            }
+            .foregroundColor(.axTextTertiary)
+        }
+    }
+
+    @ViewBuilder private var documentRootField: some View {
+        VStack(alignment: .leading, spacing: AXSpacing.sm) {
+            formLabel("Document Root")
+            if showDirBrowser {
+                dirBrowser
+            } else {
+                HStack(spacing: AXSpacing.sm) {
+                    TextField("/path/to/directory", text: $documentRoot)
+                        .font(.system(size: 13, design: .monospaced)).textFieldStyle(PlainTextFieldStyle())
+                        .padding(AXSpacing.sm).background(Color.axBackgroundTertiary)
+                        .overlay(RoundedRectangle(cornerRadius: AXCornerRadius.sm).stroke(Color.axBorder, lineWidth: 1))
+                        .cornerRadius(AXCornerRadius.sm)
+                    Button(action: {
+                        showDirBrowser = true
+                        currentBrowsePath = documentRoot.isEmpty ? "/" : documentRoot
+                        Task { await browseDirs() }
+                    }) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "folder.badge.questionmark").font(.system(size: 12, weight: .medium))
+                            Text("Browse").font(.system(size: 11, weight: .medium))
+                        }
+                        .foregroundColor(.axAccentBlue).padding(.horizontal, AXSpacing.md).padding(.vertical, 8)
+                        .background(Color.axAccentBlue.opacity(0.1))
+                        .overlay(RoundedRectangle(cornerRadius: AXCornerRadius.sm).stroke(Color.axAccentBlue.opacity(0.2), lineWidth: 1))
+                        .cornerRadius(AXCornerRadius.sm)
+                    }
+                    .buttonStyle(PlainButtonStyle()).help("Browse Server Directories")
+                }
+                HStack(spacing: AXSpacing.sm) {
+                    Text("Quick:").font(.system(size: 10)).foregroundColor(.axTextTertiary)
+                    ForEach(["/www/wwwroot", "/home", "/var/www"], id: \.self) { path in
+                        Button(action: { documentRoot = path }) {
+                            Text(path).font(.system(size: 10, design: .monospaced))
+                                .foregroundColor(documentRoot == path ? .axAccentBlue : .axTextTertiary)
+                                .padding(.horizontal, 6).padding(.vertical, 2)
+                                .background(documentRoot == path ? Color.axAccentBlue.opacity(0.08) : Color.axBackgroundTertiary)
+                                .cornerRadius(3)
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                    }
+                }
+            }
+        }
+    }
+
+    @ViewBuilder private var dirBrowser: some View {
+        VStack(spacing: 0) {
+            HStack(spacing: AXSpacing.xs) {
+                Image(systemName: "folder.fill").font(.system(size: 11)).foregroundColor(.axAccentBlue)
+                Text(currentBrowsePath).font(.system(size: 11, design: .monospaced)).foregroundColor(.axTextPrimary).lineLimit(1)
+                Spacer()
+                if isLoadingDirs { ProgressView().scaleEffect(0.5) }
+                if currentBrowsePath != "/" {
+                    Button(action: {
+                        let parent = (currentBrowsePath as NSString).deletingLastPathComponent
+                        currentBrowsePath = parent.isEmpty ? "/" : parent
+                        Task { await browseDirs() }
+                    }) {
+                        HStack(spacing: 2) {
+                            Image(systemName: "arrow.up").font(.system(size: 9, weight: .bold))
+                            Text("Up").font(.system(size: 10, weight: .medium))
+                        }
+                        .foregroundColor(.axAccentBlue).padding(.horizontal, 6).padding(.vertical, 3)
+                        .background(Color.axAccentBlue.opacity(0.08)).cornerRadius(4)
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                }
+            }
+            .padding(.horizontal, AXSpacing.sm).padding(.vertical, 6).background(Color.axBackgroundTertiary)
+            Divider().background(Color.axBorder)
+            ScrollView {
+                VStack(spacing: 0) {
+                    if directories.isEmpty && !isLoadingDirs {
+                        Text("Empty directory").font(.system(size: 11)).foregroundColor(.axTextTertiary).padding(AXSpacing.lg)
+                    } else {
+                        ForEach(directories, id: \.self) { dir in
+                            Button(action: {
+                                currentBrowsePath = currentBrowsePath == "/" ? "/\(dir)" : "\(currentBrowsePath)/\(dir)"
+                                Task { await browseDirs() }
+                            }) {
+                                HStack(spacing: AXSpacing.sm) {
+                                    Image(systemName: "folder").font(.system(size: 12)).foregroundColor(.axAccentBlue)
+                                    Text(dir).font(.system(size: 12)).foregroundColor(.axTextPrimary)
+                                    Spacer()
+                                    Image(systemName: "chevron.right").font(.system(size: 9)).foregroundColor(.axTextMuted)
+                                }
+                                .padding(.horizontal, AXSpacing.sm).padding(.vertical, 6)
+                                .background(Color.clear).contentShape(Rectangle())
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                            if dir != directories.last {
+                                Divider().background(Color.axBorder.opacity(0.5)).padding(.leading, 32)
+                            }
+                        }
+                    }
+                }
+            }
+            .frame(height: 140)
+            Divider().background(Color.axBorder)
+            HStack {
+                Button(action: { showDirBrowser = false }) {
+                    Text(L10n.Button.cancel).font(.system(size: 11, weight: .medium)).foregroundColor(.axTextSecondary)
+                        .padding(.horizontal, AXSpacing.md).padding(.vertical, 5)
+                }
+                .buttonStyle(PlainButtonStyle())
+                Spacer()
+                Text(currentBrowsePath).font(.system(size: 10, design: .monospaced)).foregroundColor(.axTextTertiary).lineLimit(1)
+                Spacer()
+                Button(action: { documentRoot = currentBrowsePath; showDirBrowser = false }) {
+                    HStack(spacing: 4) {
+                        Image(systemName: "checkmark").font(.system(size: 10, weight: .bold))
+                        Text(L10n.Button.select).font(.system(size: 11, weight: .semibold))
+                    }
+                    .foregroundColor(.white).padding(.horizontal, AXSpacing.md).padding(.vertical, 5)
+                    .background(Color.axAccentBlue).cornerRadius(AXCornerRadius.sm)
+                }
+                .buttonStyle(PlainButtonStyle())
+            }
+            .padding(.horizontal, AXSpacing.sm).padding(.vertical, 6)
+        }
+        .overlay(RoundedRectangle(cornerRadius: AXCornerRadius.sm).stroke(Color.axAccentBlue.opacity(0.3), lineWidth: 1))
+        .cornerRadius(AXCornerRadius.sm)
+    }
+
+    @ViewBuilder private var quotaAndNoteRow: some View {
+        HStack(spacing: AXSpacing.lg) {
+            VStack(alignment: .leading, spacing: AXSpacing.sm) {
+                formLabel("Quota")
+                HStack(spacing: 0) {
+                    TextField("0 = Unlimited", text: $quota)
+                        .font(.system(size: 13)).textFieldStyle(PlainTextFieldStyle()).padding(AXSpacing.sm)
+                    Text("MB").font(.system(size: 11, weight: .medium)).foregroundColor(.axTextTertiary).padding(.trailing, AXSpacing.sm)
+                }
+                .background(Color.axBackgroundTertiary)
+                .overlay(RoundedRectangle(cornerRadius: AXCornerRadius.sm).stroke(Color.axBorder, lineWidth: 1))
+                .cornerRadius(AXCornerRadius.sm)
+            }
+            VStack(alignment: .leading, spacing: AXSpacing.sm) {
+                formLabel("Note")
+                TextField("Optional note", text: $note)
+                    .font(.system(size: 13)).textFieldStyle(PlainTextFieldStyle()).padding(AXSpacing.sm)
+                    .background(Color.axBackgroundTertiary)
+                    .overlay(RoundedRectangle(cornerRadius: AXCornerRadius.sm).stroke(Color.axBorder, lineWidth: 1))
+                    .cornerRadius(AXCornerRadius.sm)
+            }
+        }
+    }
+
+    // MARK: - Footer
+
+    @ViewBuilder
+    private var footerButtons: some View {
+        HStack {
+            Button(L10n.Button.cancel) { dismiss() }
+                .buttonStyle(PlainButtonStyle()).foregroundColor(.axTextSecondary)
+                .padding(.horizontal, AXSpacing.xl).padding(.vertical, AXSpacing.sm)
+            Spacer()
+            Button(action: save) {
+                HStack(spacing: AXSpacing.xs) {
+                    if isSaving {
+                        ProgressView().scaleEffect(0.6).frame(width: 14, height: 14)
+                    } else {
+                        Image(systemName: "checkmark").font(.system(size: 12, weight: .bold))
+                    }
+                    Text(isEditing ? L10n.Button.saveChanges : "Create User").font(.system(size: 13, weight: .semibold))
+                }
+                .foregroundColor(.white).padding(.horizontal, AXSpacing.xl).padding(.vertical, AXSpacing.sm)
+                .background(Color.axAccentBlue).cornerRadius(AXCornerRadius.md)
+            }
+            .buttonStyle(PlainButtonStyle())
+            .disabled(username.isEmpty || password.isEmpty || isSaving)
+            .opacity(username.isEmpty || password.isEmpty ? 0.5 : 1)
+        }
+        .padding(AXSpacing.xl)
     }
     
     private func save() {

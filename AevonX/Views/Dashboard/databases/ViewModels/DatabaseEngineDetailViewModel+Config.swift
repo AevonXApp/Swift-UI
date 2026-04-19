@@ -122,6 +122,7 @@ extension DatabaseEngineDetailViewModel {
 
     /// Save configuration content to the server
     public func saveConfiguration(content: String) async {
+        guard let sId = currentServerId else { return }
         await performOperation(
             progressMessage: "\(L10n.Status.loading)",
             successMessage: L10n.Database.actionSuccessful(L10n.Button.saveChanges),
@@ -130,7 +131,7 @@ extension DatabaseEngineDetailViewModel {
             reloadAfterSuccess: false
         ) {
             let config = DatabaseConfiguration(engineType: databaseType, settings: [:], rawContent: content)
-            try await DatabaseEngineService.shared.updateConfiguration(config, type: databaseType, serverId: currentServerId!)
+            try await DatabaseEngineService.shared.updateConfiguration(config, type: databaseType, serverId: sId)
             await loadConfiguration()
         }
     }
@@ -244,6 +245,7 @@ extension DatabaseEngineDetailViewModel {
 
     /// Apply an optimization preset to the configuration
     public func applyOptimizationPreset(_ preset: String) async {
+        guard let sId = currentServerId else { return }
         await performOperation(
             progressMessage: "Applying '\(preset)' preset...",
             successMessage: "'\(preset)' preset applied!",
@@ -251,7 +253,7 @@ extension DatabaseEngineDetailViewModel {
             failurePrefix: L10n.Database.actionFailed(L10n.Button.apply),
             reloadAfterSuccess: false
         ) {
-            let currentConfig = try await DatabaseEngineService.shared.getConfiguration(type: databaseType, serverId: currentServerId!)
+            let currentConfig = try await DatabaseEngineService.shared.getConfiguration(type: databaseType, serverId: sId)
             let presetSettings = optimizationPresetSettings(for: preset)
             var merged = currentConfig.settings
             for (key, value) in presetSettings { merged[key] = value }
@@ -270,7 +272,7 @@ extension DatabaseEngineDetailViewModel {
                 }
             }
             let updated = DatabaseConfiguration(engineType: databaseType, settings: merged, rawContent: updatedContent)
-            try await DatabaseEngineService.shared.updateConfiguration(updated, type: databaseType, serverId: currentServerId!)
+            try await DatabaseEngineService.shared.updateConfiguration(updated, type: databaseType, serverId: sId)
             await loadConfiguration()
         }
     }

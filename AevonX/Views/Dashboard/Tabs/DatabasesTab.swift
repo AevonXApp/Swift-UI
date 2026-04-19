@@ -7,8 +7,8 @@
 //
 
 import SwiftUI
-import AevonXCoreBridge
 import Combine
+import AevonXCoreBridge
 
 struct DatabasesTab: View {
     @StateObject private var viewModel: DatabasesTabViewModel

@@ -24,6 +24,13 @@ struct DashboardSidebar: View {
             Spacer(minLength: 0)
             footerSection
         }
+        .onAppear {
+            if viewModel.isConnected {
+                Task {
+                    await AevonXCoreBridge.HookLoader.shared.load(serverId: server.id.uuidString)
+                }
+            }
+        }
         .onChange(of: viewModel.isConnected) {
             if viewModel.isConnected {
                 Task {

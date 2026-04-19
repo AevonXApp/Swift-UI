@@ -16,64 +16,69 @@ extension DatabaseEngineDetailViewModel {
 
     /// Start the database service
     public func startService() async {
+        guard let sId = currentServerId else { return }
         await performOperation(
             progressMessage: "Starting \(databaseType.displayName)...",
             successMessage: "\(databaseType.displayName) started successfully!",
             successAlert: "\(databaseType.displayName) service has been started.",
             failurePrefix: L10n.Service.startFailed
         ) {
-            try await DatabaseEngineService.shared.startService(type: databaseType, serverId: currentServerId!)
+            try await DatabaseEngineService.shared.startService(type: databaseType, serverId: sId)
             try await Task.sleep(nanoseconds: 2_000_000_000)
         }
     }
 
     /// Stop the database service
     public func stopService() async {
+        guard let sId = currentServerId else { return }
         await performOperation(
             progressMessage: "Stopping \(databaseType.displayName)...",
             successMessage: "\(databaseType.displayName) stopped successfully!",
             successAlert: "\(databaseType.displayName) service has been stopped.",
             failurePrefix: L10n.Service.stopFailed
         ) {
-            try await DatabaseEngineService.shared.stopService(type: databaseType, serverId: currentServerId!)
+            try await DatabaseEngineService.shared.stopService(type: databaseType, serverId: sId)
             try await Task.sleep(nanoseconds: 2_000_000_000)
         }
     }
 
     /// Restart the database service
     public func restartService() async {
+        guard let sId = currentServerId else { return }
         await performOperation(
             progressMessage: "Restarting \(databaseType.displayName)...",
             successMessage: "\(databaseType.displayName) restarted successfully!",
             successAlert: "\(databaseType.displayName) service has been restarted.",
             failurePrefix: L10n.Service.restartFailed
         ) {
-            try await DatabaseEngineService.shared.restartService(type: databaseType, serverId: currentServerId!)
+            try await DatabaseEngineService.shared.restartService(type: databaseType, serverId: sId)
             try await Task.sleep(nanoseconds: 3_000_000_000)
         }
     }
 
     /// Enable service on boot
     public func enableOnBoot() async {
+        guard let sId = currentServerId else { return }
         await performOperation(
             progressMessage: "Enabling \(databaseType.displayName) on boot...",
             successMessage: "\(databaseType.displayName) will start on boot!",
             successAlert: "\(databaseType.displayName) has been enabled to start on system boot.",
             failurePrefix: L10n.Service.startFailed
         ) {
-            try await DatabaseEngineService.shared.enableService(type: databaseType, serverId: currentServerId!)
+            try await DatabaseEngineService.shared.enableService(type: databaseType, serverId: sId)
         }
     }
 
     /// Disable service on boot
     public func disableOnBoot() async {
+        guard let sId = currentServerId else { return }
         await performOperation(
             progressMessage: "Disabling \(databaseType.displayName) on boot...",
             successMessage: "\(databaseType.displayName) will not start on boot!",
             successAlert: "\(databaseType.displayName) has been disabled from starting on system boot.",
             failurePrefix: L10n.Service.stopFailed
         ) {
-            try await DatabaseEngineService.shared.disableService(type: databaseType, serverId: currentServerId!)
+            try await DatabaseEngineService.shared.disableService(type: databaseType, serverId: sId)
         }
     }
 
@@ -137,13 +142,14 @@ extension DatabaseEngineDetailViewModel {
     // MARK: - Uninstall
 
     public func uninstallEngine() async {
+        guard let sId = currentServerId else { return }
         await performOperation(
             progressMessage: "Uninstalling \(databaseType.displayName)...",
             successMessage: "\(databaseType.displayName) uninstalled successfully!",
             successAlert: "\(databaseType.displayName) has been uninstalled from the server.",
             failurePrefix: L10n.Service.uninstallFailed
         ) {
-            try await DatabaseEngineService.shared.uninstallDatabaseEngine(type: databaseType, serverId: currentServerId!)
+            try await DatabaseEngineService.shared.uninstallDatabaseEngine(type: databaseType, serverId: sId)
         }
     }
 

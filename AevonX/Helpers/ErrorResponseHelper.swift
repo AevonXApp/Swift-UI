@@ -23,7 +23,7 @@ enum ErrorResponseHelper {
                 sum + (tokens.contains(kw) ? kw.count : 0) // longer keywords = stronger signal
             }
             guard score > 0 else { continue }
-            if best == nil || score > best!.score || (score == best!.score && cat.pri > best!.pri) {
+            if best == nil || score > (best?.score ?? -1) || (score == best?.score && cat.pri > (best?.pri ?? -1)) {
                 best = (cat.msg, score, cat.pri)
             }
         }

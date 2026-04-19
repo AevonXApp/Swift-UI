@@ -8,9 +8,9 @@
 //
 
 import Foundation
+import Combine
 import SwiftUI
 import AevonXCoreBridge
-import Combine
 
 // MARK: - Database Installation Service
 

@@ -4,9 +4,9 @@
 //
 
 import SwiftUI
+import Combine
 import AevonXCoreBridge
 
-import Combine
 
 @MainActor
 class AddServerViewModel: ObservableObject {
