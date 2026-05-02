@@ -26,7 +26,7 @@ struct ApplicationsTab: View {
                 connectionViewModel: vm
             )
         } else {
-            Text("No connection available")
+            Text(L10n.Dashboard.noConnectionAvailable)
                 .font(AXTypography.caption)
                 .foregroundColor(.axTextMuted)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)

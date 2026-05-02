@@ -36,7 +36,7 @@ struct LiteSpeedConfigSection: View {
 
     private var configList: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text("Config Files")
+            Text(L10n.Apps.configFiles)
                 .font(AXTypography.subheadline).fontWeight(.semibold)
                 .foregroundColor(.axTextSecondary)
                 .padding(.horizontal, AXSpacing.md)
@@ -67,7 +67,7 @@ struct LiteSpeedConfigSection: View {
                                 }
                                 Spacer()
                                 if config.isMain {
-                                    Text("MAIN")
+                                    Text(L10n.Label.main)
                                         .font(AXTypography.monoXxxs).fontWeight(.bold)
                                         .foregroundColor(lsGreen)
                                         .padding(.horizontal, 4).padding(.vertical, 2)
@@ -112,7 +112,7 @@ struct LiteSpeedConfigSection: View {
                                 Image(systemName: "checkmark.circle")
                                     .font(AXTypography.footnote)
                             }
-                            Text("Validate")
+                            Text(L10n.Apps.validate)
                                 .font(AXTypography.footnote).fontWeight(.medium)
                         }
                         .foregroundColor(.axAccentBlue)
@@ -182,7 +182,7 @@ struct LiteSpeedConfigSection: View {
                 VStack(spacing: AXSpacing.md) {
                     Spacer()
                     Image(systemName: "doc.text").font(AXTypography.largeTitle).foregroundColor(.axTextMuted.opacity(0.3))
-                    Text("Select a config file to view").font(AXTypography.callout).foregroundColor(.axTextMuted)
+                    Text(L10n.Apps.selectAConfigFileToView).font(AXTypography.callout).foregroundColor(.axTextMuted)
                     Spacer()
                 }
                 .frame(maxWidth: .infinity)

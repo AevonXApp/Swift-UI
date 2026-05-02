@@ -177,7 +177,7 @@ struct WebsiteTableView: View {
             Button(action: {
                 withAnimation { activeFilter = .all }
             }) {
-                Text("Show All")
+                Text(L10n.Websites.showAll)
                     .font(AXTypography.footnote).fontWeight(.semibold)
                     .foregroundColor(.axAccentBlue)
             }

@@ -75,7 +75,7 @@ struct NginxOverviewSection: View {
             // Service info
             VStack(alignment: .leading, spacing: AXSpacing.xs) {
                 HStack(spacing: AXSpacing.sm) {
-                    Text("Nginx Service")
+                    Text(L10n.Apps.nginxService)
                         .font(.system(size: 18, weight: .bold))
                         .foregroundColor(.axTextPrimary)
 

@@ -22,7 +22,7 @@ struct LiteSpeedWorkersSection: View {
                     VStack(spacing: AXSpacing.md) {
                         Spacer()
                         Image(systemName: "cpu").font(AXTypography.largeTitle).foregroundColor(.axTextMuted.opacity(0.3))
-                        Text("No worker processes detected").font(AXTypography.callout).foregroundColor(.axTextMuted)
+                        Text(L10n.Apps.noWorkerProcessesDetected).font(AXTypography.callout).foregroundColor(.axTextMuted)
                         Spacer()
                     }.frame(maxWidth: .infinity).padding(.vertical, AXSpacing.xl)
                 } else {
@@ -38,9 +38,9 @@ struct LiteSpeedWorkersSection: View {
                         // Header
                         HStack(spacing: 0) {
                             Text("PID").frame(width: 80, alignment: .leading)
-                            Text("State").frame(width: 100, alignment: .leading)
-                            Text("CPU %").frame(width: 80, alignment: .trailing)
-                            Text("Memory").frame(width: 100, alignment: .trailing)
+                            Text(L10n.Apps.state).frame(width: 100, alignment: .leading)
+                            Text(L10n.Apps.cpu).frame(width: 80, alignment: .trailing)
+                            Text(L10n.Apps.memory).frame(width: 100, alignment: .trailing)
                             Spacer()
                         }
                         .font(AXTypography.caption).fontWeight(.bold)

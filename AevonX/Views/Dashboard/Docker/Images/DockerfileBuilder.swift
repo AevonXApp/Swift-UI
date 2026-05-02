@@ -34,7 +34,7 @@ struct DockerfileBuilder: View {
                 HStack(spacing: 6) {
                     Image(systemName: "hammer.fill")
                         .foregroundColor(.orange)
-                    Text("Dockerfile Builder")
+                    Text(L10n.Docker.dockerfileBuilder)
                         .font(AXTypography.headline)
                         .foregroundColor(.axTextPrimary)
                 }
@@ -56,7 +56,7 @@ struct DockerfileBuilder: View {
                         VStack(alignment: .leading, spacing: AXSpacing.md) {
                             // Base image
                             VStack(alignment: .leading, spacing: AXSpacing.xs) {
-                                Text("FROM (Base Image)")
+                                Text(L10n.Docker.fromBaseImage)
                                     .font(.system(size: 11, weight: .bold))
                                     .foregroundColor(.axTextSecondary)
                                 
@@ -104,7 +104,7 @@ struct DockerfileBuilder: View {
                             }) {
                                 HStack(spacing: 4) {
                                     Image(systemName: "plus.circle.fill").font(.system(size: 12))
-                                    Text("Add Instruction").font(.system(size: 11, weight: .medium))
+                                    Text(L10n.Docker.addInstruction).font(.system(size: 11, weight: .medium))
                                 }
                                 .foregroundColor(.axAccentBlue)
                             }
@@ -117,7 +117,7 @@ struct DockerfileBuilder: View {
                     // Right: Preview
                     VStack(alignment: .leading, spacing: 0) {
                         HStack {
-                            Text("Dockerfile Preview")
+                            Text(L10n.Docker.dockerfilePreview)
                                 .font(.system(size: 11, weight: .bold))
                                 .foregroundColor(.axTextSecondary)
                             Spacer()
@@ -139,7 +139,7 @@ struct DockerfileBuilder: View {
                 // Build output
                 VStack(alignment: .leading, spacing: 0) {
                     HStack {
-                        Text("Build Output")
+                        Text(L10n.Docker.buildOutput)
                             .font(.system(size: 11, weight: .bold))
                             .foregroundColor(.axTextSecondary)
                         Spacer()
@@ -175,7 +175,7 @@ struct DockerfileBuilder: View {
                     Button(action: { step = .edit }) {
                         HStack(spacing: 4) {
                             Image(systemName: "chevron.left").font(.system(size: 10))
-                            Text("Edit")
+                            Text(L10n.Docker.edit)
                         }
                     }
                     .buttonStyle(AXSecondaryButtonStyle())
@@ -197,7 +197,7 @@ struct DockerfileBuilder: View {
                     Button(action: buildImage) {
                         HStack(spacing: 4) {
                             Image(systemName: "hammer.fill").font(.system(size: 10))
-                            Text("Build Image")
+                            Text(L10n.Docker.buildImage)
                         }
                     }
                     .buttonStyle(AXPrimaryButtonStyle())

@@ -167,7 +167,7 @@ struct ProcessManagerTab: View {
             if viewModel.isLoading {
                 VStack(spacing: AXSpacing.md) {
                     ProgressView()
-                    Text("Checking PM2 status...")
+                    Text(L10n.Websites.checkingPm2Status)
                         .font(AXTypography.caption)
                         .foregroundColor(.axTextTertiary)
                 }
@@ -207,11 +207,11 @@ struct ProcessManagerTab: View {
                 .font(AXTypography.largeTitle)
                 .foregroundColor(.axTextMuted)
             
-            Text("PM2 Not Installed")
+            Text(L10n.Websites.pm2NotInstalled)
                 .font(AXTypography.title2).fontWeight(.bold)
                 .foregroundColor(.axTextPrimary)
             
-            Text("PM2 is a process manager for Node.js applications.\nIt keeps your app running and auto-restarts on crashes.")
+            Text(L10n.Label.pm2EmptyState)
                 .font(AXTypography.callout)
                 .foregroundColor(.axTextSecondary)
                 .multilineTextAlignment(.center)
@@ -223,7 +223,7 @@ struct ProcessManagerTab: View {
                     } else {
                         Image(systemName: "arrow.down.circle.fill")
                     }
-                    Text("Install PM2")
+                    Text(L10n.Websites.installPm2)
                         .font(AXTypography.headline)
                 }
                 .foregroundColor(.white)
@@ -247,7 +247,7 @@ struct ProcessManagerTab: View {
                 HStack(spacing: 6) {
                     Image(systemName: "play.fill")
                         .font(AXTypography.footnote)
-                    Text("Start App")
+                    Text(L10n.Websites.startApp)
                         .font(AXTypography.subheadline).fontWeight(.semibold)
                 }
                 .foregroundColor(.white)
@@ -265,7 +265,7 @@ struct ProcessManagerTab: View {
                 HStack(spacing: 6) {
                     Image(systemName: "arrow.down.doc.fill")
                         .font(AXTypography.footnote)
-                    Text("Save & Auto-Start")
+                    Text(L10n.Websites.saveAutoStart)
                         .font(AXTypography.subheadline).fontWeight(.semibold)
                 }
                 .foregroundColor(.axAccentBlue)
@@ -295,10 +295,10 @@ struct ProcessManagerTab: View {
             Image(systemName: "square.stack.3d.up.slash")
                 .font(AXTypography.largeTitle)
                 .foregroundColor(.axTextMuted)
-            Text("No Running Processes")
+            Text(L10n.Websites.noRunningProcesses)
                 .font(AXTypography.headline)
                 .foregroundColor(.axTextPrimary)
-            Text("Start your application using the 'Start App' button above.")
+            Text(L10n.Websites.startYourApplicationUsingTheStartAppButtonAbove)
                 .font(AXTypography.subheadline)
                 .foregroundColor(.axTextSecondary)
         }
@@ -428,7 +428,7 @@ struct ProcessManagerTab: View {
     private func logsView(_ logs: String) -> some View {
         VStack(alignment: .leading, spacing: AXSpacing.sm) {
             HStack {
-                Text("Process Logs")
+                Text(L10n.Websites.processLogs)
                     .font(AXTypography.headline).fontWeight(.bold)
                     .foregroundColor(.axTextPrimary)
                 Spacer()

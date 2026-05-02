@@ -328,7 +328,7 @@ struct DockerContainersTab: View {
             }
             Button(L10n.Button.cancel, role: .cancel) {}
         } message: {
-            Text("Enter a new name for this container")
+            Text(L10n.Docker.enterANewNameForThisContainer)
         }
         .sheet(item: $selectedContainerForRollback) { container in
             DockerRollbackSheet(container: container, serverId: serverId) {

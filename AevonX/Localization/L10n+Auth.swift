@@ -14,10 +14,8 @@ extension L10n {
         static let noAccountSignUp = s("auth.noAccountSignUp", "Don't have an account? Sign Up")
         static let hasAccountSignIn = s("auth.hasAccountSignIn", "Already have an account? Sign In")
         static let checkingTrial = s("auth.checkingTrial", "Checking trial eligibility...")
-        static let trialUsed = s("auth.trialUsed", "This device has already been used for a trial.")
         static let passwordStrength = s("auth.passwordStrength", "Password Strength:")
         static let signIn = s("auth.signIn", "Sign In")
-        static let signUp = s("auth.signUp", "Sign Up")
         static let sendResetLink = s("auth.sendResetLink", "Send Reset Link")
     }
 
@@ -36,7 +34,6 @@ extension L10n {
         static let currentPlan = s("profile.currentPlan", "Current Plan")
         static let manageSubscription = s("profile.manageSubscription", "Manage Subscription")
         static let changePassword = s("profile.changePassword", "Change Password")
-        static let apiKeysUnavailable = s("profile.apiKeysUnavailable", "API Keys are not available on the current plan.")
         static let recentActivity = s("profile.recentActivity", "Recent Activity")
         static let noActivity = s("profile.noActivity", "No activity recorded yet.")
         static let encryptionKey = s("profile.encryptionKey", "Encryption Key")
@@ -45,6 +42,9 @@ extension L10n {
         static let backupKey = s("profile.backupKey", "Backup Key")
         static let backupKeyDesc = s("profile.backupKeyDesc", "View and copy your encryption key for safekeeping.")
         static let encryptionKeyWarning = s("profile.encryptionKeyWarning", "If you lose your Encryption Key, your encrypted data cannot be recovered.")
+        static let apiKeysAreNotAvailableAevonxDoesNotOfferAPublicDeveloperApiAtThisTime = s("profile.apiKeysNotice", "API Keys are not available. AevonX does not offer a public developer API at this time.")
+        static let storeThisKeyInAPhysicalSafeOrASecurePasswordManagerIfYouLoseThisKeyYourServerCredentialsWillBePermanentlyLostAevonxIsAZeroKnowledgePlatformAndHasNoWayToRecoverIt = s("profile.storeKeyWarning", "Store this key in a physical safe or a secure password manager. If you lose this key, your server credentials will be permanently lost. AevonX is a zero-knowledge platform and has NO way to recover it.")
+        static let yourEncryptionKeyIsSafelyLockedInYourDevicesSecureStorageYourServerCredentialsAreProtectedByZeroKnowledgeEncryption = s("profile.encryptionKeyLockedNotice", "Your encryption key is safely locked in your device's secure storage. Your server credentials are protected by zero-knowledge encryption.")
     }
 
     // MARK: - Subscription (Auth.strings)
@@ -57,7 +57,6 @@ extension L10n {
         static let upgradeToContinue = s("subscription.upgradeToContinue", "Upgrade to continue")
         static let freePlan = s("subscription.freePlan", "Free Plan")
         static let trial = s("subscription.trial", "TRIAL")
-        static let subscribeNow = s("subscription.subscribeNow", "Subscribe Now")
 
         static func daysRemaining(_ count: Int) -> String {
             let dv: String.LocalizationValue = "\(count) days remaining"
@@ -79,7 +78,6 @@ extension L10n {
         static let verifyLocally = s("vault.verifyLocally", "Your key will be verified locally on this device.")
         static let verifyUnlock = s("vault.verifyUnlock", "Verify & Unlock")
         static let secured = s("vault.secured", "Vault Secured")
-        static let securedDescription = s("vault.securedDescription", "Your encryption key is safely locked in the vault.")
         static let enterApp = s("vault.enterApp", "Enter AevonX")
     }
 

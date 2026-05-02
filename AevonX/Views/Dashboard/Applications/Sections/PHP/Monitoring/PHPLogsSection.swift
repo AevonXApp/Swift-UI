@@ -21,8 +21,8 @@ struct PHPLogsSection: View {
         VStack(spacing: 0) {
             HStack(spacing: AXSpacing.md) {
                 Picker("Log Type", selection: $logType) {
-                    Text("Error Log").tag("error")
-                    Text("Access Log").tag("access")
+                    Text(L10n.Apps.errorLog).tag("error")
+                    Text(L10n.Apps.accessLog).tag("access")
                 }
                 .pickerStyle(.segmented)
                 .frame(width: 240)
@@ -30,7 +30,7 @@ struct PHPLogsSection: View {
                 Spacer()
 
                 HStack(spacing: 4) {
-                    Text("Lines:").font(.system(size: 11)).foregroundColor(.axTextMuted)
+                    Text(L10n.Apps.lines).font(.system(size: 11)).foregroundColor(.axTextMuted)
                     Picker("", selection: $logLines) {
                         Text("50").tag(50)
                         Text("100").tag(100)
@@ -57,7 +57,7 @@ struct PHPLogsSection: View {
             } else if entries.isEmpty {
                 VStack(spacing: AXSpacing.md) {
                     Image(systemName: "text.alignleft").font(.system(size: 28)).foregroundColor(.axTextMuted)
-                    Text("No log entries found").font(AXTypography.caption).foregroundColor(.axTextMuted)
+                    Text(L10n.Apps.noLogEntriesFound).font(AXTypography.caption).foregroundColor(.axTextMuted)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {

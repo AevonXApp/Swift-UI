@@ -97,7 +97,7 @@ private struct PluginModalSheet: View {
 
                     if let output = vm.resultOutput {
                         VStack(alignment: .leading, spacing: AXSpacing.sm) {
-                            Text("Output")
+                            Text(L10n.PluginsUI.output)
                                 .font(AXTypography.caption)
                                 .fontWeight(.semibold)
                                 .foregroundColor(.axTextMuted)

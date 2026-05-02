@@ -131,7 +131,7 @@ struct CerberusTrafficView: View {
 
     private var timeRangePickerRow: some View {
         HStack {
-            Text("Time Range")
+            Text(L10n.PluginsUI.timeRange)
                 .font(AXTypography.caption)
                 .foregroundStyle(Color.axTextTertiary)
             WAFTimeRangePicker(selected: $viewModel.selectedTimeRange)
@@ -157,7 +157,7 @@ struct CerberusTrafficView: View {
                     Image(systemName: "chart.line.uptrend.xyaxis")
                         .font(.system(size: 14, weight: .semibold))
                         .foregroundStyle(Color.axAccentBlue)
-                    Text("Traffic Timeline")
+                    Text(L10n.PluginsUI.trafficTimeline)
                         .font(AXTypography.headline)
                         .foregroundStyle(Color.axTextPrimary)
                     Spacer()
@@ -172,7 +172,7 @@ struct CerberusTrafficView: View {
                         Image(systemName: "chart.line.xaxis")
                             .font(.system(size: 32))
                             .foregroundStyle(Color.axTextMuted.opacity(0.3))
-                        Text("No data available for this time range")
+                        Text(L10n.PluginsUI.noDataAvailableForThisTimeRange)
                             .font(AXTypography.caption)
                             .foregroundStyle(Color.axTextMuted)
                     }

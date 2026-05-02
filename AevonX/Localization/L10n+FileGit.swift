@@ -8,11 +8,7 @@ extension L10n {
         private static func s(_ k: StaticString, _ v: String.LocalizationValue) -> String { String(localized: k, defaultValue: v, table: table) }
 
         // Toolbar
-        static let branch = s("git.toolbar.branch", "Branch")
-        static let ahead = s("git.toolbar.ahead", "ahead")
-        static let behind = s("git.toolbar.behind", "behind")
         static let lastCommit = s("git.toolbar.lastCommit", "Last:")
-        static let noCommits = s("git.toolbar.noCommits", "No commits yet")
 
         // Buttons
         static let pull = s("git.btn.pull", "Pull")
@@ -20,7 +16,6 @@ extension L10n {
         static let fetch = s("git.btn.fetch", "Fetch")
         static let commit = s("git.btn.commit", "Commit")
         static let branchBtn = s("git.btn.branch", "Branch")
-        static let more = s("git.btn.more", "More")
 
         // Commit
         enum Commit {

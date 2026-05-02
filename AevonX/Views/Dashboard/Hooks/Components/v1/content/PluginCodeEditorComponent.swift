@@ -40,7 +40,7 @@ public struct PluginCodeEditorComponent: View {
                 Spacer()
 
                 if hasChanges {
-                    Text("Modified")
+                    Text(L10n.PluginsUI.modified)
                         .font(.system(size: 10, weight: .medium))
                         .foregroundColor(.axWarning)
                         .padding(.horizontal, 6)
@@ -58,7 +58,7 @@ public struct PluginCodeEditorComponent: View {
                         HStack(spacing: 3) {
                             Image(systemName: "arrow.uturn.backward")
                                 .font(.system(size: 10))
-                            Text("Revert")
+                            Text(L10n.PluginsUI.revert)
                                 .font(.system(size: 11, weight: .medium))
                         }
                         .foregroundColor(.axTextMuted)
@@ -104,7 +104,7 @@ public struct PluginCodeEditorComponent: View {
                     Spacer()
                     VStack(spacing: AXSpacing.sm) {
                         ProgressView()
-                        Text("Loading file...")
+                        Text(L10n.PluginsUI.loadingFile)
                             .font(.system(size: 11))
                             .foregroundColor(.axTextMuted)
                     }

@@ -42,7 +42,7 @@ struct NginxModulesSection: View {
                     Image(systemName: "puzzlepiece.extension")
                         .font(.system(size: 28))
                         .foregroundColor(.axTextMuted)
-                    Text("No modules detected")
+                    Text(L10n.Apps.noModulesDetected)
                         .font(AXTypography.caption)
                         .foregroundColor(.axTextMuted)
                 }

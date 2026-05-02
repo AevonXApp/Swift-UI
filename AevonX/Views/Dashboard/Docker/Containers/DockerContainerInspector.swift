@@ -66,7 +66,7 @@ struct DockerContainerInspector: View {
             if isLoading {
                 VStack(spacing: AXSpacing.md) {
                     ProgressView()
-                    Text("Inspecting container...")
+                    Text(L10n.Docker.inspectingContainer)
                         .font(AXTypography.caption)
                         .foregroundColor(.axTextMuted)
                 }
@@ -287,8 +287,8 @@ struct DockerContainerInspector: View {
                 // Header
                 HStack {
                     Text("PID").frame(width: 60, alignment: .leading)
-                    Text("User").frame(width: 80, alignment: .leading)
-                    Text("Command")
+                    Text(L10n.Docker.user).frame(width: 80, alignment: .leading)
+                    Text(L10n.Docker.command)
                     Spacer()
                 }
                 .font(.system(size: 10, weight: .bold))

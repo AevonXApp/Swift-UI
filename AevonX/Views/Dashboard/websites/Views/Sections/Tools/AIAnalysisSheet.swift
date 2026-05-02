@@ -32,7 +32,7 @@ struct AIAnalysisSheet: View {
                     .font(AXTypography.title2)
                     .foregroundColor(.axAccentBlue)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("AI Log Analysis")
+                    Text(L10n.Websites.aiLogAnalysis)
                         .font(AXTypography.title3).fontWeight(.bold)
                         .foregroundColor(.axTextPrimary)
                     Text(viewModel.domain)
@@ -75,7 +75,7 @@ struct AIAnalysisSheet: View {
             Spacer()
             VStack(spacing: AXSpacing.lg) {
                 ProgressView().scaleEffect(1.5)
-                Text("Analyzing log patterns...")
+                Text(L10n.Websites.analyzingLogPatterns)
                     .font(AXTypography.body).fontWeight(.medium)
                     .foregroundColor(.axTextSecondary)
                 Text("\(viewModel.logLines.count) log entries")
@@ -104,7 +104,7 @@ struct AIAnalysisSheet: View {
                 Image(systemName: "waveform.path.ecg")
                     .font(AXTypography.largeTitle)
                     .foregroundColor(.axTextMuted.opacity(0.4))
-                Text("No analysis data")
+                Text(L10n.Websites.noAnalysisData)
                     .font(AXTypography.body)
                     .foregroundColor(.axTextMuted)
                 Button("Run Analysis") {
@@ -144,7 +144,7 @@ struct AIAnalysisSheet: View {
             }
 
             VStack(alignment: .leading, spacing: 4) {
-                Text("Health Score")
+                Text(L10n.Websites.healthScore)
                     .font(AXTypography.headline).fontWeight(.bold)
                     .foregroundColor(.axTextPrimary)
                 Text("Based on \(analysis.totalRequests) requests — \(analysis.errorCount) errors, \(analysis.warningCount) warnings")
@@ -198,7 +198,7 @@ struct AIAnalysisSheet: View {
 
     private func statusSection(_ stats: [LogStatusStat]) -> some View {
         VStack(alignment: .leading, spacing: AXSpacing.sm) {
-            Text("HTTP Status Distribution")
+            Text(L10n.Websites.httpStatusDistribution)
                 .font(AXTypography.callout).fontWeight(.bold)
                 .foregroundColor(.axTextPrimary)
 
@@ -248,7 +248,7 @@ struct AIAnalysisSheet: View {
 
     private func insightsSection(_ insights: [LogInsight]) -> some View {
         VStack(alignment: .leading, spacing: AXSpacing.sm) {
-            Text("Insights")
+            Text(L10n.Websites.insights)
                 .font(AXTypography.callout).fontWeight(.bold)
                 .foregroundColor(.axTextPrimary)
 

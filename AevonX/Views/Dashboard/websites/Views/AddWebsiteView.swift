@@ -81,7 +81,7 @@ struct AddWebsiteView: View {
 
     private var header: some View {
         HStack {
-            Text("Add New Website")
+            Text(L10n.Websites.addNewWebsite)
                 .font(AXTypography.title)
                 .foregroundColor(.axTextPrimary)
 
@@ -106,7 +106,7 @@ struct AddWebsiteView: View {
             Spacer()
             ProgressView()
                 .scaleEffect(1.2)
-            Text("Detecting server capabilities...")
+            Text(L10n.Websites.detectingServerCapabilities)
                 .font(AXTypography.caption)
                 .foregroundColor(.axTextSecondary)
             Spacer()
@@ -117,7 +117,7 @@ struct AddWebsiteView: View {
 
     private var domainField: some View {
         VStack(alignment: .leading, spacing: AXSpacing.sm) {
-            Text("Domain Name")
+            Text(L10n.Websites.domainName)
                 .font(AXTypography.caption)
                 .foregroundColor(.axTextSecondary)
 
@@ -150,7 +150,7 @@ struct AddWebsiteView: View {
 
     private var enginePicker: some View {
         VStack(alignment: .leading, spacing: AXSpacing.sm) {
-            Text("Web Server")
+            Text(L10n.Websites.webServer)
                 .font(AXTypography.caption)
                 .foregroundColor(.axTextSecondary)
 
@@ -173,7 +173,7 @@ struct AddWebsiteView: View {
 
     private var runtimePicker: some View {
         VStack(alignment: .leading, spacing: AXSpacing.sm) {
-            Text("Runtime")
+            Text(L10n.Websites.runtime)
                 .font(AXTypography.caption)
                 .foregroundColor(.axTextSecondary)
 
@@ -196,7 +196,7 @@ struct AddWebsiteView: View {
                 .foregroundColor(.axTextSecondary)
 
             if viewModel.currentVersions.isEmpty {
-                Text("No versions detected")
+                Text(L10n.Websites.noVersionsDetected)
                     .font(AXTypography.caption)
                     .foregroundColor(.axTextTertiary)
                     .padding(AXSpacing.md)
@@ -216,7 +216,7 @@ struct AddWebsiteView: View {
 
     private var documentRootField: some View {
         VStack(alignment: .leading, spacing: AXSpacing.sm) {
-            Text("Document Root")
+            Text(L10n.Websites.documentRoot)
                 .font(AXTypography.caption)
                 .foregroundColor(.axTextSecondary)
 
@@ -274,11 +274,11 @@ struct AddWebsiteView: View {
     private var sslToggle: some View {
         HStack {
             VStack(alignment: .leading, spacing: AXSpacing.xxs) {
-                Text("Enable SSL")
+                Text(L10n.Websites.enableSsl)
                     .font(AXTypography.body)
                     .foregroundColor(.axTextPrimary)
 
-                Text("Auto-generate Let's Encrypt certificate")
+                Text(L10n.Websites.autoGenerateLetsEncryptCertificate)
                     .font(AXTypography.caption)
                     .foregroundColor(.axTextTertiary)
             }
@@ -372,7 +372,7 @@ struct DirectoryBrowserSheet: View {
         VStack(spacing: 0) {
             // Header
             HStack {
-                Text("Browse Server Directories")
+                Text(L10n.Websites.browseServerDirectories)
                     .font(AXTypography.headline)
                     .foregroundColor(.axTextPrimary)
 
@@ -435,7 +435,7 @@ struct DirectoryBrowserSheet: View {
 
                         if viewModel.browserDirectories.isEmpty {
                             HStack {
-                                Text("No subdirectories")
+                                Text(L10n.Websites.noSubdirectories)
                                     .font(AXTypography.caption)
                                     .foregroundColor(.axTextTertiary)
                                 Spacer()
@@ -511,7 +511,7 @@ struct DirectoryBrowserSheet: View {
             // Select current path
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Selected Path:")
+                    Text(L10n.Websites.selectedPath)
                         .font(AXTypography.caption)
                         .foregroundColor(.axTextTertiary)
                     Text(viewModel.browserCurrentPath)

@@ -57,10 +57,10 @@ struct SSLManagementSection: View {
     private var sectionHeader: some View {
         HStack {
             VStack(alignment: .leading, spacing: 4) {
-                Text("SSL/TLS Management")
+                Text(L10n.Websites.sslTlsManagement)
                     .font(AXTypography.title2)
                     .foregroundColor(.axTextPrimary)
-                Text("Manage SSL certificates and security settings")
+                Text(L10n.Websites.manageSslCertificatesAndSecuritySettings)
                     .font(AXTypography.caption)
                     .foregroundColor(.axTextTertiary)
             }
@@ -84,7 +84,7 @@ struct SSLManagementSection: View {
             Spacer()
             VStack(spacing: AXSpacing.md) {
                 ProgressView().scaleEffect(1.2)
-                Text("Loading certificate details...")
+                Text(L10n.Websites.loadingCertificateDetails)
                     .font(AXTypography.body)
                     .foregroundColor(.axTextSecondary)
             }
@@ -102,11 +102,11 @@ struct SSLManagementSection: View {
                 .foregroundColor(.axWarning)
 
             VStack(spacing: AXSpacing.xs) {
-                Text("No SSL Certificate")
+                Text(L10n.Websites.noSslCertificate)
                     .font(AXTypography.title2)
                     .foregroundColor(.axTextPrimary)
 
-                Text("Secure your website with an SSL certificate")
+                Text(L10n.Websites.secureYourWebsiteWithAnSslCertificate)
                     .font(AXTypography.body)
                     .foregroundColor(.axTextSecondary)
             }
@@ -157,11 +157,11 @@ struct SSLManagementSection: View {
 
                     HStack(spacing: AXSpacing.sm) {
                         if cert.isValid {
-                            Text("Certificate is active and valid")
+                            Text(L10n.Websites.certificateIsActiveAndValid)
                                 .font(AXTypography.body)
                                 .foregroundColor(.axTextSecondary)
                         } else if cert.isExpired {
-                            Text("Certificate has expired")
+                            Text(L10n.Websites.certificateHasExpired)
                                 .font(AXTypography.body)
                                 .foregroundColor(.axError)
                         } else if cert.isExpiringSoon {
@@ -192,7 +192,7 @@ struct SSLManagementSection: View {
                         .font(AXTypography.largeTitle).fontWeight(.bold)
                         .foregroundColor(gradeColor(cert.securityGrade))
 
-                    Text("Security Grade")
+                    Text(L10n.Websites.securityGrade)
                         .font(AXTypography.caption)
                         .foregroundColor(.axTextSecondary)
                 }
@@ -202,7 +202,7 @@ struct SSLManagementSection: View {
                 HStack(spacing: AXSpacing.sm) {
                     Image(systemName: "exclamationmark.triangle.fill")
                         .foregroundColor(.axWarning)
-                    Text("Renew your certificate soon to avoid service interruption")
+                    Text(L10n.Websites.renewYourCertificateSoonToAvoidServiceInterruption)
                         .font(AXTypography.body)
                         .foregroundColor(.axWarning)
                 }
@@ -224,7 +224,7 @@ struct SSLManagementSection: View {
 
     private func certificateDetailsCard(_ cert: SSLCertificateDetails) -> some View {
         VStack(alignment: .leading, spacing: AXSpacing.md) {
-            Text("Certificate Details")
+            Text(L10n.Websites.certificateDetails)
                 .font(AXTypography.headline)
                 .foregroundColor(.axTextPrimary)
 
@@ -245,7 +245,7 @@ struct SSLManagementSection: View {
                             Image(systemName: "globe")
                                 .foregroundColor(.axTextTertiary)
                                 .frame(width: 20)
-                            Text("Covered Domains")
+                            Text(L10n.Websites.coveredDomains)
                                 .font(AXTypography.caption)
                                 .foregroundColor(.axTextSecondary)
                         }
@@ -281,7 +281,7 @@ struct SSLManagementSection: View {
     private var certificateContentCard: some View {
         VStack(alignment: .leading, spacing: AXSpacing.md) {
             HStack {
-                Text("Certificate Content")
+                Text(L10n.Websites.certificateContent)
                     .font(AXTypography.headline)
                     .foregroundColor(.axTextPrimary)
 
@@ -293,7 +293,7 @@ struct SSLManagementSection: View {
                     }) {
                         HStack(spacing: AXSpacing.xs) {
                             Image(systemName: "eye")
-                            Text("View Content")
+                            Text(L10n.Websites.viewContent)
                         }
                         .font(AXTypography.caption)
                         .foregroundColor(.axAccentBlue)
@@ -329,7 +329,7 @@ struct SSLManagementSection: View {
                 HStack(spacing: AXSpacing.sm) {
                     Image(systemName: "doc.text")
                         .foregroundColor(.axTextTertiary)
-                    Text("Click \"View Content\" to load the certificate and private key PEM data")
+                    Text(L10n.Label.sslViewContentHint)
                         .font(AXTypography.caption)
                         .foregroundColor(.axTextSecondary)
                 }
@@ -352,7 +352,7 @@ struct SSLManagementSection: View {
 
     private var certificateActionsCard: some View {
         VStack(alignment: .leading, spacing: AXSpacing.md) {
-            Text("Certificate Actions")
+            Text(L10n.Websites.certificateActions)
                 .font(AXTypography.headline)
                 .foregroundColor(.axTextPrimary)
 
@@ -401,7 +401,7 @@ struct SSLManagementSection: View {
 
     private var advancedSecurityCard: some View {
         VStack(alignment: .leading, spacing: AXSpacing.md) {
-            Text("Advanced Security")
+            Text(L10n.Websites.advancedSecurity)
                 .font(AXTypography.headline)
                 .foregroundColor(.axTextPrimary)
 
@@ -414,7 +414,7 @@ struct SSLManagementSection: View {
                         .frame(width: 40)
 
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("Force HTTPS")
+                        Text(L10n.Websites.forceHttps)
                             .font(AXTypography.body)
                             .fontWeight(.medium)
                             .foregroundColor(.axTextPrimary)

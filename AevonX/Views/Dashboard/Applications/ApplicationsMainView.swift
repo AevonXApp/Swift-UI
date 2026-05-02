@@ -124,7 +124,7 @@ struct ApplicationsMainView: View {
     private var topBar: some View {
         HStack(spacing: AXSpacing.md) {
             VStack(alignment: .leading, spacing: 2) {
-                Text("Applications")
+                Text(L10n.Apps.applications)
                     .font(.system(size: 20, weight: .bold))
                     .foregroundColor(.axTextPrimary)
                 if !isLoading {
@@ -405,7 +405,7 @@ struct ApplicationsMainView: View {
         default:
             VStack(spacing: AXSpacing.lg) {
                 Text("\(app.name) Detail View").font(AXTypography.headline).foregroundColor(.axTextPrimary)
-                Text("Coming soon").font(AXTypography.caption).foregroundColor(.axTextMuted)
+                Text(L10n.Apps.comingSoon).font(AXTypography.caption).foregroundColor(.axTextMuted)
                 Button("← Back") { withAnimation { selectedApp = nil } }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -643,7 +643,7 @@ private struct AppCard3D: View {
 
                         // "Open details" hint on hover
                         HStack(spacing: 3) {
-                            Text("Details")
+                            Text(L10n.Apps.details)
                                 .font(.system(size: 10, weight: .semibold))
                                 .foregroundColor(accentColor.opacity(0.7))
                             Image(systemName: "arrow.forward.circle")

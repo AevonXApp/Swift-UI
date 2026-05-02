@@ -904,7 +904,7 @@ struct APIKeysTab: View {
                 HStack(spacing: AXSpacing.md) {
                     Image(systemName: "info.circle.fill")
                         .foregroundColor(.axInfo)
-                    Text("API Keys are not available. AevonX does not offer a public developer API at this time.")
+                    Text(L10n.Profile.apiKeysAreNotAvailableAevonxDoesNotOfferAPublicDeveloperApiAtThisTime)
                         .font(AXTypography.body)
                         .foregroundColor(.axTextSecondary)
                 }

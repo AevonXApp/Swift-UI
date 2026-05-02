@@ -20,13 +20,13 @@ struct PgSQLLogsSection: View {
         VStack(spacing: 0) {
             HStack(spacing: AXSpacing.md) {
                 Picker("Log Type", selection: $selectedLogType) {
-                    Text("Error").tag("error")
-                    Text("General").tag("general")
+                    Text(L10n.Apps.error).tag("error")
+                    Text(L10n.Apps.general).tag("general")
                 }
                 .pickerStyle(.segmented).frame(width: 200)
                 Spacer()
                 HStack(spacing: 4) {
-                    Text("Lines:").font(.system(size: 11)).foregroundColor(.axTextMuted)
+                    Text(L10n.Apps.lines).font(.system(size: 11)).foregroundColor(.axTextMuted)
                     Picker("", selection: $logLines) {
                         Text("50").tag(50); Text("100").tag(100); Text("200").tag(200); Text("500").tag(500)
                     }.frame(width: 70)
@@ -43,7 +43,7 @@ struct PgSQLLogsSection: View {
             } else if logEntries.isEmpty {
                 VStack(spacing: AXSpacing.md) {
                     Image(systemName: "text.alignleft").font(.system(size: 28)).foregroundColor(.axTextMuted)
-                    Text("No log entries found").font(AXTypography.caption).foregroundColor(.axTextMuted)
+                    Text(L10n.Apps.noLogEntriesFound).font(AXTypography.caption).foregroundColor(.axTextMuted)
                 }.frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 ScrollView {

@@ -95,7 +95,7 @@ struct PgSQLSecuritySection: View {
             if !sslCerts.isEmpty {
                 Divider().padding(.horizontal, AXSpacing.lg).padding(.top, AXSpacing.sm)
                 VStack(alignment: .leading, spacing: AXSpacing.sm) {
-                    Text("Certificates").font(.system(size: 11, weight: .semibold)).foregroundColor(.axTextMuted)
+                    Text(L10n.Apps.certificates).font(.system(size: 11, weight: .semibold)).foregroundColor(.axTextMuted)
                         .padding(.horizontal, AXSpacing.lg)
                     ForEach(sslCerts.indices, id: \.self) { i in certRow(sslCerts[i]) }
                 }.padding(.bottom, AXSpacing.md)
@@ -103,8 +103,8 @@ struct PgSQLSecuritySection: View {
                 HStack(spacing: AXSpacing.sm) {
                     Image(systemName: "exclamationmark.triangle.fill").font(.system(size: 12)).foregroundColor(.axWarning)
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("No SSL certificates found").font(.system(size: 12, weight: .medium)).foregroundColor(.axTextSecondary)
-                        Text("Configure SSL in postgresql.conf").font(.system(size: 10)).foregroundColor(.axTextMuted)
+                        Text(L10n.Apps.noSslCertificatesFound).font(.system(size: 12, weight: .medium)).foregroundColor(.axTextSecondary)
+                        Text(L10n.Apps.configureSslInPostgresqlConf).font(.system(size: 10)).foregroundColor(.axTextMuted)
                     }
                 }.padding(AXSpacing.lg)
             }

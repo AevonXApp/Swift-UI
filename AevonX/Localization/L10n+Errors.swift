@@ -119,11 +119,5 @@ extension L10n {
         private static let table = "Errors"
         private static func s(_ k: StaticString, _ v: String.LocalizationValue) -> String { String(localized: k, defaultValue: v, table: table) }
 
-        static let required = s("validation.required", "This field is required.")
-        static let invalidEmail = s("validation.invalidEmail", "Please enter a valid email address.")
-        static let passwordTooShort = s("validation.passwordTooShort", "Password must be at least 8 characters.")
-        static let passwordMismatch = s("validation.passwordMismatch", "Passwords do not match.")
-        static let invalidPort = s("validation.invalidPort", "Port must be between 1 and 65535.")
-        static let nameRequired = s("validation.nameRequired", "Name is required.")
     }
 }

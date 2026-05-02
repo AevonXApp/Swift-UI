@@ -19,7 +19,7 @@ struct DockerComposeValidator: View {
                 HStack(spacing: 6) {
                     Image(systemName: "checkmark.shield.fill")
                         .foregroundColor(.axSuccess)
-                    Text("Compose Validation")
+                    Text(L10n.Docker.composeValidation)
                         .font(AXTypography.headline)
                         .foregroundColor(.axTextPrimary)
                 }
@@ -48,7 +48,7 @@ struct DockerComposeValidator: View {
                     if isValidating {
                         HStack(spacing: AXSpacing.sm) {
                             ProgressView().controlSize(.small)
-                            Text("Validating docker-compose.yml...")
+                            Text(L10n.Docker.validatingDockerComposeYml)
                                 .font(.system(size: 12))
                                 .foregroundColor(.axTextSecondary)
                         }
@@ -76,7 +76,7 @@ struct DockerComposeValidator: View {
                     if let output = validOutput, !output.isEmpty {
                         VStack(alignment: .leading, spacing: 4) {
                             HStack {
-                                Text("Resolved Configuration")
+                                Text(L10n.Docker.resolvedConfiguration)
                                     .font(.system(size: 10, weight: .bold))
                                     .foregroundColor(.axTextMuted)
                                 Spacer()
@@ -109,7 +109,7 @@ struct DockerComposeValidator: View {
                     // Error output
                     if let error = errorOutput, !error.isEmpty {
                         VStack(alignment: .leading, spacing: 4) {
-                            Text("Errors")
+                            Text(L10n.Docker.errors)
                                 .font(.system(size: 10, weight: .bold))
                                 .foregroundColor(.axError)
                             Text(error)

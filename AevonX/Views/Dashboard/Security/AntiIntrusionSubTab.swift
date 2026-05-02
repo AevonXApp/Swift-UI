@@ -108,7 +108,7 @@ struct AntiIntrusionSubTab: View {
                     }
 
                     VStack(alignment: .leading, spacing: AXSpacing.xxxs) {
-                        Text("Intrusion Detection & Prevention")
+                        Text(L10n.Security.intrusionDetectionPrevention)
                             .font(AXTypography.headline)
                             .foregroundColor(.axTextPrimary)
                         Text("fail2ban jail monitoring and banned IP management")
@@ -139,7 +139,7 @@ struct AntiIntrusionSubTab: View {
                 Text("fail2ban is not installed")
                     .font(AXTypography.title3)
                     .foregroundColor(.axTextPrimary)
-                Text("Install fail2ban to enable intrusion detection and automatic IP banning.")
+                Text(L10n.Security.installFail2banToEnableIntrusionDetectionAndAutomaticIpBanning)
                     .font(AXTypography.body)
                     .foregroundColor(.axTextMuted)
                     .multilineTextAlignment(.center)
@@ -219,7 +219,7 @@ struct AntiIntrusionSubTab: View {
 
                             HStack(spacing: AXSpacing.lg) {
                                 HStack(spacing: AXSpacing.xs) {
-                                    Text("Currently:")
+                                    Text(L10n.Security.currently)
                                         .font(AXTypography.caption)
                                         .foregroundColor(.axTextMuted)
                                     Text("\(detail.currentlyBanned)")
@@ -227,7 +227,7 @@ struct AntiIntrusionSubTab: View {
                                         .foregroundColor(.axError)
                                 }
                                 HStack(spacing: AXSpacing.xs) {
-                                    Text("Total:")
+                                    Text(L10n.Security.total)
                                         .font(AXTypography.caption)
                                         .foregroundColor(.axTextMuted)
                                     Text("\(detail.totalBanned)")
@@ -268,8 +268,8 @@ struct AntiIntrusionSubTab: View {
 
                             // Table header
                             HStack(spacing: 0) {
-                                Text("IP Address").frame(maxWidth: .infinity, alignment: .leading)
-                                Text("Action").frame(width: 120, alignment: .center)
+                                Text(L10n.Security.ipAddress).frame(maxWidth: .infinity, alignment: .leading)
+                                Text(L10n.Security.action).frame(width: 120, alignment: .center)
                             }
                             .font(AXTypography.caption)
                             .fontWeight(.semibold)

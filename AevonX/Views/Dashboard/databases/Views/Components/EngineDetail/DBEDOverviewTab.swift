@@ -36,7 +36,7 @@ struct DBEDOverviewTab: View {
     private var engineInfoCard: some View {
         AXGlassCard {
             VStack(alignment: .leading, spacing: AXSpacing.lg) {
-                Text("Engine Information")
+                Text(L10n.Database.engineInformation)
                     .font(AXTypography.headline)
                     .foregroundColor(.axTextPrimary)
 
@@ -88,7 +88,7 @@ struct DBEDOverviewTab: View {
     private func performanceCard(stats: PerformanceStatistics) -> some View {
         AXGlassCard {
             VStack(alignment: .leading, spacing: AXSpacing.lg) {
-                Text("Performance Statistics")
+                Text(L10n.Database.performanceStatistics)
                     .font(AXTypography.headline)
                     .foregroundColor(.axTextPrimary)
 

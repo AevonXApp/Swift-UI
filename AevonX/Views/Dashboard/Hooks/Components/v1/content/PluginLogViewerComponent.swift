@@ -128,7 +128,7 @@ public struct PluginLogViewerComponent: View {
             if vm.isLoading {
                 HStack(spacing: AXSpacing.xs) {
                     ProgressView().scaleEffect(0.6)
-                    Text("Loading logs...")
+                    Text(L10n.PluginsUI.loadingLogs)
                         .font(.system(size: 10))
                         .foregroundColor(.axTextMuted)
                 }

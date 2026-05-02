@@ -288,7 +288,7 @@ struct PluginChartComponent: View {
     private var loadingView: some View {
         VStack(spacing: AXSpacing.md) {
             ProgressView().scaleEffect(0.8)
-            Text("Loading chart data...")
+            Text(L10n.PluginsUI.loadingChartData)
                 .font(.system(size: 13))
                 .foregroundColor(.axTextMuted)
         }
@@ -320,7 +320,7 @@ struct PluginChartComponent: View {
             Image(systemName: "chart.bar")
                 .font(.system(size: 36))
                 .foregroundColor(.axTextMuted)
-            Text("No chart data available")
+            Text(L10n.PluginsUI.noChartDataAvailable)
                 .font(.system(size: 13))
                 .foregroundColor(.axTextMuted)
         }

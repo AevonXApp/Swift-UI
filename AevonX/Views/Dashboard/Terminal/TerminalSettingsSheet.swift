@@ -23,7 +23,7 @@ struct TerminalSettingsSheet: View {
                     Image(systemName: "gearshape.fill")
                         .font(.system(size: 16))
                         .foregroundColor(.axAccentBlue)
-                    Text("Terminal Settings")
+                    Text(L10n.Terminal.terminalSettings)
                         .font(.system(size: 16, weight: .bold))
                         .foregroundColor(.axTextPrimary)
                 }
@@ -62,7 +62,7 @@ struct TerminalSettingsSheet: View {
                         VStack(spacing: AXSpacing.md) {
                             // Font family
                             HStack {
-                                Text("Font Family")
+                                Text(L10n.Terminal.fontFamily)
                                     .font(AXTypography.body)
                                     .foregroundColor(.axTextSecondary)
                                 Spacer()
@@ -77,7 +77,7 @@ struct TerminalSettingsSheet: View {
                             
                             // Font size
                             HStack {
-                                Text("Font Size")
+                                Text(L10n.Terminal.fontSize)
                                     .font(AXTypography.body)
                                     .foregroundColor(.axTextSecondary)
                                 Spacer()
@@ -113,7 +113,7 @@ struct TerminalSettingsSheet: View {
                     settingsSection("Cursor") {
                         VStack(spacing: AXSpacing.md) {
                             HStack {
-                                Text("Style")
+                                Text(L10n.Terminal.style)
                                     .font(AXTypography.body)
                                     .foregroundColor(.axTextSecondary)
                                 Spacer()
@@ -127,7 +127,7 @@ struct TerminalSettingsSheet: View {
                             }
                             
                             HStack {
-                                Text("Cursor Blink")
+                                Text(L10n.Terminal.cursorBlink)
                                     .font(AXTypography.body)
                                     .foregroundColor(.axTextSecondary)
                                 Spacer()
@@ -143,7 +143,7 @@ struct TerminalSettingsSheet: View {
                     settingsSection("Behavior") {
                         VStack(spacing: AXSpacing.md) {
                             HStack {
-                                Text("Scrollback Lines")
+                                Text(L10n.Terminal.scrollbackLines)
                                     .font(AXTypography.body)
                                     .foregroundColor(.axTextSecondary)
                                 Spacer()
@@ -158,7 +158,7 @@ struct TerminalSettingsSheet: View {
                             }
                             
                             HStack {
-                                Text("Dangerous Command Warnings")
+                                Text(L10n.Terminal.dangerousCommandWarnings)
                                     .font(AXTypography.body)
                                     .foregroundColor(.axTextSecondary)
                                 Spacer()
@@ -169,7 +169,7 @@ struct TerminalSettingsSheet: View {
                             }
                             
                             HStack {
-                                Text("Auto Reconnect")
+                                Text(L10n.Terminal.autoReconnect)
                                     .font(AXTypography.body)
                                     .foregroundColor(.axTextSecondary)
                                 Spacer()
@@ -180,7 +180,7 @@ struct TerminalSettingsSheet: View {
                             }
                             
                             HStack {
-                                Text("Command Timer")
+                                Text(L10n.Terminal.commandTimer)
                                     .font(AXTypography.body)
                                     .foregroundColor(.axTextSecondary)
                                 Spacer()

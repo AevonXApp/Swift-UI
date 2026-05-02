@@ -32,7 +32,7 @@ struct NginxAnalyticsSection: View {
             VStack(alignment: .leading, spacing: AXSpacing.xl) {
                 // Controls
                 HStack {
-                    Text("Analyze last")
+                    Text(L10n.Apps.analyzeLast)
                         .font(.system(size: 12))
                         .foregroundColor(.axTextSecondary)
                     Picker("", selection: $selectedLines) {

@@ -123,7 +123,7 @@ struct SetupGenerationView: View {
                         .foregroundColor(.axError)
                 }
                 
-                Text("Store this key in a physical safe or a secure password manager. If you lose this key, your server credentials will be permanently lost. AevonX is a zero-knowledge platform and has NO way to recover it.")
+                Text(L10n.Profile.storeThisKeyInAPhysicalSafeOrASecurePasswordManagerIfYouLoseThisKeyYourServerCredentialsWillBePermanentlyLostAevonxIsAZeroKnowledgePlatformAndHasNoWayToRecoverIt)
                     .font(AXTypography.callout)
                     .foregroundColor(.axTextSecondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -432,7 +432,7 @@ struct SuccessView: View {
                             )
                         )
 
-                    Text("Your encryption key is safely locked in your device's secure storage. Your server credentials are protected by zero-knowledge encryption.")
+                    Text(L10n.Profile.yourEncryptionKeyIsSafelyLockedInYourDevicesSecureStorageYourServerCredentialsAreProtectedByZeroKnowledgeEncryption)
                         .font(.system(size: 14, weight: .regular))
                         .foregroundColor(Color.white.opacity(0.55))
                         .multilineTextAlignment(.center)

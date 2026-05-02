@@ -23,14 +23,12 @@ extension L10n {
         // MARK: Server Info
         static let serverInfo = s("ss.serverInfo", "Server Info")
         static let systemDetails = s("ss.systemDetails", "System details")
-        static let hostname = s("ss.hostname", "Hostname")
         static let os = s("ss.os", "OS")
         static let kernel = s("ss.kernel", "Kernel")
         static let architecture = s("ss.architecture", "Architecture")
         static let cpu = s("ss.cpu", "CPU")
         static let totalRAM = s("ss.totalRAM", "Total RAM")
         static let uptime = s("ss.uptime", "Uptime")
-        static let timezone = s("ss.timezone", "Timezone")
         static let noPartitions = s("ss.noPartitions", "No partitions found")
         static let diskStorage = s("ss.diskStorage", "Disk & Storage")
         static let partitionUsage = s("ss.partitionUsage", "Partition usage")
@@ -250,7 +248,6 @@ extension L10n {
         static let services = s("ss.services", "Services")
         static let searchServicesPlaceholder = s("ss.searchServicesPlaceholder", "Search services...")
         static let noServicesMatch = s("ss.noServicesMatch", "No services match filter")
-        static let serviceLogs = s("ss.serviceLogs", "Service Logs")
         static let lines = s("ss.lines", "Lines")
         static let noLogsAvailable = s("ss.noLogsAvailable", "No logs available")
         static func servicesCount(_ count: Int) -> String {

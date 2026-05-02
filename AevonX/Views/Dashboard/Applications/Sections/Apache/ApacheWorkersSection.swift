@@ -23,7 +23,7 @@ struct ApacheWorkersSection: View {
                 if workers.isEmpty {
                     VStack(spacing: AXSpacing.md) {
                         Image(systemName: "cpu").font(.system(size: 28)).foregroundColor(.axTextMuted)
-                        Text("No worker processes detected").font(AXTypography.caption).foregroundColor(.axTextMuted)
+                        Text(L10n.Apps.noWorkerProcessesDetected).font(AXTypography.caption).foregroundColor(.axTextMuted)
                     }
                     .frame(maxWidth: .infinity).padding(.top, 40)
                 } else {

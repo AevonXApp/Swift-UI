@@ -50,7 +50,7 @@ public struct PluginTableComponent: View {
                     ProgressView()
                         .progressViewStyle(CircularProgressViewStyle(tint: .axAccentBlue))
                         .scaleEffect(0.8)
-                    Text("Loading...")
+                    Text(L10n.PluginsUI.loading)
                         .font(AXTypography.caption)
                         .foregroundColor(.axTextMuted)
                 }
@@ -87,7 +87,7 @@ public struct PluginTableComponent: View {
                         .foregroundColor(.axError)
                 }
             } else {
-                Text("No data")
+                Text(L10n.PluginsUI.noData)
                     .font(AXTypography.caption)
                     .foregroundColor(.axTextMuted)
                     .frame(maxWidth: .infinity)

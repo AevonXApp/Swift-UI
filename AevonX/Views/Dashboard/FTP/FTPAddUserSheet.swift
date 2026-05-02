@@ -60,7 +60,7 @@ struct FTPAddUserSheet: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(isEditing ? L10n.FTP.editUser : L10n.FTP.addUser)
                     .font(.system(size: 18, weight: .bold)).foregroundColor(.axTextPrimary)
-                Text("Configure FTP access credentials and permissions")
+                Text(L10n.FTP.configureFtpAccessCredentialsAndPermissions)
                     .font(.system(size: 12)).foregroundColor(.axTextTertiary)
             }
             Spacer()
@@ -135,7 +135,7 @@ struct FTPAddUserSheet: View {
             }
             HStack(spacing: AXSpacing.xs) {
                 Image(systemName: "shield.checkered").font(.system(size: 10))
-                Text("Use the generate button for a secure random password").font(.system(size: 10))
+                Text(L10n.FTP.useTheGenerateButtonForASecureRandomPassword).font(.system(size: 10))
             }
             .foregroundColor(.axTextTertiary)
         }
@@ -160,7 +160,7 @@ struct FTPAddUserSheet: View {
                     }) {
                         HStack(spacing: 4) {
                             Image(systemName: "folder.badge.questionmark").font(.system(size: 12, weight: .medium))
-                            Text("Browse").font(.system(size: 11, weight: .medium))
+                            Text(L10n.FTP.browse).font(.system(size: 11, weight: .medium))
                         }
                         .foregroundColor(.axAccentBlue).padding(.horizontal, AXSpacing.md).padding(.vertical, 8)
                         .background(Color.axAccentBlue.opacity(0.1))
@@ -170,7 +170,7 @@ struct FTPAddUserSheet: View {
                     .buttonStyle(PlainButtonStyle()).help("Browse Server Directories")
                 }
                 HStack(spacing: AXSpacing.sm) {
-                    Text("Quick:").font(.system(size: 10)).foregroundColor(.axTextTertiary)
+                    Text(L10n.FTP.quick).font(.system(size: 10)).foregroundColor(.axTextTertiary)
                     ForEach(["/www/wwwroot", "/home", "/var/www"], id: \.self) { path in
                         Button(action: { documentRoot = path }) {
                             Text(path).font(.system(size: 10, design: .monospaced))
@@ -214,7 +214,7 @@ struct FTPAddUserSheet: View {
             ScrollView {
                 VStack(spacing: 0) {
                     if directories.isEmpty && !isLoadingDirs {
-                        Text("Empty directory").font(.system(size: 11)).foregroundColor(.axTextTertiary).padding(AXSpacing.lg)
+                        Text(L10n.FTP.emptyDirectory).font(.system(size: 11)).foregroundColor(.axTextTertiary).padding(AXSpacing.lg)
                     } else {
                         ForEach(directories, id: \.self) { dir in
                             Button(action: {

@@ -960,7 +960,7 @@ struct DockerTemplateDeployView: View {
                                 Image(systemName: "magnifyingglass")
                                     .font(.system(size: 32))
                                     .foregroundColor(.axTextMuted)
-                                Text("No templates found")
+                                Text(L10n.Docker.noTemplatesFound)
                                     .font(AXTypography.subheadline)
                                     .foregroundColor(.axTextMuted)
                             }
@@ -1015,7 +1015,7 @@ struct DockerTemplateDeployView: View {
                     
                     // Project name
                     VStack(alignment: .leading, spacing: AXSpacing.xs) {
-                        Text("Project Name")
+                        Text(L10n.Docker.projectName)
                             .font(AXTypography.caption)
                             .fontWeight(.semibold)
                             .foregroundColor(.axTextSecondary)
@@ -1030,7 +1030,7 @@ struct DockerTemplateDeployView: View {
                     
                     // Compose preview
                     VStack(alignment: .leading, spacing: AXSpacing.xs) {
-                        Text("Compose Configuration")
+                        Text(L10n.Docker.composeConfiguration)
                             .font(AXTypography.caption)
                             .fontWeight(.semibold)
                             .foregroundColor(.axTextSecondary)
@@ -1142,7 +1142,7 @@ private struct TemplateCard: View {
                         HStack(spacing: 2) {
                             Image(systemName: "flame.fill")
                                 .font(.system(size: 8))
-                            Text("Popular")
+                            Text(L10n.Docker.popular)
                                 .font(.system(size: 9, weight: .bold))
                         }
                         .foregroundColor(.orange)

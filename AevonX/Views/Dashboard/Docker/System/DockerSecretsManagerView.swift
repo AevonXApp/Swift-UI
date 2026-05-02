@@ -50,7 +50,7 @@ struct DockerSecretsManagerView: View {
                     if showAddSecret {
                         AXCard {
                             VStack(alignment: .leading, spacing: 10) {
-                                Text("Create Secret")
+                                Text(L10n.Docker.createSecret)
                                     .font(AXTypography.headline)
                                     .foregroundColor(.axTextPrimary)
                                 
@@ -95,10 +95,10 @@ struct DockerSecretsManagerView: View {
                             Image(systemName: "key.slash")
                                 .font(.system(size: 32))
                                 .foregroundColor(.axTextMuted)
-                            Text("No Docker secrets found")
+                            Text(L10n.Docker.noDockerSecretsFound)
                                 .font(AXTypography.body)
                                 .foregroundColor(.axTextSecondary)
-                            Text("Secrets require Docker Swarm mode")
+                            Text(L10n.Docker.secretsRequireDockerSwarmMode)
                                 .font(AXTypography.caption)
                                 .foregroundColor(.axTextMuted)
                         }

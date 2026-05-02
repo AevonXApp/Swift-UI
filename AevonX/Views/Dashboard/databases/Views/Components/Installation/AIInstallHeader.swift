@@ -19,7 +19,7 @@ struct AIInstallHeader: View {
                     .font(AXTypography.title)
                     .foregroundColor(.axTextPrimary)
                 
-                Text("AI-assisted installation with optimal configuration")
+                Text(L10n.Database.aiAssistedInstallationWithOptimalConfiguration)
                     .font(AXTypography.subheadline)
                     .foregroundColor(.axTextSecondary)
             }

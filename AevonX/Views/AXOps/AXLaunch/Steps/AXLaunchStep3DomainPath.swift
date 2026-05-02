@@ -253,7 +253,7 @@ struct AXLaunchStep3DomainPath: View {
             )
 
             if !viewModel.isValidRemoteAppName {
-                Text("Invalid app name: avoid paths with \"..\" or shell characters")
+                Text(L10n.Label.invalidAppNameAvoidPaths)
                     .font(AXTypography.caption)
                     .foregroundColor(.axError)
             }

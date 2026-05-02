@@ -261,7 +261,7 @@ struct ChronoSecurityView: View {
             Image(systemName: "shield.checkered")
                 .font(.system(size: 36))
                 .foregroundColor(.axTextMuted)
-            Text("Select a project to scan")
+            Text(L10n.PluginsUI.selectAProjectToScan)
                 .font(AXTypography.subheadline)
                 .foregroundColor(.axTextSecondary)
         }

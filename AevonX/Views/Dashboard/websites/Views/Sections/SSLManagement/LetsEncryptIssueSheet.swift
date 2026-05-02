@@ -23,7 +23,7 @@ struct LetsEncryptIssueSheet: View {
 
                 Spacer()
 
-                Text("Issue Let's Encrypt Certificate")
+                Text(L10n.Websites.issueLetsEncryptCertificate)
                     .font(AXTypography.headline)
                     .foregroundColor(.axTextPrimary)
 
@@ -68,12 +68,12 @@ struct LetsEncryptIssueSheet: View {
                             .font(AXTypography.title)
 
                         VStack(alignment: .leading, spacing: 4) {
-                            Text("Let's Encrypt")
+                            Text(L10n.Websites.letsEncrypt)
                                 .font(AXTypography.subheadline)
                                 .fontWeight(.semibold)
                                 .foregroundColor(.axTextPrimary)
 
-                            Text("Free SSL certificates that auto-renew every 90 days")
+                            Text(L10n.Websites.freeSslCertificatesThatAutoRenewEveryDays)
                                 .font(AXTypography.caption)
                                 .foregroundColor(.axTextSecondary)
                         }
@@ -119,10 +119,10 @@ struct LetsEncryptIssueSheet: View {
                             if viewModel.isIssuingCertificate {
                                 ProgressView()
                                     .scaleEffect(0.8)
-                                Text("Issuing Certificate...")
+                                Text(L10n.Websites.issuingCertificate)
                             } else {
                                 Image(systemName: "checkmark.circle.fill")
-                                Text("Issue Certificate")
+                                Text(L10n.Websites.issueCertificate)
                             }
                         }
                         .frame(maxWidth: .infinity)
@@ -148,7 +148,7 @@ struct LetsEncryptIssueSheet: View {
                     .foregroundColor(.axAccentBlue)
                     .font(AXTypography.title3)
 
-                Text("Please add the following DNS records for verification")
+                Text(L10n.Websites.pleaseAddTheFollowingDnsRecordsForVerification)
                     .font(AXTypography.body)
                     .fontWeight(.medium)
                     .foregroundColor(.axTextPrimary)
@@ -171,13 +171,13 @@ struct LetsEncryptIssueSheet: View {
                 VStack(spacing: 0) {
                     // Table Header
                     HStack(spacing: 0) {
-                        Text("Domain name")
+                        Text(L10n.Websites.domainName)
                             .frame(maxWidth: .infinity, alignment: .leading)
-                        Text("Record value")
+                        Text(L10n.Websites.recordValue)
                             .frame(maxWidth: .infinity, alignment: .leading)
-                        Text("Type")
+                        Text(L10n.Websites.type)
                             .frame(width: 60, alignment: .leading)
-                        Text("Required")
+                        Text(L10n.Websites.`required`)
                             .frame(width: 70, alignment: .center)
                     }
                     .font(AXTypography.caption)

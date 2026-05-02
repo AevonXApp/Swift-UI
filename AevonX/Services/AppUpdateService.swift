@@ -137,29 +137,17 @@ final class AppUpdateService: ObservableObject {
 
         do {
             let token = try await getToken()
-            guard let url = URL(string: "\(baseURL)/app/check-update") else {
-                if !silent { state = .error("Invalid server URL.") }
-                return
-            }
-            var request = URLRequest(url: url)
-            request.httpMethod = "GET"
-            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-            request.setValue("application/json", forHTTPHeaderField: "Accept")
-            request.setValue(currentVersion, forHTTPHeaderField: "X-App-Version")
-            request.setValue(currentBuild, forHTTPHeaderField: "X-Build-Number")
-            request.setValue("macos", forHTTPHeaderField: "X-Platform")
-            request.setValue(ProcessInfo.processInfo.operatingSystemVersionString, forHTTPHeaderField: "X-OS-Version")
-            request.setValue(channel, forHTTPHeaderField: "X-Channel")
-            request.setValue(Locale.current.language.languageCode?.identifier ?? "en", forHTTPHeaderField: "Accept-Language")
-
-            let (data, response) = try await URLSession.shared.data(for: request)
-
-            guard let http = response as? HTTPURLResponse, http.statusCode == 200 else {
-                if !silent { state = .error("Server returned an error.") }
-                return
-            }
-
-            let result = try JSONDecoder().decode(CheckUpdateResponse.self, from: data)
+            let json = await APIBridge.shared.checkAppUpdateAsync(
+                baseURL: baseURL,
+                token: token,
+                appVersion: currentVersion,
+                buildNumber: currentBuild,
+                platform: "macos",
+                osVersion: ProcessInfo.processInfo.operatingSystemVersionString,
+                channel: channel,
+                language: Locale.current.language.languageCode?.identifier ?? "en"
+            )
+            let result = try CoreResult.decodePayload(json, as: CheckUpdateResponse.self)
             lastCheckDate = Date()
 
             if result.updateAvailable, let version = result.version {
@@ -192,23 +180,10 @@ final class AppUpdateService: ObservableObject {
 
         do {
             let token = try await getToken()
-            guard let url = URL(string: "\(baseURL)/app/download-update/\(version.id)") else {
-                state = .error("Invalid download URL.")
-                return
-            }
-            var request = URLRequest(url: url)
-            request.httpMethod = "POST"
-            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-            request.setValue("application/json", forHTTPHeaderField: "Accept")
-
-            let (data, response) = try await URLSession.shared.data(for: request)
-
-            guard let http = response as? HTTPURLResponse, http.statusCode == 200 else {
-                state = .error("Failed to get download URL.")
-                return
-            }
-
-            let downloadInfo = try JSONDecoder().decode(DownloadUpdateResponse.self, from: data)
+            let json = await APIBridge.shared.requestAppUpdateDownloadAsync(
+                baseURL: baseURL, token: token, versionID: version.id
+            )
+            let downloadInfo = try CoreResult.decodePayload(json, as: DownloadUpdateResponse.self)
 
             guard let url = URL(string: downloadInfo.downloadURL) else {
                 state = .error("Invalid download URL.")
@@ -410,7 +385,7 @@ final class AppUpdateService: ObservableObject {
 
     private func getToken() async throws -> String {
         guard let token = await AuthService.shared.getToken() else {
-            throw URLError(.userAuthenticationRequired)
+            throw CoreResult.makeError(code: 401, message: "Not authenticated")
         }
         return token
     }
@@ -418,16 +393,9 @@ final class AppUpdateService: ObservableObject {
     private func reportUpdate(versionId: String, status: String) async {
         do {
             let token = try await getToken()
-            guard let url = URL(string: "\(baseURL)/app/report-update") else { return }
-            var request = URLRequest(url: url)
-            request.httpMethod = "POST"
-            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-            request.httpBody = try JSONEncoder().encode([
-                "version_id": versionId,
-                "status": status
-            ])
-            let _ = try? await URLSession.shared.data(for: request)
+            let _ = await APIBridge.shared.reportAppUpdateAsync(
+                baseURL: baseURL, token: token, versionID: versionId, status: status
+            )
         } catch {}
     }
 

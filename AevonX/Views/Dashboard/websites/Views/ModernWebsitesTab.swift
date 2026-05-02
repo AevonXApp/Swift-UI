@@ -116,7 +116,7 @@ struct ModernWebsitesTab: View {
                 }
             }
         } message: {
-            Text("Enter a new domain name for the cloned website.")
+            Text(L10n.Websites.enterANewDomainNameForTheClonedWebsite)
         }
     }
 
@@ -276,7 +276,7 @@ struct WebsiteToolbar: View {
             Button(action: { viewModel.showAddWebsite = true }) {
                 HStack(spacing: AXSpacing.sm) {
                     Image(systemName: "plus")
-                    Text("Add Website")
+                    Text(L10n.Websites.addWebsite)
                 }
                 .font(AXTypography.subheadline)
                 .fontWeight(.medium)
@@ -382,15 +382,15 @@ struct EmptyStateView: View {
                 .foregroundColor(.axTextMuted)
 
             if searchText.isEmpty {
-                Text("No Websites")
+                Text(L10n.Websites.noWebsites)
                     .font(AXTypography.title)
                     .foregroundColor(.axTextPrimary)
 
-                Text("Create your first website to get started")
+                Text(L10n.Websites.createYourFirstWebsiteToGetStarted)
                     .font(AXTypography.body)
                     .foregroundColor(.axTextSecondary)
             } else {
-                Text("No Results")
+                Text(L10n.Websites.noResults)
                     .font(AXTypography.title)
                     .foregroundColor(.axTextPrimary)
 

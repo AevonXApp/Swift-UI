@@ -40,14 +40,14 @@ struct RedisVersionsSection: View {
                         AXSectionTitle(title: "Installed", icon: "checkmark.seal.fill")
                         if filteredInstalled.isEmpty {
                             HStack { Image(systemName: "exclamationmark.triangle").foregroundColor(.axWarning)
-                                Text("No installed version detected").font(AXTypography.caption).foregroundColor(.axTextMuted) }.padding()
+                                Text(L10n.Apps.noInstalledVersionDetected).font(AXTypography.caption).foregroundColor(.axTextMuted) }.padding()
                         } else { ForEach(filteredInstalled) { v in installedRow(v) } }
                     }
                     VStack(alignment: .leading, spacing: AXSpacing.md) {
                         AXSectionTitle(title: "Available Versions", icon: "shippingbox.fill")
                         if filteredAvailable.isEmpty {
                             HStack { Image(systemName: "checkmark.seal").foregroundColor(.axTextMuted)
-                                Text("No additional versions available").font(AXTypography.caption).foregroundColor(.axTextMuted) }.padding()
+                                Text(L10n.Apps.noAdditionalVersionsAvailable).font(AXTypography.caption).foregroundColor(.axTextMuted) }.padding()
                         } else { ForEach(filteredAvailable) { v in availableRow(v) } }
                     }
                 }.padding(AXSpacing.xl)
@@ -61,7 +61,7 @@ struct RedisVersionsSection: View {
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: AXSpacing.sm) {
                     Text("v\(version.version)").font(.system(size: 14, weight: .semibold, design: .monospaced)).foregroundColor(.axTextPrimary)
-                    if version.isActive { Text("ACTIVE").font(.system(size: 8, weight: .heavy)).foregroundColor(.axSuccess)
+                    if version.isActive { Text(L10n.Label.active).font(.system(size: 8, weight: .heavy)).foregroundColor(.axSuccess)
                         .padding(.horizontal, 6).padding(.vertical, 2).background(Color.axSuccess.opacity(0.1)).cornerRadius(3) }
                 }
                 if let ch = version.channel { Text(ch.capitalized).font(.system(size: 10, weight: .medium)).foregroundColor(.axAccentBlue) }

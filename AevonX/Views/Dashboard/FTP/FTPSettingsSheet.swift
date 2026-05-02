@@ -23,7 +23,7 @@ struct FTPSettingsSheet: View {
                     Image(systemName: "gearshape.fill")
                         .font(.system(size: 18, weight: .semibold))
                         .foregroundColor(.axAccentBlue)
-                    Text("FTP Settings")
+                    Text(L10n.FTP.ftpSettings)
                         .font(.system(size: 16, weight: .bold))
                         .foregroundColor(.axTextPrimary)
                 }
@@ -59,7 +59,7 @@ struct FTPSettingsSheet: View {
                             
                             // Version
                             HStack(spacing: AXSpacing.xs) {
-                                Text("PureFTPd")
+                                Text(L10n.FTP.pureftpd)
                                     .font(.system(size: 11, weight: .semibold))
                                     .foregroundColor(.axAccentGreen)
                                 Text(vm.serverInfo.version)
@@ -106,7 +106,7 @@ struct FTPSettingsSheet: View {
                     // Change Port
                     settingsGroup("FTP Port") {
                         VStack(alignment: .leading, spacing: AXSpacing.md) {
-                            Text("Change the FTP listening port. Default: 21")
+                            Text(L10n.FTP.changeTheFtpListeningPortDefault)
                                 .font(.system(size: 12))
                                 .foregroundColor(.axTextTertiary)
                             
@@ -133,7 +133,7 @@ struct FTPSettingsSheet: View {
                                                 .scaleEffect(0.6)
                                                 .frame(width: 14, height: 14)
                                         }
-                                        Text("Change Port")
+                                        Text(L10n.FTP.changePort)
                                             .font(.system(size: 12, weight: .semibold))
                                     }
                                     .foregroundColor(.white)

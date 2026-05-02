@@ -42,7 +42,7 @@ struct AIInstallRecommendationsView: View {
 
     private func systemRequirementsSection(_ requirements: SystemRequirements) -> some View {
         VStack(alignment: .leading, spacing: AXSpacing.md) {
-            Text("System Requirements")
+            Text(L10n.Database.systemRequirements)
                 .font(AXTypography.headline)
                 .foregroundColor(.axTextPrimary)
             
@@ -73,7 +73,7 @@ struct AIInstallRecommendationsView: View {
 
     private func versionRecommendationsSection(_ recommendations: [DatabaseVersionRecommendation]) -> some View {
         VStack(alignment: .leading, spacing: AXSpacing.md) {
-            Text("Recommended Versions")
+            Text(L10n.Database.recommendedVersions)
                 .font(AXTypography.headline)
                 .foregroundColor(.axTextPrimary)
             
@@ -92,7 +92,7 @@ struct AIInstallRecommendationsView: View {
 
     private func warningsSection(_ warnings: [String]) -> some View {
         VStack(alignment: .leading, spacing: AXSpacing.md) {
-            Text("Warnings")
+            Text(L10n.Database.warnings)
                 .font(AXTypography.headline)
                 .foregroundColor(.axWarning)
             
@@ -235,7 +235,7 @@ private struct VersionRecommendationCard: View {
                         .fontWeight(.bold)
                         .foregroundColor(compatibilityColor)
                     
-                    Text("Compatible")
+                    Text(L10n.Database.compatible)
                         .font(AXTypography.caption2)
                         .foregroundColor(.axTextMuted)
                 }

@@ -38,7 +38,7 @@ struct DockerCustomTemplateCreator: View {
                 HStack(spacing: 6) {
                     Image(systemName: "plus.rectangle.on.folder.fill")
                         .foregroundColor(.axAccentBlue)
-                    Text("Create Custom Template")
+                    Text(L10n.Docker.createCustomTemplate)
                         .font(AXTypography.headline)
                         .foregroundColor(.axTextPrimary)
                 }
@@ -58,7 +58,7 @@ struct DockerCustomTemplateCreator: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: AXSpacing.lg) {
                         VStack(alignment: .leading, spacing: AXSpacing.xs) {
-                            Text("Template Name")
+                            Text(L10n.Docker.templateName)
                                 .font(.system(size: 11, weight: .semibold))
                                 .foregroundColor(.axTextSecondary)
                             TextField("e.g. My LEMP Stack", text: $templateName)
@@ -66,7 +66,7 @@ struct DockerCustomTemplateCreator: View {
                         }
                         
                         VStack(alignment: .leading, spacing: AXSpacing.xs) {
-                            Text("Description")
+                            Text(L10n.Docker.description)
                                 .font(.system(size: 11, weight: .semibold))
                                 .foregroundColor(.axTextSecondary)
                             TextField("Brief description of this template", text: $templateDescription)
@@ -74,7 +74,7 @@ struct DockerCustomTemplateCreator: View {
                         }
                         
                         VStack(alignment: .leading, spacing: AXSpacing.xs) {
-                            Text("Category")
+                            Text(L10n.Docker.category)
                                 .font(.system(size: 11, weight: .semibold))
                                 .foregroundColor(.axTextSecondary)
                             Picker("", selection: $templateCategory) {

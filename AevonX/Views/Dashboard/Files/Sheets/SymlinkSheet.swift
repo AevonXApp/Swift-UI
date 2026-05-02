@@ -20,7 +20,7 @@ struct SymlinkSheetView: View {
                 Image(systemName: "link")
                     .font(.system(size: 18))
                     .foregroundColor(.axAccentBlue)
-                Text("Create Symlink")
+                Text(L10n.Files.createSymlink)
                     .font(AXTypography.headline)
                     .foregroundColor(.axTextPrimary)
             }
@@ -33,7 +33,7 @@ struct SymlinkSheetView: View {
             }
             
             VStack(alignment: .leading, spacing: AXSpacing.xs) {
-                Text("Link Name")
+                Text(L10n.Files.linkName)
                     .font(AXTypography.caption)
                     .foregroundColor(.axTextSecondary)
                 TextField("link_name", text: $linkName)

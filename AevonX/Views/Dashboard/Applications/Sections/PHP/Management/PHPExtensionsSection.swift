@@ -117,9 +117,9 @@ struct PHPExtensionsSection: View {
                 .frame(width: 120, alignment: .leading)
             Text(L10n.Field.description)
                 .frame(maxWidth: .infinity, alignment: .leading)
-            Text("Status")
+            Text(L10n.Apps.status)
                 .frame(width: 70, alignment: .center)
-            Text("Action")
+            Text(L10n.Apps.action)
                 .frame(width: 90, alignment: .center)
         }
         .font(.system(size: 11, weight: .semibold))

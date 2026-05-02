@@ -45,7 +45,7 @@ struct SiteConfigSection: View {
                                 } else {
                                     Image(systemName: "checkmark.shield")
                                 }
-                                Text("Validate")
+                                Text(L10n.Websites.validate)
                             }
                             .font(AXTypography.subheadline).fontWeight(.medium)
                         }
@@ -60,7 +60,7 @@ struct SiteConfigSection: View {
                                 } else {
                                     Image(systemName: "square.and.arrow.down")
                                 }
-                                Text("Save & Reload")
+                                Text(L10n.Websites.saveReload)
                             }
                             .font(AXTypography.subheadline).fontWeight(.semibold)
                         }
@@ -120,7 +120,7 @@ struct SiteConfigSection: View {
                 if viewModel.isLoading {
                     VStack(spacing: AXSpacing.md) {
                         ProgressView()
-                        Text("Loading configuration...")
+                        Text(L10n.Websites.loadingConfiguration)
                             .font(AXTypography.subheadline)
                             .foregroundColor(.axTextSecondary)
                     }
@@ -156,7 +156,7 @@ struct SiteConfigSection: View {
     private var templateSheet: some View {
         VStack(spacing: 0) {
             HStack {
-                Text("Config Templates")
+                Text(L10n.Websites.configTemplates)
                     .font(AXTypography.title3).fontWeight(.bold)
                 Spacer()
                 Button(L10n.Button.close) { showTemplates = false }
@@ -210,7 +210,7 @@ struct SiteConfigSection: View {
     private var backupsSheet: some View {
         VStack(spacing: 0) {
             HStack {
-                Text("Config Backups")
+                Text(L10n.Websites.configBackups)
                     .font(AXTypography.title3).fontWeight(.bold)
                 Spacer()
                 Button(L10n.Button.close) { showBackups = false }

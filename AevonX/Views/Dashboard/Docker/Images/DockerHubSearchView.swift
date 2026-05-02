@@ -28,7 +28,7 @@ struct DockerHubSearchView: View {
             HStack {
                 Image(systemName: "magnifyingglass")
                     .foregroundColor(.axAccentBlue)
-                Text("Docker Hub")
+                Text(L10n.Docker.dockerHub)
                     .font(AXTypography.headline)
                     .foregroundColor(.axTextPrimary)
                 Spacer()
@@ -78,7 +78,7 @@ struct DockerHubSearchView: View {
                     Image(systemName: "shippingbox")
                         .font(.system(size: 40))
                         .foregroundColor(.axTextMuted)
-                    Text("Search for Docker images")
+                    Text(L10n.Docker.searchForDockerImages)
                         .font(AXTypography.subheadline)
                         .foregroundColor(.axTextMuted)
                     Text("e.g. nginx, redis, postgres, node")
@@ -198,7 +198,7 @@ private struct HubResultRow: View {
                         .foregroundColor(.axTextPrimary)
                     
                     if result.isOfficial {
-                        Text("Official")
+                        Text(L10n.Docker.official)
                             .font(.system(size: 8, weight: .bold))
                             .foregroundColor(.axAccentBlue)
                             .padding(.horizontal, 5)

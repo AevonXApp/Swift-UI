@@ -40,7 +40,7 @@ struct RedisOverviewSection: View {
                 Image(systemName: isRunning ? "checkmark" : "xmark").font(.system(size: 22, weight: .black)).foregroundColor(.white)
             }
             VStack(alignment: .leading, spacing: AXSpacing.xs) {
-                Text("Redis Service").font(.system(size: 18, weight: .bold)).foregroundColor(.axTextPrimary)
+                Text(L10n.Apps.redisService).font(.system(size: 18, weight: .bold)).foregroundColor(.axTextPrimary)
                 Text(isRunning ? "Active & Healthy" : "Service Stopped").font(AXTypography.body)
                     .foregroundColor(isRunning ? .axTextSecondary : .axError)
                 if let uptime = status?.uptime, !uptime.isEmpty {

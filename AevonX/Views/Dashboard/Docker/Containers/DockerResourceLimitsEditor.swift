@@ -21,7 +21,7 @@ struct DockerResourceLimitsEditor: View {
                 HStack(spacing: 6) {
                     Image(systemName: "gauge.with.dots.needle.33percent")
                         .foregroundColor(.orange)
-                    Text("Resource Limits")
+                    Text(L10n.Docker.resourceLimits)
                         .font(AXTypography.headline)
                         .foregroundColor(.axTextPrimary)
                 }

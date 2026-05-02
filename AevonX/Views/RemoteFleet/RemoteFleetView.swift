@@ -93,11 +93,11 @@ struct RemoteFleetView: View {
                             .font(.system(size: 48))
                             .foregroundColor(.axTextMuted)
 
-                        Text("Sign In Required")
+                        Text(L10n.Fleet.signInRequired)
                             .font(AXTypography.title2)
                             .foregroundColor(.axTextPrimary)
 
-                        Text("Sign in or create an account to manage your servers")
+                        Text(L10n.Fleet.signInOrCreateAnAccountToManageYourServers)
                             .font(AXTypography.body)
                             .foregroundColor(.axTextSecondary)
                             .multilineTextAlignment(.center)

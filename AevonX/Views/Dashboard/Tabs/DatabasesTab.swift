@@ -130,7 +130,7 @@ struct DatabasesTab: View {
                     Button(action: { showAddDatabase = true }) {
                         HStack(spacing: AXSpacing.sm) {
                             Image(systemName: "plus")
-                            Text("New Database")
+                            Text(L10n.Database.newDatabase)
                         }
                         .font(AXTypography.subheadline)
                         .fontWeight(.medium)
@@ -148,7 +148,7 @@ struct DatabasesTab: View {
                             Image(systemName: "arrow.clockwise")
                                 .rotationEffect(.degrees(viewModel.isLoading ? 360 : 0))
                                 .animation(viewModel.isLoading ? Animation.linear(duration: 1).repeatForever(autoreverses: false) : .default, value: viewModel.isLoading)
-                            Text("Refresh")
+                            Text(L10n.Database.refresh)
                         }
                         .font(AXTypography.subheadline)
                         .fontWeight(.medium)
@@ -207,7 +207,7 @@ struct DatabasesTab: View {
                 Button(action: { showAddUser = true }) {
                     HStack(spacing: AXSpacing.sm) {
                         Image(systemName: "plus")
-                        Text("Add User")
+                        Text(L10n.Database.addUser)
                     }
                     .font(AXTypography.subheadline)
                     .fontWeight(.medium)
@@ -246,7 +246,7 @@ struct DatabasesTab: View {
                 .font(.system(size: 48))
                 .foregroundColor(.axError)
             
-            Text("Failed to Load Databases")
+            Text(L10n.Database.failedToLoadDatabases)
                 .font(AXTypography.headline)
                 .foregroundColor(.axTextPrimary)
             
@@ -280,20 +280,20 @@ struct DatabasesTab: View {
                 .foregroundColor(.axTextMuted)
             
             if viewModel.isConnected {
-                Text("No Databases Found")
+                Text(L10n.Database.noDatabasesFound)
                     .font(AXTypography.headline)
                     .foregroundColor(.axTextPrimary)
                 
-                Text("No MySQL, PostgreSQL, or Redis databases were detected on this server.")
+                Text(L10n.Database.noMysqlPostgresqlOrRedisDatabasesWereDetectedOnThisServer)
                     .font(AXTypography.subheadline)
                     .foregroundColor(.axTextSecondary)
                     .multilineTextAlignment(.center)
             } else {
-                Text("Not Connected")
+                Text(L10n.Database.notConnected)
                     .font(AXTypography.headline)
                     .foregroundColor(.axTextPrimary)
                 
-                Text("Connect to the server to view databases.")
+                Text(L10n.Database.connectToTheServerToViewDatabases)
                     .font(AXTypography.subheadline)
                     .foregroundColor(.axTextSecondary)
             }
@@ -308,11 +308,11 @@ struct DatabasesTab: View {
                 .font(.system(size: 48))
                 .foregroundColor(.axTextMuted)
             
-            Text("No Users Found")
+            Text(L10n.Database.noUsersFound)
                 .font(AXTypography.headline)
                 .foregroundColor(.axTextPrimary)
             
-            Text("Connect to the server to view database users.")
+            Text(L10n.Database.connectToTheServerToViewDatabaseUsers)
                 .font(AXTypography.subheadline)
                 .foregroundColor(.axTextSecondary)
         }
@@ -646,25 +646,25 @@ struct UsersTableView: View {
             VStack(spacing: 0) {
                 // Header
                 HStack(spacing: AXSpacing.md) {
-                    Text("User")
+                    Text(L10n.Database.user)
                         .font(AXTypography.caption)
                         .fontWeight(.semibold)
                         .foregroundColor(.axTextMuted)
                         .frame(width: 150, alignment: .leading)
                     
-                    Text("Host")
+                    Text(L10n.Database.host)
                         .font(AXTypography.caption)
                         .fontWeight(.semibold)
                         .foregroundColor(.axTextMuted)
                         .frame(width: 120, alignment: .leading)
                     
-                    Text("Privileges")
+                    Text(L10n.Database.privileges)
                         .font(AXTypography.caption)
                         .fontWeight(.semibold)
                         .foregroundColor(.axTextMuted)
                         .frame(width: 200, alignment: .leading)
                     
-                    Text("Last Active")
+                    Text(L10n.Database.lastActive)
                         .font(AXTypography.caption)
                         .fontWeight(.semibold)
                         .foregroundColor(.axTextMuted)
@@ -672,7 +672,7 @@ struct UsersTableView: View {
                     
                     Spacer()
                     
-                    Text("Actions")
+                    Text(L10n.Database.actions)
                         .font(AXTypography.caption)
                         .fontWeight(.semibold)
                         .foregroundColor(.axTextMuted)
@@ -753,7 +753,7 @@ struct DatabaseUserRow: View {
                     .foregroundColor(.axTextTertiary)
                     .frame(width: 100, alignment: .leading)
             } else {
-                Text("Never")
+                Text(L10n.Database.never)
                     .font(AXTypography.caption)
                     .foregroundColor(.axTextMuted)
                     .frame(width: 100, alignment: .leading)
@@ -906,7 +906,7 @@ struct DatabaseInfoCard: View {
                         HStack(spacing: AXSpacing.xs) {
                             Image(systemName: "terminal")
                                 .font(.system(size: 10))
-                            Text("Console")
+                            Text(L10n.Database.console)
                         }
                         .font(AXTypography.caption)
                         .foregroundColor(database.type.brandColor)
@@ -921,7 +921,7 @@ struct DatabaseInfoCard: View {
                         HStack(spacing: AXSpacing.xs) {
                             Image(systemName: "arrow.down.doc")
                                 .font(.system(size: 10))
-                            Text("Backup")
+                            Text(L10n.Database.backup)
                         }
                         .font(AXTypography.caption)
                         .foregroundColor(.axAccentGreen)
@@ -1051,7 +1051,7 @@ struct AddDatabaseView: View {
     var body: some View {
         VStack(spacing: AXSpacing.xl) {
             HStack {
-                Text("Create Database")
+                Text(L10n.Database.createDatabase)
                     .font(AXTypography.title)
                     .foregroundColor(.axTextPrimary)
                 
@@ -1073,7 +1073,7 @@ struct AddDatabaseView: View {
             
             VStack(alignment: .leading, spacing: AXSpacing.lg) {
                 VStack(alignment: .leading, spacing: AXSpacing.sm) {
-                    Text("Database Name")
+                    Text(L10n.Database.databaseName)
                         .font(AXTypography.caption)
                         .foregroundColor(.axTextSecondary)
                     
@@ -1090,7 +1090,7 @@ struct AddDatabaseView: View {
                 }
                 
                 VStack(alignment: .leading, spacing: AXSpacing.sm) {
-                    Text("Database Type")
+                    Text(L10n.Database.databaseType)
                         .font(AXTypography.caption)
                         .foregroundColor(.axTextSecondary)
                     
@@ -1107,7 +1107,7 @@ struct AddDatabaseView: View {
             
             HStack(spacing: AXSpacing.md) {
                 Button(action: { dismiss() }) {
-                    Text("Cancel")
+                    Text(L10n.Database.cancel)
                         .font(AXTypography.subheadline)
                         .foregroundColor(.axTextSecondary)
                         .padding(.horizontal, AXSpacing.lg)
@@ -1116,7 +1116,7 @@ struct AddDatabaseView: View {
                 .buttonStyle(PlainButtonStyle())
                 
                 Button(action: { dismiss() }) {
-                    Text("Create Database")
+                    Text(L10n.Database.createDatabase)
                         .font(AXTypography.subheadline)
                         .fontWeight(.semibold)
                         .foregroundColor(.axBackground)
@@ -1145,7 +1145,7 @@ struct AddUserView: View {
     var body: some View {
         VStack(spacing: AXSpacing.xl) {
             HStack {
-                Text("Add Database User")
+                Text(L10n.Database.addDatabaseUser)
                     .font(AXTypography.title)
                     .foregroundColor(.axTextPrimary)
                 
@@ -1167,7 +1167,7 @@ struct AddUserView: View {
             
             VStack(alignment: .leading, spacing: AXSpacing.lg) {
                 VStack(alignment: .leading, spacing: AXSpacing.sm) {
-                    Text("Username")
+                    Text(L10n.Database.username)
                         .font(AXTypography.caption)
                         .foregroundColor(.axTextSecondary)
                     
@@ -1184,7 +1184,7 @@ struct AddUserView: View {
                 }
                 
                 VStack(alignment: .leading, spacing: AXSpacing.sm) {
-                    Text("Host")
+                    Text(L10n.Database.host)
                         .font(AXTypography.caption)
                         .foregroundColor(.axTextSecondary)
                     
@@ -1201,7 +1201,7 @@ struct AddUserView: View {
                 }
                 
                 VStack(alignment: .leading, spacing: AXSpacing.sm) {
-                    Text("Password")
+                    Text(L10n.Database.password)
                         .font(AXTypography.caption)
                         .foregroundColor(.axTextSecondary)
                     
@@ -1222,7 +1222,7 @@ struct AddUserView: View {
             
             HStack(spacing: AXSpacing.md) {
                 Button(action: { dismiss() }) {
-                    Text("Cancel")
+                    Text(L10n.Database.cancel)
                         .font(AXTypography.subheadline)
                         .foregroundColor(.axTextSecondary)
                         .padding(.horizontal, AXSpacing.lg)
@@ -1231,7 +1231,7 @@ struct AddUserView: View {
                 .buttonStyle(PlainButtonStyle())
                 
                 Button(action: { dismiss() }) {
-                    Text("Create User")
+                    Text(L10n.Database.createUser)
                         .font(AXTypography.subheadline)
                         .fontWeight(.semibold)
                         .foregroundColor(.axBackground)

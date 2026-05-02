@@ -95,7 +95,7 @@ struct PluginWizardComponent: View {
                         Button(action: goBack) {
                             HStack(spacing: AXSpacing.xs) {
                                 Image(systemName: "chevron.left")
-                                Text("Back")
+                                Text(L10n.PluginsUI.back)
                             }
                             .font(.system(size: 13, weight: .medium))
                             .foregroundColor(.axTextSecondary)
@@ -180,7 +180,7 @@ struct PluginWizardComponent: View {
             Image(systemName: "checkmark.circle.fill")
                 .font(.system(size: 64))
                 .foregroundColor(.axSuccess)
-            Text("Setup Complete!")
+            Text(L10n.PluginsUI.setupComplete)
                 .font(.system(size: 22, weight: .bold))
                 .foregroundColor(.axTextPrimary)
             if let desc = plugin.description {

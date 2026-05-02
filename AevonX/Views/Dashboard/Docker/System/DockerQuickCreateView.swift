@@ -18,7 +18,7 @@ struct DockerQuickCreateView: View {
         VStack(spacing: 0) {
             // Header
             HStack {
-                Text("Quick Create Container")
+                Text(L10n.Docker.quickCreateContainer)
                     .font(AXTypography.headline)
                     .foregroundColor(.axTextPrimary)
                 Spacer()
@@ -48,7 +48,7 @@ struct DockerQuickCreateView: View {
                         TextField("e.g. 8080:80, 443:443", text: $ports)
                             .textFieldStyle(AXTextFieldStyle())
                         
-                        Text("Format: host_port:container_port. Separate multiple with commas.")
+                        Text(L10n.Docker.formatHostPortContainerPortSeparateMultipleWithCommas)
                             .font(AXTypography.caption)
                             .foregroundColor(.axTextMuted)
                     }

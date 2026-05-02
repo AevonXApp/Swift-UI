@@ -92,10 +92,10 @@ struct QuickInstallView: View {
             }
 
             VStack(alignment: .leading, spacing: 2) {
-                Text("Quick Install")
+                Text(L10n.Dashboard.quickInstall)
                     .font(.system(size: 18, weight: .bold))
                     .foregroundColor(.axTextPrimary)
-                Text("Set up your server environment in one step")
+                Text(L10n.Dashboard.setUpYourServerEnvironmentInOneStep)
                     .font(AXTypography.caption)
                     .foregroundColor(.axTextSecondary)
             }
@@ -110,7 +110,7 @@ struct QuickInstallView: View {
                 HStack(spacing: AXSpacing.xs) {
                     ProgressView()
                         .scaleEffect(0.6)
-                    Text("Scanning...")
+                    Text(L10n.Dashboard.scanning)
                         .font(AXTypography.caption)
                         .foregroundColor(.axTextMuted)
                 }
@@ -177,7 +177,7 @@ struct QuickInstallView: View {
 
     private var presetBar: some View {
         VStack(alignment: .leading, spacing: AXSpacing.sm) {
-            Text("QUICK PRESETS")
+            Text(L10n.Dashboard.quickPresets)
                 .font(.system(size: 10, weight: .semibold))
                 .foregroundColor(.axTextMuted)
                 .tracking(1)
@@ -289,7 +289,7 @@ struct QuickInstallView: View {
 
             // Selected chips
             if viewModel.selections.isEmpty {
-                Text("Select packages above to begin")
+                Text(L10n.Dashboard.selectPackagesAboveToBegin)
                     .font(AXTypography.caption)
                     .foregroundColor(.axTextMuted)
             } else {
@@ -540,7 +540,7 @@ private struct QIPackageCard: View {
                     .background(accentColor.opacity(0.2))
 
                 HStack {
-                    Text("Version")
+                    Text(L10n.Dashboard.version)
                         .font(.system(size: 10, weight: .medium))
                         .foregroundColor(.axTextMuted)
 

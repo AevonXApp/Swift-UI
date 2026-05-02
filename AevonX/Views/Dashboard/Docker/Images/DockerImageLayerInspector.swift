@@ -20,7 +20,7 @@ struct DockerImageLayerInspector: View {
                     Image(systemName: "square.stack.3d.down.right.fill")
                         .foregroundColor(.axAccentBlue)
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("Image Layers")
+                        Text(L10n.Docker.imageLayers)
                             .font(AXTypography.headline)
                             .foregroundColor(.axTextPrimary)
                         Text("\(image.repository):\(image.tag)")
@@ -53,7 +53,7 @@ struct DockerImageLayerInspector: View {
             if isLoading {
                 VStack(spacing: AXSpacing.md) {
                     ProgressView()
-                    Text("Loading image layers...")
+                    Text(L10n.Docker.loadingImageLayers)
                         .font(AXTypography.caption)
                         .foregroundColor(.axTextMuted)
                 }

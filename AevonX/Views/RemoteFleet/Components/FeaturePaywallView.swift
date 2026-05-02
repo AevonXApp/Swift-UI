@@ -102,7 +102,7 @@ struct FeaturePaywallView: View {
 
     private var pricingSection: some View {
         VStack(spacing: AXSpacing.sm) {
-            Text("Choose a Plan")
+            Text(L10n.Fleet.chooseAPlan)
                 .font(.system(size: 11, weight: .semibold))
                 .foregroundColor(.axTextSecondary)
                 .textCase(.uppercase)
@@ -174,7 +174,7 @@ struct FeaturePaywallView: View {
     }
 
     private var popularBadge: some View {
-        Text("MOST POPULAR")
+        Text(L10n.Fleet.mostPopular)
             .font(.system(size: 6, weight: .black))
             .foregroundColor(.axAccentBlue)
             .padding(.horizontal, 4)

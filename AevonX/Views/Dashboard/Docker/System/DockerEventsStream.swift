@@ -25,14 +25,14 @@ struct DockerEventsStream: View {
                 HStack(spacing: 6) {
                     Image(systemName: "bolt.fill")
                         .foregroundColor(.yellow)
-                    Text("Docker Events")
+                    Text(L10n.Docker.dockerEvents)
                         .font(AXTypography.headline)
                         .foregroundColor(.axTextPrimary)
                     
                     if isStreaming {
                         HStack(spacing: 3) {
                             Circle().fill(Color.axSuccess).frame(width: 5, height: 5)
-                            Text("Live").font(.system(size: 9, weight: .bold)).foregroundColor(.axSuccess)
+                            Text(L10n.Docker.live).font(.system(size: 9, weight: .bold)).foregroundColor(.axSuccess)
                         }
                     }
                 }

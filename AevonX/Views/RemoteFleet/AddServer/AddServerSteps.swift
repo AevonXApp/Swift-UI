@@ -222,7 +222,7 @@ struct AddServerAuthStep: View {
                                     if viewModel.privateKey.isEmpty {
                                         VStack {
                                             HStack {
-                                                Text("Paste your private key or import a file...")
+                                                Text(L10n.Fleet.pasteYourPrivateKeyOrImportAFile)
                                                     .font(.system(size: 12, design: .monospaced))
                                                     .foregroundColor(.axTextMuted)
                                                     .padding(.top, AXSpacing.md)

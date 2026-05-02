@@ -664,12 +664,12 @@ private extension CerberusDomainDetailView {
 
     var trafficTableHeader: some View {
         HStack(spacing: AXSpacing.sm) {
-            Text("Time").frame(width: 65, alignment: .leading)
-            Text("Method").frame(width: 44, alignment: .leading)
-            Text("Path").frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
+            Text(L10n.PluginsUI.time).frame(width: 65, alignment: .leading)
+            Text(L10n.PluginsUI.method).frame(width: 44, alignment: .leading)
+            Text(L10n.PluginsUI.path).frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
             Text("IP").frame(width: 110, alignment: .leading)
-            Text("Status").frame(width: 50, alignment: .center)
-            Text("Latency").frame(width: 55, alignment: .trailing)
+            Text(L10n.PluginsUI.status).frame(width: 50, alignment: .center)
+            Text(L10n.PluginsUI.latency).frame(width: 55, alignment: .trailing)
         }
         .font(AXTypography.caption2)
         .fontWeight(.semibold)
@@ -740,10 +740,10 @@ private extension CerberusDomainDetailView {
 
     var attackTableHeader: some View {
         HStack(spacing: AXSpacing.sm) {
-            Text("Time").frame(width: 65, alignment: .leading)
+            Text(L10n.PluginsUI.time).frame(width: 65, alignment: .leading)
             Text("IP").frame(width: 110, alignment: .leading)
-            Text("Path").frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
-            Text("Rule").frame(width: 120, alignment: .trailing)
+            Text(L10n.PluginsUI.path).frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
+            Text(L10n.PluginsUI.rule).frame(width: 120, alignment: .trailing)
         }
         .font(AXTypography.caption2)
         .fontWeight(.semibold)

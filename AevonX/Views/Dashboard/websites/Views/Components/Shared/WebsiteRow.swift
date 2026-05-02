@@ -120,7 +120,7 @@ struct WebsiteCard: View {
                     HStack(spacing: 4) {
                         Image(systemName: "safari")
                             .font(AXTypography.caption2).fontWeight(.bold)
-                        Text("Visit")
+                        Text(L10n.Websites.visit)
                             .font(AXTypography.caption).fontWeight(.semibold)
                     }
                     .foregroundColor(.axAccentBlue)

@@ -39,7 +39,7 @@ struct RedisDatabasesSection: View {
                     Text(searchText.isEmpty ? "No keyspaces found" : "No results for \"\(searchText)\"")
                         .font(.system(size: 14, weight: .semibold)).foregroundColor(.axTextSecondary)
                     if searchText.isEmpty {
-                        Text("Redis keyspace data will appear here when detected")
+                        Text(L10n.Apps.redisKeyspaceDataWillAppearHereWhenDetected)
                             .font(.system(size: 11)).foregroundColor(.axTextMuted).multilineTextAlignment(.center).frame(maxWidth: 280)
                     }
                 }; Spacer()

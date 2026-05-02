@@ -26,10 +26,10 @@ struct NginxSnapshotsSection: View {
             // Header bar
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Config Snapshots")
+                    Text(L10n.Apps.configSnapshots)
                         .font(.system(size: 13, weight: .bold))
                         .foregroundColor(.axTextPrimary)
-                    Text("Automatic backups of nginx.conf before each change")
+                    Text(L10n.Apps.automaticBackupsOfNginxConfBeforeEachChange)
                         .font(.system(size: 11))
                         .foregroundColor(.axTextMuted)
                 }
@@ -43,7 +43,7 @@ struct NginxSnapshotsSection: View {
                         } else {
                             Image(systemName: "plus.circle.fill")
                         }
-                        Text("Create Snapshot")
+                        Text(L10n.Apps.createSnapshot)
                             .font(.system(size: 12, weight: .semibold))
                     }
                     .foregroundColor(.white)
@@ -81,10 +81,10 @@ struct NginxSnapshotsSection: View {
                             .font(.system(size: 24, weight: .semibold))
                             .foregroundColor(.indigo)
                     }
-                    Text("No snapshots yet")
+                    Text(L10n.Apps.noSnapshotsYet)
                         .font(.system(size: 14, weight: .semibold))
                         .foregroundColor(.axTextPrimary)
-                    Text("Create a snapshot to save the current nginx.conf state")
+                    Text(L10n.Apps.createASnapshotToSaveTheCurrentNginxConfState)
                         .font(.system(size: 11))
                         .foregroundColor(.axTextMuted)
                         .multilineTextAlignment(.center)
@@ -93,7 +93,7 @@ struct NginxSnapshotsSection: View {
                     } label: {
                         HStack(spacing: AXSpacing.xs) {
                             Image(systemName: "plus.circle.fill")
-                            Text("Create First Snapshot")
+                            Text(L10n.Apps.createFirstSnapshot)
                                 .font(.system(size: 12, weight: .semibold))
                         }
                         .foregroundColor(.white)

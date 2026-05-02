@@ -34,7 +34,7 @@ struct NginxBenchmarkSection: View {
             VStack(alignment: .leading, spacing: AXSpacing.xl) {
                 // Config
                 VStack(alignment: .leading, spacing: AXSpacing.md) {
-                    Text("TARGET").font(.system(size: 10, weight: .bold)).foregroundColor(.axTextMuted)
+                    Text(L10n.Label.target).font(.system(size: 10, weight: .bold)).foregroundColor(.axTextMuted)
                     HStack {
                         Image(systemName: "link").foregroundColor(.axTextMuted)
                         TextField("http://localhost", text: $url)
@@ -77,7 +77,7 @@ struct NginxBenchmarkSection: View {
                 // Results
                 if let r = result {
                     VStack(alignment: .leading, spacing: AXSpacing.md) {
-                        Text("RESULTS").font(.system(size: 10, weight: .bold)).foregroundColor(.axTextMuted)
+                        Text(L10n.Label.results).font(.system(size: 10, weight: .bold)).foregroundColor(.axTextMuted)
                         LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())], spacing: AXSpacing.md) {
                             benchCard("Req/sec", value: String(format: "%.1f", r.rps), color: r.rps > 100 ? .green : r.rps > 10 ? .orange : .red, icon: "arrow.up.right")
                             benchCard("Mean Latency", value: String(format: "%.0fms", r.meanMs), color: r.meanMs < 100 ? .green : r.meanMs < 500 ? .orange : .red, icon: "clock")
@@ -139,7 +139,7 @@ struct NginxProxySection: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack {
-                Text("Upstream Groups").font(.system(size: 13, weight: .bold)).foregroundColor(.axTextPrimary)
+                Text(L10n.Apps.upstreamGroups).font(.system(size: 13, weight: .bold)).foregroundColor(.axTextPrimary)
                 Spacer()
                 Button { showAddSheet = true } label: {
                     Label("Add Upstream", systemImage: "plus.circle.fill")
@@ -158,8 +158,8 @@ struct NginxProxySection: View {
             } else if upstreams.isEmpty {
                 VStack(spacing: AXSpacing.md) {
                     Image(systemName: "arrow.triangle.branch").font(.system(size: 40)).foregroundColor(.axTextMuted)
-                    Text("No upstream groups").font(.system(size: 13)).foregroundColor(.axTextSecondary)
-                    Text("Add an upstream group to configure reverse proxy load balancing").font(.system(size: 11)).foregroundColor(.axTextMuted).multilineTextAlignment(.center)
+                    Text(L10n.Apps.noUpstreamGroups).font(.system(size: 13)).foregroundColor(.axTextSecondary)
+                    Text(L10n.Apps.addAnUpstreamGroupToConfigureReverseProxyLoadBalancing).font(.system(size: 11)).foregroundColor(.axTextMuted).multilineTextAlignment(.center)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
@@ -194,7 +194,7 @@ struct NginxProxySection: View {
                     Text(srv["address"] as? String ?? "").font(.system(size: 11, design: .monospaced)).foregroundColor(.axTextPrimary)
                     Text("w:\(srv["weight"] as? Int ?? 1)").font(.system(size: 9)).foregroundColor(.axTextMuted)
                     if srv["down"] as? Bool == true {
-                        Text("DOWN").font(.system(size: 8, weight: .bold)).foregroundColor(.red)
+                        Text(L10n.Label.down).font(.system(size: 8, weight: .bold)).foregroundColor(.red)
                     }
                 }
             }
@@ -224,10 +224,10 @@ struct NginxProxySection: View {
                         .foregroundColor(.axAccentBlue)
                 }
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("New Upstream Group")
+                    Text(L10n.Apps.newUpstreamGroup)
                         .font(.system(size: 15, weight: .bold))
                         .foregroundColor(.axTextPrimary)
-                    Text("Configure reverse proxy load balancing")
+                    Text(L10n.Apps.configureReverseProxyLoadBalancing)
                         .font(.system(size: 11))
                         .foregroundColor(.axTextMuted)
                 }
@@ -307,7 +307,7 @@ struct NginxProxySection: View {
                         Label("Servers", systemImage: "server.rack")
                             .font(.system(size: 11, weight: .semibold))
                             .foregroundColor(.axTextMuted)
-                        Text("One server per line: host:port")
+                        Text(L10n.Apps.oneServerPerLineHostPort)
                             .font(.system(size: 10))
                             .foregroundColor(.axTextMuted.opacity(0.7))
                         TextEditor(text: $newServers)
@@ -353,7 +353,7 @@ struct NginxProxySection: View {
                             Image(systemName: "checkmark")
                                 .font(.system(size: 11, weight: .bold))
                         }
-                        Text("Save Upstream")
+                        Text(L10n.Apps.saveUpstream)
                             .font(.system(size: 13, weight: .semibold))
                     }
                     .foregroundColor(.white)

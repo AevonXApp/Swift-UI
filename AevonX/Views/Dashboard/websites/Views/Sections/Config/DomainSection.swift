@@ -74,7 +74,7 @@ struct DomainSection: View {
                 Image(systemName: "star.fill")
                     .font(AXTypography.caption)
                     .foregroundColor(.axWarning)
-                Text("Primary Domain")
+                Text(L10n.Websites.primaryDomain)
                     .font(AXTypography.caption).fontWeight(.semibold)
                     .foregroundColor(.axTextMuted)
             }
@@ -84,7 +84,7 @@ struct DomainSection: View {
                     .font(AXTypography.monoLg).fontWeight(.bold)
                     .foregroundColor(.axTextPrimary)
                 Spacer()
-                Text("PRIMARY")
+                Text(L10n.Label.primary)
                     .font(AXTypography.caption2).fontWeight(.bold)
                     .foregroundColor(.axSuccess)
                     .padding(.horizontal, 8)

@@ -33,19 +33,19 @@ struct GitTab: View {
             Button("Cancel", role: .cancel) {}
             Button("Discard All", role: .destructive) { Task { await vm.discardAll() } }
         } message: {
-            Text("All uncommitted changes will be permanently lost. This cannot be undone.")
+            Text(L10n.Websites.allUncommittedChangesWillBePermanentlyLostThisCannotBeUndone)
         }
         .alert("Hard Reset to \(vm.resetRef)?", isPresented: $showResetConfirm) {
             Button("Cancel", role: .cancel) {}
             Button("Hard Reset", role: .destructive) { Task { await vm.resetHard() } }
         } message: {
-            Text("This will discard all changes and reset your repository. This cannot be undone.")
+            Text(L10n.Websites.thisWillDiscardAllChangesAndResetYourRepositoryThisCannotBeUndone)
         }
         .alert("Disconnect Git Repository?", isPresented: $showDisconnectConfirm) {
             Button("Cancel", role: .cancel) {}
             Button("Disconnect", role: .destructive) { Task { await vm.disconnectGit() } }
         } message: {
-            Text("The .git directory will be permanently deleted. Your website files remain untouched, but all Git history will be lost.")
+            Text(L10n.Websites.theGitDirectoryWillBePermanentlyDeletedYourWebsiteFilesRemainUntouchedButAllGitHistoryWillBeLost)
         }
         .task { await vm.loadAll() }
     }
@@ -55,7 +55,7 @@ struct GitTab: View {
     private var loadingView: some View {
         VStack(spacing: AXSpacing.md) {
             ProgressView().scaleEffect(0.8)
-            Text("Detecting Git repository...")
+            Text(L10n.Websites.detectingGitRepository)
                 .font(AXTypography.subheadline)
                 .foregroundColor(.axTextTertiary)
         }
@@ -72,7 +72,7 @@ struct GitTab: View {
                 Image(systemName: "arrow.up.doc.fill")
                     .font(AXTypography.body)
                     .foregroundColor(.axAccentBlue)
-                Text("Commit & Push")
+                Text(L10n.Websites.commitPush)
                     .font(AXTypography.headline).fontWeight(.bold)
                     .foregroundColor(.axTextPrimary)
                 Spacer()
@@ -104,7 +104,7 @@ struct GitTab: View {
                 if vm.isGeneratingCommitMessage {
                     HStack(spacing: AXSpacing.sm) {
                         ProgressView().scaleEffect(0.6)
-                        Text("Generating commit message...")
+                        Text(L10n.Websites.generatingCommitMessage)
                             .font(AXTypography.footnote)
                             .foregroundColor(.axTextMuted)
                     }
@@ -125,7 +125,7 @@ struct GitTab: View {
                     HStack(spacing: 4) {
                         Image(systemName: "lock.fill")
                             .font(AXTypography.caption2)
-                        Text("Upgrade to Pro for AI-generated commit messages")
+                        Text(L10n.Websites.upgradeToProForAiGeneratedCommitMessages)
                             .font(AXTypography.caption2)
                     }
                     .foregroundColor(.axTextMuted)
@@ -157,7 +157,7 @@ struct GitTab: View {
                     HStack(spacing: 4) {
                         Image(systemName: "arrow.up.circle.fill")
                             .font(AXTypography.footnote)
-                        Text("Commit & Push")
+                        Text(L10n.Websites.commitPush)
                             .font(AXTypography.footnote).fontWeight(.bold)
                     }
                     .foregroundColor(.white)
@@ -195,11 +195,11 @@ struct GitTab: View {
                         .foregroundColor(.orange)
                 }
                 
-                Text("Connect Git Repository")
+                Text(L10n.Websites.connectGitRepository)
                     .font(AXTypography.title2).fontWeight(.bold)
                     .foregroundColor(.axTextPrimary)
                 
-                Text("Clone an existing repository or initialize a new one.\nSupports GitHub, GitLab, Bitbucket, and any Git server.")
+                Text(L10n.Label.gitEmptyState)
                     .font(AXTypography.subheadline)
                     .foregroundColor(.axTextTertiary)
                     .multilineTextAlignment(.center)
@@ -227,7 +227,7 @@ struct GitTab: View {
                 HStack(spacing: AXSpacing.sm) {
                     Image(systemName: "plus.circle.fill")
                         .font(AXTypography.body)
-                    Text("Initialize Empty Repository")
+                    Text(L10n.Websites.initializeEmptyRepository)
                         .font(AXTypography.callout).fontWeight(.semibold)
                 }
                 .foregroundColor(.axAccentBlue)
@@ -250,7 +250,7 @@ struct GitTab: View {
         VStack(spacing: AXSpacing.md) {
             // Repo URL
             VStack(alignment: .leading, spacing: 4) {
-                Text("Repository URL")
+                Text(L10n.Websites.repositoryUrl)
                     .font(AXTypography.footnote).fontWeight(.semibold)
                     .foregroundColor(.axTextSecondary)
                 
@@ -271,7 +271,7 @@ struct GitTab: View {
             // Branch
             HStack(spacing: AXSpacing.md) {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Branch")
+                    Text(L10n.Websites.branch)
                         .font(AXTypography.footnote).fontWeight(.semibold)
                         .foregroundColor(.axTextSecondary)
                     TextField("main", text: $vm.cloneConfig.branch)
@@ -286,7 +286,7 @@ struct GitTab: View {
                 
                 // Private toggle
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Private Repo")
+                    Text(L10n.Websites.privateRepo)
                         .font(AXTypography.footnote).fontWeight(.semibold)
                         .foregroundColor(.axTextSecondary)
                     Toggle("", isOn: $vm.cloneConfig.isPrivate)
@@ -302,7 +302,7 @@ struct GitTab: View {
                 VStack(spacing: AXSpacing.sm) {
                     HStack(spacing: AXSpacing.sm) {
                         VStack(alignment: .leading, spacing: 4) {
-                            Text("Username")
+                            Text(L10n.Websites.username)
                                 .font(AXTypography.footnote).fontWeight(.semibold)
                                 .foregroundColor(.axTextSecondary)
                             TextField("username", text: $vm.cloneConfig.username)
@@ -316,7 +316,7 @@ struct GitTab: View {
                         }
                         
                         VStack(alignment: .leading, spacing: 4) {
-                            Text("Access Token")
+                            Text(L10n.Websites.accessToken)
                                 .font(AXTypography.footnote).fontWeight(.semibold)
                                 .foregroundColor(.axTextSecondary)
                             SecureField("ghp_xxxx...", text: $vm.cloneConfig.token)
@@ -338,7 +338,7 @@ struct GitTab: View {
                 HStack(spacing: AXSpacing.sm) {
                     Image(systemName: "arrow.down.circle.fill")
                         .font(AXTypography.headline)
-                    Text("Clone Repository")
+                    Text(L10n.Websites.cloneRepository)
                         .font(AXTypography.callout).fontWeight(.bold)
                 }
                 .foregroundColor(.white)
@@ -576,7 +576,7 @@ struct GitTab: View {
                     Image(systemName: "clock")
                         .font(AXTypography.caption)
                         .foregroundColor(.axTextMuted)
-                    Text("Last commit:")
+                    Text(L10n.Websites.lastCommit)
                         .font(AXTypography.caption)
                         .foregroundColor(.axTextMuted)
                     Text(vm.repoInfo.lastCommitMessage)
@@ -598,7 +598,7 @@ struct GitTab: View {
             // Output console
             if !vm.operationOutput.isEmpty {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Output")
+                    Text(L10n.Websites.output)
                         .font(AXTypography.caption).fontWeight(.bold)
                         .foregroundColor(.axTextMuted)
                     
@@ -627,7 +627,7 @@ struct GitTab: View {
         VStack(spacing: AXSpacing.md) {
             // Header
             HStack {
-                Text("Branches")
+                Text(L10n.Websites.branches)
                     .font(AXTypography.callout).fontWeight(.bold)
                     .foregroundColor(.axTextPrimary)
                 
@@ -645,7 +645,7 @@ struct GitTab: View {
                     HStack(spacing: 4) {
                         Image(systemName: "plus")
                             .font(AXTypography.caption).fontWeight(.bold)
-                        Text("New Branch")
+                        Text(L10n.Websites.newBranch)
                             .font(AXTypography.footnote).fontWeight(.semibold)
                     }
                     .foregroundColor(.orange)
@@ -724,7 +724,7 @@ struct GitTab: View {
                 .foregroundColor(branch.isCurrent ? .axTextPrimary : .axTextSecondary)
             
             if branch.isCurrent {
-                Text("CURRENT")
+                Text(L10n.Label.current)
                     .font(AXTypography.caption2).fontWeight(.heavy)
                     .foregroundColor(.axSuccess)
                     .padding(.horizontal, 4)
@@ -744,7 +744,7 @@ struct GitTab: View {
             if !branch.isCurrent {
                 HStack(spacing: 4) {
                     Button(action: { Task { await vm.switchBranch(branch) } }) {
-                        Text("Switch")
+                        Text(L10n.Websites.`switch`)
                             .font(AXTypography.caption).fontWeight(.semibold)
                             .foregroundColor(.axAccentBlue)
                             .padding(.horizontal, 8)
@@ -903,10 +903,10 @@ struct GitTab: View {
                     Image(systemName: "checkmark.circle.fill")
                         .font(AXTypography.largeTitle)
                         .foregroundColor(.axSuccess)
-                    Text("Working tree clean")
+                    Text(L10n.Websites.workingTreeClean)
                         .font(AXTypography.callout).fontWeight(.medium)
                         .foregroundColor(.axTextSecondary)
-                    Text("No modified, added, or untracked files")
+                    Text(L10n.Websites.noModifiedAddedOrUntrackedFiles)
                         .font(AXTypography.footnote)
                         .foregroundColor(.axTextTertiary)
                 }
@@ -1018,7 +1018,7 @@ struct GitTab: View {
             // Tags
             advancedCard(title: "Tags", icon: "tag.fill", color: .cyan) {
                 if vm.tags.isEmpty {
-                    Text("No tags found")
+                    Text(L10n.Websites.noTagsFound)
                         .font(AXTypography.footnote)
                         .foregroundColor(.axTextTertiary)
                 } else {
@@ -1100,7 +1100,7 @@ struct GitTab: View {
                         Button(action: { vm.showAddRemoteSheet = true }) {
                             HStack(spacing: 3) {
                                 Image(systemName: "plus").font(AXTypography.caption2).fontWeight(.bold)
-                                Text("Add Remote").font(AXTypography.caption).fontWeight(.semibold)
+                                Text(L10n.Websites.addRemote).font(AXTypography.caption).fontWeight(.semibold)
                             }
                             .foregroundColor(.purple)
                         }
@@ -1148,7 +1148,7 @@ struct GitTab: View {
                             HStack(spacing: 6) {
                                 Image(systemName: "xmark.circle.fill")
                                     .font(AXTypography.subheadline)
-                                Text("Disconnect Git Repository")
+                                Text(L10n.Websites.disconnectGitRepository)
                                     .font(AXTypography.footnote).fontWeight(.bold)
                             }
                             .foregroundColor(.axError)
@@ -1160,7 +1160,7 @@ struct GitTab: View {
                         }
                         .buttonStyle(.plain)
                         
-                        Text("Removes the .git directory. Your website files remain untouched.")
+                        Text(L10n.Websites.removesTheGitDirectoryYourWebsiteFilesRemainUntouched)
                             .font(AXTypography.caption2)
                             .foregroundColor(.axError.opacity(0.7))
                     }

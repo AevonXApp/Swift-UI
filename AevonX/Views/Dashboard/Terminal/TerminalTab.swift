@@ -191,14 +191,14 @@ struct TerminalTab: View {
                             ProgressView()
                                 .scaleEffect(0.6)
                                 .padding(.trailing, 4)
-                            Text("Loading directories...")
+                            Text(L10n.Terminal.loadingDirectories)
                                 .font(.system(size: 11))
                                 .foregroundColor(.axTextMuted)
                         }
                         .padding(.vertical, 14)
                         .padding(.horizontal, 14)
                     } else if dirContents.isEmpty {
-                        Text("No subdirectories")
+                        Text(L10n.Terminal.noSubdirectories)
                             .font(.system(size: 11))
                             .foregroundColor(.axTextMuted)
                             .padding(.vertical, 14)
@@ -223,7 +223,7 @@ struct TerminalTab: View {
             let recent = recentDirectories(from: session)
             if !recent.isEmpty {
                 Divider().background(Color.axBorder.opacity(0.3))
-                Text("RECENT")
+                Text(L10n.Label.recent)
                     .font(.system(size: 9, weight: .semibold))
                     .foregroundColor(.axTextMuted)
                     .padding(.horizontal, 14)
@@ -326,7 +326,7 @@ struct TerminalTab: View {
                 Image(systemName: "terminal.fill")
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundColor(.axAccentBlue)
-                Text("Terminal")
+                Text(L10n.Terminal.terminal)
                     .font(.system(size: 14, weight: .bold))
                     .foregroundColor(.axTextPrimary)
             }
@@ -359,7 +359,7 @@ struct TerminalTab: View {
             Button(action: { active?.disconnect() }) {
                 HStack(spacing: 3) {
                     Image(systemName: "power").font(.system(size: 10))
-                    Text("Disconnect").font(.system(size: 11, weight: .medium))
+                    Text(L10n.Terminal.disconnect).font(.system(size: 11, weight: .medium))
                 }
                 .foregroundColor(.axError)
                 .padding(.horizontal, AXSpacing.sm)

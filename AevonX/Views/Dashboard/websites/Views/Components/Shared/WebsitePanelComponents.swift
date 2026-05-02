@@ -72,7 +72,7 @@ struct SSLOverviewCard: View {
         VStack(alignment: .leading, spacing: AXSpacing.md) {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Provider")
+                    Text(L10n.Websites.provider)
                         .font(AXTypography.footnote)
                         .foregroundColor(.axTextSecondary)
                     Text(ssl.provider.rawValue)
@@ -84,7 +84,7 @@ struct SSLOverviewCard: View {
 
                 if let expiry = expiryText {
                     VStack(alignment: .center, spacing: 4) {
-                        Text("Expires")
+                        Text(L10n.Websites.expires)
                             .font(AXTypography.footnote)
                             .foregroundColor(.axTextSecondary)
                         Text(expiry)
@@ -96,7 +96,7 @@ struct SSLOverviewCard: View {
                 Spacer()
 
                 VStack(alignment: .trailing, spacing: 4) {
-                    Text("Status")
+                    Text(L10n.Websites.status)
                         .font(AXTypography.footnote)
                         .foregroundColor(.axTextSecondary)
                     Text(ssl.status.rawValue.capitalized)

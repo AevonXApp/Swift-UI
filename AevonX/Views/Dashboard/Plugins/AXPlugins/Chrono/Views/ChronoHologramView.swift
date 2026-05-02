@@ -293,7 +293,7 @@ struct ChronoHologramView: View {
             Image(systemName: "cube.transparent")
                 .font(.system(size: 36))
                 .foregroundColor(.axTextMuted)
-            Text("Select a project to analyze")
+            Text(L10n.PluginsUI.selectAProjectToAnalyze)
                 .font(AXTypography.subheadline)
                 .foregroundColor(.axTextSecondary)
         }

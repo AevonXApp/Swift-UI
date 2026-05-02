@@ -73,7 +73,7 @@ struct DockerToolsTab: View {
                     Image(systemName: "wrench.and.screwdriver.fill")
                         .font(.system(size: 11, weight: .bold))
                         .foregroundColor(.axAccentBlue)
-                    Text("TOOLS")
+                    Text(L10n.Label.tools)
                         .font(.system(size: 10, weight: .heavy))
                         .foregroundColor(.axTextMuted)
                         .tracking(1.5)
@@ -103,7 +103,7 @@ struct DockerToolsTab: View {
                     .fill(Color.axBorder.opacity(0.25))
                     .frame(height: 1)
                     .padding(.horizontal, 10)
-                Text("Docker Tools v1.0")
+                Text(L10n.Docker.dockerToolsV1)
                     .font(.system(size: 9, weight: .medium))
                     .foregroundColor(.axTextMuted.opacity(0.5))
                     .padding(.vertical, 10)
@@ -165,7 +165,7 @@ private struct DockerSchedulerInline: View {
                     Text(L10n.Docker.containerScheduler)
                         .font(.system(size: 16, weight: .bold))
                         .foregroundColor(.axTextPrimary)
-                    Text("Schedule automatic container actions using cron")
+                    Text(L10n.Docker.scheduleAutomaticContainerActionsUsingCron)
                         .font(.system(size: 12))
                         .foregroundColor(.axTextSecondary)
                 }
@@ -206,7 +206,7 @@ private struct DockerSchedulerInline: View {
         VStack(alignment: .leading, spacing: AXSpacing.sm) {
             HStack(spacing: AXSpacing.md) {
                 Picker("Container", selection: $selectedContainer) {
-                    Text("Select...").tag("")
+                    Text(L10n.Docker.select).tag("")
                     ForEach(containers, id: \.id) { c in
                         Text(c.names).tag(c.names)
                     }
@@ -222,7 +222,7 @@ private struct DockerSchedulerInline: View {
             }
             
             HStack(spacing: 6) {
-                Text("Cron:")
+                Text(L10n.Docker.cron)
                     .font(.system(size: 11, weight: .medium))
                     .foregroundColor(.axTextSecondary)
                 TextField("cron expression", text: $selectedSchedule)
@@ -339,7 +339,7 @@ private struct DockerSecretsInline: View {
                     Text(L10n.Docker.secretsManager)
                         .font(.system(size: 16, weight: .bold))
                         .foregroundColor(.axTextPrimary)
-                    Text("Manage sensitive data for containers (requires Swarm mode)")
+                    Text(L10n.Docker.manageSensitiveDataForContainersRequiresSwarmMode)
                         .font(.system(size: 12))
                         .foregroundColor(.axTextSecondary)
                 }
@@ -444,10 +444,10 @@ private struct DockerTrafficInline: View {
         VStack(alignment: .leading, spacing: AXSpacing.lg) {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Network Traffic")
+                    Text(L10n.Docker.networkTraffic)
                         .font(.system(size: 16, weight: .bold))
                         .foregroundColor(.axTextPrimary)
-                    Text("Real-time network I/O per container")
+                    Text(L10n.Docker.realTimeNetworkIOPerContainer)
                         .font(.system(size: 12))
                         .foregroundColor(.axTextSecondary)
                 }
@@ -468,9 +468,9 @@ private struct DockerTrafficInline: View {
                 // Table
                 VStack(spacing: 0) {
                     HStack {
-                        Text("Container").frame(width: 150, alignment: .leading)
-                        Text("Received").frame(width: 100, alignment: .trailing)
-                        Text("Sent").frame(width: 100, alignment: .trailing)
+                        Text(L10n.Docker.container).frame(width: 150, alignment: .leading)
+                        Text(L10n.Docker.received).frame(width: 100, alignment: .trailing)
+                        Text(L10n.Docker.sent).frame(width: 100, alignment: .trailing)
                         Text("").frame(minWidth: 200)
                         Spacer()
                     }
@@ -559,10 +559,10 @@ private struct DockerDependenciesInline: View {
         VStack(alignment: .leading, spacing: AXSpacing.lg) {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Container Dependencies")
+                    Text(L10n.Docker.containerDependencies)
                         .font(.system(size: 16, weight: .bold))
                         .foregroundColor(.axTextPrimary)
-                    Text("Shared networks and volumes between containers")
+                    Text(L10n.Docker.sharedNetworksAndVolumesBetweenContainers)
                         .font(.system(size: 12))
                         .foregroundColor(.axTextSecondary)
                 }
@@ -631,10 +631,10 @@ private struct DockerRunToComposeInline: View {
     var body: some View {
         VStack(alignment: .leading, spacing: AXSpacing.lg) {
             VStack(alignment: .leading, spacing: 4) {
-                Text("Run → Compose Converter")
+                Text(L10n.Docker.runComposeConverter)
                     .font(.system(size: 16, weight: .bold))
                     .foregroundColor(.axTextPrimary)
-                Text("Convert a docker run command to docker-compose.yml")
+                Text(L10n.Docker.convertADockerRunCommandToDockerComposeYml)
                     .font(.system(size: 12))
                     .foregroundColor(.axTextSecondary)
             }
@@ -710,10 +710,10 @@ private struct DockerEnvTemplatesInline: View {
         VStack(alignment: .leading, spacing: AXSpacing.lg) {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Environment Templates")
+                    Text(L10n.Docker.environmentTemplates)
                         .font(.system(size: 16, weight: .bold))
                         .foregroundColor(.axTextPrimary)
-                    Text("Save and reuse environment variable sets")
+                    Text(L10n.Docker.saveAndReuseEnvironmentVariableSets)
                         .font(.system(size: 12))
                         .foregroundColor(.axTextSecondary)
                 }
@@ -735,7 +735,7 @@ private struct DockerEnvTemplatesInline: View {
                         TextField("Template name", text: $tName).textFieldStyle(.roundedBorder).frame(width: 200)
                         TextField("Description", text: $tDesc).textFieldStyle(.roundedBorder)
                     }
-                    Text("Variables (KEY=VALUE, one per line)").font(.system(size: 10)).foregroundColor(.axTextMuted)
+                    Text(L10n.Docker.variablesKeyValueOnePerLine).font(.system(size: 10)).foregroundColor(.axTextMuted)
                     TextEditor(text: $tVars).font(.system(size: 11, design: .monospaced)).frame(height: 80)
                         .padding(6).background(Color.axSurface).cornerRadius(6).overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.axBorder))
                     HStack {
@@ -832,10 +832,10 @@ private struct DockerProfilesInline: View {
         VStack(alignment: .leading, spacing: AXSpacing.lg) {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Profile Export / Import")
+                    Text(L10n.Docker.profileExportImport)
                         .font(.system(size: 16, weight: .bold))
                         .foregroundColor(.axTextPrimary)
-                    Text("Export all container configs as JSON or import to recreate")
+                    Text(L10n.Docker.exportAllContainerConfigsAsJsonOrImportToRecreate)
                         .font(.system(size: 12))
                         .foregroundColor(.axTextSecondary)
                 }
@@ -863,7 +863,7 @@ private struct DockerProfilesInline: View {
                 
                 if !exportedJSON.isEmpty {
                     HStack {
-                        Text("Exported JSON").font(.system(size: 13, weight: .semibold)).foregroundColor(.axTextPrimary)
+                        Text(L10n.Docker.exportedJson).font(.system(size: 13, weight: .semibold)).foregroundColor(.axTextPrimary)
                         Spacer()
                         Button {
                             NSPasteboard.general.clearContents()
@@ -961,10 +961,10 @@ private struct DockerAutoUpdateInline: View {
         VStack(alignment: .leading, spacing: AXSpacing.lg) {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Auto-Update Manager")
+                    Text(L10n.Docker.autoUpdateManager)
                         .font(.system(size: 16, weight: .bold))
                         .foregroundColor(.axTextPrimary)
-                    Text("Check and apply container image updates")
+                    Text(L10n.Docker.checkAndApplyContainerImageUpdates)
                         .font(.system(size: 12))
                         .foregroundColor(.axTextSecondary)
                 }
@@ -992,7 +992,7 @@ private struct DockerAutoUpdateInline: View {
                 Image(systemName: "eye.fill")
                     .font(.system(size: 12))
                     .foregroundColor(watchtowerRunning ? .axSuccess : .axTextMuted)
-                Text("Watchtower: ")
+                Text(L10n.Docker.watchtower)
                     .font(.system(size: 12, weight: .medium))
                     .foregroundColor(.axTextPrimary)
                 Text(watchtowerRunning ? L10n.Status.running : "Not Running")
@@ -1044,7 +1044,7 @@ private struct DockerAutoUpdateInline: View {
                                 .cornerRadius(6)
                             }
                         } else {
-                            Text("Up to date")
+                            Text(L10n.Docker.upToDate)
                                 .font(.system(size: 10))
                                 .foregroundColor(.axSuccess)
                         }

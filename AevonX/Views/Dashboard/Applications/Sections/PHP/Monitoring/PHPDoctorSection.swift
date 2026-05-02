@@ -38,7 +38,7 @@ struct PHPDoctorSection: View {
                                 .foregroundColor(scoreColor(r.score))
                         }
                         VStack(alignment: .leading) {
-                            Text("Health Score").font(.system(size: 16, weight: .bold)).foregroundColor(.axTextPrimary)
+                            Text(L10n.Apps.healthScore).font(.system(size: 16, weight: .bold)).foregroundColor(.axTextPrimary)
                             Text(r.score >= 80 ? "PHP is well configured" :
                                  r.score >= 50 ? "Some improvements needed" : "Critical issues found")
                                 .font(AXTypography.caption).foregroundColor(.axTextSecondary)

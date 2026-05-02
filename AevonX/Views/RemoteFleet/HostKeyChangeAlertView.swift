@@ -35,7 +35,7 @@ struct HostKeyChangeAlertView: View {
                 .foregroundStyle(.red)
             
             // Description
-            Text("The server's identity has changed since your last connection. This could indicate a man-in-the-middle attack, or the server may have been reinstalled.")
+            Text(L10n.Fleet.theServersIdentityHasChangedSinceYourLastConnectionThisCouldIndicateAManInTheMiddleAttackOrTheServerMayHaveBeenReinstalled)
                 .font(.body)
                 .multilineTextAlignment(.center)
                 .foregroundStyle(.secondary)

@@ -21,7 +21,7 @@ struct NewFileSheetView: View {
                 .foregroundColor(.axTextPrimary)
             
             VStack(alignment: .leading, spacing: AXSpacing.xs) {
-                Text("File Name")
+                Text(L10n.Files.fileName)
                     .font(AXTypography.caption)
                     .foregroundColor(.axTextSecondary)
                 TextField("filename.txt", text: $fileName)

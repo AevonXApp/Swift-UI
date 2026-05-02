@@ -28,7 +28,7 @@ struct ChangeOwnerSheetView: View {
                 Image(systemName: "person.2")
                     .font(.system(size: 18))
                     .foregroundColor(.axAccentBlue)
-                Text("Change Owner")
+                Text(L10n.Files.changeOwner)
                     .font(AXTypography.headline)
                     .foregroundColor(.axTextPrimary)
             }
@@ -47,7 +47,7 @@ struct ChangeOwnerSheetView: View {
             VStack(alignment: .leading, spacing: AXSpacing.md) {
                 // Owner
                 VStack(alignment: .leading, spacing: AXSpacing.xs) {
-                    Text("Owner")
+                    Text(L10n.Files.owner)
                         .font(AXTypography.caption)
                         .foregroundColor(.axTextSecondary)
                     
@@ -62,7 +62,7 @@ struct ChangeOwnerSheetView: View {
                 
                 // Group
                 VStack(alignment: .leading, spacing: AXSpacing.xs) {
-                    Text("Group")
+                    Text(L10n.Files.group)
                         .font(AXTypography.caption)
                         .foregroundColor(.axTextSecondary)
                     
@@ -141,7 +141,7 @@ struct ChangeOwnerSheetView: View {
                     isCustom.wrappedValue = true
                     selected.wrappedValue = ""
                 } label: {
-                    Text("Custom")
+                    Text(L10n.Files.custom)
                         .font(.system(size: 10, weight: isCustom.wrappedValue ? .bold : .regular))
                         .foregroundColor(isCustom.wrappedValue ? .white : .axTextTertiary)
                         .padding(.horizontal, 8)

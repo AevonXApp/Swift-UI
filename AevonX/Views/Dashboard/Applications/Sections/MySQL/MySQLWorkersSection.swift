@@ -23,7 +23,7 @@ struct MySQLWorkersSection: View {
                         Image(systemName: "cpu")
                             .font(.system(size: 28))
                             .foregroundColor(.axTextMuted)
-                        Text("No active threads detected")
+                        Text(L10n.Apps.noActiveThreadsDetected)
                             .font(AXTypography.caption)
                             .foregroundColor(.axTextMuted)
                     }

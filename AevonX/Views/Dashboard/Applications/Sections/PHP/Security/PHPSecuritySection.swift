@@ -75,7 +75,7 @@ struct PHPSecuritySection: View {
                         }
                     }
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("Security Score").font(.system(size: 16, weight: .bold)).foregroundColor(.axTextPrimary)
+                        Text(L10n.Apps.securityScore).font(.system(size: 16, weight: .bold)).foregroundColor(.axTextPrimary)
                         Text(securityScore >= 80 ? "Well hardened" : securityScore >= 50 ? "Improvements needed" : "Critical issues")
                             .font(.system(size: 12)).foregroundColor(.axTextSecondary)
                     }
@@ -117,7 +117,7 @@ struct PHPSecuritySection: View {
                     VStack(spacing: AXSpacing.md) {
                         VStack(alignment: .leading, spacing: 4) {
                             Text("disable_functions").font(.system(size: 12, weight: .medium, design: .monospaced)).foregroundColor(.axTextPrimary)
-                            Text("Comma-separated list of dangerous functions to disable").font(.system(size: 10)).foregroundColor(.axTextMuted)
+                            Text(L10n.Apps.commaSeparatedListOfDangerousFunctionsToDisable).font(.system(size: 10)).foregroundColor(.axTextMuted)
                             TextField("exec,passthru,shell_exec,system...", text: $disableFunctions)
                                 .textFieldStyle(PlainTextFieldStyle())
                                 .font(.system(size: 11, design: .monospaced))
@@ -130,7 +130,7 @@ struct PHPSecuritySection: View {
 
                         VStack(alignment: .leading, spacing: 4) {
                             Text("open_basedir").font(.system(size: 12, weight: .medium, design: .monospaced)).foregroundColor(.axTextPrimary)
-                            Text("Restrict filesystem access to specified directories").font(.system(size: 10)).foregroundColor(.axTextMuted)
+                            Text(L10n.Apps.restrictFilesystemAccessToSpecifiedDirectories).font(.system(size: 10)).foregroundColor(.axTextMuted)
                             TextField("/var/www:/tmp:/usr/share/php", text: $openBasedir)
                                 .textFieldStyle(PlainTextFieldStyle())
                                 .font(.system(size: 11, design: .monospaced))
@@ -172,7 +172,7 @@ struct PHPSecuritySection: View {
                     HStack(spacing: AXSpacing.xs) {
                         if isSaving { ProgressView().scaleEffect(0.65).frame(width: 14, height: 14) }
                         else { Image(systemName: "shield.checkered").font(.system(size: 12, weight: .semibold)) }
-                        Text("Apply Security Hardening").font(.system(size: 12, weight: .semibold))
+                        Text(L10n.Apps.applySecurityHardening).font(.system(size: 12, weight: .semibold))
                     }
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)

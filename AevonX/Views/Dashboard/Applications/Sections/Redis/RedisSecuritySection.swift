@@ -74,7 +74,7 @@ struct RedisSecuritySection: View {
             if !sslCerts.isEmpty {
                 Divider().padding(.horizontal, AXSpacing.lg).padding(.top, AXSpacing.sm)
                 VStack(alignment: .leading, spacing: AXSpacing.sm) {
-                    Text("Certificates").font(.system(size: 11, weight: .semibold)).foregroundColor(.axTextMuted).padding(.horizontal, AXSpacing.lg)
+                    Text(L10n.Apps.certificates).font(.system(size: 11, weight: .semibold)).foregroundColor(.axTextMuted).padding(.horizontal, AXSpacing.lg)
                     ForEach(sslCerts.indices, id: \.self) { i in certRow(sslCerts[i]) }
                 }.padding(.bottom, AXSpacing.md)
             }
@@ -86,7 +86,7 @@ struct RedisSecuritySection: View {
             if existingRateLimits.isEmpty {
                 HStack(spacing: AXSpacing.sm) {
                     Image(systemName: "info.circle.fill").font(.system(size: 12)).foregroundColor(.axAccentBlue)
-                    Text("No ACL rules configured — default user only").font(.system(size: 12)).foregroundColor(.axTextSecondary)
+                    Text(L10n.Apps.noAclRulesConfiguredDefaultUserOnly).font(.system(size: 12)).foregroundColor(.axTextSecondary)
                 }.padding(AXSpacing.lg)
             } else {
                 VStack(alignment: .leading, spacing: AXSpacing.xs) {

@@ -26,7 +26,7 @@ struct HeadersSection: View {
                                 } else {
                                     Image(systemName: "checkmark.shield")
                                 }
-                                Text("Audit")
+                                Text(L10n.Websites.audit)
                             }
                             .font(AXTypography.subheadline).fontWeight(.medium)
                         }
@@ -36,7 +36,7 @@ struct HeadersSection: View {
                         Button(action: { Task { await viewModel.applyRecommendedHeaders() } }) {
                             HStack(spacing: 4) {
                                 Image(systemName: "sparkles")
-                                Text("Apply Recommended")
+                                Text(L10n.Websites.applyRecommended)
                             }
                             .font(AXTypography.subheadline).fontWeight(.semibold)
                         }

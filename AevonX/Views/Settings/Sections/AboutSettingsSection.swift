@@ -502,7 +502,7 @@ private struct AboutCopyrightFooter: View {
                 .font(.system(size: 11, weight: .regular))
                 .foregroundColor(.axTextMuted)
 
-            Text("Made with passion for server engineers worldwide")
+            Text(L10n.Settings.madeWithPassionForServerEngineersWorldwide)
                 .font(.system(size: 10, weight: .medium))
                 .foregroundColor(.axTextMuted.opacity(0.6))
                 .tracking(0.3)

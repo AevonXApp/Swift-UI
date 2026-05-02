@@ -40,7 +40,7 @@ struct DockerComposeScaleView: View {
             Divider()
             
             if isLoading {
-                VStack { ProgressView(); Text("Loading services...").font(AXTypography.caption).foregroundColor(.axTextMuted) }
+                VStack { ProgressView(); Text(L10n.Docker.loadingServices).font(AXTypography.caption).foregroundColor(.axTextMuted) }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 ScrollView {
@@ -133,7 +133,7 @@ struct DockerComposeScaleView: View {
                     HStack(spacing: 4) {
                         if isApplying { ProgressView().controlSize(.small) }
                         Image(systemName: "arrow.up.left.and.arrow.down.right").font(.system(size: 10))
-                        Text("Apply Scale")
+                        Text(L10n.Docker.applyScale)
                     }
                 }
                 .buttonStyle(AXPrimaryButtonStyle())

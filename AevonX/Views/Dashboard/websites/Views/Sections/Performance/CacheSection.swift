@@ -25,7 +25,7 @@ struct CacheSection: View {
                             } else {
                                 Image(systemName: "trash")
                             }
-                            Text("Purge All")
+                            Text(L10n.Websites.purgeAll)
                         }
                         .font(AXTypography.subheadline).fontWeight(.medium)
                     }
@@ -104,7 +104,7 @@ struct CacheSection: View {
             Button(action: {
                 Task { await viewModel.purgeSpecificCache(status.type) }
             }) {
-                Text("Purge")
+                Text(L10n.Websites.purge)
                     .font(AXTypography.caption)
                     .frame(maxWidth: .infinity)
             }

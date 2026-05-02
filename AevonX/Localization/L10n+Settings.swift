@@ -27,6 +27,7 @@ extension L10n {
         static let networkPort = s("settings.network.port", "Port")
         static let securityKeychainInfo = s("settings.security.keychainInfo", "Password is stored securely in your Keychain")
         static let securityPasswordSaved = s("settings.security.passwordSaved", "Password saved successfully")
+        static let madeWithPassionForServerEngineersWorldwide = s("settings.madeWithPassionForServerEngineersWorldwide", "Made with passion for server engineers worldwide")
     }
 
     // MARK: - Update (Settings.strings)

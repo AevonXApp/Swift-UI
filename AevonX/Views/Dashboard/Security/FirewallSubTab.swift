@@ -235,7 +235,7 @@ struct FirewallSubTab: View {
                         .font(.system(size: 16))
                         .foregroundColor(firewallEnabled ? .axAccentBlue : .axTextMuted)
 
-                    Text("Firewall")
+                    Text(L10n.Security.firewall)
                         .font(AXTypography.headline)
                         .foregroundColor(.axTextPrimary)
 
@@ -265,7 +265,7 @@ struct FirewallSubTab: View {
                         .font(.system(size: 16))
                         .foregroundColor(blockICMP ? .axWarning : .axTextMuted)
 
-                    Text("Block ICMP")
+                    Text(L10n.Security.blockIcmp)
                         .font(AXTypography.headline)
                         .foregroundColor(.axTextSecondary)
 
@@ -386,11 +386,11 @@ struct FirewallSubTab: View {
                     Image(systemName: "square.grid.2x2.fill")
                         .font(.system(size: 14))
                         .foregroundColor(.axAccentPurple)
-                    Text("Quick Templates")
+                    Text(L10n.Security.quickTemplates)
                         .font(AXTypography.title3)
                         .foregroundColor(.axTextPrimary)
                     Spacer()
-                    Text("One-click rule groups")
+                    Text(L10n.Security.oneClickRuleGroups)
                         .font(AXTypography.caption)
                         .foregroundColor(.axTextMuted)
                 }
@@ -444,7 +444,7 @@ struct FirewallSubTab: View {
                 if isApplyingTemplate {
                     HStack(spacing: AXSpacing.sm) {
                         ProgressView().scaleEffect(0.6)
-                        Text("Applying rules…")
+                        Text(L10n.Security.applyingRules)
                             .font(AXTypography.caption)
                             .foregroundColor(.axTextMuted)
                     }
@@ -478,7 +478,7 @@ struct FirewallSubTab: View {
                 HStack(spacing: AXSpacing.xs) {
                     Image(systemName: "plus")
                         .font(.system(size: 12, weight: .bold))
-                    Text("Add Port Rule")
+                    Text(L10n.Security.addPortRule)
                         .font(AXTypography.headline)
                 }
                 .padding(.horizontal, AXSpacing.lg)
@@ -501,7 +501,7 @@ struct FirewallSubTab: View {
                 HStack(spacing: AXSpacing.xs) {
                     Image(systemName: "square.grid.2x2")
                         .font(.system(size: 11))
-                    Text("Templates")
+                    Text(L10n.Security.templates)
                         .font(AXTypography.headline)
                 }
                 .padding(.horizontal, AXSpacing.lg)
@@ -619,7 +619,7 @@ struct FirewallSubTab: View {
                     .foregroundColor(.axAccentBlue)
                     .frame(maxWidth: .infinity, alignment: .leading)
 
-                Text("LISTEN")
+                Text(L10n.Literal.listen)
                     .font(AXTypography.caption)
                     .foregroundColor(.axAccentGreen)
                     .padding(.horizontal, AXSpacing.sm)
@@ -664,7 +664,7 @@ struct FirewallSubTab: View {
                 Circle()
                     .fill(Color.axTextMuted)
                     .frame(width: 6, height: 6)
-                Text("No Rule")
+                Text(L10n.Security.noRule)
                     .font(AXTypography.caption2)
                     .foregroundColor(.axTextMuted)
             }
@@ -691,7 +691,7 @@ struct FirewallSubTab: View {
                         HStack(spacing: AXSpacing.xxs) {
                             Image(systemName: "hand.raised.fill")
                                 .font(.system(size: 9))
-                            Text("Block")
+                            Text(L10n.Security.block)
                                 .font(.system(size: 10, weight: .medium))
                         }
                         .foregroundColor(.axError)
@@ -721,7 +721,7 @@ struct FirewallSubTab: View {
                         HStack(spacing: AXSpacing.xxs) {
                             Image(systemName: "checkmark.circle.fill")
                                 .font(.system(size: 9))
-                            Text("Allow")
+                            Text(L10n.Security.allow)
                                 .font(.system(size: 10, weight: .medium))
                         }
                         .foregroundColor(.axAccentGreen)
@@ -762,7 +762,7 @@ struct FirewallSubTab: View {
                     HStack(spacing: AXSpacing.xxs) {
                         Image(systemName: "checkmark.circle")
                             .font(.system(size: 9))
-                        Text("Allow")
+                        Text(L10n.Security.allow)
                             .font(.system(size: 10, weight: .medium))
                     }
                     .foregroundColor(.axAccentGreen)
@@ -791,7 +791,7 @@ struct FirewallSubTab: View {
                     HStack(spacing: AXSpacing.xxs) {
                         Image(systemName: "hand.raised")
                             .font(.system(size: 9))
-                        Text("Block")
+                        Text(L10n.Security.block)
                             .font(.system(size: 10, weight: .medium))
                     }
                     .foregroundColor(.axError)

@@ -87,7 +87,7 @@ struct DockerProfileExportView: View {
     private var exportView: some View {
         AXCard {
             VStack(alignment: .leading, spacing: 10) {
-                Text("Export all container configurations as a portable JSON profile.")
+                Text(L10n.Docker.exportAllContainerConfigurationsAsAPortableJsonProfile)
                     .font(AXTypography.caption)
                     .foregroundColor(.axTextSecondary)
                 
@@ -115,7 +115,7 @@ struct DockerProfileExportView: View {
         if !exportedJSON.isEmpty {
             VStack(alignment: .leading, spacing: 6) {
                 HStack {
-                    Text("Exported Profile")
+                    Text(L10n.Docker.exportedProfile)
                         .font(AXTypography.headline)
                         .foregroundColor(.axTextPrimary)
                     Spacer()
@@ -157,7 +157,7 @@ struct DockerProfileExportView: View {
     private var importView: some View {
         AXCard {
             VStack(alignment: .leading, spacing: 10) {
-                Text("Paste an exported JSON profile to recreate containers.")
+                Text(L10n.Docker.pasteAnExportedJsonProfileToRecreateContainers)
                     .font(AXTypography.caption)
                     .foregroundColor(.axTextSecondary)
                 

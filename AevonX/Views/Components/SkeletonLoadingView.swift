@@ -157,7 +157,7 @@ struct SkeletonStatsGrid: View {
 
 #Preview {
     VStack(spacing: 24) {
-        Text("Skeleton Loading States")
+        Text(L10n.Label.skeletonLoadingStates)
             .font(.headline)
             .foregroundColor(.axTextPrimary)
         

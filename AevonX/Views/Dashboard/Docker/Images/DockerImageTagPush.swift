@@ -29,7 +29,7 @@ struct DockerImageTagPush: View {
                 HStack(spacing: 6) {
                     Image(systemName: "tag.fill")
                         .foregroundColor(.purple)
-                    Text("Tag & Push Image")
+                    Text(L10n.Docker.tagPushImage)
                         .font(AXTypography.headline)
                         .foregroundColor(.axTextPrimary)
                 }
@@ -68,12 +68,12 @@ struct DockerImageTagPush: View {
                     
                     // Tag section
                     VStack(alignment: .leading, spacing: AXSpacing.md) {
-                        Text("Tag Image")
+                        Text(L10n.Docker.tagImage)
                             .font(.system(size: 13, weight: .bold))
                             .foregroundColor(.axTextPrimary)
                         
                         VStack(alignment: .leading, spacing: AXSpacing.xs) {
-                            Text("Registry (optional)")
+                            Text(L10n.Docker.registryOptional)
                                 .font(.system(size: 11, weight: .semibold))
                                 .foregroundColor(.axTextSecondary)
                             TextField("e.g. docker.io/myuser or ghcr.io/myorg", text: $registry)
@@ -82,7 +82,7 @@ struct DockerImageTagPush: View {
                         }
                         
                         VStack(alignment: .leading, spacing: AXSpacing.xs) {
-                            Text("New Tag")
+                            Text(L10n.Docker.newTag)
                                 .font(.system(size: 11, weight: .semibold))
                                 .foregroundColor(.axTextSecondary)
                             TextField("e.g. myimage:v2.0", text: $newTag)
@@ -124,7 +124,7 @@ struct DockerImageTagPush: View {
                     
                     if !output.isEmpty {
                         VStack(alignment: .leading, spacing: 4) {
-                            Text("Output")
+                            Text(L10n.Docker.output)
                                 .font(.system(size: 10, weight: .bold))
                                 .foregroundColor(.axTextMuted)
                             Text(output)

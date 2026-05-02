@@ -28,7 +28,7 @@ struct DockerContainerDiff: View {
                 HStack(spacing: 6) {
                     Image(systemName: "doc.badge.plus")
                         .foregroundColor(.orange)
-                    Text("Container Filesystem Changes")
+                    Text(L10n.Docker.containerFilesystemChanges)
                         .font(AXTypography.headline)
                         .foregroundColor(.axTextPrimary)
                 }
@@ -71,10 +71,10 @@ struct DockerContainerDiff: View {
                     Image(systemName: "checkmark.circle")
                         .font(.system(size: 40))
                         .foregroundColor(.axSuccess)
-                    Text("No filesystem changes")
+                    Text(L10n.Docker.noFilesystemChanges)
                         .font(AXTypography.headline)
                         .foregroundColor(.axTextSecondary)
-                    Text("Container matches its base image")
+                    Text(L10n.Docker.containerMatchesItsBaseImage)
                         .font(AXTypography.caption)
                         .foregroundColor(.axTextMuted)
                 }

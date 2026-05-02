@@ -106,7 +106,7 @@ struct EnvVariablesTab: View {
             if viewModel.isLoading {
                 VStack(spacing: AXSpacing.md) {
                     ProgressView()
-                    Text("Loading environment variables...")
+                    Text(L10n.Websites.loadingEnvironmentVariables)
                         .font(AXTypography.caption)
                         .foregroundColor(.axTextTertiary)
                 }
@@ -177,7 +177,7 @@ struct EnvVariablesTab: View {
                 HStack(spacing: 6) {
                     Image(systemName: "plus")
                         .font(AXTypography.footnote).fontWeight(.bold)
-                    Text("Add Variable")
+                    Text(L10n.Websites.addVariable)
                         .font(AXTypography.subheadline).fontWeight(.semibold)
                 }
                 .foregroundColor(.axAccentBlue)
@@ -197,10 +197,10 @@ struct EnvVariablesTab: View {
             Image(systemName: "key")
                 .font(AXTypography.largeTitle)
                 .foregroundColor(.axTextMuted)
-            Text("No Environment Variables")
+            Text(L10n.Websites.noEnvironmentVariables)
                 .font(AXTypography.headline)
                 .foregroundColor(.axTextPrimary)
-            Text("No .env file found. Add variables to create one.")
+            Text(L10n.Websites.noEnvFileFoundAddVariablesToCreateOne)
                 .font(AXTypography.subheadline)
                 .foregroundColor(.axTextSecondary)
         }
@@ -220,13 +220,13 @@ struct EnvVariablesTab: View {
                     .foregroundColor(.axTextTertiary)
                     .frame(width: 200, alignment: .leading)
                 
-                Text("VALUE")
+                Text(L10n.Label.value)
                     .font(AXTypography.monoXs).fontWeight(.bold)
                     .foregroundColor(.axTextTertiary)
                 
                 Spacer()
                 
-                Text("ACTIONS")
+                Text(L10n.Label.actions)
                     .font(AXTypography.monoXs).fontWeight(.bold)
                     .foregroundColor(.axTextTertiary)
                     .frame(width: 60)
@@ -304,7 +304,7 @@ struct EnvVariablesTab: View {
     
     private var addForm: some View {
         VStack(alignment: .leading, spacing: AXSpacing.md) {
-            Text("Add Variable")
+            Text(L10n.Websites.addVariable)
                 .font(AXTypography.headline).fontWeight(.bold)
                 .foregroundColor(.axTextPrimary)
             
@@ -319,7 +319,7 @@ struct EnvVariablesTab: View {
                 }
                 
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Value")
+                    Text(L10n.Websites.value)
                         .font(AXTypography.caption)
                         .foregroundColor(.axTextTertiary)
                     TextField("postgres://...", text: $viewModel.newValue)

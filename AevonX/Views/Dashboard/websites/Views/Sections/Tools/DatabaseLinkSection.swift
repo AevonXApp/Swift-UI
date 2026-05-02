@@ -38,7 +38,7 @@ struct DatabaseLinkSection: View {
 
                         HStack(spacing: AXSpacing.md) {
                             VStack(alignment: .leading, spacing: 4) {
-                                Text("Database Name")
+                                Text(L10n.Websites.databaseName)
                                     .font(AXTypography.footnote).foregroundColor(.axTextSecondary)
                                 TextField("database_name", text: $dbName)
                                     .textFieldStyle(.roundedBorder)
@@ -76,13 +76,13 @@ struct DatabaseLinkSection: View {
                                         Text(stats.sizeFormatted)
                                             .font(AXTypography.title2).fontWeight(.bold)
                                             .foregroundColor(.axAccentBlue)
-                                        Text("Size").font(AXTypography.footnote).foregroundColor(.axTextTertiary)
+                                        Text(L10n.Websites.size).font(AXTypography.footnote).foregroundColor(.axTextTertiary)
                                     }
                                     VStack(spacing: 4) {
                                         Text("\(stats.tableCount)")
                                             .font(AXTypography.title2).fontWeight(.bold)
                                             .foregroundColor(.axSuccess)
-                                        Text("Tables").font(AXTypography.footnote).foregroundColor(.axTextTertiary)
+                                        Text(L10n.Websites.tables).font(AXTypography.footnote).foregroundColor(.axTextTertiary)
                                     }
                                 }
 

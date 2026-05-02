@@ -44,14 +44,14 @@ struct ApacheSecuritySection: View {
                     ), hint: "HTTP Strict Transport Security")
 
                     HStack(spacing: AXSpacing.lg) {
-                        Text("X-Frame-Options")
+                        Text(L10n.Apps.xFrameOptions)
                             .font(.system(size: 12, weight: .medium, design: .monospaced))
                             .foregroundColor(.axTextPrimary)
                             .frame(width: 240, alignment: .trailing)
                         Picker("", selection: $xFrameOptions) {
                             Text("Off").tag("")
-                            Text("DENY").tag("DENY")
-                            Text("SAMEORIGIN").tag("SAMEORIGIN")
+                            Text(L10n.Literal.deny).tag(L10n.Literal.deny)
+                            Text(L10n.Literal.sameOrigin).tag(L10n.Literal.sameOrigin)
                         }
                         .pickerStyle(.segmented)
                         .frame(width: 200)

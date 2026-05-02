@@ -51,7 +51,7 @@ struct DockerSecurityTab: View {
             if isLoading {
                 VStack(spacing: AXSpacing.lg) {
                     ProgressView().scaleEffect(1.2)
-                    Text("Loading containers...")
+                    Text(L10n.Docker.loadingContainers)
                         .font(.system(size: 14))
                         .foregroundColor(.axTextSecondary)
                 }
@@ -65,7 +65,7 @@ struct DockerSecurityTab: View {
                 
                 // Scan All button
                 HStack {
-                    Text("Container Security")
+                    Text(L10n.Docker.containerSecurity)
                         .font(.system(size: 16, weight: .bold))
                         .foregroundColor(.axTextPrimary)
                     
@@ -81,7 +81,7 @@ struct DockerSecurityTab: View {
                         HStack(spacing: 6) {
                             Image(systemName: "shield.lefthalf.filled")
                                 .font(.system(size: 11, weight: .semibold))
-                            Text("Scan All")
+                            Text(L10n.Docker.scanAll)
                                 .font(.system(size: 11, weight: .medium))
                         }
                         .foregroundColor(.axAccentBlue)
@@ -128,7 +128,7 @@ struct DockerSecurityTab: View {
             }
             
             VStack(alignment: .leading, spacing: 4) {
-                Text("Overall Security Score")
+                Text(L10n.Docker.overallSecurityScore)
                     .font(.system(size: 15, weight: .bold))
                     .foregroundColor(.axTextPrimary)
                 Text("\(auditResults.count) of \(containers.count) containers scanned")
@@ -229,7 +229,7 @@ struct DockerSecurityTab: View {
                     Button {
                         scanContainer(container)
                     } label: {
-                        Text("Scan")
+                        Text(L10n.Docker.scan)
                             .font(.system(size: 10, weight: .semibold))
                             .foregroundColor(.axAccentBlue)
                             .padding(.horizontal, 10)
@@ -293,7 +293,7 @@ struct DockerSecurityTab: View {
         let infoCount = result.findings.filter { $0.0.lowercased() == "info" || $0.0.lowercased() == "low" }.count
         
         return HStack(spacing: AXSpacing.md) {
-            Text("Security Findings")
+            Text(L10n.Docker.securityFindings)
                 .font(.system(size: 13, weight: .bold))
                 .foregroundColor(.axTextPrimary)
             
@@ -324,7 +324,7 @@ struct DockerSecurityTab: View {
                         }
                     }
                     VStack(alignment: .leading, spacing: 1) {
-                        Text("Scan Image Vulnerabilities")
+                        Text(L10n.Docker.scanImageVulnerabilities)
                             .font(.system(size: 12, weight: .semibold))
                             .foregroundColor(.purple)
                         Text("Deep scan for known CVEs in \(container.image)")
@@ -357,7 +357,7 @@ struct DockerSecurityTab: View {
                 Image(systemName: "doc.text.fill")
                     .font(.system(size: 10, weight: .semibold))
                     .foregroundColor(.purple)
-                Text("Vulnerability Report")
+                Text(L10n.Docker.vulnerabilityReport)
                     .font(.system(size: 11, weight: .bold))
                     .foregroundColor(.axTextPrimary)
                 Spacer()

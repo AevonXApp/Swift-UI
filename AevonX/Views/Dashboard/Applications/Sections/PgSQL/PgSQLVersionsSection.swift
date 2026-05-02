@@ -54,7 +54,7 @@ struct PgSQLVersionsSection: View {
                         if filteredInstalled.isEmpty {
                             HStack {
                                 Image(systemName: "exclamationmark.triangle").foregroundColor(.axWarning)
-                                Text("No installed version detected")
+                                Text(L10n.Apps.noInstalledVersionDetected)
                                     .font(AXTypography.caption).foregroundColor(.axTextMuted)
                             }.padding()
                         } else {
@@ -67,7 +67,7 @@ struct PgSQLVersionsSection: View {
                         if filteredAvailable.isEmpty {
                             HStack {
                                 Image(systemName: "checkmark.seal").foregroundColor(.axTextMuted)
-                                Text("No additional versions available")
+                                Text(L10n.Apps.noAdditionalVersionsAvailable)
                                     .font(AXTypography.caption).foregroundColor(.axTextMuted)
                             }.padding()
                         } else {
@@ -89,7 +89,7 @@ struct PgSQLVersionsSection: View {
                         .font(.system(size: 14, weight: .semibold, design: .monospaced))
                         .foregroundColor(.axTextPrimary)
                     if version.isActive {
-                        Text("ACTIVE").font(.system(size: 8, weight: .heavy)).foregroundColor(.axSuccess)
+                        Text(L10n.Label.active).font(.system(size: 8, weight: .heavy)).foregroundColor(.axSuccess)
                             .padding(.horizontal, 6).padding(.vertical, 2)
                             .background(Color.axSuccess.opacity(0.1)).cornerRadius(3)
                     }
@@ -104,7 +104,7 @@ struct PgSQLVersionsSection: View {
                     HStack(spacing: 4) {
                         if actionInProgress == "switch_\(version.version)" { ProgressView().scaleEffect(0.5) }
                         else { Image(systemName: "arrow.triangle.swap").font(.system(size: 10)) }
-                        Text("Switch").font(.system(size: 11, weight: .medium))
+                        Text(L10n.Apps.`switch`).font(.system(size: 11, weight: .medium))
                     }
                     .foregroundColor(.axAccentBlue).padding(.horizontal, AXSpacing.sm).padding(.vertical, 4)
                     .background(Color.axAccentBlue.opacity(0.1)).cornerRadius(AXCornerRadius.sm)

@@ -73,10 +73,10 @@ struct URLRewriteSection: View {
     private var sectionHeader: some View {
         HStack {
             VStack(alignment: .leading, spacing: 4) {
-                Text("URL Rewrite Rules")
+                Text(L10n.Websites.urlRewriteRules)
                     .font(AXTypography.title2)
                     .foregroundColor(.axTextPrimary)
-                Text("Manage redirects and URL rewriting for your website")
+                Text(L10n.Websites.manageRedirectsAndUrlRewritingForYourWebsite)
                     .font(AXTypography.caption)
                     .foregroundColor(.axTextTertiary)
             }
@@ -140,7 +140,7 @@ struct URLRewriteSection: View {
             VStack(spacing: AXSpacing.md) {
                 ProgressView()
                     .scaleEffect(1.2)
-                Text("Loading rewrite rules...")
+                Text(L10n.Websites.loadingRewriteRules)
                     .font(AXTypography.body)
                     .foregroundColor(.axTextSecondary)
             }
@@ -158,11 +158,11 @@ struct URLRewriteSection: View {
                 .foregroundColor(.axTextMuted)
 
             VStack(spacing: AXSpacing.xs) {
-                Text("No Rewrite Rules")
+                Text(L10n.Websites.noRewriteRules)
                     .font(AXTypography.title2)
                     .foregroundColor(.axTextPrimary)
 
-                Text("Add your first rewrite rule or use a template to get started")
+                Text(L10n.Websites.addYourFirstRewriteRuleOrUseATemplateToGetStarted)
                     .font(AXTypography.body)
                     .foregroundColor(.axTextSecondary)
                     .multilineTextAlignment(.center)
@@ -213,11 +213,11 @@ struct URLRewriteSection: View {
 
     private var rewriteTesterView: some View {
         VStack(alignment: .leading, spacing: AXSpacing.md) {
-            Text("Test Rewrite Rules")
+            Text(L10n.Websites.testRewriteRules)
                 .font(AXTypography.headline)
                 .foregroundColor(.axTextPrimary)
 
-            Text("Enter a URL to test how it will be rewritten")
+            Text(L10n.Websites.enterAUrlToTestHowItWillBeRewritten)
                 .font(AXTypography.caption)
                 .foregroundColor(.axTextSecondary)
 
@@ -236,7 +236,7 @@ struct URLRewriteSection: View {
                         } else {
                             Image(systemName: "play.circle.fill")
                         }
-                        Text("Test")
+                        Text(L10n.Websites.test)
                     }
                 }
                 .buttonStyle(AXPrimaryButtonStyle())
@@ -415,7 +415,7 @@ struct URLRewriteTestResult: View {
             if result.wasRewritten {
                 VStack(alignment: .leading, spacing: 4) {
                     HStack {
-                        Text("Original:")
+                        Text(L10n.Websites.original)
                             .font(AXTypography.caption)
                             .foregroundColor(.axTextSecondary)
                         Text(result.inputURL)
@@ -424,7 +424,7 @@ struct URLRewriteTestResult: View {
                     }
 
                     HStack {
-                        Text("Rewritten:")
+                        Text(L10n.Websites.rewritten)
                             .font(AXTypography.caption)
                             .foregroundColor(.axTextSecondary)
                         Text(result.finalURL)

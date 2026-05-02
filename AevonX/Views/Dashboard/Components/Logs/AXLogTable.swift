@@ -132,7 +132,7 @@ struct AXLogTable: View {
                 Button(action: onAnalyze) {
                     HStack(spacing: 4) {
                         Image(systemName: "brain")
-                        Text("AI Analysis")
+                        Text(L10n.Dashboard.aiAnalysis)
                     }
                     .font(.system(size: 11, weight: .semibold))
                 }
@@ -229,7 +229,7 @@ struct AXLogTable: View {
                     .frame(width: 35, alignment: .center)
 
                 // Level badge column (always present)
-                Text("LEVEL")
+                Text(L10n.Label.level)
                     .frame(width: 55, alignment: .center)
                     .overlay(alignment: .leading) { Color.axBorder.opacity(0.15).frame(width: 1) }
 
@@ -260,7 +260,7 @@ struct AXLogTable: View {
             if isLoading {
                 HStack {
                     ProgressView().scaleEffect(0.8)
-                    Text("Loading logs...").font(.system(size: 12)).foregroundColor(.axTextMuted)
+                    Text(L10n.Dashboard.loadingLogs).font(.system(size: 12)).foregroundColor(.axTextMuted)
                 }
                 .padding(AXSpacing.xl).frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if filteredRows.isEmpty {

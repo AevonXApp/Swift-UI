@@ -23,8 +23,8 @@ struct ApacheLogsSection: View {
             // Toolbar
             HStack(spacing: AXSpacing.md) {
                 Picker("Log Type", selection: $selectedLogType) {
-                    Text("Access Log").tag("access")
-                    Text("Error Log").tag("error")
+                    Text(L10n.Apps.accessLog).tag("access")
+                    Text(L10n.Apps.errorLog).tag("error")
                 }
                 .pickerStyle(.segmented)
                 .frame(width: 240)
@@ -32,7 +32,7 @@ struct ApacheLogsSection: View {
                 Spacer()
 
                 HStack(spacing: 4) {
-                    Text("Lines:")
+                    Text(L10n.Apps.lines)
                         .font(.system(size: 11))
                         .foregroundColor(.axTextMuted)
                     Picker("", selection: $logLines) {
@@ -62,7 +62,7 @@ struct ApacheLogsSection: View {
                     Image(systemName: "text.alignleft")
                         .font(.system(size: 28))
                         .foregroundColor(.axTextMuted)
-                    Text("No log entries found")
+                    Text(L10n.Apps.noLogEntriesFound)
                         .font(AXTypography.caption)
                         .foregroundColor(.axTextMuted)
                 }

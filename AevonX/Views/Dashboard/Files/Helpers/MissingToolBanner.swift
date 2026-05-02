@@ -52,7 +52,7 @@ struct MissingToolBanner: View {
                             .progressViewStyle(CircularProgressViewStyle(tint: .white))
                             .scaleEffect(0.5)
                             .frame(width: 12, height: 12)
-                        Text("Installing...")
+                        Text(L10n.Files.installing)
                             .font(.system(size: 11, weight: .semibold))
                     } else {
                         Image(systemName: "arrow.down.circle.fill")

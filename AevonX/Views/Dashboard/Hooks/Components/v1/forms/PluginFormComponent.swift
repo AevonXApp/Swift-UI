@@ -387,7 +387,7 @@ public struct PluginFormComponent: View {
                 Image(systemName: "terminal.fill")
                     .font(.system(size: 9))
                     .foregroundColor(.axSuccess)
-                Text("Output")
+                Text(L10n.PluginsUI.output)
                     .font(.system(size: 10, weight: .semibold))
                     .foregroundColor(.axSuccess)
             }
@@ -449,7 +449,7 @@ public struct PluginFormComponent: View {
             } else {
                 HStack(spacing: AXSpacing.xs) {
                     Image(systemName: "exclamationmark.circle").foregroundColor(.axWarning)
-                    Text("No action configured for this form").font(.system(size: 12)).foregroundColor(.axTextSecondary)
+                    Text(L10n.PluginsUI.noActionConfiguredForThisForm).font(.system(size: 12)).foregroundColor(.axTextSecondary)
                 }
                 .frame(maxWidth: .infinity).padding(.vertical, 10)
                 .background(Color.axWarning.opacity(0.08)).cornerRadius(AXCornerRadius.md)

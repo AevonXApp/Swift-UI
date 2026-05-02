@@ -18,11 +18,11 @@ extension CerberusDomainDetailView {
                 HStack(spacing: AXSpacing.sm) {
                     Image(systemName: "info.circle.fill").foregroundStyle(Color.axAccentBlue)
                     VStack(alignment: .leading, spacing: AXSpacing.xxs) {
-                        Text("Manual IP Blocking")
+                        Text(L10n.PluginsUI.manualIpBlocking)
                             .font(AXTypography.caption)
                             .fontWeight(.semibold)
                             .foregroundStyle(Color.axTextPrimary)
-                        Text("IPs listed here are permanently banned. Requests auto-blocked by WAF rules are logged in the Attacks tab.")
+                        Text(L10n.PluginsUI.ipsListedHereArePermanentlyBannedRequestsAutoBlockedByWafRulesAreLoggedInTheAttacksTab)
                             .font(AXTypography.caption2)
                             .foregroundStyle(Color.axTextSecondary)
                     }
@@ -75,7 +75,7 @@ private struct DomainBlockIPSection: View {
             }
             VStack(alignment: .leading, spacing: AXSpacing.xxxs) {
                 HStack(spacing: AXSpacing.sm) {
-                    Text("Blocked IPs — Manual Rules")
+                    Text(L10n.PluginsUI.blockedIpsManualRules)
                         .font(AXTypography.subheadline)
                         .fontWeight(.semibold)
                         .foregroundStyle(Color.axTextPrimary)
@@ -86,7 +86,7 @@ private struct DomainBlockIPSection: View {
                         style: .soft
                     )
                 }
-                Text("Permanently banned IPs — added manually by you")
+                Text(L10n.PluginsUI.permanentlyBannedIpsAddedManuallyByYou)
                     .font(AXTypography.caption2)
                     .foregroundStyle(Color.axTextMuted)
             }

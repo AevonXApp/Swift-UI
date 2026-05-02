@@ -21,7 +21,7 @@ struct DockerComposeTab: View {
         VStack(spacing: AXSpacing.md) {
             // Header
             HStack {
-                Text("Docker Compose Projects")
+                Text(L10n.Docker.dockerComposeProjects)
                     .font(AXTypography.title3)
                     .foregroundColor(.axTextPrimary)
                 

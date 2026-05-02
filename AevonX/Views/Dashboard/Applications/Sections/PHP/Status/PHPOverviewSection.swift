@@ -60,7 +60,7 @@ struct PHPOverviewSection: View {
 
             VStack(alignment: .leading, spacing: AXSpacing.xs) {
                 HStack(spacing: AXSpacing.sm) {
-                    Text("PHP-FPM Service")
+                    Text(L10n.Apps.phpFpmService)
                         .font(.system(size: 18, weight: .bold))
                         .foregroundColor(.axTextPrimary)
 

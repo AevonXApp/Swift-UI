@@ -88,7 +88,7 @@ struct SecurityOverviewSection: View {
                 )
 
                 VStack(spacing: AXSpacing.xxs) {
-                    Text("Security Score")
+                    Text(L10n.Security.securityScore)
                         .font(AXTypography.headline)
                         .foregroundColor(.axTextPrimary)
 
@@ -120,7 +120,7 @@ struct SecurityOverviewSection: View {
     private var protectionStatusGrid: some View {
         AXCard {
             VStack(alignment: .leading, spacing: AXSpacing.md) {
-                Text("Protection Status")
+                Text(L10n.Security.protectionStatus)
                     .font(AXTypography.headline)
                     .foregroundColor(.axTextPrimary)
 

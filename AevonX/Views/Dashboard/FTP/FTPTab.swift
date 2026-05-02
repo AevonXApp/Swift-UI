@@ -118,7 +118,7 @@ struct FTPTab: View {
                     Image(systemName: "externaldrive.connected.to.line.below")
                         .font(.system(size: 18, weight: .semibold))
                         .foregroundColor(.axAccentBlue)
-                    Text("FTP Manager")
+                    Text(L10n.FTP.ftpManager)
                         .font(.system(size: 18, weight: .bold))
                         .foregroundColor(.axTextPrimary)
                 }
@@ -161,7 +161,7 @@ struct FTPTab: View {
                         HStack(spacing: AXSpacing.xs) {
                             Image(systemName: "gearshape")
                                 .font(.system(size: 11))
-                            Text("Settings")
+                            Text(L10n.FTP.settings)
                                 .font(.system(size: 12, weight: .medium))
                         }
                         .foregroundColor(.axTextSecondary)
@@ -179,7 +179,7 @@ struct FTPTab: View {
                             HStack(spacing: AXSpacing.xs) {
                                 Image(systemName: "plus")
                                     .font(.system(size: 12, weight: .bold))
-                                Text("Add FTP")
+                                Text(L10n.FTP.addFtp)
                                     .font(.system(size: 12, weight: .semibold))
                             }
                             .foregroundColor(.white)
@@ -225,7 +225,7 @@ struct FTPTab: View {
                 Image(systemName: "info.circle.fill")
                     .font(.system(size: 13))
                     .foregroundColor(.axAccentBlue)
-                Text("FTP address:")
+                Text(L10n.FTP.ftpAddress)
                     .font(.system(size: 12))
                     .foregroundColor(.axTextSecondary)
                 Text(vm.serverInfo.ftpAddress)
@@ -250,7 +250,7 @@ struct FTPTab: View {
             
             // Version info
             HStack(spacing: AXSpacing.xs) {
-                Text("PureFTPd")
+                Text(L10n.FTP.pureftpd)
                     .font(.system(size: 11, weight: .semibold))
                     .foregroundColor(.axAccentGreen)
                 Text(vm.serverInfo.version)
@@ -349,15 +349,15 @@ struct FTPTab: View {
             } else {
                 // Table header
                 HStack(spacing: 0) {
-                    Text("User")
+                    Text(L10n.FTP.user)
                         .frame(maxWidth: .infinity, alignment: .leading)
-                    Text("Quota")
+                    Text(L10n.FTP.quota)
                         .frame(width: 80, alignment: .center)
                     Text(L10n.FTP.status)
                         .frame(width: 80, alignment: .center)
                     Text(L10n.FTP.password)
                         .frame(width: 80, alignment: .center)
-                    Text("Actions")
+                    Text(L10n.FTP.actions)
                         .frame(width: 130, alignment: .trailing)
                 }
                 .font(.system(size: 10, weight: .semibold))
@@ -449,11 +449,11 @@ struct FTPTab: View {
             } else {
                 // Log table header
                 HStack(spacing: 0) {
-                    Text("Type")
+                    Text(L10n.FTP.type)
                         .frame(width: 80, alignment: .leading)
-                    Text("Timestamp")
+                    Text(L10n.FTP.timestamp)
                         .frame(width: 160, alignment: .leading)
-                    Text("Message")
+                    Text(L10n.FTP.message)
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
                 .font(.system(size: 10, weight: .semibold))
@@ -528,7 +528,7 @@ struct FTPTab: View {
                 .font(.system(size: 18, weight: .semibold))
                 .foregroundColor(.axTextPrimary)
             
-            Text("Create FTP accounts to allow file transfer access.\nUsers can connect using any FTP client.")
+            Text(L10n.Label.ftpEmptyState)
                 .font(AXTypography.body)
                 .foregroundColor(.axTextTertiary)
                 .multilineTextAlignment(.center)
@@ -563,11 +563,11 @@ struct FTPTab: View {
                     .foregroundColor(.axWarning.opacity(0.6))
             }
             
-            Text("PureFTPd Not Installed")
+            Text(L10n.FTP.pureftpdNotInstalled)
                 .font(.system(size: 20, weight: .bold))
                 .foregroundColor(.axTextPrimary)
             
-            Text("PureFTPd is required for FTP user management.\nInstall it now to enable FTP access on this server.")
+            Text(L10n.Label.pureFTPdMissing)
                 .font(AXTypography.body)
                 .foregroundColor(.axTextTertiary)
                 .multilineTextAlignment(.center)

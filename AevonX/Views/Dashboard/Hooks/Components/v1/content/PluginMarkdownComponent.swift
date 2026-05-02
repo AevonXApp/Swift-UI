@@ -48,7 +48,7 @@ struct PluginMarkdownComponent: View {
                 VStack(spacing: AXSpacing.md) {
                     ProgressView()
                         .scaleEffect(1.0)
-                    Text("Loading content…")
+                    Text(L10n.PluginsUI.loadingContent)
                         .font(AXTypography.caption)
                         .foregroundColor(.axTextMuted)
                 }
@@ -58,7 +58,7 @@ struct PluginMarkdownComponent: View {
                     Image(systemName: "doc.text")
                         .font(.system(size: 32))
                         .foregroundColor(.axTextMuted)
-                    Text("No content available")
+                    Text(L10n.PluginsUI.noContentAvailable)
                         .font(AXTypography.body)
                         .foregroundColor(.axTextSecondary)
                 }

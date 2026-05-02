@@ -38,7 +38,7 @@ struct DockerHealthTab: View {
         VStack(spacing: AXSpacing.md) {
             // Header
             HStack {
-                Text("Health Check Dashboard")
+                Text(L10n.Docker.healthCheckDashboard)
                     .font(AXTypography.title3)
                     .foregroundColor(.axTextPrimary)
                 
@@ -135,7 +135,7 @@ struct DockerHealthTab: View {
             // Show last check output if unhealthy
             if let info = info, !info.lastOutput.isEmpty, status == "unhealthy" {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Last Check Output:")
+                    Text(L10n.Docker.lastCheckOutput)
                         .font(.system(size: 9, weight: .bold))
                         .foregroundColor(.axTextMuted)
                     Text(info.lastOutput)

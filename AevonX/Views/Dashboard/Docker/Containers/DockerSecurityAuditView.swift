@@ -81,7 +81,7 @@ struct DockerSecurityAuditView: View {
                         // Findings
                         if !audit.findings.isEmpty {
                             VStack(alignment: .leading, spacing: AXSpacing.sm) {
-                                Text("Findings")
+                                Text(L10n.Docker.findings)
                                     .font(AXTypography.headline)
                                     .foregroundColor(.axTextPrimary)
                                 

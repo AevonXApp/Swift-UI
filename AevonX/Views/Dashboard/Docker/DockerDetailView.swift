@@ -122,7 +122,7 @@ struct DockerDetailView: View {
     private var headerSection: some View {
         HStack {
             VStack(alignment: .leading, spacing: 4) {
-                Text("Docker Management")
+                Text(L10n.Docker.dockerManagement)
                     .font(AXTypography.title2)
                     .foregroundColor(.axTextPrimary)
 

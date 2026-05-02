@@ -35,7 +35,7 @@ public struct AXCodeEditor: View {
                                 .foregroundColor(.axTextPrimary)
                             
                             if hasChanges {
-                                Text("Unsaved changes")
+                                Text(L10n.Dashboard.unsavedChanges)
                                     .font(AXTypography.caption)
                                     .foregroundColor(.axAccentBlue)
                             }

@@ -60,7 +60,7 @@ struct PHPComposerSection: View {
                     if isInstalled {
                         VStack(alignment: .leading, spacing: AXSpacing.md) {
                             AXSectionTitle(title: "Security Audit", icon: "shield.lefthalf.filled")
-                            Text("Run composer audit to check for known vulnerabilities in your dependencies")
+                            Text(L10n.Apps.runComposerAuditToCheckForKnownVulnerabilitiesInYourDependencies)
                                 .font(AXTypography.caption)
                                 .foregroundColor(.axTextSecondary)
 
@@ -70,7 +70,7 @@ struct PHPComposerSection: View {
                                 HStack {
                                     if isAuditing { ProgressView().scaleEffect(0.65).frame(width: 14, height: 14) }
                                     else { Image(systemName: "shield.lefthalf.filled") }
-                                    Text("Run Security Audit")
+                                    Text(L10n.Apps.runSecurityAudit)
                                 }
                                 .frame(maxWidth: .infinity)
                                 .padding(AXSpacing.md)
@@ -119,7 +119,7 @@ struct PHPComposerSection: View {
                             HStack {
                                 if isInstalling { ProgressView().scaleEffect(0.65).frame(width: 14, height: 14) }
                                 else { Image(systemName: "arrow.down.circle.fill") }
-                                Text("Install Composer").font(.system(size: 14, weight: .semibold))
+                                Text(L10n.Apps.installComposer).font(.system(size: 14, weight: .semibold))
                             }
                             .frame(maxWidth: .infinity)
                             .padding(AXSpacing.lg)

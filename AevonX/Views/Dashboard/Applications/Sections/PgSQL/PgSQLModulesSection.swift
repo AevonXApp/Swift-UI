@@ -34,7 +34,7 @@ struct PgSQLModulesSection: View {
             if modules.isEmpty {
                 VStack(spacing: AXSpacing.md) {
                     Image(systemName: "puzzlepiece.extension").font(.system(size: 28)).foregroundColor(.axTextMuted)
-                    Text("No extensions detected").font(AXTypography.caption).foregroundColor(.axTextMuted)
+                    Text(L10n.Apps.noExtensionsDetected).font(AXTypography.caption).foregroundColor(.axTextMuted)
                 }.frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 ScrollView {

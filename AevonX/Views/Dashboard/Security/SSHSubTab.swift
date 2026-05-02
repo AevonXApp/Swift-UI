@@ -250,7 +250,7 @@ struct SSHSubTab: View {
                         .font(.system(size: 16))
                         .foregroundColor(sshEnabled ? .axAccentBlue : .axTextMuted)
 
-                    Text("SSH Service")
+                    Text(L10n.Security.sshService)
                         .font(AXTypography.headline)
                         .foregroundColor(.axTextPrimary)
 
@@ -279,7 +279,7 @@ struct SSHSubTab: View {
                             Text(formatNumber(successCount))
                                 .font(.system(size: 16, weight: .bold, design: .rounded))
                                 .foregroundColor(.axSuccess)
-                            Text("Total Success")
+                            Text(L10n.Security.totalSuccess)
                                 .font(AXTypography.caption2)
                                 .foregroundColor(.axTextMuted)
                         }
@@ -290,7 +290,7 @@ struct SSHSubTab: View {
                             Text(formatNumber(failedCount))
                                 .font(.system(size: 16, weight: .bold, design: .rounded))
                                 .foregroundColor(.axError)
-                            Text("Total Failed")
+                            Text(L10n.Security.totalFailed)
                                 .font(AXTypography.caption2)
                                 .foregroundColor(.axTextMuted)
                         }
@@ -301,7 +301,7 @@ struct SSHSubTab: View {
                             Text(formatNumber(todayFailedCount))
                                 .font(.system(size: 16, weight: .bold, design: .rounded))
                                 .foregroundColor(.axWarning)
-                            Text("Today Failed")
+                            Text(L10n.Security.todayFailed)
                                 .font(AXTypography.caption2)
                                 .foregroundColor(.axTextMuted)
                         }
@@ -397,13 +397,13 @@ struct SSHSubTab: View {
                             HStack(spacing: AXSpacing.xs) {
                                 Image(systemName: "checkmark.circle.fill")
                                     .foregroundColor(.axSuccess)
-                                Text("Port updated — SSH restarting...")
+                                Text(L10n.Security.portUpdatedSshRestarting)
                                     .font(AXTypography.caption)
                                     .foregroundColor(.axSuccess)
                             }
                             .transition(.opacity)
                         } else {
-                            Text("Default port is 22. Changing it will restart SSH and may disconnect you.")
+                            Text(L10n.Security.defaultPortIsChangingItWillRestartSshAndMayDisconnectYou)
                                 .font(AXTypography.caption)
                                 .foregroundColor(.axTextMuted)
                         }
@@ -466,7 +466,7 @@ struct SSHSubTab: View {
                             HStack(spacing: AXSpacing.sm) {
                                 Image(systemName: "checkmark.circle.fill")
                                     .foregroundColor(.axSuccess)
-                                Text("SSH key pair exists")
+                                Text(L10n.Security.sshKeyPairExists)
                                     .font(AXTypography.body)
                                     .foregroundColor(.axSuccess)
                             }
@@ -520,7 +520,7 @@ struct SSHSubTab: View {
                                     HStack(spacing: AXSpacing.xs) {
                                         Image(systemName: "arrow.down.circle")
                                             .font(.system(size: 11))
-                                        Text("Download Key")
+                                        Text(L10n.Security.downloadKey)
                                             .font(AXTypography.headline)
                                     }
                                     .padding(.horizontal, AXSpacing.lg)
@@ -540,12 +540,12 @@ struct SSHSubTab: View {
                             HStack(spacing: AXSpacing.sm) {
                                 Image(systemName: "xmark.circle.fill")
                                     .foregroundColor(.axWarning)
-                                Text("No SSH key pair found")
+                                Text(L10n.Security.noSshKeyPairFound)
                                     .font(AXTypography.body)
                                     .foregroundColor(.axTextSecondary)
                             }
 
-                            Text("Generate a new ED25519 SSH key pair to enable key-based authentication.")
+                            Text(L10n.Security.generateANewEd25519SshKeyPairToEnableKeyBasedAuthentication)
                                 .font(AXTypography.caption)
                                 .foregroundColor(.axTextMuted)
 
@@ -702,7 +702,7 @@ struct SSHSubTab: View {
                     AXSectionTitle(title: "Add Authorized Key", icon: "key.horizontal.fill")
                     Divider().background(Color.axBorder)
 
-                    Text("Paste a public SSH key (e.g. ssh-ed25519 AAAA... user@host)")
+                    Text(L10n.Security.pasteAPublicSshKeyEGSshEd25519AaaaUserHost)
                         .font(AXTypography.caption)
                         .foregroundColor(.axTextMuted)
 
@@ -737,7 +737,7 @@ struct SSHSubTab: View {
                                     Image(systemName: "plus")
                                         .font(.system(size: 11, weight: .semibold))
                                 }
-                                Text("Add Key")
+                                Text(L10n.Security.addKey)
                                     .font(.system(size: 12, weight: .semibold))
                             }
                             .foregroundColor(.white)
@@ -762,7 +762,7 @@ struct SSHSubTab: View {
                             Image(systemName: "list.bullet.rectangle")
                                 .font(.system(size: 14))
                                 .foregroundColor(.axAccentBlue)
-                            Text("Authorized Keys")
+                            Text(L10n.Security.authorizedKeys)
                                 .font(AXTypography.title3)
                                 .foregroundColor(.axTextPrimary)
                         }
@@ -790,7 +790,7 @@ struct SSHSubTab: View {
                             Image(systemName: "key.slash")
                                 .font(.system(size: 28))
                                 .foregroundColor(.axTextMuted)
-                            Text("No authorized keys found")
+                            Text(L10n.Security.noAuthorizedKeysFound)
                                 .font(AXTypography.body)
                                 .foregroundColor(.axTextMuted)
                         }
@@ -921,7 +921,7 @@ struct SSHSubTab: View {
                             .font(.system(size: 12, weight: .medium))
                             .foregroundColor(.axTextPrimary)
                         if item.isCurrentDevice {
-                            Text("This device")
+                            Text(L10n.Security.thisDevice)
                                 .font(.system(size: 9, weight: .semibold))
                                 .foregroundColor(.axAccentGreen)
                         }
@@ -946,7 +946,7 @@ struct SSHSubTab: View {
 
                 Group {
                     if item.isCurrentDevice {
-                        Text("Current")
+                        Text(L10n.Security.current)
                             .font(.system(size: 11, weight: .medium))
                             .foregroundColor(.axAccentGreen)
                     } else {

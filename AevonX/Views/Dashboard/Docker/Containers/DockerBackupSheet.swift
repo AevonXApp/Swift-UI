@@ -20,7 +20,7 @@ struct DockerBackupSheet: View {
             // Header
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Backup & Restore")
+                    Text(L10n.Docker.backupRestore)
                         .font(AXTypography.title2)
                         .foregroundColor(.axTextPrimary)
                     Text(container.names)
@@ -46,10 +46,10 @@ struct DockerBackupSheet: View {
                     AXCard {
                         HStack {
                             VStack(alignment: .leading, spacing: 4) {
-                                Text("Full Backup")
+                                Text(L10n.Docker.fullBackup)
                                     .font(AXTypography.headline)
                                     .foregroundColor(.axTextPrimary)
-                                Text("Saves image, volumes, and configuration")
+                                Text(L10n.Docker.savesImageVolumesAndConfiguration)
                                     .font(AXTypography.caption)
                                     .foregroundColor(.axTextSecondary)
                             }
@@ -129,7 +129,7 @@ struct DockerBackupSheet: View {
                         ProgressView("Loading backups...")
                     } else if !existingBackups.isEmpty {
                         VStack(alignment: .leading, spacing: AXSpacing.sm) {
-                            Text("Existing Backups")
+                            Text(L10n.Docker.existingBackups)
                                 .font(AXTypography.headline)
                                 .foregroundColor(.axTextPrimary)
                             

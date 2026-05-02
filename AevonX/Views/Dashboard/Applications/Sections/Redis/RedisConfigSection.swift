@@ -29,7 +29,7 @@ struct RedisConfigSection: View {
     private var configFileList: some View {
         VStack(spacing: 0) {
             HStack {
-                Text("Config Files").font(.system(size: 13, weight: .semibold)).foregroundColor(.axTextPrimary)
+                Text(L10n.Apps.configFiles).font(.system(size: 13, weight: .semibold)).foregroundColor(.axTextPrimary)
                 Spacer()
                 Button { Task { await testConfig() } } label: {
                     Image(systemName: "checkmark.circle").font(.system(size: 13))
@@ -40,7 +40,7 @@ struct RedisConfigSection: View {
             if configs.isEmpty {
                 VStack(spacing: AXSpacing.sm) {
                     Image(systemName: "doc.text").font(.system(size: 24)).foregroundColor(.axTextMuted)
-                    Text("No config files found").font(AXTypography.caption).foregroundColor(.axTextMuted)
+                    Text(L10n.Apps.noConfigFilesFound).font(AXTypography.caption).foregroundColor(.axTextMuted)
                 }.frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 ScrollView { LazyVStack(spacing: 1) { ForEach(configs) { config in configFileRow(config) } }.padding(AXSpacing.xs) }
@@ -90,7 +90,7 @@ struct RedisConfigSection: View {
             } else {
                 VStack(spacing: AXSpacing.md) {
                     Image(systemName: "doc.text").font(.system(size: 28)).foregroundColor(.axTextMuted)
-                    Text("Select a config file to edit").font(AXTypography.caption).foregroundColor(.axTextMuted)
+                    Text(L10n.Apps.selectAConfigFileToEdit).font(AXTypography.caption).foregroundColor(.axTextMuted)
                 }.frame(maxWidth: .infinity, maxHeight: .infinity)
             }
             if let result = configTestResult {

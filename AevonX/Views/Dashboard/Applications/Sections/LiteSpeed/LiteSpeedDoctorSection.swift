@@ -109,7 +109,7 @@ struct LiteSpeedDoctorSection: View {
         VStack(spacing: AXSpacing.md) {
             Spacer()
             Image(systemName: "stethoscope").font(AXTypography.largeTitle).foregroundColor(.axTextMuted.opacity(0.3))
-            Text("Click \"Run Doctor\" to perform health checks").font(AXTypography.callout).foregroundColor(.axTextMuted)
+            Text(L10n.Label.liteSpeedDoctorHint).font(AXTypography.callout).foregroundColor(.axTextMuted)
             Spacer()
         }.frame(maxWidth: .infinity).padding(.vertical, AXSpacing.xl)
     }
@@ -133,7 +133,7 @@ struct LiteSpeedDoctorSection: View {
             }
 
             VStack(alignment: .leading, spacing: AXSpacing.xs) {
-                Text("Health Score")
+                Text(L10n.Apps.healthScore)
                     .font(AXTypography.title3).fontWeight(.bold)
                     .foregroundColor(.axTextPrimary)
                 Text(scoreLabel(report.score))

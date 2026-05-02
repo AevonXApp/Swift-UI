@@ -107,7 +107,7 @@ struct PluginGeoMapComponent: View {
 
     private var geoBarChart: some View {
         VStack(alignment: .leading, spacing: AXSpacing.md) {
-            Text("Attack Origins")
+            Text(L10n.PluginsUI.attackOrigins)
                 .font(.system(size: 13, weight: .semibold))
                 .foregroundColor(.axTextSecondary)
                 .textCase(.uppercase)
@@ -224,7 +224,7 @@ struct PluginGeoMapComponent: View {
     private var loadingView: some View {
         VStack(spacing: AXSpacing.md) {
             ProgressView().scaleEffect(1.2)
-            Text("Loading geographic data…")
+            Text(L10n.PluginsUI.loadingGeographicData)
                 .font(AXTypography.caption)
                 .foregroundColor(.axTextMuted)
         }
@@ -236,7 +236,7 @@ struct PluginGeoMapComponent: View {
             Image(systemName: "globe")
                 .font(.system(size: 40))
                 .foregroundColor(.axTextMuted)
-            Text("No geographic data available")
+            Text(L10n.PluginsUI.noGeographicDataAvailable)
                 .font(AXTypography.body)
                 .foregroundColor(.axTextSecondary)
         }

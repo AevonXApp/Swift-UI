@@ -21,7 +21,7 @@ struct DownloadFromURLSheetView: View {
                 Image(systemName: "link.badge.plus")
                     .font(.system(size: 18))
                     .foregroundColor(.axAccentBlue)
-                Text("Download from URL")
+                Text(L10n.Files.downloadFromUrl)
                     .font(AXTypography.headline)
                     .foregroundColor(.axTextPrimary)
             }
@@ -36,7 +36,7 @@ struct DownloadFromURLSheetView: View {
                 }
                 
                 VStack(alignment: .leading, spacing: AXSpacing.xs) {
-                    Text("File Name (optional)")
+                    Text(L10n.Files.fileNameOptional)
                         .font(AXTypography.caption)
                         .foregroundColor(.axTextSecondary)
                     TextField("Leave empty to auto-detect", text: $fileName)

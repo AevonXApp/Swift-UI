@@ -22,7 +22,7 @@ struct DockerAILogAnalyzer: View {
                     Image(systemName: "sparkles")
                         .foregroundColor(.purple)
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("AI Log Analyzer")
+                        Text(L10n.Docker.aiLogAnalyzer)
                             .font(AXTypography.headline)
                             .foregroundColor(.axTextPrimary)
                         Text(container.names)
@@ -44,7 +44,7 @@ struct DockerAILogAnalyzer: View {
             if isLoadingLogs {
                 VStack(spacing: AXSpacing.md) {
                     ProgressView()
-                    Text("Loading logs...")
+                    Text(L10n.Docker.loadingLogs)
                         .font(AXTypography.caption)
                         .foregroundColor(.axTextMuted)
                 }
@@ -77,7 +77,7 @@ struct DockerAILogAnalyzer: View {
                     // Analysis panel
                     VStack(alignment: .leading, spacing: 0) {
                         HStack {
-                            Text("AI Analysis")
+                            Text(L10n.Docker.aiAnalysis)
                                 .font(.system(size: 11, weight: .bold))
                                 .foregroundColor(.purple)
                             Spacer()
@@ -86,7 +86,7 @@ struct DockerAILogAnalyzer: View {
                                 Button(action: analyze) {
                                     HStack(spacing: 3) {
                                         Image(systemName: "arrow.clockwise").font(.system(size: 9))
-                                        Text("Re-analyze").font(.system(size: 9))
+                                        Text(L10n.Docker.reAnalyze).font(.system(size: 9))
                                     }
                                     .foregroundColor(.purple)
                                 }
@@ -101,7 +101,7 @@ struct DockerAILogAnalyzer: View {
                             VStack(spacing: AXSpacing.md) {
                                 ProgressView()
                                     .tint(.purple)
-                                Text("AI is analyzing your logs...")
+                                Text(L10n.Docker.aiIsAnalyzingYourLogs)
                                     .font(.system(size: 11))
                                     .foregroundColor(.axTextMuted)
                             }
@@ -111,14 +111,14 @@ struct DockerAILogAnalyzer: View {
                                 Image(systemName: "sparkles")
                                     .font(.system(size: 28))
                                     .foregroundColor(.purple.opacity(0.5))
-                                Text("Click Analyze to get AI insights")
+                                Text(L10n.Docker.clickAnalyzeToGetAiInsights)
                                     .font(.system(size: 12))
                                     .foregroundColor(.axTextMuted)
                                 
                                 Button(action: analyze) {
                                     HStack(spacing: 4) {
                                         Image(systemName: "sparkles").font(.system(size: 10))
-                                        Text("Analyze Logs")
+                                        Text(L10n.Docker.analyzeLogs)
                                     }
                                     .font(.system(size: 12, weight: .semibold))
                                     .foregroundColor(.white)

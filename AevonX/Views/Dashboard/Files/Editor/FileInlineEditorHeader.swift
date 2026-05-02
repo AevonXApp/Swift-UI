@@ -21,7 +21,7 @@ struct FileInlineEditorHeader: View {
                 HStack(spacing: AXSpacing.xs) {
                     Image(systemName: "chevron.left")
                         .font(.system(size: 11))
-                    Text("Files")
+                    Text(L10n.Files.files)
                         .font(.system(size: 12))
                 }
                 .foregroundColor(.axAccentBlue)
@@ -72,7 +72,7 @@ struct FileInlineEditorHeader: View {
             
             // Discard
             Button(action: { viewModel.editorContent = viewModel.editorOriginalContent }) {
-                Text("Discard")
+                Text(L10n.Files.discard)
                     .font(.system(size: 11))
                     .foregroundColor(.axTextSecondary)
                     .padding(.horizontal, AXSpacing.sm)

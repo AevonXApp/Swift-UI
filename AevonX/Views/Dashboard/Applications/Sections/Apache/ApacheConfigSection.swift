@@ -54,7 +54,7 @@ struct ApacheConfigSection: View {
             if configs.isEmpty {
                 VStack(spacing: AXSpacing.md) {
                     Image(systemName: "doc.text").font(.system(size: 24)).foregroundColor(.axTextMuted)
-                    Text("No config files").font(AXTypography.caption).foregroundColor(.axTextMuted)
+                    Text(L10n.Apps.noConfigFiles).font(AXTypography.caption).foregroundColor(.axTextMuted)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
@@ -95,7 +95,7 @@ struct ApacheConfigSection: View {
                 Spacer()
 
                 if config.isMain {
-                    Text("MAIN").font(.system(size: 8, weight: .bold))
+                    Text(L10n.Label.main).font(.system(size: 8, weight: .bold))
                         .foregroundColor(apacheRed).padding(.horizontal, 4).padding(.vertical, 2)
                         .background(apacheRed.opacity(0.1)).cornerRadius(3)
                 }
@@ -171,7 +171,7 @@ struct ApacheConfigSection: View {
                 VStack(spacing: AXSpacing.md) {
                     Image(systemName: "doc.text.magnifyingglass")
                         .font(.system(size: 32)).foregroundColor(.axTextMuted)
-                    Text("Select a config file to edit")
+                    Text(L10n.Apps.selectAConfigFileToEdit)
                         .font(AXTypography.caption).foregroundColor(.axTextMuted)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)

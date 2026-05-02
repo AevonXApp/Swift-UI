@@ -21,7 +21,7 @@ struct CustomCertificateUploadSheet: View {
 
                 Spacer()
 
-                Text("Upload Custom Certificate")
+                Text(L10n.Websites.uploadCustomCertificate)
                     .font(AXTypography.headline)
                     .foregroundColor(.axTextPrimary)
 
@@ -44,12 +44,12 @@ struct CustomCertificateUploadSheet: View {
                             .font(AXTypography.title)
 
                         VStack(alignment: .leading, spacing: 4) {
-                            Text("Upload Requirements")
+                            Text(L10n.Websites.uploadRequirements)
                                 .font(AXTypography.subheadline)
                                 .fontWeight(.semibold)
                                 .foregroundColor(.axTextPrimary)
 
-                            Text("Certificate and private key must be in PEM format")
+                            Text(L10n.Websites.certificateAndPrivateKeyMustBeInPemFormat)
                                 .font(AXTypography.caption)
                                 .foregroundColor(.axTextSecondary)
                         }
@@ -60,12 +60,12 @@ struct CustomCertificateUploadSheet: View {
 
                     // Certificate
                     VStack(alignment: .leading, spacing: AXSpacing.sm) {
-                        Text("Certificate (Required)")
+                        Text(L10n.Websites.certificateRequired)
                             .font(AXTypography.subheadline)
                             .fontWeight(.semibold)
                             .foregroundColor(.axTextPrimary)
 
-                        Text("Paste your SSL certificate in PEM format")
+                        Text(L10n.Websites.pasteYourSslCertificateInPemFormat)
                             .font(AXTypography.caption)
                             .foregroundColor(.axTextSecondary)
 
@@ -83,12 +83,12 @@ struct CustomCertificateUploadSheet: View {
 
                     // Private Key
                     VStack(alignment: .leading, spacing: AXSpacing.sm) {
-                        Text("Private Key (Required)")
+                        Text(L10n.Websites.privateKeyRequired)
                             .font(AXTypography.subheadline)
                             .fontWeight(.semibold)
                             .foregroundColor(.axTextPrimary)
 
-                        Text("Paste your private key in PEM format")
+                        Text(L10n.Websites.pasteYourPrivateKeyInPemFormat)
                             .font(AXTypography.caption)
                             .foregroundColor(.axTextSecondary)
 
@@ -106,12 +106,12 @@ struct CustomCertificateUploadSheet: View {
 
                     // Certificate Chain
                     VStack(alignment: .leading, spacing: AXSpacing.sm) {
-                        Text("Certificate Chain (Optional)")
+                        Text(L10n.Websites.certificateChainOptional)
                             .font(AXTypography.subheadline)
                             .fontWeight(.semibold)
                             .foregroundColor(.axTextPrimary)
 
-                        Text("CA bundle if required by your certificate")
+                        Text(L10n.Websites.caBundleIfRequiredByYourCertificate)
                             .font(AXTypography.caption)
                             .foregroundColor(.axTextSecondary)
 
@@ -135,10 +135,10 @@ struct CustomCertificateUploadSheet: View {
                             if viewModel.isUploadingCertificate {
                                 ProgressView()
                                     .scaleEffect(0.8)
-                                Text("Uploading...")
+                                Text(L10n.Websites.uploading)
                             } else {
                                 Image(systemName: "arrow.up.circle.fill")
-                                Text("Upload Certificate")
+                                Text(L10n.Websites.uploadCertificate)
                             }
                         }
                         .frame(maxWidth: .infinity)

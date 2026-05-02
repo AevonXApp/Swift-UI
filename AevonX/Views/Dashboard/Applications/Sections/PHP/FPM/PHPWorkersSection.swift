@@ -39,7 +39,7 @@ struct PHPWorkersSection: View {
     private var emptyWorkers: some View {
         VStack(spacing: AXSpacing.md) {
             Image(systemName: "person.3.fill").font(.system(size: 28)).foregroundColor(.axTextMuted)
-            Text("No active workers").font(AXTypography.body).foregroundColor(.axTextMuted)
+            Text(L10n.Apps.noActiveWorkers).font(AXTypography.body).foregroundColor(.axTextMuted)
         }
         .frame(maxWidth: .infinity).padding(.vertical, AXSpacing.xxl)
     }

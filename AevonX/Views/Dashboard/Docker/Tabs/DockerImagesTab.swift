@@ -66,7 +66,7 @@ struct DockerImagesTab: View {
                 Button(action: { showHubSearch = true }) {
                     HStack(spacing: 6) {
                         Image(systemName: "magnifyingglass")
-                        Text("Search Hub")
+                        Text(L10n.Docker.searchHub)
                     }
                     .font(AXTypography.subheadline)
                     .foregroundColor(.white)
@@ -359,7 +359,7 @@ private struct PullImageSheet: View {
                 .foregroundColor(.axTextPrimary)
             
             VStack(alignment: .leading, spacing: 8) {
-                Text("Image Name")
+                Text(L10n.Docker.imageName)
                     .font(AXTypography.caption)
                     .foregroundColor(.axTextSecondary)
                 

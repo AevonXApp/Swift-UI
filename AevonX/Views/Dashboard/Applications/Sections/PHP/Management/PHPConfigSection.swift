@@ -64,7 +64,7 @@ struct PHPConfigSection: View {
                         Image(systemName: "doc.text.fill")
                             .font(.system(size: 40))
                             .foregroundColor(phpPurple.opacity(0.3))
-                        Text("Select a config file to view").font(AXTypography.body).foregroundColor(.axTextMuted)
+                        Text(L10n.Apps.selectAConfigFileToView).font(AXTypography.body).foregroundColor(.axTextMuted)
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }

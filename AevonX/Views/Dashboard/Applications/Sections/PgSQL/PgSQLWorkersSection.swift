@@ -20,7 +20,7 @@ struct PgSQLWorkersSection: View {
                     VStack(spacing: AXSpacing.md) {
                         Image(systemName: "point.3.connected.trianglepath.dotted")
                             .font(.system(size: 28)).foregroundColor(.axTextMuted)
-                        Text("No active connections detected")
+                        Text(L10n.Apps.noActiveConnectionsDetected)
                             .font(AXTypography.caption).foregroundColor(.axTextMuted)
                     }.frame(maxWidth: .infinity).padding(.top, 40)
                 } else { workerTable }

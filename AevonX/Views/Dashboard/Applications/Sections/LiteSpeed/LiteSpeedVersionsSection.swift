@@ -24,7 +24,7 @@ struct LiteSpeedVersionsSection: View {
                     if installedVersions.isEmpty {
                         HStack {
                             Image(systemName: "shippingbox").foregroundColor(.axTextMuted)
-                            Text("No versions detected").font(AXTypography.subheadline).foregroundColor(.axTextMuted)
+                            Text(L10n.Apps.noVersionsDetected).font(AXTypography.subheadline).foregroundColor(.axTextMuted)
                         }
                         .padding(AXSpacing.md)
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -49,7 +49,7 @@ struct LiteSpeedVersionsSection: View {
                                 Spacer()
 
                                 if version.isActive {
-                                    Text("CURRENT")
+                                    Text(L10n.Label.current)
                                         .font(AXTypography.caption2).fontWeight(.bold)
                                         .foregroundColor(lsGreen)
                                         .padding(.horizontal, 6).padding(.vertical, 3)
@@ -76,7 +76,7 @@ struct LiteSpeedVersionsSection: View {
                     if availableVersions.isEmpty {
                         HStack {
                             Image(systemName: "arrow.down.circle").foregroundColor(.axTextMuted)
-                            Text("No additional versions available").font(AXTypography.subheadline).foregroundColor(.axTextMuted)
+                            Text(L10n.Apps.noAdditionalVersionsAvailable).font(AXTypography.subheadline).foregroundColor(.axTextMuted)
                         }
                         .padding(AXSpacing.md)
                         .frame(maxWidth: .infinity, alignment: .leading)

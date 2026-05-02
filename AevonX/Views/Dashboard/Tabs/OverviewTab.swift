@@ -258,7 +258,7 @@ private struct LoadMetricCard: View {
             Image(systemName: "chart.bar.xaxis")
                 .font(.system(size: 11, weight: .medium))
                 .foregroundColor(reactiveColor)
-            Text("Load")
+            Text(L10n.Dashboard.load)
                 .font(AXTypography.caption)
                 .foregroundColor(.axTextSecondary)
             Spacer()
@@ -411,7 +411,7 @@ struct ResourceMetricCard: View {
                 .cornerRadius(AXCornerRadius.xs)
 
                 if isConnected {
-                    Text("Real-time")
+                    Text(L10n.Dashboard.realTime)
                         .font(AXTypography.caption2)
                         .foregroundColor(.axTextTertiary)
                 }
@@ -512,7 +512,7 @@ private struct DiskMetricCard: View {
             Image(systemName: "internaldrive")
                 .font(.system(size: 11, weight: .medium))
                 .foregroundColor(reactiveColor)
-            Text("Disk")
+            Text(L10n.Dashboard.disk)
                 .font(AXTypography.caption)
                 .foregroundColor(.axTextSecondary)
             Spacer()
@@ -543,7 +543,7 @@ private struct DiskMetricCard: View {
                 .padding(.vertical, 2)
                 .background(reactiveColor.opacity(0.1))
                 .cornerRadius(AXCornerRadius.xs)
-                Text("Real-time")
+                Text(L10n.Dashboard.realTime)
                     .font(AXTypography.caption2)
                     .foregroundColor(.axTextTertiary)
             }
@@ -600,14 +600,14 @@ private struct DiskDetailPopover: View {
             diskRowItem(label: "Free", valueGB: freeGB, color: .axAccentGreen)
             Divider()
             HStack {
-                Text("Total").font(.system(size: 11, weight: .semibold)).foregroundColor(.axTextSecondary)
+                Text(L10n.Dashboard.total).font(.system(size: 11, weight: .semibold)).foregroundColor(.axTextSecondary)
                 Spacer()
                 Text(String(format: "%.0f GB", viewModel.totalDiskGB))
                     .font(.system(size: 13, weight: .bold, design: .rounded))
                     .foregroundColor(.axTextPrimary)
             }
             HStack {
-                Text("Mount").font(.system(size: 11)).foregroundColor(.axTextSecondary)
+                Text(L10n.Dashboard.mount).font(.system(size: 11)).foregroundColor(.axTextSecondary)
                 Spacer()
                 Text("/").font(.system(size: 11, weight: .medium, design: .monospaced)).foregroundColor(.axTextPrimary)
             }
@@ -620,7 +620,7 @@ private struct DiskDetailPopover: View {
     private var diskPopoverHeader: some View {
         HStack(spacing: AXSpacing.sm) {
             Image(systemName: "internaldrive").font(.system(size: 13)).foregroundColor(.axAccentBlue)
-            Text("Disk Detail").font(.system(size: 13, weight: .semibold)).foregroundColor(.axTextPrimary)
+            Text(L10n.Dashboard.diskDetail).font(.system(size: 13, weight: .semibold)).foregroundColor(.axTextPrimary)
             Spacer()
             Text(String(format: "%.1f%%", viewModel.diskUsage))
                 .font(.system(size: 12, weight: .bold))
@@ -702,7 +702,7 @@ private struct LoadAverageCard: View {
             Image(systemName: "chart.bar.xaxis")
                 .font(.system(size: 14))
                 .foregroundColor(.axAccentBlue)
-            Text("Load Average")
+            Text(L10n.Dashboard.loadAverage)
                 .font(AXTypography.headline)
                 .foregroundColor(.axTextPrimary)
             Spacer()
@@ -812,7 +812,7 @@ private struct InventoryCard: View {
             Image(systemName: "square.grid.2x2")
                 .font(.system(size: 14))
                 .foregroundColor(.axAccentGreen)
-            Text("Overview")
+            Text(L10n.Dashboard.overview)
                 .font(AXTypography.headline)
                 .foregroundColor(.axTextPrimary)
             Spacer()
@@ -935,7 +935,7 @@ private struct SystemInfoCard: View {
                 Image(systemName: "server.rack")
                     .font(.system(size: 11, weight: .semibold))
                     .foregroundColor(Color(red: 0.45, green: 0.72, blue: 0.90))
-                Text("System Info")
+                Text(L10n.Dashboard.systemInfo)
                     .font(.system(size: 11, weight: .semibold))
                     .foregroundColor(.axTextSecondary)
                 Spacer()
@@ -973,7 +973,7 @@ private struct SystemInfoCard: View {
                 }
                 Spacer()
                 VStack(alignment: .trailing, spacing: 1) {
-                    Text("Uptime")
+                    Text(L10n.Dashboard.uptime)
                         .font(.system(size: 9))
                         .foregroundColor(.axTextTertiary)
                     Text(viewModel.uptime)
@@ -1077,7 +1077,7 @@ private struct QuickActionsCard: View {
                 Image(systemName: "bolt.circle.fill")
                     .font(.system(size: 11, weight: .semibold))
                     .foregroundColor(Color(red: 0.95, green: 0.75, blue: 0.25))
-                Text("Quick Actions")
+                Text(L10n.Dashboard.quickActions)
                     .font(.system(size: 11, weight: .semibold))
                     .foregroundColor(.axTextSecondary)
                 Spacer()
@@ -1262,7 +1262,7 @@ private struct CPUMetricCard: View {
                 .padding(.vertical, 2)
                 .background(reactiveColor.opacity(0.1))
                 .cornerRadius(AXCornerRadius.xs)
-                Text("Real-time")
+                Text(L10n.Dashboard.realTime)
                     .font(AXTypography.caption2)
                     .foregroundColor(.axTextTertiary)
             }
@@ -1329,7 +1329,7 @@ private struct CPUDetailPopover: View {
     private var cpuPopoverHeader: some View {
         HStack(spacing: AXSpacing.sm) {
             Image(systemName: "cpu").font(.system(size: 13)).foregroundColor(.axAccentBlue)
-            Text("CPU Detail").font(.system(size: 13, weight: .semibold)).foregroundColor(.axTextPrimary)
+            Text(L10n.Dashboard.cpuDetail).font(.system(size: 13, weight: .semibold)).foregroundColor(.axTextPrimary)
             Spacer()
             if viewModel.stats.isFetchingCPUDetail {
                 ProgressView().scaleEffect(0.6)
@@ -1348,12 +1348,12 @@ private struct CPUDetailPopover: View {
         } else if viewModel.stats.isFetchingCPUDetail {
             HStack {
                 ProgressView().scaleEffect(0.5)
-                Text("Sampling cores…")
+                Text(L10n.Dashboard.samplingCores)
                     .font(AXTypography.caption2)
                     .foregroundColor(.axTextMuted)
             }
         } else {
-            Text("No core data")
+            Text(L10n.Dashboard.noCoreData)
                 .font(AXTypography.caption2)
                 .foregroundColor(.axTextMuted)
         }
@@ -1533,7 +1533,7 @@ private struct RAMMetricCard: View {
                 .padding(.vertical, 2)
                 .background(reactiveColor.opacity(0.1))
                 .cornerRadius(AXCornerRadius.xs)
-                Text("Real-time")
+                Text(L10n.Dashboard.realTime)
                     .font(AXTypography.caption2)
                     .foregroundColor(.axTextTertiary)
             }
@@ -1589,7 +1589,7 @@ private struct RAMDetailPopover: View {
             ramRowItem(label: "Buff/Cache", valueMB: viewModel.ramBuffCacheMB, color: .axInfo)
             Divider()
             HStack {
-                Text("Total").font(.system(size: 11, weight: .semibold)).foregroundColor(.axTextSecondary)
+                Text(L10n.Dashboard.total).font(.system(size: 11, weight: .semibold)).foregroundColor(.axTextSecondary)
                 Spacer()
                 Text(formatMB(viewModel.totalRAMMB))
                     .font(.system(size: 13, weight: .bold, design: .rounded))
@@ -1604,7 +1604,7 @@ private struct RAMDetailPopover: View {
     private var ramPopoverHeader: some View {
         HStack(spacing: AXSpacing.sm) {
             Image(systemName: "memorychip").font(.system(size: 13)).foregroundColor(.axAccentBlue)
-            Text("RAM Detail").font(.system(size: 13, weight: .semibold)).foregroundColor(.axTextPrimary)
+            Text(L10n.Dashboard.ramDetail).font(.system(size: 13, weight: .semibold)).foregroundColor(.axTextPrimary)
             Spacer()
         }
     }
@@ -1687,7 +1687,7 @@ private struct TrafficCard: View {
             Image(systemName: "chart.line.uptrend.xyaxis")
                 .font(.system(size: 14))
                 .foregroundColor(.axAccentBlue)
-            Text("Network Traffic")
+            Text(L10n.Dashboard.networkTraffic)
                 .font(AXTypography.headline)
                 .foregroundColor(.axTextPrimary)
             Spacer()
@@ -1726,7 +1726,7 @@ private struct TrafficCard: View {
             TrafficTotalItem(label: "Total received", value: formatGB(viewModel.netRxGB), color: .axAccentGreen)
             TrafficTotalItem(label: "Total sent", value: formatGB(viewModel.netTxGB), color: .axAccentBlue)
             Spacer()
-            Text("Since boot")
+            Text(L10n.Dashboard.sinceBoot)
                 .font(.system(size: 9))
                 .foregroundColor(.axTextTertiary)
         }
@@ -1822,11 +1822,11 @@ private struct TrafficChartView: View {
                 Spacer().frame(width: 52)
                 HStack(spacing: 4) {
                     RoundedRectangle(cornerRadius: 1).fill(Color.axAccentGreen).frame(width: 12, height: 3)
-                    Text("Download").font(.system(size: 9)).foregroundColor(.axTextTertiary)
+                    Text(L10n.Dashboard.download).font(.system(size: 9)).foregroundColor(.axTextTertiary)
                 }
                 HStack(spacing: 4) {
                     RoundedRectangle(cornerRadius: 1).fill(Color.axAccentBlue).frame(width: 12, height: 3)
-                    Text("Upload").font(.system(size: 9)).foregroundColor(.axTextTertiary)
+                    Text(L10n.Dashboard.upload).font(.system(size: 9)).foregroundColor(.axTextTertiary)
                 }
                 Spacer()
             }
@@ -1921,11 +1921,11 @@ private struct NetworkIOCard: View {
                     Image(systemName: "network")
                         .font(.system(size: 14))
                         .foregroundColor(.axAccentBlue)
-                    Text("Network I/O")
+                    Text(L10n.Dashboard.networkIO)
                         .font(AXTypography.headline)
                         .foregroundColor(.axTextPrimary)
                     Spacer()
-                    Text("Since boot")
+                    Text(L10n.Dashboard.sinceBoot)
                         .font(AXTypography.caption2)
                         .foregroundColor(.axTextTertiary)
                 }
@@ -2022,7 +2022,7 @@ private struct ServerLoadCard: View {
             Image(systemName: "speedometer")
                 .font(.system(size: 14))
                 .foregroundColor(.axAccentBlue)
-            Text("Server Load")
+            Text(L10n.Dashboard.serverLoad)
                 .font(AXTypography.headline)
                 .foregroundColor(.axTextPrimary)
             Spacer()
@@ -2097,13 +2097,13 @@ private struct ServerLoadCard: View {
                 Text("\(viewModel.processesTotal)")
                     .font(.system(size: 16, weight: .bold, design: .rounded))
                     .foregroundColor(.axTextPrimary)
-                Text("Total procs").font(.system(size: 9)).foregroundColor(.axTextTertiary)
+                Text(L10n.Dashboard.totalProcs).font(.system(size: 9)).foregroundColor(.axTextTertiary)
             }
             VStack(spacing: 1) {
                 Text("\(viewModel.processesRunning)")
                     .font(.system(size: 16, weight: .bold, design: .rounded))
                     .foregroundColor(.axAccentGreen)
-                Text("Running").font(.system(size: 9)).foregroundColor(.axTextTertiary)
+                Text(L10n.Dashboard.running).font(.system(size: 9)).foregroundColor(.axTextTertiary)
             }
             Spacer()
         }
@@ -2114,7 +2114,7 @@ private struct ServerLoadCard: View {
         let swapColor: Color = viewModel.swapUsage < 50 ? .axAccentGreen : viewModel.swapUsage < 80 ? .axWarning : .axError
         HStack(spacing: AXSpacing.md) {
             Image(systemName: "memorychip.fill").font(.system(size: 12)).foregroundColor(.axInfo)
-            Text("Swap").font(.system(size: 11)).foregroundColor(.axTextSecondary)
+            Text(L10n.Dashboard.swap).font(.system(size: 11)).foregroundColor(.axTextSecondary)
             Spacer()
             Text(swapDetail).font(.system(size: 11, weight: .semibold)).foregroundColor(.axTextPrimary)
             Text(String(format: "%.0f%%", viewModel.swapUsage))
@@ -2253,7 +2253,7 @@ struct ConnectionStatusBar: View {
             Button("Disconnect", role: .destructive) { Task { await viewModel.disconnect() } }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("Are you sure you want to disconnect from this server?")
+            Text(L10n.Dashboard.areYouSureYouWantToDisconnectFromThisServer)
         }
     }
 
@@ -2426,10 +2426,10 @@ struct FreshServerBanner: View {
             }
 
             VStack(alignment: .leading, spacing: 2) {
-                Text("Fresh server detected")
+                Text(L10n.Dashboard.freshServerDetected)
                     .font(.system(size: 13, weight: .semibold))
                     .foregroundColor(.axTextPrimary)
-                Text("No services found — set up your environment with one click")
+                Text(L10n.Dashboard.noServicesFoundSetUpYourEnvironmentWithOneClick)
                     .font(AXTypography.caption)
                     .foregroundColor(.axTextSecondary)
             }
@@ -2439,7 +2439,7 @@ struct FreshServerBanner: View {
             Button(action: onSetup) {
                 HStack(spacing: AXSpacing.xs) {
                     Image(systemName: "bolt.fill").font(.system(size: 11, weight: .semibold))
-                    Text("Setup Server").font(.system(size: 12, weight: .semibold))
+                    Text(L10n.Dashboard.setupServer).font(.system(size: 12, weight: .semibold))
                 }
                 .foregroundColor(.white)
                 .padding(.horizontal, AXSpacing.lg)

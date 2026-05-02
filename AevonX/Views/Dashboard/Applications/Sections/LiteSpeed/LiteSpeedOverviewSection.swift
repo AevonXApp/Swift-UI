@@ -70,7 +70,7 @@ struct LiteSpeedOverviewSection: View {
 
             VStack(alignment: .leading, spacing: AXSpacing.xs) {
                 HStack(spacing: AXSpacing.sm) {
-                    Text("LiteSpeed Service")
+                    Text(L10n.Apps.litespeedService)
                         .font(AXTypography.title2).fontWeight(.bold)
                         .foregroundColor(.axTextPrimary)
 

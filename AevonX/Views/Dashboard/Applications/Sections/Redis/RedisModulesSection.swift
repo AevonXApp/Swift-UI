@@ -25,7 +25,7 @@ struct RedisModulesSection: View {
             Divider().background(Color.axBorder.opacity(0.3))
             if modules.isEmpty {
                 VStack(spacing: AXSpacing.md) { Image(systemName: "puzzlepiece.extension").font(.system(size: 28)).foregroundColor(.axTextMuted)
-                    Text("No modules loaded").font(AXTypography.caption).foregroundColor(.axTextMuted)
+                    Text(L10n.Apps.noModulesLoaded).font(AXTypography.caption).foregroundColor(.axTextMuted)
                 }.frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 ScrollView {

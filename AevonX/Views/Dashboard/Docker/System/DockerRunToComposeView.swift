@@ -47,7 +47,7 @@ struct DockerRunToComposeView: View {
                                 .stroke(Color.axBorder, lineWidth: 1)
                         )
                     
-                    Text("Paste your docker run command here")
+                    Text(L10n.Docker.pasteYourDockerRunCommandHere)
                         .font(AXTypography.caption2)
                         .foregroundColor(.axTextMuted)
                 }

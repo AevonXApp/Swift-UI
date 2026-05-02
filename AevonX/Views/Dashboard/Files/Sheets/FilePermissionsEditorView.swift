@@ -77,7 +77,7 @@ struct FilePermissionsEditorView: View {
                 // Numeric Display
                 HStack(spacing: AXSpacing.lg) {
                     VStack(spacing: AXSpacing.xs) {
-                        Text("Numeric")
+                        Text(L10n.Files.numeric)
                             .font(AXTypography.caption)
                             .foregroundColor(.axTextMuted)
                         Text(String(format: "%03d", numericValue))
@@ -88,7 +88,7 @@ struct FilePermissionsEditorView: View {
                     Divider().frame(height: 50)
                     
                     VStack(spacing: AXSpacing.xs) {
-                        Text("Access Level")
+                        Text(L10n.Files.accessLevel)
                             .font(AXTypography.caption)
                             .foregroundColor(.axTextMuted)
                         Text(humanLabel)
@@ -118,7 +118,7 @@ struct FilePermissionsEditorView: View {
                 
                 // Quick Presets
                 VStack(alignment: .leading, spacing: AXSpacing.sm) {
-                    Text("Quick Presets")
+                    Text(L10n.Files.quickPresets)
                         .font(AXTypography.caption)
                         .foregroundColor(.axTextMuted)
                     

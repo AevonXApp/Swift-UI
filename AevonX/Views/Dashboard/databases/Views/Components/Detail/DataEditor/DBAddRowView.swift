@@ -118,7 +118,7 @@ struct DBAddRowView: View {
                     .cornerRadius(AXCornerRadius.sm)
 
                 if isAuto {
-                    Text("AUTO")
+                    Text(L10n.Literal.auto)
                         .font(AXTypography.caption2).fontWeight(.bold)
                         .foregroundColor(.axAccentBlue)
                         .padding(.horizontal, AXSpacing.xs)
@@ -136,7 +136,7 @@ struct DBAddRowView: View {
                         HStack(spacing: AXSpacing.xxs) {
                             Image(systemName: isNull ? "checkmark.square.fill" : "square")
                                 .font(AXTypography.caption2)
-                            Text("NULL")
+                            Text(L10n.Literal.null)
                                 .font(AXTypography.caption2)
                                 .fontWeight(.medium)
                         }
@@ -164,7 +164,7 @@ struct DBAddRowView: View {
                 .disabled(isAuto)
             } else {
                 HStack {
-                    Text("NULL")
+                    Text(L10n.Literal.null)
                         .font(AXTypography.monoMd)
                         .italic()
                         .foregroundColor(.axTextMuted.opacity(0.5))

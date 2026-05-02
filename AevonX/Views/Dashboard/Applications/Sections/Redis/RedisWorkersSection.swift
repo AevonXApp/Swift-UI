@@ -19,7 +19,7 @@ struct RedisWorkersSection: View {
                 if workers.isEmpty {
                     VStack(spacing: AXSpacing.md) {
                         Image(systemName: "person.2").font(.system(size: 28)).foregroundColor(.axTextMuted)
-                        Text("No connected clients detected").font(AXTypography.caption).foregroundColor(.axTextMuted)
+                        Text(L10n.Apps.noConnectedClientsDetected).font(AXTypography.caption).foregroundColor(.axTextMuted)
                     }.frame(maxWidth: .infinity).padding(.top, 40)
                 } else { workerTable }
             }.padding(AXSpacing.xl)

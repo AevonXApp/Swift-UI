@@ -82,7 +82,7 @@ struct PluginConfigurationView: View {
                             .foregroundColor(.axTextSecondary)
                             .lineLimit(2)
                     } else {
-                        Text("Manage plugin settings and behavior")
+                        Text(L10n.PluginsUI.managePluginSettingsAndBehavior)
                             .font(AXTypography.caption)
                             .foregroundColor(.axTextSecondary)
                     }
@@ -205,7 +205,7 @@ struct PluginConfigurationView: View {
                         Image(systemName: "slider.horizontal.3")
                             .font(.system(size: 32))
                             .foregroundColor(.axTextMuted)
-                        Text("No configuration schema found")
+                        Text(L10n.PluginsUI.noConfigurationSchemaFound)
                             .font(AXTypography.caption)
                             .foregroundColor(.axTextSecondary)
                         

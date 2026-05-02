@@ -22,7 +22,7 @@ struct LiteSpeedModulesSection: View {
                     VStack(spacing: AXSpacing.md) {
                         Spacer()
                         Image(systemName: "puzzlepiece.extension").font(AXTypography.largeTitle).foregroundColor(.axTextMuted.opacity(0.3))
-                        Text("No modules detected").font(AXTypography.callout).foregroundColor(.axTextMuted)
+                        Text(L10n.Apps.noModulesDetected).font(AXTypography.callout).foregroundColor(.axTextMuted)
                         Spacer()
                     }.frame(maxWidth: .infinity).padding(.vertical, AXSpacing.xl)
                 } else {

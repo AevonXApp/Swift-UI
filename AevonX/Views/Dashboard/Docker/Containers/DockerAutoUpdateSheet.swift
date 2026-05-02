@@ -78,7 +78,7 @@ struct DockerAutoUpdateSheet: View {
                 if isChecking {
                     HStack {
                         ProgressView().scaleEffect(0.7)
-                        Text("Checking for updates...")
+                        Text(L10n.Docker.checkingForUpdates)
                             .font(AXTypography.caption)
                             .foregroundColor(.axTextSecondary)
                     }
@@ -89,7 +89,7 @@ struct DockerAutoUpdateSheet: View {
                         .toggleStyle(.switch)
                         .controlSize(.small)
                 } else {
-                    Text("Could not determine update status")
+                    Text(L10n.Docker.couldNotDetermineUpdateStatus)
                         .font(AXTypography.caption)
                         .foregroundColor(.axTextMuted)
                 }
@@ -168,7 +168,7 @@ struct DockerAutoUpdateSheet: View {
                         .foregroundColor(watchtowerRunning ? .axSuccess : .axTextMuted)
                 }
 
-                Text("Watchtower monitors your containers and automatically updates them when new images are available.")
+                Text(L10n.Docker.watchtowerMonitorsYourContainersAndAutomaticallyUpdatesThemWhenNewImagesAreAvailable)
                     .font(AXTypography.caption).foregroundColor(.axTextSecondary)
 
                 Toggle("Notify only (don't auto-update)", isOn: $watchtowerNotifyOnly)

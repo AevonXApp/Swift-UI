@@ -97,85 +97,35 @@ public class ServerDatabasesViewModel: ObservableObject {
         isLoading = false
     }
     
-    // MARK: - Parsing Helpers
-    
+    // MARK: - Parsing Helpers (delegated to InventoryBridge / Go)
+    //
+    // The system-database filter list, the column conventions of `psql -l`,
+    // and the Redis INFO format all live in `core-go/pkg/remote/databases/parsing`.
+    // Centralising in Go means future Windows/Linux clients reuse the same
+    // logic — and the open-source UI doesn't need to know which schemas to hide.
+
     private func parseMySQLDatabases(_ output: String) -> [DatabaseInfo] {
-        var databases: [DatabaseInfo] = []
-        let lines = output.components(separatedBy: .newlines)
-        
-        for line in lines {
-            let trimmed = line.trimmingCharacters(in: .whitespaces)
-            guard !trimmed.isEmpty,
-                  trimmed != "Database",
-                  !trimmed.hasPrefix("+"),
-                  !trimmed.hasPrefix("|") else { continue }
-            
-            let systemDBs = ["information_schema", "mysql", "performance_schema", "sys"]
-            guard !systemDBs.contains(trimmed) else { continue }
-            
-            databases.append(DatabaseInfo(
-                name: trimmed,
-                type: .mysql,
-                status: .online
-            ))
-        }
-        
-        return databases
+        InventoryBridge.shared.parseMySQLDatabases(output).map(toLocal(.mysql))
     }
-    
+
     private func parsePostgreSQLDatabases(_ output: String) -> [DatabaseInfo] {
-        var databases: [DatabaseInfo] = []
-        let lines = output.components(separatedBy: .newlines)
-        
-        for line in lines {
-            let trimmed = line.trimmingCharacters(in: .whitespaces)
-            guard !trimmed.isEmpty,
-                  !trimmed.hasPrefix("Name"),
-                  !trimmed.hasPrefix("-"),
-                  !trimmed.hasPrefix("(") else { continue }
-            
-            let components = trimmed.components(separatedBy: "|")
-            guard let name = components.first?.trimmingCharacters(in: .whitespaces),
-                  !name.isEmpty,
-                  name != "postgres",
-                  name != "template0",
-                  name != "template1" else { continue }
-            
-            databases.append(DatabaseInfo(
-                name: name,
-                type: .postgresql,
-                status: .online
-            ))
-        }
-        
-        return databases
+        InventoryBridge.shared.parsePostgreSQLDatabases(output).map(toLocal(.postgresql))
     }
-    
+
     private func parseRedisInfo(_ output: String) -> DatabaseInfo? {
-        guard output.contains("redis_version") else { return nil }
-        
-        var version: String?
-        var usedMemory: Double = 0
-        
-        let lines = output.components(separatedBy: .newlines)
-        for line in lines {
-            if line.hasPrefix("redis_version:") {
-                version = line.components(separatedBy: ":").last?.trimmingCharacters(in: .whitespaces)
-            }
-            if line.hasPrefix("used_memory:") {
-                if let bytesStr = line.components(separatedBy: ":").last?.trimmingCharacters(in: .whitespaces),
-                   let bytes = Double(bytesStr) {
-                    usedMemory = bytes / (1024 * 1024)
-                }
-            }
-        }
-        
+        guard let core = InventoryBridge.shared.parseRedisInfo(output) else { return nil }
         return DatabaseInfo(
-            name: "Redis Server",
+            name: core.name,
             type: .redis,
-            version: version,
+            version: core.version,
             status: .online,
-            size: usedMemory
+            size: core.size ?? 0
         )
+    }
+
+    private func toLocal(_ type: DatabaseType) -> (DatabaseInfoCore) -> DatabaseInfo {
+        return { core in
+            DatabaseInfo(name: core.name, type: type, status: .online)
+        }
     }
 }

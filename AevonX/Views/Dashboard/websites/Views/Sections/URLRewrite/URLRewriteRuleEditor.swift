@@ -61,7 +61,7 @@ struct URLRewriteRuleEditor: View {
                             .toggleStyle(SwitchToggleStyle(tint: .axAccentBlue))
 
                         if isRegex {
-                            Text("Regex tips: Use ^ for start, $ for end, .* for any characters")
+                            Text(L10n.Websites.regexTipsUseForStartForEndForAnyCharacters)
                                 .font(AXTypography.caption)
                                 .foregroundColor(.axTextTertiary)
                                 .padding(.top, 4)
@@ -73,7 +73,7 @@ struct URLRewriteRuleEditor: View {
                         TextField("e.g., /new-path or https://example.com/page", text: $destination)
                             .textFieldStyle(AXTextFieldStyle())
 
-                        Text("Use $1, $2 for regex capture groups")
+                        Text(L10n.Websites.useForRegexCaptureGroups)
                             .font(AXTypography.caption)
                             .foregroundColor(.axTextTertiary)
                     }
@@ -126,7 +126,7 @@ struct URLRewriteRuleEditor: View {
 
     private var rulePreview: some View {
         VStack(alignment: .leading, spacing: AXSpacing.md) {
-            Text("Preview")
+            Text(L10n.Websites.preview)
                 .font(AXTypography.headline)
                 .foregroundColor(.axTextPrimary)
 

@@ -46,7 +46,7 @@ struct BackupSection: View {
                                     } else {
                                         Image(systemName: "arrow.down.circle")
                                     }
-                                    Text("Create Now")
+                                    Text(L10n.Websites.createNow)
                                 }
                                 .font(AXTypography.subheadline).fontWeight(.semibold)
                             }
@@ -120,7 +120,7 @@ struct BackupSection: View {
                     Button(action: { Task { await viewModel.deleteOldBackups(olderThanDays: 30) } }) {
                         HStack(spacing: 4) {
                             Image(systemName: "trash.circle")
-                            Text("Delete backups older than 30 days")
+                            Text(L10n.Websites.deleteBackupsOlderThanDays)
                         }
                         .font(AXTypography.footnote)
                     }

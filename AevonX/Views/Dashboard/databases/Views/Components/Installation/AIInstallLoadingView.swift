@@ -14,11 +14,11 @@ struct AIInstallLoadingView: View {
             ProgressView()
                 .scaleEffect(1.5)
             
-            Text("Analyzing your server...")
+            Text(L10n.Database.analyzingYourServer)
                 .font(AXTypography.subheadline)
                 .foregroundColor(.axTextSecondary)
             
-            Text("Our AI is determining the best database version and configuration for your system")
+            Text(L10n.Database.ourAiIsDeterminingTheBestDatabaseVersionAndConfigurationForYourSystem)
                 .font(AXTypography.caption)
                 .foregroundColor(.axTextMuted)
                 .multilineTextAlignment(.center)

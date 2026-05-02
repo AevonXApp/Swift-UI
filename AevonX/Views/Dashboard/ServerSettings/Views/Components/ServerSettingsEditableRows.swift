@@ -15,7 +15,7 @@ struct ServerSettingsHostnameRow: View {
     var body: some View {
         HStack {
             Image(systemName: "desktopcomputer").font(AXTypography.callout).foregroundColor(.axTextMuted).frame(width: 22)
-            Text("Hostname").font(AXTypography.body).foregroundColor(.axTextPrimary)
+            Text(L10n.Dashboard.hostname).font(AXTypography.body).foregroundColor(.axTextPrimary)
             Spacer()
             if vm.isEditingHostname {
                 HStack(spacing: AXSpacing.xxs) {
@@ -56,7 +56,7 @@ struct ServerSettingsTimezoneRow: View {
     var body: some View {
         HStack {
             Image(systemName: "globe.americas").font(AXTypography.callout).foregroundColor(.axTextMuted).frame(width: 22)
-            Text("Timezone").font(AXTypography.body).foregroundColor(.axTextPrimary)
+            Text(L10n.Dashboard.timezone).font(AXTypography.body).foregroundColor(.axTextPrimary)
             Spacer()
             if vm.isEditingTimezone {
                 HStack(spacing: AXSpacing.xxs) {

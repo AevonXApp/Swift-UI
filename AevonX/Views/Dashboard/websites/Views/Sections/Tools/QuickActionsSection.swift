@@ -77,7 +77,7 @@ struct QuickActionsSection: View {
                             Image(systemName: "internaldrive")
                                 .font(AXTypography.title2)
                                 .foregroundColor(.axAccentBlue)
-                            Text("Disk Usage")
+                            Text(L10n.Websites.diskUsage)
                                 .font(AXTypography.footnote).fontWeight(.semibold)
                                 .foregroundColor(.axTextPrimary)
                             Text(viewModel.diskUsage)

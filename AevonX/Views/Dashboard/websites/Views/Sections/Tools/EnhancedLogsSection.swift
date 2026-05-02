@@ -93,7 +93,7 @@ struct EnhancedLogsSection: View {
                 Task { await viewModel.clearLog() }
             }
         } message: {
-            Text("Are you sure you want to clear this log file? This action cannot be undone.")
+            Text(L10n.Websites.areYouSureYouWantToClearThisLogFileThisActionCannotBeUndone)
         }
         .alert("Block IP", isPresented: Binding(
             get: { ipToBlock != nil },
@@ -116,10 +116,10 @@ struct EnhancedLogsSection: View {
     private var headerBar: some View {
         HStack(spacing: AXSpacing.md) {
             VStack(alignment: .leading, spacing: 2) {
-                Text("Logs")
+                Text(L10n.Websites.logs)
                     .font(AXTypography.title2).fontWeight(.bold)
                     .foregroundColor(.axTextPrimary)
-                Text("Log viewer, search & filtering")
+                Text(L10n.Websites.logViewerSearchFiltering)
                     .font(AXTypography.footnote)
                     .foregroundColor(.axTextTertiary)
             }
@@ -154,7 +154,7 @@ struct EnhancedLogsSection: View {
             }) {
                 HStack(spacing: 4) {
                     Image(systemName: "brain")
-                    Text("AI Analysis")
+                    Text(L10n.Websites.aiAnalysis)
                 }
                 .font(AXTypography.footnote).fontWeight(.semibold)
             }
@@ -260,20 +260,20 @@ struct EnhancedLogsSection: View {
             HStack(spacing: 0) {
                 Text("#")
                     .frame(width: 35, alignment: .center)
-                Text("LEVEL")
+                Text(L10n.Label.level)
                     .frame(width: 55, alignment: .center)
                     .overlay(alignment: .leading) { Color.axBorder.opacity(0.15).frame(width: 1) }
-                Text("TIME")
+                Text(L10n.Label.time)
                     .frame(width: 120, alignment: .leading)
                     .padding(.leading, 8)
                     .overlay(alignment: .leading) { Color.axBorder.opacity(0.15).frame(width: 1) }
-                Text("STATUS")
+                Text(L10n.Label.status)
                     .frame(width: 50, alignment: .center)
                     .overlay(alignment: .leading) { Color.axBorder.opacity(0.15).frame(width: 1) }
-                Text("METHOD")
+                Text(L10n.Label.method)
                     .frame(width: 55, alignment: .center)
                     .overlay(alignment: .leading) { Color.axBorder.opacity(0.15).frame(width: 1) }
-                Text("URL / MESSAGE")
+                Text(L10n.Websites.urlMessage)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.leading, 8)
                     .overlay(alignment: .leading) { Color.axBorder.opacity(0.15).frame(width: 1) }
@@ -292,7 +292,7 @@ struct EnhancedLogsSection: View {
                     if viewModel.isLoading {
                         HStack {
                             ProgressView().scaleEffect(0.8)
-                            Text("Loading logs...").font(AXTypography.subheadline).foregroundColor(.axTextMuted)
+                            Text(L10n.Websites.loadingLogs).font(AXTypography.subheadline).foregroundColor(.axTextMuted)
                         }
                         .padding(AXSpacing.xl).frame(maxWidth: .infinity)
                     } else if filteredLines.isEmpty {
@@ -397,7 +397,7 @@ struct EnhancedLogsSection: View {
                     Button(action: { ipToBlock = parsed.ip }) {
                         HStack(spacing: 4) {
                             Image(systemName: "hand.raised.fill")
-                            Text("Block IP")
+                            Text(L10n.Websites.blockIp)
                         }
                         .font(AXTypography.caption).fontWeight(.semibold)
                         .foregroundColor(.white)

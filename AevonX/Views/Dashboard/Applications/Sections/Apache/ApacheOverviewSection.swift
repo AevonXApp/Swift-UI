@@ -70,7 +70,7 @@ struct ApacheOverviewSection: View {
 
             VStack(alignment: .leading, spacing: AXSpacing.xs) {
                 HStack(spacing: AXSpacing.sm) {
-                    Text("Apache Service")
+                    Text(L10n.Apps.apacheService)
                         .font(.system(size: 18, weight: .bold))
                         .foregroundColor(.axTextPrimary)
 

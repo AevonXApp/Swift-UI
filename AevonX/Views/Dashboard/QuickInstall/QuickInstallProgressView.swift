@@ -35,7 +35,7 @@ struct QuickInstallProgressView: View {
             } else {
                 VStack {
                     ProgressView()
-                    Text("Preparing installation...")
+                    Text(L10n.Dashboard.preparingInstallation)
                         .font(AXTypography.caption)
                         .foregroundColor(.axTextSecondary)
                         .padding(.top, AXSpacing.sm)
@@ -117,7 +117,7 @@ struct QuickInstallProgressView: View {
                     HStack(spacing: 4) {
                         Image(systemName: "arrow.down.right.and.arrow.up.left")
                             .font(.system(size: 11))
-                        Text("Minimize")
+                        Text(L10n.Dashboard.minimize)
                             .font(.system(size: 12, weight: .medium))
                     }
                     .foregroundColor(.axTextSecondary)

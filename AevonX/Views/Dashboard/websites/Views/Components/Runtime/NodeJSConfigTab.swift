@@ -143,7 +143,7 @@ struct NodeJSConfigTab: View {
             if viewModel.isLoading {
                 VStack(spacing: AXSpacing.md) {
                     ProgressView()
-                    Text("Detecting Node.js configuration...")
+                    Text(L10n.Websites.detectingNodeJsConfiguration)
                         .font(AXTypography.caption)
                         .foregroundColor(.axTextTertiary)
                 }

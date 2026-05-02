@@ -1323,77 +1323,35 @@ public class ServerConnectionViewModel: ObservableObject {
         ].joined(separator: "; echo '~~AX~~'; ")
 
         let hwOut = await SSHBridge.shared.executeAsync(serverID: serverId, command: batchCmd)
-        let sections = hwOut.components(separatedBy: "~~AX~~").map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
 
-        // Parse RAM (section 0)
-        var ramTotal = 0, ramUsed = 0, ramAvail = 0, ramBC = 0
-        if sections.count > 0 {
-            let parts = sections[0].split(separator: " ")
-            if parts.count >= 4 {
-                ramTotal = Int(parts[0]) ?? 0
-                ramUsed  = Int(parts[1]) ?? 0
-                ramAvail = Int(parts[2]) ?? 0
-                ramBC    = Int(parts[3]) ?? 0
-            }
-        }
+        // Hand the raw output to Go — it owns the section format, the
+        // tokenisation, and the "Unknown" → empty fallback for OS name.
+        // The local code only decides which parsed fields to apply where.
+        guard let inv = InventoryBridge.shared.parseHardware(hwOut) else { return }
 
-        // Parse Disk (section 1)
-        var diskTotal = 0.0, diskUsed = 0.0
-        if sections.count > 1 {
-            let parts = sections[1].split(separator: " ")
-            if parts.count >= 2 {
-                diskTotal = Double(parts[0]) ?? 0
-                diskUsed  = Double(parts[1]) ?? 0
-            }
-        }
-
-        // Parse CPU cores (section 2)
-        let cores = sections.count > 2 ? (Int(sections[2]) ?? 0) : 0
-
-        // Parse CPU model (section 3)
-        let cpuModel = sections.count > 3 ? sections[3] : ""
-
-        // Apply hardware specs
-        if ramTotal > 0 {
+        if inv.ramTotalMB > 0 {
             stats.applyHardwareSpecs(
-                totalRAMMB: ramTotal,
-                usedRAMMB: ramUsed,
-                totalDiskGB: diskTotal,
-                usedDiskGB: diskUsed,
-                cpuCores: cores,
-                ramAvailableMB: ramAvail,
-                ramBuffCacheMB: ramBC,
-                cpuModelName: cpuModel
+                totalRAMMB: inv.ramTotalMB,
+                usedRAMMB: inv.ramUsedMB,
+                totalDiskGB: inv.diskTotalGB,
+                usedDiskGB: inv.diskUsedGB,
+                cpuCores: inv.cpuCores,
+                ramAvailableMB: inv.ramAvailableMB,
+                ramBuffCacheMB: inv.ramBuffCacheMB,
+                cpuModelName: inv.cpuModel
             )
         }
 
-        // Parse Network totals (section 4)
-        if sections.count > 4 {
-            let netParts = sections[4].split(separator: " ")
-            if netParts.count >= 2,
-               let rxGB = Double(netParts[0]),
-               let txGB = Double(netParts[1]) {
-                stats.applyNetworkTotals(rxGB: rxGB, txGB: txGB)
-            }
+        if inv.netRxGB > 0 || inv.netTxGB > 0 {
+            stats.applyNetworkTotals(rxGB: inv.netRxGB, txGB: inv.netTxGB)
         }
 
-        // Parse OS (section 5)
-        if sections.count > 5 {
-            let osName = sections[5]
-            if !osName.isEmpty && osName != "Unknown" {
-                detectedOS = osName
-            }
+        if !inv.osPrettyName.isEmpty {
+            detectedOS = inv.osPrettyName
         }
 
-        // Parse Swap (section 6)
-        if sections.count > 6 {
-            let swapParts = sections[6].split(separator: " ")
-            if swapParts.count >= 2,
-               let swapTotal = Int(swapParts[0]),
-               let swapUsed = Int(swapParts[1]),
-               swapTotal > 0 {
-                stats.applySwapInfo(totalMB: swapTotal, usedMB: swapUsed)
-            }
+        if inv.swapTotalMB > 0 {
+            stats.applySwapInfo(totalMB: inv.swapTotalMB, usedMB: inv.swapUsedMB)
         }
     }
     

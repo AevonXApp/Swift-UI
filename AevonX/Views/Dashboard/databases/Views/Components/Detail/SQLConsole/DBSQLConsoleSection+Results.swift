@@ -341,7 +341,7 @@ extension DBSQLConsoleSection {
         let isCopied = copiedResultCell == cellId
         return Group {
             if value.isEmpty || value == "NULL" {
-                Text("NULL")
+                Text(L10n.Literal.null)
                     .font(AXTypography.monoXs).fontWeight(.medium)
                     .foregroundColor(.axTextMuted.opacity(0.4))
                     .italic()

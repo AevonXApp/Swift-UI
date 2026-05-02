@@ -28,7 +28,7 @@ struct DockerContainerWizard: View {
         VStack(spacing: 0) {
             // Header
             HStack {
-                Text("Create Container")
+                Text(L10n.Docker.createContainer)
                     .font(AXTypography.headline)
                     .foregroundColor(.axTextPrimary)
                 Spacer()
@@ -89,7 +89,7 @@ struct DockerContainerWizard: View {
                 if currentStep < steps.count - 1 {
                     Button(action: { currentStep += 1 }) {
                         HStack(spacing: 4) {
-                            Text("Next")
+                            Text(L10n.Docker.next)
                             Image(systemName: "chevron.right")
                                 .font(.system(size: 10))
                         }
@@ -191,7 +191,7 @@ struct DockerContainerWizard: View {
                     .textFieldStyle(AXTextFieldStyle())
             }
             
-            Text("Tip: Use image:tag format. If no tag is specified, 'latest' will be used.")
+            Text(L10n.Docker.tipUseImageTagFormatIfNoTagIsSpecifiedLatestWillBeUsed)
                 .font(.system(size: 10))
                 .foregroundColor(.axTextMuted)
         }
@@ -336,7 +336,7 @@ struct DockerContainerWizard: View {
             
             WizardField(label: "Network") {
                 Picker("", selection: $config.network) {
-                    Text("Default (bridge)").tag("")
+                    Text(L10n.Docker.defaultBridge).tag("")
                     ForEach(availableNetworks) { net in
                         Text("\(net.name) (\(net.driver))").tag(net.name)
                     }
@@ -427,7 +427,7 @@ struct DockerContainerWizard: View {
             
             // Command preview
             VStack(alignment: .leading, spacing: 4) {
-                Text("Generated Command")
+                Text(L10n.Docker.generatedCommand)
                     .font(AXTypography.caption)
                     .fontWeight(.semibold)
                     .foregroundColor(.axTextSecondary)

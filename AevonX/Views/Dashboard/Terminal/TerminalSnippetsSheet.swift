@@ -242,10 +242,10 @@ struct TerminalSnippetsSheet: View {
                             .foregroundColor(.axTextMuted)
                         
                         VStack(spacing: AXSpacing.xs) {
-                            Text("No snippets found")
+                            Text(L10n.Terminal.noSnippetsFound)
                                 .font(.system(size: 14, weight: .medium))
                                 .foregroundColor(.axTextSecondary)
-                            Text("Try a different search or add a new snippet")
+                            Text(L10n.Terminal.tryADifferentSearchOrAddANewSnippet)
                                 .font(.system(size: 12))
                                 .foregroundColor(.axTextMuted)
                         }
@@ -325,7 +325,7 @@ struct TerminalSnippetsSheet: View {
                                 .font(.system(size: 13, weight: .medium))
                                 .foregroundColor(.axTextPrimary)
                             if custom {
-                                Text("Custom")
+                                Text(L10n.Terminal.custom)
                                     .font(.system(size: 8, weight: .bold))
                                     .foregroundColor(.axAccentGreen)
                                     .padding(.horizontal, 4)
@@ -431,7 +431,7 @@ struct AddSnippetSheet: View {
                                 endPoint: .bottomTrailing
                             )
                         )
-                    Text("New Custom Snippet")
+                    Text(L10n.Terminal.newCustomSnippet)
                         .font(.system(size: 15, weight: .bold))
                         .foregroundColor(.axTextPrimary)
                 }
@@ -530,7 +530,7 @@ struct AddSnippetSheet: View {
                     // Live Preview
                     if isValid {
                         VStack(alignment: .leading, spacing: AXSpacing.xs) {
-                            Text("PREVIEW")
+                            Text(L10n.Label.preview)
                                 .font(.system(size: 10, weight: .bold))
                                 .foregroundColor(.axTextMuted)
                                 .tracking(1)
@@ -548,7 +548,7 @@ struct AddSnippetSheet: View {
                                         Text(name)
                                             .font(.system(size: 13, weight: .medium))
                                             .foregroundColor(.axTextPrimary)
-                                        Text("Custom")
+                                        Text(L10n.Terminal.custom)
                                             .font(.system(size: 8, weight: .bold))
                                             .foregroundColor(.axAccentGreen)
                                             .padding(.horizontal, 4)

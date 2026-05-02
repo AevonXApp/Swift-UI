@@ -21,7 +21,7 @@ struct CompressSheetView: View {
                 Image(systemName: "archivebox")
                     .font(.system(size: 18))
                     .foregroundColor(.axAccentBlue)
-                Text("Compress Files")
+                Text(L10n.Files.compressFiles)
                     .font(AXTypography.headline)
                     .foregroundColor(.axTextPrimary)
             }
@@ -32,7 +32,7 @@ struct CompressSheetView: View {
             
             VStack(alignment: .leading, spacing: AXSpacing.sm) {
                 VStack(alignment: .leading, spacing: AXSpacing.xs) {
-                    Text("Archive Name")
+                    Text(L10n.Files.archiveName)
                         .font(AXTypography.caption)
                         .foregroundColor(.axTextSecondary)
                     TextField("archive", text: $archiveName)
@@ -41,7 +41,7 @@ struct CompressSheetView: View {
                 }
                 
                 VStack(alignment: .leading, spacing: AXSpacing.xs) {
-                    Text("Format")
+                    Text(L10n.Files.format)
                         .font(AXTypography.caption)
                         .foregroundColor(.axTextSecondary)
                     Picker("", selection: $selectedFormat) {
@@ -68,7 +68,7 @@ struct CompressSheetView: View {
                                 .progressViewStyle(CircularProgressViewStyle(tint: .white))
                                 .scaleEffect(0.5)
                         }
-                        Text("Compress")
+                        Text(L10n.Files.compress)
                     }
                 }
                 .buttonStyle(AXPrimaryButtonStyle())

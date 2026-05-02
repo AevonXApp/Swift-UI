@@ -85,7 +85,7 @@ struct PluginDataTableComponent: View {
                             columnHeaderFlex(col)
                         }
                         if hasRowActions {
-                            Text("ACTIONS")
+                            Text(L10n.Label.actions)
                                 .font(.system(size: 11, weight: .bold))
                                 .foregroundColor(.axTextSecondary)
                                 .tracking(0.5)
@@ -351,7 +351,7 @@ struct PluginDataTableComponent: View {
                 } label: {
                     HStack(spacing: 4) {
                         Image(systemName: "square.and.arrow.up").font(.system(size: 11, weight: .medium))
-                        Text("Export").font(.system(size: 12, weight: .medium))
+                        Text(L10n.PluginsUI.export).font(.system(size: 12, weight: .medium))
                     }.foregroundColor(.axTextSecondary).padding(.horizontal, 10).padding(.vertical, 4)
                     .background(Color.axSurface).cornerRadius(AXCornerRadius.md)
                     .overlay(RoundedRectangle(cornerRadius: AXCornerRadius.md).stroke(Color.axBorder.opacity(0.6), lineWidth: 1))
@@ -362,7 +362,7 @@ struct PluginDataTableComponent: View {
                     Image(systemName: "arrow.clockwise").font(.system(size: 11, weight: .semibold))
                         .rotationEffect(.degrees(vm.isLoading ? 360 : 0))
                         .animation(vm.isLoading ? .linear(duration: 0.8).repeatForever(autoreverses: false) : .default, value: vm.isLoading)
-                    Text("Refresh").font(.system(size: 12, weight: .semibold))
+                    Text(L10n.PluginsUI.refresh).font(.system(size: 12, weight: .semibold))
                 }.foregroundColor(vm.isLoading ? .axTextMuted : .axAccentBlue)
                 .padding(.horizontal, 12).padding(.vertical, 4)
                 .background(Color.axAccentBlue.opacity(vm.isLoading ? 0.05 : 0.1)).cornerRadius(AXCornerRadius.md)
@@ -501,7 +501,7 @@ struct PluginDataTableComponent: View {
                     .frame(width: 36, height: 36).rotationEffect(.degrees(-90))
                     .animation(.linear(duration: 0.8).repeatForever(autoreverses: false), value: vm.isLoading)
             }
-            Text("Fetching data from server...").font(.system(size: 13)).foregroundColor(.axTextMuted)
+            Text(L10n.PluginsUI.fetchingDataFromServer).font(.system(size: 13)).foregroundColor(.axTextMuted)
         }.frame(maxWidth: .infinity, maxHeight: .infinity).padding(AXSpacing.xxl)
     }
 
@@ -512,11 +512,11 @@ struct PluginDataTableComponent: View {
                 Image(systemName: "exclamationmark.triangle.fill").font(.system(size: 22)).foregroundColor(.axError)
             }
             VStack(spacing: 6) {
-                Text("Failed to load data").font(.system(size: 14, weight: .semibold)).foregroundColor(.axTextPrimary)
+                Text(L10n.PluginsUI.failedToLoadData).font(.system(size: 14, weight: .semibold)).foregroundColor(.axTextPrimary)
                 Text(error).font(.system(size: 12)).foregroundColor(.axTextSecondary).multilineTextAlignment(.center).frame(maxWidth: 320)
             }
             Button(action: { Task { await vm.load(plugin: plugin, serverId: serverId, context: context) } }) {
-                HStack(spacing: 5) { Image(systemName: "arrow.clockwise"); Text("Try Again") }
+                HStack(spacing: 5) { Image(systemName: "arrow.clockwise"); Text(L10n.PluginsUI.tryAgain) }
                     .font(.system(size: 12, weight: .semibold)).foregroundColor(.axAccentBlue)
                     .padding(.horizontal, 16).padding(.vertical, 8)
                     .background(Color.axAccentBlue.opacity(0.1)).cornerRadius(AXCornerRadius.md)
@@ -531,8 +531,8 @@ struct PluginDataTableComponent: View {
                 Image(systemName: "tray").font(.system(size: 22)).foregroundColor(.axTextMuted)
             }
             VStack(spacing: 4) {
-                Text("No data").font(.system(size: 14, weight: .semibold)).foregroundColor(.axTextSecondary)
-                Text("The command returned no results").font(.system(size: 12)).foregroundColor(.axTextMuted)
+                Text(L10n.PluginsUI.noData).font(.system(size: 14, weight: .semibold)).foregroundColor(.axTextSecondary)
+                Text(L10n.PluginsUI.theCommandReturnedNoResults).font(.system(size: 12)).foregroundColor(.axTextMuted)
             }
         }.frame(maxWidth: .infinity, maxHeight: .infinity).padding(AXSpacing.xxl)
     }
@@ -724,7 +724,7 @@ struct PluginDataTableComponent: View {
     private var filterBar: some View {
         HStack(spacing: AXSpacing.sm) {
             Image(systemName: "line.3.horizontal.decrease.circle").font(.system(size: 11, weight: .medium)).foregroundColor(.axTextMuted)
-            Text("Filters").font(.system(size: 11, weight: .semibold)).foregroundColor(.axTextSecondary)
+            Text(L10n.PluginsUI.filters).font(.system(size: 11, weight: .semibold)).foregroundColor(.axTextSecondary)
 
             ForEach(columnFilters, id: \.key) { filter in
                 if filter.type == .select {
@@ -765,7 +765,7 @@ struct PluginDataTableComponent: View {
                 Button(action: { activeFilters.removeAll() }) {
                     HStack(spacing: 3) {
                         Image(systemName: "xmark.circle.fill").font(.system(size: 10))
-                        Text("Clear").font(.system(size: 10, weight: .medium))
+                        Text(L10n.PluginsUI.clear).font(.system(size: 10, weight: .medium))
                     }.foregroundColor(.axTextMuted)
                 }.buttonStyle(.plain)
             }

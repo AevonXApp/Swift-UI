@@ -61,7 +61,7 @@ struct DockerConnectDomainSheet: View {
                     
                     if isComplete {
                         VStack(spacing: AXSpacing.sm) {
-                            Text("Your container is now accessible at:")
+                            Text(L10n.Docker.yourContainerIsNowAccessibleAt)
                                 .font(AXTypography.caption)
                                 .foregroundColor(.axTextMuted)
                             Text(enableSSL ? "https://\(domain)" : "http://\(domain)")
@@ -145,7 +145,7 @@ struct DockerConnectDomainSheet: View {
                                     }
                                     
                                     VStack(alignment: .leading, spacing: 4) {
-                                        Text("Active Domain")
+                                        Text(L10n.Docker.activeDomain)
                                             .font(.system(size: 10, weight: .bold))
                                             .foregroundColor(.axSuccess)
                                             .tracking(0.5)
@@ -264,7 +264,7 @@ struct DockerConnectDomainSheet: View {
                         } label: {
                             HStack(spacing: 6) {
                                 Image(systemName: "arrow.triangle.2.circlepath")
-                                Text("Change Domain")
+                                Text(L10n.Docker.changeDomain)
                             }
                             .font(.system(size: 13, weight: .semibold))
                             .foregroundColor(.white)
@@ -309,14 +309,14 @@ struct DockerConnectDomainSheet: View {
                         
                         // Port Selection
                         VStack(alignment: .leading, spacing: AXSpacing.sm) {
-                            Text("Container Port")
+                            Text(L10n.Docker.containerPort)
                                 .font(AXTypography.subheadline)
                                 .foregroundColor(.axTextSecondary)
                             
                             if isLoading {
                                 HStack {
                                     ProgressView().scaleEffect(0.7)
-                                    Text("Detecting ports...")
+                                    Text(L10n.Docker.detectingPorts)
                                         .font(AXTypography.caption)
                                         .foregroundColor(.axTextMuted)
                                 }
@@ -325,7 +325,7 @@ struct DockerConnectDomainSheet: View {
                                     Image(systemName: "exclamationmark.triangle")
                                         .foregroundColor(.axWarning)
                                         .font(.system(size: 12))
-                                    Text("No exposed ports detected. Enter manually.")
+                                    Text(L10n.Docker.noExposedPortsDetectedEnterManually)
                                         .font(AXTypography.caption)
                                         .foregroundColor(.axWarning)
                                 }
@@ -367,7 +367,7 @@ struct DockerConnectDomainSheet: View {
                         
                         // Domain Input
                         VStack(alignment: .leading, spacing: AXSpacing.sm) {
-                            Text("Domain Name")
+                            Text(L10n.Docker.domainName)
                                 .font(AXTypography.subheadline)
                                 .foregroundColor(.axTextSecondary)
                             
@@ -378,14 +378,14 @@ struct DockerConnectDomainSheet: View {
                                 .cornerRadius(AXCornerRadius.sm)
                                 .overlay(RoundedRectangle(cornerRadius: AXCornerRadius.sm).stroke(Color.axBorder, lineWidth: 1))
                             
-                            Text("Make sure DNS A record points to your server IP")
+                            Text(L10n.Docker.makeSureDnsARecordPointsToYourServerIp)
                                 .font(AXTypography.caption2)
                                 .foregroundColor(.axTextMuted)
                         }
                         
                         // Options
                         VStack(alignment: .leading, spacing: AXSpacing.sm) {
-                            Text("Options")
+                            Text(L10n.Docker.options)
                                 .font(AXTypography.subheadline)
                                 .foregroundColor(.axTextSecondary)
                             
@@ -394,7 +394,7 @@ struct DockerConnectDomainSheet: View {
                                     Image(systemName: "lock.fill")
                                         .font(.system(size: 11))
                                         .foregroundColor(.axSuccess)
-                                    Text("Enable SSL (Let's Encrypt)")
+                                    Text(L10n.Docker.enableSslLetsEncrypt)
                                         .font(AXTypography.caption)
                                 }
                             }
@@ -406,7 +406,7 @@ struct DockerConnectDomainSheet: View {
                                     Image(systemName: "antenna.radiowaves.left.and.right")
                                         .font(.system(size: 11))
                                         .foregroundColor(.axAccentBlue)
-                                    Text("Enable WebSocket Support")
+                                    Text(L10n.Docker.enableWebsocketSupport)
                                         .font(AXTypography.caption)
                                 }
                             }
@@ -433,7 +433,7 @@ struct DockerConnectDomainSheet: View {
                     }) {
                         HStack(spacing: 6) {
                             Image(systemName: "globe")
-                            Text("Connect Domain")
+                            Text(L10n.Docker.connectDomain)
                         }
                         .font(.system(size: 13, weight: .semibold))
                         .padding(.horizontal, 16)

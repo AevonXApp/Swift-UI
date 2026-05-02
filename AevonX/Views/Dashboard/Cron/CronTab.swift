@@ -147,13 +147,13 @@ struct CronTab: View {
             } else {
                 // Table header
                 HStack(spacing: AXSpacing.md) {
-                    Text("Task")
+                    Text(L10n.Cron.task)
                         .frame(maxWidth: .infinity, alignment: .leading)
-                    Text("Status")
+                    Text(L10n.Cron.status)
                         .frame(width: 80)
-                    Text("Last Executed")
+                    Text(L10n.Cron.lastExecuted)
                         .frame(width: 90, alignment: .trailing)
-                    Text("Actions")
+                    Text(L10n.Cron.actions)
                         .frame(width: 160, alignment: .trailing)
                 }
                 .font(.system(size: 10, weight: .semibold))
@@ -196,7 +196,7 @@ struct CronTab: View {
                     .foregroundColor(.axAccentBlue.opacity(0.5))
             }
             
-            Text("No Cron Jobs")
+            Text(L10n.Cron.noCronJobs)
                 .font(.system(size: 18, weight: .semibold))
                 .foregroundColor(.axTextPrimary)
             
@@ -209,7 +209,7 @@ struct CronTab: View {
                 Button(action: { vm.editingJob = nil; vm.showAddSheet = true }) {
                     HStack(spacing: AXSpacing.xs) {
                         Image(systemName: "plus").font(.system(size: 12, weight: .bold))
-                        Text("Create Task").font(.system(size: 13, weight: .semibold))
+                        Text(L10n.Cron.createTask).font(.system(size: 13, weight: .semibold))
                     }
                     .foregroundColor(.white)
                     .padding(.horizontal, AXSpacing.xl)
@@ -222,7 +222,7 @@ struct CronTab: View {
                 Button(action: { selectedSubTab = 1 }) {
                     HStack(spacing: AXSpacing.xs) {
                         Image(systemName: "book.closed").font(.system(size: 12))
-                        Text("Browse Scripts").font(.system(size: 13, weight: .medium))
+                        Text(L10n.Cron.browseScripts).font(.system(size: 13, weight: .medium))
                     }
                     .foregroundColor(.axAccentBlue)
                     .padding(.horizontal, AXSpacing.xl)
@@ -242,7 +242,7 @@ struct CronTab: View {
     private var executeResultSheet: some View {
         VStack(spacing: 0) {
             HStack {
-                Text("Execution Result")
+                Text(L10n.Cron.executionResult)
                     .font(.system(size: 16, weight: .bold))
                     .foregroundColor(.axTextPrimary)
                 Spacer()

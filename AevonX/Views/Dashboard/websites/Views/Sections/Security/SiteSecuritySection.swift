@@ -148,7 +148,7 @@ struct SiteSecuritySection: View {
 
         return HStack(spacing: AXSpacing.xl) {
             VStack(alignment: .leading, spacing: 4) {
-                Text("Security Score")
+                Text(L10n.Websites.securityScore)
                     .font(AXTypography.subheadline)
                     .foregroundColor(.axTextSecondary)
                 Text("\(Int(score))%")

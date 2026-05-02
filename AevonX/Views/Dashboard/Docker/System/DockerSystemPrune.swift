@@ -22,7 +22,7 @@ struct DockerSystemPrune: View {
                 HStack(spacing: 6) {
                     Image(systemName: "trash.circle.fill")
                         .foregroundColor(.axError)
-                    Text("System Prune")
+                    Text(L10n.Docker.systemPrune)
                         .font(AXTypography.headline)
                         .foregroundColor(.axTextPrimary)
                 }
@@ -44,10 +44,10 @@ struct DockerSystemPrune: View {
                         Image(systemName: "exclamationmark.triangle.fill")
                             .foregroundColor(.axWarning)
                         VStack(alignment: .leading, spacing: 2) {
-                            Text("This will remove unused Docker resources")
+                            Text(L10n.Docker.thisWillRemoveUnusedDockerResources)
                                 .font(.system(size: 12, weight: .bold))
                                 .foregroundColor(.axTextPrimary)
-                            Text("Stopped containers, dangling images, unused networks, and build cache will be removed.")
+                            Text(L10n.Docker.stoppedContainersDanglingImagesUnusedNetworksAndBuildCacheWillBeRemoved)
                                 .font(.system(size: 10))
                                 .foregroundColor(.axTextSecondary)
                         }
@@ -61,10 +61,10 @@ struct DockerSystemPrune: View {
                     VStack(alignment: .leading, spacing: AXSpacing.md) {
                         Toggle(isOn: $pruneAll) {
                             VStack(alignment: .leading) {
-                                Text("Remove ALL unused images")
+                                Text(L10n.Docker.removeAllUnusedImages)
                                     .font(.system(size: 12, weight: .semibold))
                                     .foregroundColor(.axTextPrimary)
-                                Text("Not just dangling images (adds --all flag)")
+                                Text(L10n.Docker.notJustDanglingImagesAddsAllFlag)
                                     .font(.system(size: 10))
                                     .foregroundColor(.axTextMuted)
                             }
@@ -73,7 +73,7 @@ struct DockerSystemPrune: View {
                         
                         Toggle(isOn: $pruneVolumes) {
                             VStack(alignment: .leading) {
-                                Text("Also prune volumes")
+                                Text(L10n.Docker.alsoPruneVolumes)
                                     .font(.system(size: 12, weight: .semibold))
                                     .foregroundColor(.axTextPrimary)
                                 Text("⚠️ This will delete ALL unused volume data permanently!")
@@ -87,7 +87,7 @@ struct DockerSystemPrune: View {
                     // Output
                     if !output.isEmpty {
                         VStack(alignment: .leading, spacing: 4) {
-                            Text("Output")
+                            Text(L10n.Docker.output)
                                 .font(.system(size: 10, weight: .bold))
                                 .foregroundColor(.axTextMuted)
                             ScrollView {

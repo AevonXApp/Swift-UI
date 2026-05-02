@@ -46,7 +46,7 @@ struct CronAddTaskSheet: View {
                     Text(isEditing ? L10n.Cron.editTask : L10n.Cron.addTask)
                         .font(.system(size: 18, weight: .bold))
                         .foregroundColor(.axTextPrimary)
-                    Text("Configure a scheduled task for your server")
+                    Text(L10n.Cron.configureAScheduledTaskForYourServer)
                         .font(.system(size: 12))
                         .foregroundColor(.axTextTertiary)
                 }
@@ -187,7 +187,7 @@ struct CronAddTaskSheet: View {
                             Button(action: { scriptContent = taskType.defaultScript(param: customParam) }) {
                                 HStack(spacing: 3) {
                                     Image(systemName: "arrow.counterclockwise").font(.system(size: 9))
-                                    Text("Reset").font(.system(size: 10, weight: .medium))
+                                    Text(L10n.Cron.reset).font(.system(size: 10, weight: .medium))
                                 }
                                 .foregroundColor(.axAccentBlue)
                             }
@@ -208,7 +208,7 @@ struct CronAddTaskSheet: View {
                         HStack(spacing: AXSpacing.xs) {
                             Image(systemName: "exclamationmark.triangle")
                                 .font(.system(size: 10))
-                            Text("Avoid dangerous commands: shutdown, init 0, mkfs, rm -rf /")
+                            Text(L10n.Cron.avoidDangerousCommandsShutdownInitMkfsRmRf)
                                 .font(.system(size: 10))
                         }
                         .foregroundColor(.axWarning)

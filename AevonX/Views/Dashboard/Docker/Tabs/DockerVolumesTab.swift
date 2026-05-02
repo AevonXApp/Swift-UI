@@ -240,7 +240,7 @@ private struct CreateVolumeSheet: View {
                 .foregroundColor(.axTextPrimary)
             
             VStack(alignment: .leading, spacing: 8) {
-                Text("Volume Name")
+                Text(L10n.Docker.volumeName)
                     .font(AXTypography.caption)
                     .foregroundColor(.axTextSecondary)
                 
@@ -249,7 +249,7 @@ private struct CreateVolumeSheet: View {
             }
             
             VStack(alignment: .leading, spacing: 8) {
-                Text("Driver")
+                Text(L10n.Docker.driver)
                     .font(AXTypography.caption)
                     .foregroundColor(.axTextSecondary)
                 

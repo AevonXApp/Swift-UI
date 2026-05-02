@@ -58,7 +58,7 @@ struct DashboardSidebar: View {
                 HStack(spacing: AXSpacing.xs) {
                     Image(systemName: "chevron.left")
                         .font(.system(size: 10, weight: .semibold))
-                    Text("Servers")
+                    Text(L10n.Dashboard.servers)
                         .font(.system(size: 11, weight: .semibold))
                 }
                 .foregroundColor(isHoveringBack ? .axTextPrimary : .axTextTertiary)
@@ -199,7 +199,7 @@ struct DashboardSidebar: View {
         let pluginTabs = hookRegistry.plugins(for: .sidebarTabs)
         if !pluginTabs.isEmpty {
             VStack(alignment: .leading, spacing: AXSpacing.xxs) {
-                Text("EXTENSIONS")
+                Text(L10n.Label.extensions)
                     .font(.system(size: 9, weight: .bold, design: .rounded))
                     .foregroundColor(.axTextMuted.opacity(0.6))
                     .tracking(1.2)

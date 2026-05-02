@@ -62,10 +62,10 @@ struct DockerDependencyGraphView: View {
                             Image(systemName: "point.3.connected.trianglepath.dotted")
                                 .font(.system(size: 40))
                                 .foregroundColor(.axTextMuted)
-                            Text("No dependencies found")
+                            Text(L10n.Docker.noDependenciesFound)
                                 .font(AXTypography.body)
                                 .foregroundColor(.axTextSecondary)
-                            Text("Containers sharing networks or volumes will appear here")
+                            Text(L10n.Docker.containersSharingNetworksOrVolumesWillAppearHere)
                                 .font(AXTypography.caption)
                                 .foregroundColor(.axTextMuted)
                         }

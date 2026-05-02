@@ -87,15 +87,6 @@ extension L10n {
         static let loading = s("status.loading", "Loading...")
         static let pleaseWait = s("status.pleaseWait", "Please wait...")
         static let connectionFailed = s("status.connectionFailed", "Connection Failed")
-        static let readyToConnect = s("status.readyToConnect", "Ready to Connect")
-        static let requestingAuth = s("status.requestingAuth", "Requesting Authorization")
-        static let encryptingAuth = s("status.encryptingAuth", "Encrypting Authorization")
-        static let validatingAuth = s("status.validatingAuth", "Validating Authorization")
-        static let authenticating = s("status.authenticating", "Authenticating")
-        static let decryptingCreds = s("status.decryptingCreds", "Decrypting Credentials")
-        static let verifyingHost = s("status.verifyingHost", "Verifying Host Key")
-        static let establishingSSH = s("status.establishingSSH", "Establishing SSH Connection")
-        static let disconnecting = s("status.disconnecting", "Disconnecting")
         static let active = s("status.active", "Active")
         static let inactive = s("status.inactive", "Inactive")
         static let online = s("status.online", "Online")
@@ -115,6 +106,80 @@ extension L10n {
         }
     }
 
+    // MARK: - Common UI Labels (Shared.strings)
+    /// Short, all-caps section headers and badge text that appears across many
+    /// screens. Keep the default values uppercase so existing visuals are
+    /// preserved when the app runs in English.
+    enum Label {
+        private static let table = "Shared"
+        private static func s(_ k: StaticString, _ v: String.LocalizationValue) -> String { String(localized: k, defaultValue: v, table: table) }
+
+        // Badges
+        static let active = s("label.active", "ACTIVE")
+        static let current = s("label.current", "CURRENT")
+        static let main = s("label.main", "MAIN")
+        static let primary = s("label.primary", "PRIMARY")
+        static let success = s("label.success", "SUCCESS")
+        static let down = s("label.down", "DOWN")
+        static let banned = s("label.banned", "Banned")
+        static let whitelisted = s("label.whitelisted", "Whitelisted")
+
+        // Section headers / table column titles
+        static let actions = s("label.actions", "ACTIONS")
+        static let extensions = s("label.extensions", "EXTENSIONS")
+        static let favorites = s("label.favorites", "FAVORITES")
+        static let recent = s("label.recent", "RECENT")
+        static let preview = s("label.preview", "PREVIEW")
+        static let tools = s("label.tools", "TOOLS")
+        static let target = s("label.target", "TARGET")
+        static let results = s("label.results", "RESULTS")
+        static let level = s("label.level", "LEVEL")
+        static let time = s("label.time", "TIME")
+        static let status = s("label.status", "STATUS")
+        static let method = s("label.method", "METHOD")
+        static let value = s("label.value", "VALUE")
+
+        // Multi-line / multi-sentence empty-state and explainer copy.
+        // Newlines are preserved literally; the localiser can re-flow them.
+        static let ftpEmptyState = s("label.ftpEmptyState",
+            "Create FTP accounts to allow file transfer access.\nUsers can connect using any FTP client.")
+        static let pureFTPdMissing = s("label.pureFTPdMissing",
+            "PureFTPd is required for FTP user management.\nInstall it now to enable FTP access on this server.")
+        static let pm2EmptyState = s("label.pm2EmptyState",
+            "PM2 is a process manager for Node.js applications.\nIt keeps your app running and auto-restarts on crashes.")
+        static let gitEmptyState = s("label.gitEmptyState",
+            "Clone an existing repository or initialize a new one.\nSupports GitHub, GitLab, Bitbucket, and any Git server.")
+
+        // Strings with embedded quotes — kept escaped exactly as the original.
+        static let invalidAppNameAvoidPaths = s("label.invalidAppNameAvoidPaths",
+            "Invalid app name: avoid paths with \"..\" or shell characters")
+        static let dockerLogsHint = s("label.dockerLogsHint",
+            "Select containers above and click \"Fetch Logs\" to load aggregated logs")
+        static let liteSpeedDoctorHint = s("label.liteSpeedDoctorHint",
+            "Click \"Run Doctor\" to perform health checks")
+        static let sslViewContentHint = s("label.sslViewContentHint",
+            "Click \"View Content\" to load the certificate and private key PEM data")
+
+        // Misc one-offs.
+        static let configureSecurityHeaders = s("label.configureSecurityHeaders",
+            "Configure security headers for your website.")
+        static let dockerToolsVersion = s("label.dockerToolsVersion", "Docker Tools v1.0")
+        static let skeletonLoadingStates = s("label.skeletonLoadingStates", "Skeleton Loading States")
+    }
+
+    // MARK: - Technical/protocol literals — DO NOT translate (Shared.strings)
+    /// These look like translatable strings but are actually protocol or
+    /// SQL keywords the user expects to see verbatim. Wrapped in an enum so
+    /// future audits can grep for the wrapper rather than the bare literal.
+    enum Literal {
+        static let null    = "NULL"
+        static let auto    = "AUTO"
+        static let listen  = "LISTEN"
+        static let cidr    = "CIDR"
+        static let deny    = "DENY"
+        static let sameOrigin = "SAMEORIGIN"
+    }
+
     // MARK: - App Info (Shared.strings)
     enum App {
         private static let table = "Shared"
@@ -122,5 +187,14 @@ extension L10n {
 
         static let name = s("app.name", "AevonX")
         static let tagline = s("app.tagline", "Server Management, Reimagined.")
+    }
+}
+
+extension L10n {
+    enum Shared {
+        private static let table = "Shared"
+        private static func s(_ k: StaticString, _ v: String.LocalizationValue) -> String { String(localized: k, defaultValue: v, table: table) }
+        static let invalidInput = s("shared.invalidInput", "Invalid input")
+        static let viewDetails = s("shared.viewDetails", "View Details")
     }
 }

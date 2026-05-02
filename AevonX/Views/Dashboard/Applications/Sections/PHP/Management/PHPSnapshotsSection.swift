@@ -25,8 +25,8 @@ struct PHPSnapshotsSection: View {
         VStack(spacing: 0) {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Config Snapshots").font(.system(size: 13, weight: .bold)).foregroundColor(.axTextPrimary)
-                    Text("Automatic backups of php.ini before each change").font(.system(size: 11)).foregroundColor(.axTextMuted)
+                    Text(L10n.Apps.configSnapshots).font(.system(size: 13, weight: .bold)).foregroundColor(.axTextPrimary)
+                    Text(L10n.Apps.automaticBackupsOfPhpIniBeforeEachChange).font(.system(size: 11)).foregroundColor(.axTextMuted)
                 }
                 Spacer()
                 Button {
@@ -35,7 +35,7 @@ struct PHPSnapshotsSection: View {
                     HStack(spacing: AXSpacing.xs) {
                         if isCreating { ProgressView().scaleEffect(0.6) }
                         else { Image(systemName: "plus.circle.fill") }
-                        Text("Create Snapshot").font(.system(size: 12, weight: .semibold))
+                        Text(L10n.Apps.createSnapshot).font(.system(size: 12, weight: .semibold))
                     }
                     .foregroundColor(.white)
                     .padding(.horizontal, AXSpacing.md).padding(.vertical, 7)
@@ -64,14 +64,14 @@ struct PHPSnapshotsSection: View {
                         Circle().fill(phpPurple.opacity(0.1)).frame(width: 60, height: 60)
                         Image(systemName: "clock.arrow.2.circlepath").font(.system(size: 24, weight: .semibold)).foregroundColor(phpPurple)
                     }
-                    Text("No snapshots yet").font(.system(size: 14, weight: .semibold)).foregroundColor(.axTextPrimary)
-                    Text("Create a snapshot to save the current php.ini state").font(.system(size: 11)).foregroundColor(.axTextMuted)
+                    Text(L10n.Apps.noSnapshotsYet).font(.system(size: 14, weight: .semibold)).foregroundColor(.axTextPrimary)
+                    Text(L10n.Apps.createASnapshotToSaveTheCurrentPhpIniState).font(.system(size: 11)).foregroundColor(.axTextMuted)
                     Button {
                         Task { await createSnapshot() }
                     } label: {
                         HStack(spacing: AXSpacing.xs) {
                             Image(systemName: "plus.circle.fill")
-                            Text("Create First Snapshot").font(.system(size: 12, weight: .semibold))
+                            Text(L10n.Apps.createFirstSnapshot).font(.system(size: 12, weight: .semibold))
                         }
                         .foregroundColor(.white)
                         .padding(.horizontal, AXSpacing.lg).padding(.vertical, 8)

@@ -61,7 +61,7 @@ struct NginxVersionsSection: View {
                             HStack {
                                 Image(systemName: "exclamationmark.triangle")
                                     .foregroundColor(.axWarning)
-                                Text("No installed version detected")
+                                Text(L10n.Apps.noInstalledVersionDetected)
                                     .font(AXTypography.caption)
                                     .foregroundColor(.axTextMuted)
                             }
@@ -102,7 +102,7 @@ struct NginxVersionsSection: View {
                         .foregroundColor(.axTextPrimary)
 
                     if version.isActive {
-                        Text("ACTIVE")
+                        Text(L10n.Label.active)
                             .font(.system(size: 8, weight: .heavy))
                             .foregroundColor(.axSuccess)
                             .padding(.horizontal, 6)

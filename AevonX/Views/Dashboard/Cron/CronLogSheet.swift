@@ -79,7 +79,7 @@ struct CronLogSheet: View {
                     Text(L10n.Cron.noLogs)
                         .font(AXTypography.body)
                         .foregroundColor(.axTextTertiary)
-                    Text("Logs will appear after the task is executed")
+                    Text(L10n.Cron.logsWillAppearAfterTheTaskIsExecuted)
                         .font(AXTypography.caption)
                         .foregroundColor(.axTextMuted)
                 }

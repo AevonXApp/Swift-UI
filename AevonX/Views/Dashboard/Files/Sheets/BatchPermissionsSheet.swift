@@ -32,7 +32,7 @@ struct BatchPermissionsSheet: View {
                     .font(.system(size: 16))
                     .foregroundColor(.axAccentBlue)
                 
-                Text("Batch Permissions")
+                Text(L10n.Files.batchPermissions)
                     .font(AXTypography.title3)
                     .fontWeight(.bold)
                     .foregroundColor(.axTextPrimary)
@@ -66,7 +66,7 @@ struct BatchPermissionsSheet: View {
                 
                 // Permission input
                 HStack(spacing: AXSpacing.md) {
-                    Text("Permissions:")
+                    Text(L10n.Files.permissions)
                         .font(.system(size: 13, weight: .medium))
                         .foregroundColor(.axTextSecondary)
                     
@@ -100,7 +100,7 @@ struct BatchPermissionsSheet: View {
                     HStack(spacing: AXSpacing.xs) {
                         Image(systemName: "arrow.triangle.2.circlepath")
                             .font(.system(size: 11))
-                        Text("Apply recursively to directories")
+                        Text(L10n.Files.applyRecursivelyToDirectories)
                             .font(.system(size: 12))
                     }
                     .foregroundColor(.axTextSecondary)

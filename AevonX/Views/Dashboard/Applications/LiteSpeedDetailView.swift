@@ -206,7 +206,7 @@ struct LiteSpeedDetailView: View {
                         }
 
                         VStack(alignment: .leading, spacing: 2) {
-                            Text("LiteSpeed")
+                            Text(L10n.Apps.litespeed)
                                 .font(AXTypography.subheadline).fontWeight(.bold)
                                 .foregroundColor(.axTextPrimary)
                             if let version = app.version, !version.isEmpty {

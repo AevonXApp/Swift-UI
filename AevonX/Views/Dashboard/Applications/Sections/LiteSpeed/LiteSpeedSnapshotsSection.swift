@@ -36,7 +36,7 @@ struct LiteSpeedSnapshotsSection: View {
                             } else {
                                 Image(systemName: "plus.circle.fill").font(AXTypography.footnote)
                             }
-                            Text("Create Snapshot")
+                            Text(L10n.Apps.createSnapshot)
                                 .font(AXTypography.footnote).fontWeight(.semibold)
                         }
                         .foregroundColor(.white)
@@ -57,8 +57,8 @@ struct LiteSpeedSnapshotsSection: View {
                     VStack(spacing: AXSpacing.md) {
                         Spacer()
                         Image(systemName: "clock.arrow.2.circlepath").font(AXTypography.largeTitle).foregroundColor(.axTextMuted.opacity(0.3))
-                        Text("No snapshots yet").font(AXTypography.callout).foregroundColor(.axTextMuted)
-                        Text("Create a snapshot to backup your current config").font(AXTypography.footnote).foregroundColor(.axTextMuted)
+                        Text(L10n.Apps.noSnapshotsYet).font(AXTypography.callout).foregroundColor(.axTextMuted)
+                        Text(L10n.Apps.createASnapshotToBackupYourCurrentConfig).font(AXTypography.footnote).foregroundColor(.axTextMuted)
                         Spacer()
                     }.frame(maxWidth: .infinity).padding(.vertical, AXSpacing.xl)
                 } else {
@@ -92,7 +92,7 @@ struct LiteSpeedSnapshotsSection: View {
                                 Button {
                                     Task { await diffSnapshot(snap.id) }
                                 } label: {
-                                    Text("Diff")
+                                    Text(L10n.Apps.diff)
                                         .font(AXTypography.caption).fontWeight(.semibold)
                                         .foregroundColor(.axAccentBlue)
                                         .padding(.horizontal, AXSpacing.sm).padding(.vertical, 3)
@@ -103,7 +103,7 @@ struct LiteSpeedSnapshotsSection: View {
                                 Button {
                                     Task { await restoreSnapshot(snap.id) }
                                 } label: {
-                                    Text("Restore")
+                                    Text(L10n.Apps.restore)
                                         .font(AXTypography.caption).fontWeight(.semibold)
                                         .foregroundColor(lsGreen)
                                         .padding(.horizontal, AXSpacing.sm).padding(.vertical, 3)

@@ -19,7 +19,7 @@ struct AXLogDetailSheet: View {
             // Header
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Log Details")
+                    Text(L10n.Dashboard.logDetails)
                         .font(.system(size: 18, weight: .bold))
                         .foregroundColor(.axTextPrimary)
                     Text(log.timeFormatted)

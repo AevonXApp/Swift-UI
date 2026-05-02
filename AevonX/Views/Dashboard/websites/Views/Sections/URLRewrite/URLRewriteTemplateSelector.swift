@@ -29,7 +29,7 @@ struct URLRewriteTemplateSelector: View {
                                 .foregroundColor(.axSuccess)
                                 .font(AXTypography.title2)
 
-                            Text("Template saved successfully! The rewrite rule has been applied.")
+                            Text(L10n.Websites.templateSavedSuccessfullyTheRewriteRuleHasBeenApplied)
                                 .font(AXTypography.callout).fontWeight(.medium)
                                 .foregroundColor(.axTextPrimary)
 
@@ -121,7 +121,7 @@ struct URLRewriteTemplateSelector: View {
                                     .stroke(Color.axBorder, lineWidth: 1)
                             )
 
-                        Text("You can edit the code above before saving")
+                        Text(L10n.Websites.youCanEditTheCodeAboveBeforeSaving)
                             .font(AXTypography.footnote)
                             .foregroundColor(.axTextSecondary)
                     }
@@ -168,7 +168,7 @@ struct URLRewriteTemplateSelector: View {
                 .padding(AXSpacing.xl)
             }
             .background(Color.axBackground)
-            .navigationTitle("URL Rewrite Template")
+            .navigationTitle(L10n.Websites.urlRewriteTemplate)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(L10n.Button.cancel, action: onCancel)

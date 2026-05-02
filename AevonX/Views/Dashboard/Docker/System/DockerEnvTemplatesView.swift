@@ -53,7 +53,7 @@ struct DockerEnvTemplatesView: View {
                     if showAddForm {
                         AXCard {
                             VStack(alignment: .leading, spacing: 10) {
-                                Text("Create Environment Template")
+                                Text(L10n.Docker.createEnvironmentTemplate)
                                     .font(AXTypography.headline)
                                     .foregroundColor(.axTextPrimary)
                                 
@@ -63,7 +63,7 @@ struct DockerEnvTemplatesView: View {
                                     .textFieldStyle(.roundedBorder)
                                 
                                 VStack(alignment: .leading, spacing: 4) {
-                                    Text("Variables (one per line: KEY=VALUE)")
+                                    Text(L10n.Docker.variablesOnePerLineKeyValue)
                                         .font(AXTypography.caption)
                                         .foregroundColor(.axTextSecondary)
                                     TextEditor(text: $envLines)
@@ -83,7 +83,7 @@ struct DockerEnvTemplatesView: View {
                                         saveTemplate()
                                     } label: {
                                         if isAdding { ProgressView().scaleEffect(0.6) }
-                                        else { Text("Save Template") }
+                                        else { Text(L10n.Docker.saveTemplate) }
                                     }
                                     .buttonStyle(.plain)
                                     .padding(.horizontal, 12).padding(.vertical, 6)
@@ -107,10 +107,10 @@ struct DockerEnvTemplatesView: View {
                             Image(systemName: "list.bullet.rectangle")
                                 .font(.system(size: 32))
                                 .foregroundColor(.axTextMuted)
-                            Text("No templates saved")
+                            Text(L10n.Docker.noTemplatesSaved)
                                 .font(AXTypography.body)
                                 .foregroundColor(.axTextSecondary)
-                            Text("Save env var sets for quick reuse")
+                            Text(L10n.Docker.saveEnvVarSetsForQuickReuse)
                                 .font(AXTypography.caption)
                                 .foregroundColor(.axTextMuted)
                         }

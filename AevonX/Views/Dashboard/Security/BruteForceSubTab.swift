@@ -198,7 +198,7 @@ struct BruteForceSubTab: View {
                         .foregroundColor(isInstalled ? .axWarning : .axTextMuted)
 
                     VStack(alignment: .leading, spacing: AXSpacing.xxxs) {
-                        Text("Brute Force Protection")
+                        Text(L10n.Security.bruteForceProtection)
                             .font(AXTypography.headline)
                             .foregroundColor(.axTextPrimary)
                         Text("fail2ban — Automatically blocks IPs after repeated failed login attempts")
@@ -248,7 +248,7 @@ struct BruteForceSubTab: View {
                     .font(AXTypography.title3)
                     .foregroundColor(.axTextPrimary)
 
-                Text("Install fail2ban on your server to enable brute force protection.")
+                Text(L10n.Security.installFail2banOnYourServerToEnableBruteForceProtection)
                     .font(AXTypography.body)
                     .foregroundColor(.axTextMuted)
                     .multilineTextAlignment(.center)
@@ -299,7 +299,7 @@ struct BruteForceSubTab: View {
 
                 // Max retries
                 VStack(alignment: .leading, spacing: AXSpacing.sm) {
-                    Text("Max Failed Attempts")
+                    Text(L10n.Security.maxFailedAttempts)
                         .font(AXTypography.body)
                         .foregroundColor(.axTextSecondary)
 
@@ -334,7 +334,7 @@ struct BruteForceSubTab: View {
 
                 // Ban duration
                 VStack(alignment: .leading, spacing: AXSpacing.sm) {
-                    Text("Ban Duration")
+                    Text(L10n.Security.banDuration)
                         .font(AXTypography.body)
                         .foregroundColor(.axTextSecondary)
 
@@ -345,7 +345,7 @@ struct BruteForceSubTab: View {
                             Text("30 min").tag(1800)
                             Text("1 hour").tag(3600)
                             Text("24 hours").tag(86400)
-                            Text("Permanent").tag(-1)
+                            Text(L10n.Security.permanent).tag(-1)
                         }
                         .pickerStyle(.menu)
                         .frame(width: 150)
@@ -445,7 +445,7 @@ struct BruteForceSubTab: View {
                                 HStack(spacing: AXSpacing.xxs) {
                                     Image(systemName: "xmark.circle")
                                         .font(.system(size: 10))
-                                    Text("Unban All")
+                                    Text(L10n.Security.unbanAll)
                                         .font(.system(size: 11, weight: .medium))
                                 }
                                 .foregroundColor(.axError)
@@ -570,8 +570,8 @@ struct BruteForceSubTab: View {
                 } else {
                     // Table header
                     HStack(spacing: 0) {
-                        Text("IP Address").frame(maxWidth: .infinity, alignment: .leading)
-                        Text("Action").frame(width: 120, alignment: .center)
+                        Text(L10n.Security.ipAddress).frame(maxWidth: .infinity, alignment: .leading)
+                        Text(L10n.Security.action).frame(width: 120, alignment: .center)
                     }
                     .font(AXTypography.caption)
                     .fontWeight(.semibold)
@@ -598,7 +598,7 @@ struct BruteForceSubTab: View {
                                 HStack(spacing: AXSpacing.xxs) {
                                     Image(systemName: "trash")
                                         .font(.system(size: 10))
-                                    Text("Remove")
+                                    Text(L10n.Security.remove)
                                         .font(.system(size: 11, weight: .medium))
                                 }
                                 .foregroundColor(.axError)
@@ -718,7 +718,7 @@ struct BruteForceSubTab: View {
                                 HStack(spacing: AXSpacing.xxs) {
                                     Image(systemName: "trash")
                                         .font(.system(size: 10))
-                                    Text("Remove")
+                                    Text(L10n.Security.remove)
                                         .font(.system(size: 11, weight: .medium))
                                 }
                                 .foregroundColor(.axError)

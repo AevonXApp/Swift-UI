@@ -34,7 +34,7 @@ public struct PluginSectionComponent: View {
                 HStack(spacing: 3) {
                     Image(systemName: "puzzlepiece.fill")
                         .font(.system(size: 8))
-                    Text("Plugin")
+                    Text(L10n.PluginsUI.plugin)
                         .font(.system(size: 9, weight: .medium))
                 }
                 .foregroundColor(.axTextMuted)

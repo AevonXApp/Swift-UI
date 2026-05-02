@@ -152,7 +152,7 @@ struct DBEditRowView: View {
                         HStack(spacing: AXSpacing.xxs) {
                             Image(systemName: isNull ? "checkmark.square.fill" : "square")
                                 .font(AXTypography.caption2)
-                            Text("NULL")
+                            Text(L10n.Literal.null)
                                 .font(AXTypography.caption2)
                                 .fontWeight(.medium)
                         }
@@ -179,7 +179,7 @@ struct DBEditRowView: View {
                 )
             } else {
                 HStack {
-                    Text("NULL")
+                    Text(L10n.Literal.null)
                         .font(AXTypography.monoMd)
                         .italic()
                         .foregroundColor(.axTextMuted.opacity(0.5))

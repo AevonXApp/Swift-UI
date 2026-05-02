@@ -34,7 +34,7 @@ struct ModernAddUserView: View {
     
     private var header: some View {
         HStack {
-            Text("Add Database User")
+            Text(L10n.Database.addDatabaseUser)
                 .font(AXTypography.title3)
                 .fontWeight(.bold)
                 .foregroundColor(.axTextPrimary)
@@ -113,7 +113,7 @@ struct ModernAddUserView: View {
                         .background(Color.axSurface)
                         .cornerRadius(AXCornerRadius.md)
                         .overlay(RoundedRectangle(cornerRadius: AXCornerRadius.md).stroke(Color.axBorder, lineWidth: 1))
-                    Text("Use % for any host, or localhost for local access only.")
+                    Text(L10n.Database.useForAnyHostOrLocalhostForLocalAccessOnly)
                         .font(AXTypography.caption2)
                         .foregroundColor(.axTextMuted)
                 }
@@ -133,7 +133,7 @@ struct ModernAddUserView: View {
                 onSave(username, password, host)
                 dismiss()
             } label: {
-                Text("Create User")
+                Text(L10n.Database.createUser)
                     .fontWeight(.medium)
                     .foregroundColor(.white)
                     .padding(.horizontal, AXSpacing.xl)

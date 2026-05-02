@@ -705,7 +705,7 @@ struct ModernWebsitePanel: View {
                                     Image(systemName: "checkmark.circle.fill")
                                         .font(AXTypography.subheadline)
                                 }
-                                Text("Update Port")
+                                Text(L10n.Websites.updatePort)
                                     .font(AXTypography.caption)
                                     .fontWeight(.semibold)
                             }
@@ -754,7 +754,7 @@ struct ModernWebsitePanel: View {
                         .foregroundColor(.axAccentBlue)
 
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("Document Root")
+                        Text(L10n.Websites.documentRoot)
                             .font(AXTypography.caption)
                             .foregroundColor(.axTextTertiary)
                         Text(viewModel.documentRoot.isEmpty ? "/var/www/html" : viewModel.documentRoot)
@@ -860,7 +860,7 @@ struct ModernWebsitePanel: View {
                             HStack(spacing: 4) {
                                 Image(systemName: "checkmark.circle.fill")
                                     .font(AXTypography.footnote)
-                                Text("Set as Root")
+                                Text(L10n.Websites.setAsRoot)
                                     .font(AXTypography.footnote).fontWeight(.semibold)
                             }
                             .foregroundColor(.white)
@@ -880,7 +880,7 @@ struct ModernWebsitePanel: View {
                     if viewModel.isLoadingBrowsingItems {
                         VStack(spacing: AXSpacing.md) {
                             ProgressView()
-                            Text("Loading directories...")
+                            Text(L10n.Websites.loadingDirectories)
                                 .font(AXTypography.caption)
                                 .foregroundColor(.axTextSecondary)
                         }
@@ -890,7 +890,7 @@ struct ModernWebsitePanel: View {
                             Image(systemName: "folder")
                                 .font(AXTypography.largeTitle)
                                 .foregroundColor(.axTextMuted)
-                            Text("No subdirectories found")
+                            Text(L10n.Websites.noSubdirectoriesFound)
                                 .font(AXTypography.body)
                                 .foregroundColor(.axTextMuted)
                             Text(viewModel.currentBrowsingPath)
@@ -968,7 +968,7 @@ struct ModernWebsitePanel: View {
                     if viewModel.isLoadingPHPVersions {
                         HStack {
                             ProgressView().scaleEffect(0.7)
-                            Text("Loading PHP versions...")
+                            Text(L10n.Websites.loadingPhpVersions)
                                 .font(AXTypography.subheadline)
                                 .foregroundColor(.axTextSecondary)
                         }
@@ -978,10 +978,10 @@ struct ModernWebsitePanel: View {
                             Image(systemName: "exclamationmark.triangle")
                                 .font(AXTypography.title)
                                 .foregroundColor(.axWarning)
-                            Text("No PHP versions found")
+                            Text(L10n.Websites.noPhpVersionsFound)
                                 .font(AXTypography.callout).fontWeight(.medium)
                                 .foregroundColor(.axTextPrimary)
-                            Text("PHP may not be installed on this server")
+                            Text(L10n.Websites.phpMayNotBeInstalledOnThisServer)
                                 .font(AXTypography.footnote)
                                 .foregroundColor(.axTextSecondary)
                         }
@@ -992,7 +992,7 @@ struct ModernWebsitePanel: View {
                     } else {
                         // Current active version display
                         HStack {
-                            Text("Current:")
+                            Text(L10n.Websites.current)
                                 .font(AXTypography.subheadline).fontWeight(.medium)
                                 .foregroundColor(.axTextSecondary)
                             Text("PHP \(viewModel.phpVersion)")
@@ -1042,7 +1042,7 @@ struct ModernWebsitePanel: View {
                                                     Image(systemName: "arrow.right.circle.fill")
                                                         .font(AXTypography.caption)
                                                 }
-                                                Text("Switch")
+                                                Text(L10n.Websites.`switch`)
                                                     .font(AXTypography.caption).fontWeight(.semibold)
                                             }
                                             .foregroundColor(.white)
@@ -1142,7 +1142,7 @@ struct ModernWebsitePanel: View {
                     Image(systemName: "exclamationmark.triangle")
                         .font(AXTypography.largeTitle)
                         .foregroundColor(.axWarning)
-                    Text("Server not connected")
+                    Text(L10n.Websites.serverNotConnected)
                         .font(AXTypography.callout).fontWeight(.medium)
                         .foregroundColor(.axTextSecondary)
                 }
@@ -1191,7 +1191,7 @@ struct ModernWebsitePanel: View {
                                 .font(AXTypography.subheadline)
                                 .foregroundColor(.axTextTertiary)
                         }
-                        Text("Full Python version management coming soon.")
+                        Text(L10n.Websites.fullPythonVersionManagementComingSoon)
                             .font(AXTypography.footnote)
                             .foregroundColor(.axTextSecondary)
                     }

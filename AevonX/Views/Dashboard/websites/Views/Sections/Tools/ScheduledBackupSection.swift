@@ -63,20 +63,20 @@ struct ScheduledBackupSection: View {
                     VStack(spacing: AXSpacing.md) {
                         // Frequency picker
                         HStack {
-                            Text("Frequency")
+                            Text(L10n.Websites.frequency)
                                 .font(AXTypography.subheadline).fontWeight(.medium)
                                 .frame(width: 100, alignment: .trailing)
                             Picker("", selection: $viewModel.selectedFrequency) {
-                                Text("Daily").tag("daily")
-                                Text("Weekly").tag("weekly")
-                                Text("Monthly").tag("monthly")
+                                Text(L10n.Websites.daily).tag("daily")
+                                Text(L10n.Websites.weekly).tag("weekly")
+                                Text(L10n.Websites.monthly).tag("monthly")
                             }
                             .pickerStyle(.segmented)
                         }
 
                         // Retention
                         HStack {
-                            Text("Keep for")
+                            Text(L10n.Websites.keepFor)
                                 .font(AXTypography.subheadline).fontWeight(.medium)
                                 .frame(width: 100, alignment: .trailing)
                             Picker("", selection: $viewModel.retentionDays) {
@@ -95,7 +95,7 @@ struct ScheduledBackupSection: View {
                                 Image(systemName: "cylinder.fill")
                                     .font(AXTypography.subheadline)
                                     .foregroundColor(.axAccentBlue)
-                                Text("Include database dump")
+                                Text(L10n.Websites.includeDatabaseDump)
                                     .font(AXTypography.subheadline)
                             }
                         }

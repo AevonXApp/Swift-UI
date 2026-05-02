@@ -59,8 +59,8 @@ struct DockerRollbackSheet: View {
         AXCard {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Create Snapshot").font(AXTypography.headline).foregroundColor(.axTextPrimary)
-                    Text("Save current state before making changes").font(AXTypography.caption).foregroundColor(.axTextSecondary)
+                    Text(L10n.Docker.createSnapshot).font(AXTypography.headline).foregroundColor(.axTextPrimary)
+                    Text(L10n.Docker.saveCurrentStateBeforeMakingChanges).font(AXTypography.caption).foregroundColor(.axTextSecondary)
                 }
                 Spacer()
                 Button { createSnapshot() } label: {
@@ -105,13 +105,13 @@ struct DockerRollbackSheet: View {
         } else if snapshots.isEmpty {
             VStack(spacing: AXSpacing.sm) {
                 Image(systemName: "camera.metering.none").font(.system(size: 32)).foregroundColor(.axTextMuted)
-                Text("No snapshots yet").font(AXTypography.body).foregroundColor(.axTextSecondary)
-                Text("Create a snapshot to enable rollback").font(AXTypography.caption).foregroundColor(.axTextMuted)
+                Text(L10n.Docker.noSnapshotsYet).font(AXTypography.body).foregroundColor(.axTextSecondary)
+                Text(L10n.Docker.createASnapshotToEnableRollback).font(AXTypography.caption).foregroundColor(.axTextMuted)
             }
             .padding(.vertical, 20)
         } else {
             VStack(spacing: AXSpacing.sm) {
-                Text("Available Snapshots").font(AXTypography.headline).foregroundColor(.axTextPrimary)
+                Text(L10n.Docker.availableSnapshots).font(AXTypography.headline).foregroundColor(.axTextPrimary)
                     .frame(maxWidth: .infinity, alignment: .leading)
                 ForEach(snapshots) { snapshot in
                     AXCard {

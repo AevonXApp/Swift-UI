@@ -63,11 +63,11 @@ struct EngineMigrationSection: View {
                 .foregroundColor(.axTextMuted.opacity(0.4))
                 .padding(.top, AXSpacing.xxxl)
 
-            Text("Engine Migration Unavailable")
+            Text(L10n.Websites.engineMigrationUnavailable)
                 .font(.system(size: 16, weight: .semibold, design: .rounded))
                 .foregroundColor(.axTextSecondary)
 
-            Text("Only one web server engine is installed on this server. Install another engine (Nginx, Apache, or OpenLiteSpeed) to enable migration.")
+            Text(L10n.Websites.onlyOneWebServerEngineIsInstalledOnThisServerInstallAnotherEngineNginxApacheOrOpenlitespeedToEnableMigration)
                 .font(AXTypography.footnote)
                 .foregroundColor(.axTextMuted)
                 .multilineTextAlignment(.center)
@@ -127,7 +127,7 @@ struct EngineMigrationSection: View {
             }
 
             VStack(alignment: .leading, spacing: AXSpacing.xxxs) {
-                Text("Current Engine")
+                Text(L10n.Websites.currentEngine)
                     .font(.system(size: 10, weight: .semibold, design: .rounded))
                     .foregroundColor(.axTextMuted)
                     .textCase(.uppercase)
@@ -175,7 +175,7 @@ struct EngineMigrationSection: View {
         VStack(alignment: .leading, spacing: AXSpacing.lg) {
             // Header
             HStack {
-                Text("Migrate To")
+                Text(L10n.Websites.migrateTo)
                     .font(.system(size: 12, weight: .bold, design: .rounded))
                     .foregroundColor(.axTextPrimary)
                     .textCase(.uppercase)

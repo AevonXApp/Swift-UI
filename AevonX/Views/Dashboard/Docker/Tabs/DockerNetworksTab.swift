@@ -271,7 +271,7 @@ private struct CreateNetworkSheet: View {
                 .foregroundColor(.axTextPrimary)
             
             VStack(alignment: .leading, spacing: 8) {
-                Text("Network Name")
+                Text(L10n.Docker.networkName)
                     .font(AXTypography.caption)
                     .foregroundColor(.axTextSecondary)
                 
@@ -280,16 +280,16 @@ private struct CreateNetworkSheet: View {
             }
             
             VStack(alignment: .leading, spacing: 8) {
-                Text("Driver")
+                Text(L10n.Docker.driver)
                     .font(AXTypography.caption)
                     .foregroundColor(.axTextSecondary)
                 
                 Picker("Driver", selection: $driver) {
-                    Text("Bridge").tag("bridge")
-                    Text("Host").tag("host")
-                    Text("Overlay").tag("overlay")
-                    Text("Macvlan").tag("macvlan")
-                    Text("Null").tag("null")
+                    Text(L10n.Docker.bridge).tag("bridge")
+                    Text(L10n.Docker.host).tag("host")
+                    Text(L10n.Docker.overlay).tag("overlay")
+                    Text(L10n.Docker.macvlan).tag("macvlan")
+                    Text(L10n.Docker.null).tag("null")
                 }
                 .pickerStyle(SegmentedPickerStyle())
             }

@@ -23,7 +23,7 @@ struct NginxWorkersSection: View {
                         Image(systemName: "cpu")
                             .font(.system(size: 28))
                             .foregroundColor(.axTextMuted)
-                        Text("No worker processes detected")
+                        Text(L10n.Apps.noWorkerProcessesDetected)
                             .font(AXTypography.caption)
                             .foregroundColor(.axTextMuted)
                     }

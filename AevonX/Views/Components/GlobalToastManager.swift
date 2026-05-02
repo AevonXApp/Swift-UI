@@ -249,7 +249,7 @@ struct GlobalToastOverlay: View {
                     HStack(spacing: AXSpacing.xxs) {
                         Image(systemName: "doc.text.magnifyingglass")
                             .font(.system(size: 9, weight: .semibold))
-                        Text("View Details")
+                        Text(L10n.Shared.viewDetails)
                             .font(.system(size: 10, weight: .semibold))
                     }
                     .foregroundColor(toast.type.color)

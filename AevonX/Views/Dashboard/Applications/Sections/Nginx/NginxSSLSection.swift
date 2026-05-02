@@ -107,10 +107,10 @@ struct NginxSSLSection: View {
     private var protocolsRow: some View {
         HStack(spacing: AXSpacing.lg) {
             VStack(alignment: .leading, spacing: 2) {
-                Text("TLS Protocols")
+                Text(L10n.Apps.tlsProtocols)
                     .font(.system(size: 12, weight: .medium, design: .monospaced))
                     .foregroundColor(.axTextPrimary)
-                Text("Select minimum TLS versions")
+                Text(L10n.Apps.selectMinimumTlsVersions)
                     .font(.system(size: 10))
                     .foregroundColor(.axTextMuted)
             }
@@ -184,10 +184,10 @@ struct NginxSSLSection: View {
                 .font(.system(size: 12))
                 .foregroundColor(.axWarning)
             VStack(alignment: .leading, spacing: 2) {
-                Text("No SSL certificates detected")
+                Text(L10n.Apps.noSslCertificatesDetected)
                     .font(.system(size: 12, weight: .medium))
                     .foregroundColor(.axTextSecondary)
-                Text("Issue a Let's Encrypt certificate or upload your own")
+                Text(L10n.Apps.issueALetsEncryptCertificateOrUploadYourOwn)
                     .font(.system(size: 10))
                     .foregroundColor(.axTextMuted)
             }
@@ -290,7 +290,7 @@ struct NginxSSLSection: View {
             Image(systemName: "globe")
                 .font(.system(size: 24))
                 .foregroundColor(.axTextMuted.opacity(0.5))
-            Text("No sites found")
+            Text(L10n.Apps.noSitesFound)
                 .font(.system(size: 12))
                 .foregroundColor(.axTextMuted)
         }
@@ -342,7 +342,7 @@ struct NginxSSLSection: View {
                                 Image(systemName: "arrow.triangle.2.circlepath")
                                     .font(.system(size: 10))
                             }
-                            Text("Renew")
+                            Text(L10n.Apps.renew)
                                 .font(.system(size: 10, weight: .medium))
                         }
                         .foregroundColor(.axAccentBlue)
@@ -363,7 +363,7 @@ struct NginxSSLSection: View {
                     HStack(spacing: 3) {
                         Image(systemName: "arrow.up.doc")
                             .font(.system(size: 10))
-                        Text("Upload")
+                        Text(L10n.Apps.upload)
                             .font(.system(size: 10, weight: .medium))
                     }
                     .foregroundColor(.purple)
@@ -383,7 +383,7 @@ struct NginxSSLSection: View {
                         HStack(spacing: 3) {
                             Image(systemName: "lock.shield.fill")
                                 .font(.system(size: 10))
-                            Text("Let's Encrypt")
+                            Text(L10n.Apps.letsEncrypt)
                                 .font(.system(size: 10, weight: .medium))
                         }
                         .foregroundColor(.axSuccess)
@@ -439,7 +439,7 @@ struct NginxSSLSection: View {
             sheetHeader(title: "Issue Let's Encrypt Certificate", icon: "lock.shield.fill", color: .axSuccess)
 
             VStack(alignment: .leading, spacing: AXSpacing.sm) {
-                Text("Domain")
+                Text(L10n.Apps.domain)
                     .font(.system(size: 12, weight: .medium))
                     .foregroundColor(.axTextSecondary)
 
@@ -451,7 +451,7 @@ struct NginxSSLSection: View {
                     .cornerRadius(AXCornerRadius.sm)
                     .overlay(RoundedRectangle(cornerRadius: AXCornerRadius.sm).stroke(Color.axBorder.opacity(0.4), lineWidth: 1))
 
-                Text("Certbot will verify domain ownership via HTTP-01 challenge")
+                Text(L10n.Apps.certbotWillVerifyDomainOwnershipViaHttpChallenge)
                     .font(.system(size: 10))
                     .foregroundColor(.axTextMuted)
             }
@@ -468,7 +468,7 @@ struct NginxSSLSection: View {
                         if isIssuingLE {
                             ProgressView().scaleEffect(0.7)
                         }
-                        Text("Issue Certificate")
+                        Text(L10n.Apps.issueCertificate)
                     }
                 }
                 .buttonStyle(AXPrimaryButtonStyle())
@@ -490,7 +490,7 @@ struct NginxSSLSection: View {
             VStack(alignment: .leading, spacing: AXSpacing.md) {
                 // Domain
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Domain")
+                    Text(L10n.Apps.domain)
                         .font(.system(size: 12, weight: .medium))
                         .foregroundColor(.axTextSecondary)
                     TextField("example.com", text: $uploadDomain)
@@ -524,7 +524,7 @@ struct NginxSSLSection: View {
                         if isUploading {
                             ProgressView().scaleEffect(0.7)
                         }
-                        Text("Upload & Apply")
+                        Text(L10n.Apps.uploadApply)
                     }
                 }
                 .buttonStyle(AXPrimaryButtonStyle())

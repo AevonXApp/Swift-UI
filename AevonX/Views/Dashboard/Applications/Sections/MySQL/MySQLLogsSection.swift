@@ -22,9 +22,9 @@ struct MySQLLogsSection: View {
         VStack(spacing: 0) {
             HStack(spacing: AXSpacing.md) {
                 Picker("Log Type", selection: $selectedLogType) {
-                    Text("Error").tag("error")
-                    Text("Slow").tag("slow")
-                    Text("General").tag("general")
+                    Text(L10n.Apps.error).tag("error")
+                    Text(L10n.Apps.slow).tag("slow")
+                    Text(L10n.Apps.general).tag("general")
                 }
                 .pickerStyle(.segmented)
                 .frame(width: 280)
@@ -32,7 +32,7 @@ struct MySQLLogsSection: View {
                 Spacer()
 
                 HStack(spacing: 4) {
-                    Text("Lines:")
+                    Text(L10n.Apps.lines)
                         .font(.system(size: 11))
                         .foregroundColor(.axTextMuted)
                     Picker("", selection: $logLines) {
@@ -62,7 +62,7 @@ struct MySQLLogsSection: View {
                     Image(systemName: "text.alignleft")
                         .font(.system(size: 28))
                         .foregroundColor(.axTextMuted)
-                    Text("No log entries found")
+                    Text(L10n.Apps.noLogEntriesFound)
                         .font(AXTypography.caption)
                         .foregroundColor(.axTextMuted)
                 }

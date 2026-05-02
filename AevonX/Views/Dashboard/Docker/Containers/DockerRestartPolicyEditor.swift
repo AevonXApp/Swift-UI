@@ -28,7 +28,7 @@ struct DockerRestartPolicyEditor: View {
                 HStack(spacing: 6) {
                     Image(systemName: "arrow.clockwise.circle.fill")
                         .foregroundColor(.orange)
-                    Text("Restart Policy")
+                    Text(L10n.Docker.restartPolicy)
                         .font(AXTypography.headline)
                         .foregroundColor(.axTextPrimary)
                 }
@@ -54,7 +54,7 @@ struct DockerRestartPolicyEditor: View {
                 VStack(alignment: .leading, spacing: AXSpacing.lg) {
                     // Current policy
                     HStack(spacing: 6) {
-                        Text("Current:")
+                        Text(L10n.Docker.current)
                             .font(.system(size: 11))
                             .foregroundColor(.axTextMuted)
                         Text(currentPolicy)
@@ -105,13 +105,13 @@ struct DockerRestartPolicyEditor: View {
                     // Max retries for on-failure
                     if selectedPolicy == "on-failure" {
                         VStack(alignment: .leading, spacing: AXSpacing.xs) {
-                            Text("Max Retries")
+                            Text(L10n.Docker.maxRetries)
                                 .font(.system(size: 11, weight: .semibold))
                                 .foregroundColor(.axTextSecondary)
                             TextField("5", text: $maxRetries)
                                 .textFieldStyle(AXTextFieldStyle())
                                 .frame(width: 100)
-                            Text("Number of times to retry before giving up (0 = unlimited)")
+                            Text(L10n.Docker.numberOfTimesToRetryBeforeGivingUpUnlimited)
                                 .font(.system(size: 9))
                                 .foregroundColor(.axTextMuted)
                         }

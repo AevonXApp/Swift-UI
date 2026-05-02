@@ -44,7 +44,7 @@ struct PluginsTab: View {
                 VStack(spacing: 0) {
                     // Header with Segmented Control + Developer Buttons
                     HStack(spacing: AXSpacing.md) {
-                        Text("Plugins")
+                        Text(L10n.PluginsUI.plugins)
                             .font(AXTypography.headline)
                             .foregroundColor(.axTextPrimary)
                         
@@ -55,7 +55,7 @@ struct PluginsTab: View {
                             HStack(spacing: 6) {
                                 Image(systemName: "arrow.up.doc.fill")
                                     .font(.system(size: 11, weight: .semibold))
-                                Text("Upload Build")
+                                Text(L10n.PluginsUI.uploadBuild)
                                     .font(.system(size: 12, weight: .semibold))
                             }
                             .foregroundColor(.white)
@@ -75,7 +75,7 @@ struct PluginsTab: View {
                             HStack(spacing: 6) {
                                 Image(systemName: "person.badge.plus")
                                     .font(.system(size: 11, weight: .semibold))
-                                Text("Join Developers")
+                                Text(L10n.PluginsUI.joinDevelopers)
                                     .font(.system(size: 12, weight: .semibold))
                             }
                             .foregroundColor(.axAccentBlue)

@@ -43,14 +43,14 @@ struct DockerNetworkInspector: View {
             Divider()
             
             if isLoading {
-                VStack { ProgressView(); Text("Inspecting network...").font(AXTypography.caption).foregroundColor(.axTextMuted) }
+                VStack { ProgressView(); Text(L10n.Docker.inspectingNetwork).font(AXTypography.caption).foregroundColor(.axTextMuted) }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 ScrollView {
                     VStack(alignment: .leading, spacing: AXSpacing.lg) {
                         // Network info
                         VStack(alignment: .leading, spacing: AXSpacing.sm) {
-                            Text("Network Configuration")
+                            Text(L10n.Docker.networkConfiguration)
                                 .font(.system(size: 13, weight: .bold))
                                 .foregroundColor(.axTextPrimary)
                             
@@ -67,7 +67,7 @@ struct DockerNetworkInspector: View {
                         // Connected containers
                         VStack(alignment: .leading, spacing: AXSpacing.sm) {
                             HStack {
-                                Text("Connected Containers")
+                                Text(L10n.Docker.connectedContainers)
                                     .font(.system(size: 13, weight: .bold))
                                     .foregroundColor(.axTextPrimary)
                                 Text("\(connectedContainers.count)")
@@ -80,7 +80,7 @@ struct DockerNetworkInspector: View {
                             }
                             
                             if connectedContainers.isEmpty {
-                                Text("No containers connected")
+                                Text(L10n.Docker.noContainersConnected)
                                     .font(AXTypography.caption)
                                     .foregroundColor(.axTextMuted)
                                     .padding(.vertical, AXSpacing.lg)
@@ -88,9 +88,9 @@ struct DockerNetworkInspector: View {
                             } else {
                                 // Header
                                 HStack {
-                                    Text("Container").frame(maxWidth: .infinity, alignment: .leading)
-                                    Text("IP Address").frame(width: 140, alignment: .leading)
-                                    Text("MAC Address").frame(width: 160, alignment: .leading)
+                                    Text(L10n.Docker.container).frame(maxWidth: .infinity, alignment: .leading)
+                                    Text(L10n.Docker.ipAddress).frame(width: 140, alignment: .leading)
+                                    Text(L10n.Docker.macAddress).frame(width: 160, alignment: .leading)
                                 }
                                 .font(.system(size: 10, weight: .bold))
                                 .foregroundColor(.axTextSecondary)

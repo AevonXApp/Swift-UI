@@ -36,7 +36,7 @@ struct DockerComposeEditor: View {
                 Spacer()
                 
                 if hasChanges {
-                    Text("Unsaved Changes")
+                    Text(L10n.Docker.unsavedChanges)
                         .font(.system(size: 10, weight: .bold))
                         .foregroundColor(.orange)
                         .padding(.horizontal, 8)
@@ -59,7 +59,7 @@ struct DockerComposeEditor: View {
             if isLoading {
                 VStack(spacing: AXSpacing.md) {
                     ProgressView()
-                    Text("Loading compose file...")
+                    Text(L10n.Docker.loadingComposeFile)
                         .font(AXTypography.caption)
                         .foregroundColor(.axTextMuted)
                 }
@@ -128,7 +128,7 @@ struct DockerComposeEditor: View {
                     HStack(spacing: 4) {
                         if isApplying { ProgressView().controlSize(.small) }
                         Image(systemName: "play.fill").font(.system(size: 10))
-                        Text("Save & Apply")
+                        Text(L10n.Docker.saveApply)
                     }
                 }
                 .buttonStyle(AXPrimaryButtonStyle())

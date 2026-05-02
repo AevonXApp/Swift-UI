@@ -67,7 +67,7 @@ struct SecurityTab: View {
                         }
 
                         VStack(alignment: .leading, spacing: 2) {
-                            Text("Security Center")
+                            Text(L10n.Security.securityCenter)
                                 .font(AXTypography.subheadline)
                                 .fontWeight(.bold)
                                 .foregroundColor(.axTextPrimary)
@@ -158,7 +158,7 @@ struct SecurityTab: View {
                     .frame(width: 8, height: 8)
                     .shadow(color: .axSuccess.opacity(0.5), radius: 4, x: 0, y: 0)
 
-                Text("Protected")
+                Text(L10n.Security.protected)
                     .font(AXTypography.caption)
                     .foregroundColor(.axSuccess)
             }

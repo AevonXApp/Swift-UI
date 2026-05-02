@@ -282,7 +282,7 @@ public struct AXTextField: View {
                 HStack(spacing: AXSpacing.xxs) {
                     Image(systemName: "exclamationmark.circle")
                         .font(.system(size: 10))
-                    Text("Invalid input")
+                    Text(L10n.Shared.invalidInput)
                         .font(AXTypography.caption2)
                 }
                 .foregroundColor(.axError)

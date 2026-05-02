@@ -30,7 +30,7 @@ struct PerformanceSection: View {
                         HStack(spacing: 4) {
                             if isLoading { ProgressView().scaleEffect(0.7) }
                             else { Image(systemName: "play.fill") }
-                            Text("Run Analysis")
+                            Text(L10n.Websites.runAnalysis)
                         }
                         .font(AXTypography.subheadline).fontWeight(.medium)
                     }

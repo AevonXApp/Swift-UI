@@ -124,7 +124,7 @@ extension DBTableDataView {
     func cellView(value: String, columnName: String) -> some View {
         Group {
             if value == "NULL" {
-                Text("NULL")
+                Text(L10n.Literal.null)
                     .font(AXTypography.monoXs).fontWeight(.medium)
                     .foregroundColor(.axTextMuted.opacity(0.5))
                     .italic()

@@ -141,8 +141,8 @@ struct AppOptimizationToggle: View {
                 .frame(width: 240, alignment: .trailing)
 
             Picker("", selection: $value) {
-                Text("Open").tag("on")
-                Text("Close").tag("off")
+                Text(L10n.Apps.`open`).tag("on")
+                Text(L10n.Apps.close).tag("off")
             }
             .pickerStyle(.segmented)
             .frame(width: 120)

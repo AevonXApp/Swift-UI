@@ -24,8 +24,8 @@ struct LiteSpeedLogsSection: View {
             // Toolbar
             HStack(spacing: AXSpacing.md) {
                 Picker("Log Type", selection: $selectedLogType) {
-                    Text("Access Log").tag("access")
-                    Text("Error Log").tag("error")
+                    Text(L10n.Apps.accessLog).tag("access")
+                    Text(L10n.Apps.errorLog).tag("error")
                 }
                 .pickerStyle(.segmented)
                 .frame(width: 220)
@@ -57,7 +57,7 @@ struct LiteSpeedLogsSection: View {
                 VStack(spacing: AXSpacing.md) {
                     Spacer()
                     Image(systemName: "text.alignleft").font(AXTypography.largeTitle).foregroundColor(.axTextMuted.opacity(0.3))
-                    Text("No log entries").font(AXTypography.callout).foregroundColor(.axTextMuted)
+                    Text(L10n.Apps.noLogEntries).font(AXTypography.callout).foregroundColor(.axTextMuted)
                     Spacer()
                 }.frame(maxWidth: .infinity)
             } else {

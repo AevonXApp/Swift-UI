@@ -60,7 +60,7 @@ struct DevBuildLogSheet: View {
                 .font(.system(size: 14, weight: .semibold))
                 .foregroundColor(.axAccentBlue)
             
-            Text("Dev Build Installer")
+            Text(L10n.PluginsUI.devBuildInstaller)
                 .font(.system(size: 14, weight: .bold, design: .monospaced))
                 .foregroundColor(.white)
             
@@ -76,7 +76,7 @@ struct DevBuildLogSheet: View {
                 HStack(spacing: 4) {
                     Image(systemName: "checkmark.circle.fill")
                         .font(.system(size: 11))
-                    Text("SUCCESS")
+                    Text(L10n.Label.success)
                         .font(.system(size: 10, weight: .bold, design: .monospaced))
                 }
                 .foregroundColor(.green)
@@ -139,7 +139,7 @@ struct DevBuildLogSheet: View {
                 HStack(spacing: AXSpacing.sm) {
                     Image(systemName: "info.circle")
                         .font(.system(size: 10))
-                    Text("ZIP must contain: setup.sh, uninstall.sh, config.avx")
+                    Text(L10n.PluginsUI.zipMustContainSetupShUninstallShConfigAvx)
                         .font(.system(size: 10, design: .monospaced))
                 }
                 .foregroundColor(.white.opacity(0.25))

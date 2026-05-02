@@ -104,7 +104,7 @@ struct PHPVersionsSection: View {
 
             HStack(spacing: 4) {
                 Image(systemName: "checkmark.circle.fill").font(.system(size: 10)).foregroundColor(.axSuccess)
-                Text("Installed").font(.system(size: 11)).foregroundColor(.axSuccess)
+                Text(L10n.Apps.installed).font(.system(size: 11)).foregroundColor(.axSuccess)
             }
 
             Divider().opacity(0.2)
@@ -116,7 +116,7 @@ struct PHPVersionsSection: View {
                     } label: {
                         HStack(spacing: 4) {
                             Image(systemName: "star.fill").font(.system(size: 9))
-                            Text("Set Default").font(.system(size: 10, weight: .semibold))
+                            Text(L10n.Apps.setDefault).font(.system(size: 10, weight: .semibold))
                         }
                         .foregroundColor(phpPurple)
                     }

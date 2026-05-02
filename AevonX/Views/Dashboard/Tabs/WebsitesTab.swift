@@ -12,8 +12,8 @@ struct OldWebsitesTab: View {
     @State private var websites: [Website] = [
         Website(
 // ... (trimmed for brevity, I'll use the tool properly)
-            name: "api.aevonx.io",
-            domain: "api.aevonx.io",
+            name: "api.example.com",
+            domain: "api.example.com",
             status: .online,
             sslEnabled: true,
             phpVersion: "8.2",
@@ -22,7 +22,7 @@ struct OldWebsitesTab: View {
         ),
         Website(
             name: "dashboard",
-            domain: "app.aevonx.io",
+            domain: "app.example.com",
             status: .online,
             sslEnabled: true,
             phpVersion: "8.2",
@@ -31,7 +31,7 @@ struct OldWebsitesTab: View {
         ),
         Website(
             name: "blog",
-            domain: "blog.aevonx.io",
+            domain: "blog.example.com",
             status: .maintenance,
             sslEnabled: true,
             phpVersion: "8.1",
@@ -40,7 +40,7 @@ struct OldWebsitesTab: View {
         ),
         Website(
             name: "legacy-app",
-            domain: "old.aevonx.io",
+            domain: "old.example.com",
             status: .offline,
             sslEnabled: false,
             phpVersion: "7.4",
@@ -49,7 +49,7 @@ struct OldWebsitesTab: View {
         ),
         Website(
             name: "staging-api",
-            domain: "staging-api.aevonx.io",
+            domain: "staging.example.com",
             status: .online,
             sslEnabled: true,
             phpVersion: "8.3",
@@ -141,7 +141,7 @@ struct OldWebsitesTab: View {
                 Button(action: { showAddWebsite = true }) {
                     HStack(spacing: AXSpacing.sm) {
                         Image(systemName: "plus")
-                        Text("Add Website")
+                        Text(L10n.Websites.addWebsite)
                     }
                     .font(AXTypography.subheadline)
                     .fontWeight(.medium)
@@ -161,13 +161,13 @@ struct OldWebsitesTab: View {
                 VStack(spacing: 0) {
                     // Table Header
                     HStack(spacing: AXSpacing.md) {
-                        Text("Status")
+                        Text(L10n.Websites.status)
                             .font(AXTypography.caption)
                             .fontWeight(.semibold)
                             .foregroundColor(.axTextMuted)
                             .frame(width: LayoutConstants.TableColumn.smallLabel, alignment: .leading)
                         
-                        Text("Website")
+                        Text(L10n.Websites.website)
                             .font(AXTypography.caption)
                             .fontWeight(.semibold)
                             .foregroundColor(.axTextMuted)
@@ -179,19 +179,19 @@ struct OldWebsitesTab: View {
                             .foregroundColor(.axTextMuted)
                             .frame(width: LayoutConstants.TableColumn.status, alignment: .center)
                         
-                        Text("MOCK PHP")
+                        Text(L10n.Websites.mockPhp)
                             .font(AXTypography.caption)
                             .fontWeight(.semibold)
                             .foregroundColor(.axTextMuted)
                             .frame(width: LayoutConstants.TableColumn.status, alignment: .center)
                         
-                        Text("Disk")
+                        Text(L10n.Websites.disk)
                             .font(AXTypography.caption)
                             .fontWeight(.semibold)
                             .foregroundColor(.axTextMuted)
                             .frame(width: LayoutConstants.TableColumn.actions, alignment: .trailing)
                         
-                        Text("Deployed")
+                        Text(L10n.Websites.deployed)
                             .font(AXTypography.caption)
                             .fontWeight(.semibold)
                             .foregroundColor(.axTextMuted)
@@ -199,7 +199,7 @@ struct OldWebsitesTab: View {
                         
                         Spacer()
                         
-                        Text("Actions")
+                        Text(L10n.Websites.actions)
                             .font(AXTypography.caption)
                             .fontWeight(.semibold)
                             .foregroundColor(.axTextMuted)

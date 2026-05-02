@@ -31,7 +31,7 @@ struct FileContentSearchSheet: View {
                     .font(.system(size: 16))
                     .foregroundColor(.axAccentBlue)
                 
-                Text("Search in File Contents")
+                Text(L10n.Files.searchInFileContents)
                     .font(AXTypography.title3)
                     .fontWeight(.bold)
                     .foregroundColor(.axTextPrimary)

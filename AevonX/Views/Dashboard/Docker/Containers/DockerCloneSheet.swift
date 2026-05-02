@@ -18,7 +18,7 @@ struct DockerCloneSheet: View {
             // Header
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Clone Container")
+                    Text(L10n.Docker.cloneContainer)
                         .font(AXTypography.title2)
                         .foregroundColor(.axTextPrimary)
                     Text("Clone \(container.names) with all its settings")
@@ -47,7 +47,7 @@ struct DockerCloneSheet: View {
                             .foregroundColor(.axTextPrimary)
                         
                         HStack {
-                            Text("Name:")
+                            Text(L10n.Docker.name)
                                 .font(AXTypography.caption)
                                 .foregroundColor(.axTextMuted)
                             Text(container.names)
@@ -56,7 +56,7 @@ struct DockerCloneSheet: View {
                         }
                         
                         HStack {
-                            Text("Image:")
+                            Text(L10n.Docker.image)
                                 .font(AXTypography.caption)
                                 .foregroundColor(.axTextMuted)
                             Text(container.image)

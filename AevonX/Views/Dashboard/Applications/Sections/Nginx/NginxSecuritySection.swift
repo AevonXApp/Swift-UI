@@ -174,7 +174,7 @@ struct NginxSecuritySection: View {
                 Divider().padding(.horizontal, AXSpacing.lg).padding(.top, AXSpacing.sm)
 
                 VStack(alignment: .leading, spacing: AXSpacing.sm) {
-                    Text("Certificates")
+                    Text(L10n.Apps.certificates)
                         .font(.system(size: 11, weight: .semibold))
                         .foregroundColor(.axTextMuted)
                         .padding(.horizontal, AXSpacing.lg)
@@ -190,10 +190,10 @@ struct NginxSecuritySection: View {
                         .font(.system(size: 12))
                         .foregroundColor(.axWarning)
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("No SSL certificates found")
+                        Text(L10n.Apps.noSslCertificatesFound)
                             .font(.system(size: 12, weight: .medium))
                             .foregroundColor(.axTextSecondary)
-                        Text("Configure Let's Encrypt or upload your certificates")
+                        Text(L10n.Apps.configureLetsEncryptOrUploadYourCertificates)
                             .font(.system(size: 10))
                             .foregroundColor(.axTextMuted)
                     }
@@ -218,7 +218,7 @@ struct NginxSecuritySection: View {
             if !existingRateLimits.isEmpty {
                 Divider().padding(.horizontal, AXSpacing.lg).padding(.top, AXSpacing.sm)
                 VStack(alignment: .leading, spacing: AXSpacing.xs) {
-                    Text("Active Rules")
+                    Text(L10n.Apps.activeRules)
                         .font(.system(size: 11, weight: .semibold))
                         .foregroundColor(.axTextMuted)
                         .padding(.horizontal, AXSpacing.lg)

@@ -233,7 +233,7 @@ struct PHPDetailView: View {
                         }
 
                         VStack(alignment: .leading, spacing: 2) {
-                            Text("PHP-FPM")
+                            Text(L10n.Apps.phpFpm)
                                 .font(AXTypography.subheadline)
                                 .fontWeight(.bold)
                                 .foregroundColor(.axTextPrimary)

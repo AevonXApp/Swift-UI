@@ -16,7 +16,7 @@ struct DirectoryBrowserView: View {
             // Header
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Select Directory")
+                    Text(L10n.Websites.selectDirectory)
                         .font(AXTypography.headline)
                         .foregroundColor(.axTextPrimary)
                     Text(viewModel.currentBrowsingPath)
@@ -75,7 +75,7 @@ struct DirectoryBrowserView: View {
                     }
                     .listRowBackground(Color.clear)
                 } else if viewModel.browsingItems.isEmpty {
-                    Text("No subdirectories found")
+                    Text(L10n.Websites.noSubdirectoriesFound)
                         .font(AXTypography.body)
                         .foregroundColor(.axTextMuted)
                         .listRowBackground(Color.clear)

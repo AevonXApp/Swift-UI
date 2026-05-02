@@ -16,11 +16,11 @@ struct DBEDOptimizationTab: View {
             VStack(spacing: AXSpacing.xl) {
                 AXGlassCard {
                     VStack(alignment: .leading, spacing: AXSpacing.lg) {
-                        Text("Performance Optimization")
+                        Text(L10n.Database.performanceOptimization)
                             .font(AXTypography.headline)
                             .foregroundColor(.axTextPrimary)
 
-                        Text("AI-powered optimization recommendations will appear here.")
+                        Text(L10n.Database.aiPoweredOptimizationRecommendationsWillAppearHere)
                             .font(AXTypography.subheadline)
                             .foregroundColor(.axTextMuted)
 
@@ -42,7 +42,7 @@ struct DBEDOptimizationTab: View {
                 // Optimization presets
                 AXGlassCard {
                     VStack(alignment: .leading, spacing: AXSpacing.lg) {
-                        Text("Quick Presets")
+                        Text(L10n.Database.quickPresets)
                             .font(AXTypography.headline)
                             .foregroundColor(.axTextPrimary)
 

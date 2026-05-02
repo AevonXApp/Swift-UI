@@ -35,7 +35,7 @@ struct PHPPoolsSection: View {
                     } label: {
                         HStack(spacing: AXSpacing.xs) {
                             Image(systemName: "plus.circle.fill")
-                            Text("New Pool").font(.system(size: 12, weight: .semibold))
+                            Text(L10n.Apps.newPool).font(.system(size: 12, weight: .semibold))
                         }
                         .foregroundColor(.white)
                         .padding(.horizontal, AXSpacing.md).padding(.vertical, 7)
@@ -69,8 +69,8 @@ struct PHPPoolsSection: View {
     private var emptyState: some View {
         VStack(spacing: AXSpacing.lg) {
             Image(systemName: "square.stack.3d.up.fill").font(.system(size: 36)).foregroundColor(phpPurple.opacity(0.3))
-            Text("No pools found").font(AXTypography.body).foregroundColor(.axTextMuted)
-            Text("FPM pools manage separate worker groups for different apps")
+            Text(L10n.Apps.noPoolsFound).font(AXTypography.body).foregroundColor(.axTextMuted)
+            Text(L10n.Apps.fpmPoolsManageSeparateWorkerGroupsForDifferentApps)
                 .font(AXTypography.caption).foregroundColor(.axTextTertiary).multilineTextAlignment(.center)
         }
         .frame(maxWidth: .infinity).padding(.vertical, AXSpacing.xxl)
@@ -141,7 +141,7 @@ struct PHPPoolsSection: View {
     private var poolCalculator: some View {
         VStack(alignment: .leading, spacing: AXSpacing.md) {
             AXSectionTitle(title: "Pool Calculator", icon: "function")
-            Text("Optimal pm.max_children = (Total RAM - Reserved) / Avg Process Memory")
+            Text(L10n.Apps.optimalPmMaxChildrenTotalRamReservedAvgProcessMemory)
                 .font(.system(size: 12, design: .monospaced))
                 .foregroundColor(.axTextSecondary)
                 .padding(AXSpacing.md)
@@ -152,12 +152,12 @@ struct PHPPoolsSection: View {
 
     private var createPoolSheet: some View {
         VStack(alignment: .leading, spacing: AXSpacing.lg) {
-            Text("Create FPM Pool").font(.system(size: 16, weight: .bold)).foregroundColor(.axTextPrimary)
+            Text(L10n.Apps.createFpmPool).font(.system(size: 16, weight: .bold)).foregroundColor(.axTextPrimary)
             VStack(alignment: .leading, spacing: AXSpacing.md) {
                 sheetField(label: "Pool Name", text: $newPoolName, placeholder: "my_app")
                 sheetField(label: "User", text: $newPoolUser, placeholder: "www-data")
                 HStack {
-                    Text("PM Mode").font(.system(size: 12, weight: .medium)).foregroundColor(.axTextSecondary)
+                    Text(L10n.Apps.pmMode).font(.system(size: 12, weight: .medium)).foregroundColor(.axTextSecondary)
                     Spacer()
                     Picker("", selection: $newPoolPM) {
                         Text("dynamic").tag("dynamic")

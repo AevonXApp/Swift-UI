@@ -226,7 +226,7 @@ public struct PluginPageComponent: View {
     private var pluginBadge: some View {
         HStack(spacing: 4) {
             Image(systemName: "puzzlepiece.fill").font(.system(size: 9))
-            Text("Plugin").font(.system(size: 10, weight: .semibold))
+            Text(L10n.PluginsUI.plugin).font(.system(size: 10, weight: .semibold))
         }.foregroundColor(.axTextMuted).padding(.horizontal, AXSpacing.sm).padding(.vertical, 4)
         .background(RoundedRectangle(cornerRadius: AXCornerRadius.sm).fill(Color.axSurface)
             .overlay(RoundedRectangle(cornerRadius: AXCornerRadius.sm).stroke(Color.axBorder, lineWidth: 1)))
@@ -499,7 +499,7 @@ public struct PluginPageComponent: View {
     private var emptyState: some View {
         VStack(spacing: AXSpacing.md) {
             Image(systemName: plugin.icon ?? "puzzlepiece").font(.system(size: 40)).foregroundColor(.axTextMuted)
-            Text("No layout defined for this plugin").font(AXTypography.body).foregroundColor(.axTextMuted)
+            Text(L10n.PluginsUI.noLayoutDefinedForThisPlugin).font(AXTypography.body).foregroundColor(.axTextMuted)
         }.frame(maxWidth: .infinity, maxHeight: .infinity).padding(AXSpacing.xxl)
     }
 }

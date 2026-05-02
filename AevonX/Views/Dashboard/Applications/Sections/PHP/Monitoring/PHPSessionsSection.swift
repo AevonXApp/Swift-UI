@@ -66,7 +66,7 @@ struct PHPSessionsSection: View {
                         HStack {
                             if isCleaning { ProgressView().scaleEffect(0.65).frame(width: 14, height: 14) }
                             else { Image(systemName: "trash.fill") }
-                            Text("Clean Expired Sessions")
+                            Text(L10n.Apps.cleanExpiredSessions)
                         }
                         .frame(maxWidth: .infinity)
                         .padding(AXSpacing.md)

@@ -107,11 +107,11 @@ extension AXServiceStatusCard where Trailing == EmptyView {
             HStack(spacing: AXSpacing.xl) {
                 VStack(spacing: AXSpacing.xxxs) {
                     Text("24").font(.system(size: 16, weight: .bold)).foregroundColor(.axError)
-                    Text("Banned").font(.system(size: 10)).foregroundColor(.axTextMuted)
+                    Text(L10n.Label.banned).font(.system(size: 10)).foregroundColor(.axTextMuted)
                 }
                 VStack(spacing: AXSpacing.xxxs) {
                     Text("3").font(.system(size: 16, weight: .bold)).foregroundColor(.axSuccess)
-                    Text("Whitelisted").font(.system(size: 10)).foregroundColor(.axTextMuted)
+                    Text(L10n.Label.whitelisted).font(.system(size: 10)).foregroundColor(.axTextMuted)
                 }
             }
         }

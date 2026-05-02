@@ -63,7 +63,7 @@ struct ApacheVersionsSection: View {
                         .font(.system(size: 13, weight: .semibold, design: .monospaced))
                         .foregroundColor(.axTextPrimary)
                     if version.isActive {
-                        Text("ACTIVE").font(.system(size: 8, weight: .bold))
+                        Text(L10n.Label.active).font(.system(size: 8, weight: .bold))
                             .foregroundColor(.white).padding(.horizontal, 5).padding(.vertical, 2)
                             .background(apacheRed).cornerRadius(3)
                     }

@@ -23,13 +23,13 @@ struct DockerInstallationView: View {
                             .font(.system(size: 48))
                             .foregroundColor(.axAccentBlue)
                         
-                        Text("Docker Engine Required")
+                        Text(L10n.Docker.dockerEngineRequired)
                             .font(AXTypography.title3)
                             .foregroundColor(.axTextPrimary)
                             .multilineTextAlignment(.center)
                     }
                     
-                    Text("To manage containers, images, and stacks, Docker Engine must be installed on your server. We can install it for you automatically using the official Docker setup script.")
+                    Text(L10n.Docker.toManageContainersImagesAndStacksDockerEngineMustBeInstalledOnYourServerWeCanInstallItForYouAutomaticallyUsingTheOfficialDockerSetupScript)
                         .font(AXTypography.body)
                         .foregroundColor(.axTextSecondary)
                         .multilineTextAlignment(.center)

@@ -74,7 +74,7 @@ public struct AXAdvancedLogsView: View {
                 Task { await viewModel.clearLogs() }
             }
         } message: {
-            Text("Are you sure you want to clear all log files for this source? This action cannot be undone.")
+            Text(L10n.Dashboard.areYouSureYouWantToClearAllLogFilesForThisSourceThisActionCannotBeUndone)
         }
     }
 
@@ -250,13 +250,13 @@ public struct AXAdvancedLogsView: View {
 
     private var tableHeader: some View {
         HStack(spacing: AXSpacing.md) {
-            Text("Time")
+            Text(L10n.Dashboard.time)
                 .frame(width: 140, alignment: .leading)
 
             if viewModel.selectedTab != .error {
-                Text("IP Address")
+                Text(L10n.Dashboard.ipAddress)
                     .frame(width: 130, alignment: .leading)
-                Text("Method")
+                Text(L10n.Dashboard.method)
                     .frame(width: 70, alignment: .leading)
             }
 
@@ -281,7 +281,7 @@ public struct AXAdvancedLogsView: View {
         VStack(spacing: AXSpacing.lg) {
             ProgressView()
                 .scaleEffect(1.2)
-            Text("Loading logs...")
+            Text(L10n.Dashboard.loadingLogs)
                 .font(.system(size: 14))
                 .foregroundColor(.axTextSecondary)
         }
@@ -296,7 +296,7 @@ public struct AXAdvancedLogsView: View {
                 .foregroundColor(.axTextTertiary.opacity(0.5))
 
             VStack(spacing: AXSpacing.xs) {
-                Text("No Logs Found")
+                Text(L10n.Dashboard.noLogsFound)
                     .font(.system(size: 18, weight: .semibold))
                     .foregroundColor(.axTextPrimary)
 

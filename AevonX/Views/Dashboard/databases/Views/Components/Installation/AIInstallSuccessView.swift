@@ -21,7 +21,7 @@ struct AIInstallSuccessView: View {
                 .foregroundColor(.axSuccess)
             
             VStack(spacing: AXSpacing.md) {
-                Text("Installation Successful!")
+                Text(L10n.Database.installationSuccessful)
                     .font(AXTypography.title2)
                     .fontWeight(.bold)
                     .foregroundColor(.axTextPrimary)

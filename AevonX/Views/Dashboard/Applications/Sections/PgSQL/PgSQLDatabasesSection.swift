@@ -51,7 +51,7 @@ struct PgSQLDatabasesSection: View {
                     Text(searchText.isEmpty ? "No databases found" : "No results for \"\(searchText)\"")
                         .font(.system(size: 14, weight: .semibold)).foregroundColor(.axTextSecondary)
                     if searchText.isEmpty {
-                        Text("PostgreSQL databases will appear here when detected")
+                        Text(L10n.Apps.postgresqlDatabasesWillAppearHereWhenDetected)
                             .font(.system(size: 11)).foregroundColor(.axTextMuted).multilineTextAlignment(.center).frame(maxWidth: 280)
                     }
                 }

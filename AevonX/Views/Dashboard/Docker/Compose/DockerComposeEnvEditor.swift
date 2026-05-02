@@ -34,7 +34,7 @@ struct DockerComposeEnvEditor: View {
                 Spacer()
                 
                 if hasChanges {
-                    Text("Unsaved")
+                    Text(L10n.Docker.unsaved)
                         .font(.system(size: 9, weight: .bold))
                         .foregroundColor(.orange)
                         .padding(.horizontal, 6)
@@ -55,7 +55,7 @@ struct DockerComposeEnvEditor: View {
             Divider()
             
             if isLoading {
-                VStack { ProgressView(); Text("Loading .env file...").font(AXTypography.caption).foregroundColor(.axTextMuted) }
+                VStack { ProgressView(); Text(L10n.Docker.loadingEnvFile).font(AXTypography.caption).foregroundColor(.axTextMuted) }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 // Env var list
@@ -108,7 +108,7 @@ struct DockerComposeEnvEditor: View {
                         Button(action: { envVars.append((key: "", value: "", isSecret: false)); hasChanges = true }) {
                             HStack(spacing: 4) {
                                 Image(systemName: "plus.circle.fill").font(.system(size: 12))
-                                Text("Add Variable").font(.system(size: 11, weight: .medium))
+                                Text(L10n.Docker.addVariable).font(.system(size: 11, weight: .medium))
                             }
                             .foregroundColor(.axAccentBlue)
                         }
@@ -149,7 +149,7 @@ struct DockerComposeEnvEditor: View {
                     HStack(spacing: 4) {
                         if isSaving { ProgressView().controlSize(.small) }
                         Image(systemName: "play.fill").font(.system(size: 10))
-                        Text("Save & Recreate")
+                        Text(L10n.Docker.saveRecreate)
                     }
                 }
                 .buttonStyle(AXPrimaryButtonStyle())

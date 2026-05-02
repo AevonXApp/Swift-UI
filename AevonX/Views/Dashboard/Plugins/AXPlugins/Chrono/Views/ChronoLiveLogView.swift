@@ -113,7 +113,7 @@ struct ChronoLiveLogView: View {
             if viewModel.isLiveStreaming {
                 HStack(spacing: AXSpacing.xs) {
                     ProgressView().controlSize(.small)
-                    Text("Streaming...")
+                    Text(L10n.PluginsUI.streaming)
                         .font(AXTypography.caption)
                         .foregroundColor(.axTextMuted)
                 }
@@ -124,7 +124,7 @@ struct ChronoLiveLogView: View {
             }
             Spacer()
             Button { dismiss() } label: {
-                Text("Close")
+                Text(L10n.PluginsUI.close)
                     .font(.system(size: 12, weight: .medium))
                     .foregroundColor(.axTextSecondary)
             }

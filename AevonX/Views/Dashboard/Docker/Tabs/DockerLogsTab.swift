@@ -107,7 +107,7 @@ struct DockerLogsTab: View {
                         Button {
                             selectedContainerIds.removeAll()
                         } label: {
-                            Text("All Containers")
+                            Text(L10n.Docker.allContainers)
                                 .font(.system(size: 11, weight: selectedContainerIds.isEmpty ? .bold : .medium))
                                 .foregroundColor(selectedContainerIds.isEmpty ? .axAccentBlue : .axTextSecondary)
                                 .padding(.horizontal, 10)
@@ -287,13 +287,13 @@ struct DockerLogsTab: View {
     
     private var tableHeader: some View {
         HStack(spacing: AXSpacing.md) {
-            Text("Container")
+            Text(L10n.Docker.container)
                 .frame(width: 140, alignment: .leading)
-            Text("Time")
+            Text(L10n.Docker.time)
                 .frame(width: 160, alignment: .leading)
-            Text("Level")
+            Text(L10n.Docker.level)
                 .frame(width: 80, alignment: .leading)
-            Text("Message")
+            Text(L10n.Docker.message)
                 .frame(minWidth: 300, alignment: .leading)
             Spacer()
         }
@@ -309,7 +309,7 @@ struct DockerLogsTab: View {
     private var loadingState: some View {
         VStack(spacing: AXSpacing.lg) {
             ProgressView().scaleEffect(1.2)
-            Text("Loading containers...")
+            Text(L10n.Docker.loadingContainers)
                 .font(.system(size: 14))
                 .foregroundColor(.axTextSecondary)
         }
@@ -324,10 +324,10 @@ struct DockerLogsTab: View {
                 .foregroundColor(.axTextTertiary.opacity(0.5))
             
             VStack(spacing: AXSpacing.xs) {
-                Text("No Logs Yet")
+                Text(L10n.Docker.noLogsYet)
                     .font(.system(size: 18, weight: .semibold))
                     .foregroundColor(.axTextPrimary)
-                Text("Select containers above and click \"Fetch Logs\" to load aggregated logs")
+                Text(L10n.Label.dockerLogsHint)
                     .font(.system(size: 13))
                     .foregroundColor(.axTextSecondary)
             }
@@ -342,7 +342,7 @@ struct DockerLogsTab: View {
         VStack(spacing: 0) {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Log Detail")
+                    Text(L10n.Docker.logDetail)
                         .font(.system(size: 18, weight: .bold))
                         .foregroundColor(.axTextPrimary)
                     Text(entry.containerName)
@@ -368,7 +368,7 @@ struct DockerLogsTab: View {
                     detailRow("Timestamp", entry.timestamp)
                     detailRow("Level", detectLevel(entry.message))
                     
-                    Text("Full Message")
+                    Text(L10n.Docker.fullMessage)
                         .font(.system(size: 13, weight: .semibold))
                         .foregroundColor(.axTextPrimary)
                         .padding(.top, AXSpacing.sm)

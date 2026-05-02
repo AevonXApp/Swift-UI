@@ -18,7 +18,7 @@ struct DBEDConfigurationTab: View {
                 AXGlassCard {
                     VStack(alignment: .leading, spacing: AXSpacing.lg) {
                         HStack {
-                            Text("Configuration File")
+                            Text(L10n.Database.configurationFile)
                                 .font(AXTypography.headline)
                                 .foregroundColor(.axTextPrimary)
 
@@ -50,7 +50,7 @@ struct DBEDConfigurationTab: View {
                 AXGlassCard {
                     VStack(alignment: .leading, spacing: AXSpacing.lg) {
                         HStack {
-                            Text("Version Management")
+                            Text(L10n.Database.versionManagement)
                                 .font(AXTypography.headline)
                                 .foregroundColor(.axTextPrimary)
 
@@ -67,7 +67,7 @@ struct DBEDConfigurationTab: View {
                         Divider()
 
                         HStack {
-                            Text("Current Version")
+                            Text(L10n.Database.currentVersion)
                                 .font(AXTypography.subheadline)
                                 .foregroundColor(.axTextMuted)
                             Spacer()
@@ -100,7 +100,7 @@ struct DBEDConfigurationTab: View {
                     AXGlassCard {
                         VStack(alignment: .leading, spacing: AXSpacing.lg) {
                             HStack {
-                                Text("Security")
+                                Text(L10n.Database.security)
                                     .font(AXTypography.headline)
                                     .foregroundColor(.axTextPrimary)
                                 
@@ -113,7 +113,7 @@ struct DBEDConfigurationTab: View {
                             Divider()
                             
                             VStack(alignment: .leading, spacing: AXSpacing.sm) {
-                                Text("Redis Password (requirepass)")
+                                Text(L10n.Database.redisPasswordRequirepass)
                                     .font(AXTypography.caption)
                                     .fontWeight(.semibold)
                                     .foregroundColor(.axTextSecondary)
@@ -148,7 +148,7 @@ struct DBEDConfigurationTab: View {
                                     .disabled(viewModel.isPerformingServiceAction || viewModel.redisPassword.isEmpty)
                                 }
                                 
-                                Text("Setting a password enables the 'requirepass' directive. A restart is required.")
+                                Text(L10n.Database.settingAPasswordEnablesTheRequirepassDirectiveARestartIsRequired)
                                     .font(AXTypography.caption)
                                     .foregroundColor(.axTextMuted)
                             }

@@ -58,7 +58,7 @@ struct DockerNetworkTrafficView: View {
                             Image(systemName: "antenna.radiowaves.left.and.right.slash")
                                 .font(.system(size: 32))
                                 .foregroundColor(.axTextMuted)
-                            Text("No network data")
+                            Text(L10n.Docker.noNetworkData)
                                 .font(AXTypography.body)
                                 .foregroundColor(.axTextSecondary)
                         }
@@ -66,7 +66,7 @@ struct DockerNetworkTrafficView: View {
                     } else {
                         // Per-container traffic
                         VStack(alignment: .leading, spacing: AXSpacing.sm) {
-                            Text("Per Container")
+                            Text(L10n.Docker.perContainer)
                                 .font(AXTypography.headline)
                                 .foregroundColor(.axTextPrimary)
                             

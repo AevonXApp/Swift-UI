@@ -25,8 +25,8 @@ struct NginxCacheSection: View {
             } else if caches.isEmpty {
                 VStack(spacing: AXSpacing.md) {
                     Image(systemName: "memorychip").font(.system(size: 40)).foregroundColor(.axTextMuted)
-                    Text("No cache configured").font(.system(size: 14, weight: .semibold)).foregroundColor(.axTextSecondary)
-                    Text("Add fastcgi_cache_path or proxy_cache_path to nginx.conf").font(.system(size: 11)).foregroundColor(.axTextMuted).multilineTextAlignment(.center)
+                    Text(L10n.Apps.noCacheConfigured).font(.system(size: 14, weight: .semibold)).foregroundColor(.axTextSecondary)
+                    Text(L10n.Apps.addFastcgiCachePathOrProxyCachePathToNginxConf).font(.system(size: 11)).foregroundColor(.axTextMuted).multilineTextAlignment(.center)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
@@ -55,7 +55,7 @@ struct NginxCacheSection: View {
                 Button { Task { await purge(path: path) } } label: {
                     HStack(spacing: 4) {
                         if isPurging { ProgressView().scaleEffect(0.6) } else { Image(systemName: "trash.fill") }
-                        Text("Purge").font(.system(size: 11, weight: .semibold))
+                        Text(L10n.Apps.purge).font(.system(size: 11, weight: .semibold))
                     }
                     .foregroundColor(.white).padding(.horizontal, 10).padding(.vertical, 5)
                     .background(Color.red).cornerRadius(AXCornerRadius.sm)
@@ -64,11 +64,11 @@ struct NginxCacheSection: View {
             }
             HStack(spacing: AXSpacing.xl) {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Disk Used").font(.system(size: 9)).foregroundColor(.axTextMuted)
+                    Text(L10n.Apps.diskUsed).font(.system(size: 9)).foregroundColor(.axTextMuted)
                     Text(diskUsed).font(.system(size: 12, weight: .semibold, design: .monospaced)).foregroundColor(.axTextPrimary)
                 }
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Keys").font(.system(size: 9)).foregroundColor(.axTextMuted)
+                    Text(L10n.Apps.keys).font(.system(size: 9)).foregroundColor(.axTextMuted)
                     Text("\(keys)").font(.system(size: 12, weight: .semibold)).foregroundColor(.axTextPrimary)
                 }
                 VStack(alignment: .leading, spacing: 2) {

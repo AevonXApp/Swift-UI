@@ -35,7 +35,7 @@ struct DockerAIComposeGenerator: View {
                 HStack(spacing: 6) {
                     Image(systemName: "sparkles")
                         .foregroundColor(.purple)
-                    Text("AI Compose Generator")
+                    Text(L10n.Docker.aiComposeGenerator)
                         .font(AXTypography.headline)
                         .foregroundColor(.axTextPrimary)
                 }
@@ -98,7 +98,7 @@ struct DockerAIComposeGenerator: View {
                 case .review:
                     Button(action: { step = .deploy }) {
                         HStack(spacing: 4) {
-                            Text("Continue to Deploy")
+                            Text(L10n.Docker.continueToDeploy)
                             Image(systemName: "chevron.right").font(.system(size: 10))
                         }
                     }
@@ -129,10 +129,10 @@ struct DockerAIComposeGenerator: View {
         ScrollView {
             VStack(alignment: .leading, spacing: AXSpacing.lg) {
                 VStack(alignment: .leading, spacing: AXSpacing.sm) {
-                    Text("Describe your stack")
+                    Text(L10n.Docker.describeYourStack)
                         .font(.system(size: 16, weight: .bold))
                         .foregroundColor(.axTextPrimary)
-                    Text("Tell the AI what you need and it will generate a docker-compose.yml for you.")
+                    Text(L10n.Docker.tellTheAiWhatYouNeedAndItWillGenerateADockerComposeYmlForYou)
                         .font(AXTypography.caption)
                         .foregroundColor(.axTextSecondary)
                 }
@@ -148,7 +148,7 @@ struct DockerAIComposeGenerator: View {
                 
                 // Quick presets
                 VStack(alignment: .leading, spacing: AXSpacing.sm) {
-                    Text("Quick Presets")
+                    Text(L10n.Docker.quickPresets)
                         .font(.system(size: 11, weight: .semibold))
                         .foregroundColor(.axTextMuted)
                     
@@ -191,11 +191,11 @@ struct DockerAIComposeGenerator: View {
     private var reviewStep: some View {
         VStack(spacing: 0) {
             HStack {
-                Text("Review Generated Compose")
+                Text(L10n.Docker.reviewGeneratedCompose)
                     .font(.system(size: 13, weight: .bold))
                     .foregroundColor(.axTextPrimary)
                 Spacer()
-                Text("AI Generated")
+                Text(L10n.Docker.aiGenerated)
                     .font(.system(size: 9, weight: .bold))
                     .foregroundColor(.purple)
                     .padding(.horizontal, 6)
@@ -218,12 +218,12 @@ struct DockerAIComposeGenerator: View {
     
     private var deployStep: some View {
         VStack(alignment: .leading, spacing: AXSpacing.lg) {
-            Text("Deploy Configuration")
+            Text(L10n.Docker.deployConfiguration)
                 .font(.system(size: 16, weight: .bold))
                 .foregroundColor(.axTextPrimary)
             
             VStack(alignment: .leading, spacing: AXSpacing.xs) {
-                Text("Project Name")
+                Text(L10n.Docker.projectName)
                     .font(AXTypography.caption)
                     .fontWeight(.semibold)
                     .foregroundColor(.axTextSecondary)

@@ -30,7 +30,7 @@ struct DockerContainerExportImport: View {
                 HStack(spacing: 6) {
                     Image(systemName: "arrow.left.arrow.right")
                         .foregroundColor(.axAccentBlue)
-                    Text("Container Export / Import")
+                    Text(L10n.Docker.containerExportImport)
                         .font(AXTypography.headline)
                         .foregroundColor(.axTextPrimary)
                 }
@@ -78,7 +78,7 @@ struct DockerContainerExportImport: View {
                     
                     if !output.isEmpty {
                         VStack(alignment: .leading, spacing: 4) {
-                            Text("Output")
+                            Text(L10n.Docker.output)
                                 .font(.system(size: 10, weight: .bold))
                                 .foregroundColor(.axTextMuted)
                             Text(output)
@@ -121,7 +121,7 @@ struct DockerContainerExportImport: View {
         VStack(alignment: .leading, spacing: AXSpacing.md) {
             fieldLabel("Select Container")
             Picker("", selection: $selectedContainerId) {
-                Text("Select...").tag("")
+                Text(L10n.Docker.select).tag("")
                 ForEach(containers) { c in
                     Text("\(c.names) (\(c.shortId))").tag(c.id)
                 }
@@ -173,13 +173,13 @@ struct DockerContainerExportImport: View {
     
     private var snapshotView: some View {
         VStack(alignment: .leading, spacing: AXSpacing.md) {
-            Text("Create an image from a running container's current state")
+            Text(L10n.Docker.createAnImageFromARunningContainersCurrentState)
                 .font(AXTypography.caption)
                 .foregroundColor(.axTextSecondary)
             
             fieldLabel("Select Container")
             Picker("", selection: $selectedContainerId) {
-                Text("Select...").tag("")
+                Text(L10n.Docker.select).tag("")
                 ForEach(containers) { c in
                     Text("\(c.names) (\(c.shortId))").tag(c.id)
                 }

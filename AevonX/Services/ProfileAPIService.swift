@@ -2,8 +2,17 @@
 //  ProfileAPIService.swift
 //  AevonX
 //
-//  Handles all Profile-related API calls:
-//  profile update, password change, sessions management, and activity log.
+//  Thin Swift wrapper around the Go-side Profile bridge.
+//
+//  Network I/O, TLS pinning, error sanitization and request signing all happen
+//  in core-go (`pkg/api/profile_service.go`). This file only:
+//    1. Reads the Sanctum token from Keychain.
+//    2. Forwards the call to APIBridge.shared.<method>Async(...).
+//    3. Parses the resulting AuthServiceResult JSON into either UserSession /
+//       ActivityLogEntry value types or a thrown error.
+//
+//  No URLSession / URLRequest / HTTPURLResponse references in this file —
+//  enforced by scripts/oss-audit.sh.
 //
 
 import Foundation
@@ -59,7 +68,7 @@ public struct UserSession: Codable, Identifiable {
         if type.contains("ipad")      { return "ipad" }
         return "desktopcomputer"
     }
-    
+
     /// Location string
     public var locationLabel: String {
         [city, country].compactMap { $0 }.joined(separator: ", ")
@@ -95,153 +104,79 @@ class ProfileAPIService: ObservableObject {
         AevonXCoreBridge.ConfigurationManager.shared.currentConfiguration.fullBaseURL
     }
 
-    private let decoder: JSONDecoder = {
-        let d = JSONDecoder()
-        d.dateDecodingStrategy = .custom { decoder in
-            let container = try decoder.singleValueContainer()
-            let str = try container.decode(String.self)
-            let formatter = ISO8601DateFormatter()
-            formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-            if let date = formatter.date(from: str) { return date }
-            formatter.formatOptions = [.withInternetDateTime]
-            if let date = formatter.date(from: str) { return date }
-            throw DecodingError.dataCorruptedError(in: container, debugDescription: "Invalid date: \(str)")
-        }
-        return d
-    }()
+    private let decoder: JSONDecoder = .iso8601()
 
-    // MARK: - Update Profile Name
+    // MARK: - Profile
 
     func updateProfile(name: String) async throws {
         let token = try await getToken()
-        var req = URLRequest(url: try endpoint("/user/profile"))
-        req.httpMethod = "PATCH"
-        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        req.setValue("application/json", forHTTPHeaderField: "Accept")
-        req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        req.httpBody = try JSONSerialization.data(withJSONObject: ["name": name])
-        try await perform(req)
+        let json = await APIBridge.shared.updateProfileAsync(baseURL: baseURL, token: token, name: name)
+        try CoreResult.ensureSuccess(json)
     }
 
-    // MARK: - Change Password
+    // MARK: - Password
 
     func changePassword(current: String, new: String) async throws {
         let token = try await getToken()
-        var req = URLRequest(url: try endpoint("/user/password"))
-        req.httpMethod = "POST"
-        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        req.setValue("application/json", forHTTPHeaderField: "Accept")
-        req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        req.httpBody = try JSONSerialization.data(withJSONObject: [
-            "current_password": current,
-            "new_password": new,
-            "new_password_confirmation": new
-        ])
-        try await perform(req)
+        let json = await APIBridge.shared.changePasswordAsync(baseURL: baseURL, token: token, current: current, new: new)
+        try CoreResult.ensureSuccess(json)
     }
 
     // MARK: - Sessions
 
     func fetchSessions() async throws -> [UserSession] {
         let token = try await getToken()
-        var req = URLRequest(url: try endpoint("/user/sessions"))
-        req.httpMethod = "GET"
-        req.setValue("application/json", forHTTPHeaderField: "Accept")
-        req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        let data = try await performData(req)
+        let json = await APIBridge.shared.fetchSessionsAsync(baseURL: baseURL, token: token)
         struct Resp: Decodable { let sessions: [UserSession] }
-        return try decoder.decode(Resp.self, from: data).sessions
+        return try CoreResult.decodePayload(json, as: Resp.self, decoder: decoder).sessions
     }
 
     func deleteSession(id: Int) async throws {
         let token = try await getToken()
-        var req = URLRequest(url: try endpoint("/user/sessions/\(id)"))
-        req.httpMethod = "DELETE"
-        req.setValue("application/json", forHTTPHeaderField: "Accept")
-        req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        try await perform(req)
+        let json = await APIBridge.shared.deleteSessionAsync(baseURL: baseURL, token: token, sessionID: Int32(id))
+        try CoreResult.ensureSuccess(json)
     }
 
     func deleteAllSessions() async throws {
         let token = try await getToken()
-        var req = URLRequest(url: try endpoint("/user/sessions"))
-        req.httpMethod = "DELETE"
-        req.setValue("application/json", forHTTPHeaderField: "Accept")
-        req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        try await perform(req)
+        let json = await APIBridge.shared.deleteAllSessionsAsync(baseURL: baseURL, token: token)
+        try CoreResult.ensureSuccess(json)
     }
 
     // MARK: - Activity
 
     func fetchActivity(limit: Int = 30) async throws -> [ActivityLogEntry] {
         let token = try await getToken()
-        var req = URLRequest(url: try endpoint("/user/activity?limit=\(limit)"))
-        req.httpMethod = "GET"
-        req.setValue("application/json", forHTTPHeaderField: "Accept")
-        req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        let data = try await performData(req)
+        let json = await APIBridge.shared.fetchActivityAsync(baseURL: baseURL, token: token, limit: Int32(limit))
         struct Resp: Decodable { let activity: [ActivityLogEntry] }
-        return try decoder.decode(Resp.self, from: data).activity
+        return try CoreResult.decodePayload(json, as: Resp.self, decoder: decoder).activity
     }
 
-    // MARK: - Private Helpers
-
-    private func endpoint(_ path: String) throws -> URL {
-        guard let url = URL(string: "\(baseURL)\(path)") else {
-            throw URLError(.badURL)
-        }
-        return url
-    }
-
-    private func getToken() async throws -> String {
-        guard let token = await AuthService.shared.getToken() else {
-            throw URLError(.userAuthenticationRequired)
-        }
-        return token
-    }
-
-    @discardableResult
-    private func perform(_ req: URLRequest) async throws -> Data {
-        return try await performData(req)
-    }
-
-    private func performData(_ req: URLRequest) async throws -> Data {
-        let (data, response) = try await URLSession.shared.data(for: req)
-        guard let http = response as? HTTPURLResponse,
-              (200...299).contains(http.statusCode) else {
-            if let http = response as? HTTPURLResponse {
-                if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-                   let msg = json["message"] as? String {
-                    throw NSError(domain: "ProfileAPI", code: http.statusCode,
-                                  userInfo: [NSLocalizedDescriptionKey: msg])
-                }
-                throw URLError(.badServerResponse)
-            }
-            throw URLError(.badServerResponse)
-        }
-        return data
-    }
-
-    // MARK: - Log Activity (fire-and-forget)
-    
     /// Log a client-side activity event to the backend.
-    /// Call from anywhere — runs in background, never blocks.
+    /// Fire-and-forget — uses APIBridge.logActivityAsync (which itself runs Go HTTP).
     nonisolated func logActivity(type: String, description: String, context: String? = nil) {
         Task { @MainActor in
             do {
                 let token = try await self.getToken()
-                var req = URLRequest(url: try self.endpoint("/user/activity"))
-                req.httpMethod = "POST"
-                req.setValue("application/json", forHTTPHeaderField: "Content-Type")
-                req.setValue("application/json", forHTTPHeaderField: "Accept")
-                req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-                var body: [String: String] = ["type": type, "description": description]
-                if let ctx = context { body["context"] = ctx }
-                req.httpBody = try JSONSerialization.data(withJSONObject: body)
-                try await self.perform(req)
+                let _ = await APIBridge.shared.logActivityAsync(
+                    baseURL: self.baseURL,
+                    token: token,
+                    type: type,
+                    description: description,
+                    context: context ?? ""
+                )
             } catch {
                 // Silent failure — activity logging should never disrupt the app
             }
         }
+    }
+
+    // MARK: - Helpers
+
+    private func getToken() async throws -> String {
+        guard let token = await AuthService.shared.getToken() else {
+            throw CoreResult.makeError(code: 401, message: "Not authenticated")
+        }
+        return token
     }
 }

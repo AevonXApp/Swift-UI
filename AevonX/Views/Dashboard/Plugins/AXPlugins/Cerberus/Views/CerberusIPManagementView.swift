@@ -465,7 +465,7 @@ private extension CerberusIPManagementView {
                 .font(AXTypography.monoSm)
                 .foregroundStyle(Color.axTextPrimary)
             if isCIDR {
-                Text("CIDR")
+                Text(L10n.Literal.cidr)
                     .font(AXTypography.caption2)
                     .foregroundStyle(accent)
                     .padding(.horizontal, AXSpacing.xs)

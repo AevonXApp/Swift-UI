@@ -52,7 +52,7 @@ struct DockerAggregatedLogsView: View {
             HStack(spacing: 0) {
                 // Container selector sidebar
                 VStack(alignment: .leading, spacing: 6) {
-                    Text("Containers")
+                    Text(L10n.Docker.containers)
                         .font(AXTypography.headline)
                         .foregroundColor(.axTextPrimary)
                         .padding(.bottom, 4)
@@ -129,7 +129,7 @@ struct DockerAggregatedLogsView: View {
                             Image(systemName: "text.alignleft")
                                 .font(.system(size: 32))
                                 .foregroundColor(.axTextMuted)
-                            Text("Select containers and fetch logs")
+                            Text(L10n.Docker.selectContainersAndFetchLogs)
                                 .font(AXTypography.caption)
                                 .foregroundColor(.axTextSecondary)
                         }

@@ -33,7 +33,7 @@ struct SiteCloningSection: View {
                 AXConfigCard(icon: "doc.on.doc", title: "Clone Site", subtitle: "Copy this site to a new domain on the same server") {
                     VStack(spacing: AXSpacing.sm) {
                         HStack {
-                            Text("Source:")
+                            Text(L10n.Websites.source)
                                 .font(AXTypography.footnote)
                                 .foregroundColor(.axTextMuted)
                                 .frame(width: 60, alignment: .trailing)
@@ -43,7 +43,7 @@ struct SiteCloningSection: View {
                             Spacer()
                         }
                         HStack {
-                            Text("Target:")
+                            Text(L10n.Websites.target)
                                 .font(AXTypography.footnote)
                                 .foregroundColor(.axTextMuted)
                                 .frame(width: 60, alignment: .trailing)
@@ -89,7 +89,7 @@ struct SiteCloningSection: View {
                         Image(systemName: "cylinder.fill")
                             .font(AXTypography.subheadline)
                             .foregroundColor(.axAccentBlue)
-                        Text("Include database in export")
+                        Text(L10n.Websites.includeDatabaseInExport)
                             .font(AXTypography.subheadline)
                     }
                 }
@@ -112,7 +112,7 @@ struct SiteCloningSection: View {
                     HStack(spacing: AXSpacing.sm) {
                         Image(systemName: "checkmark.circle.fill")
                             .foregroundColor(.axSuccess)
-                        Text("Export saved: ")
+                        Text(L10n.Websites.exportSaved)
                             .font(AXTypography.subheadline)
                             .foregroundColor(.axTextSecondary)
                         Text(path)

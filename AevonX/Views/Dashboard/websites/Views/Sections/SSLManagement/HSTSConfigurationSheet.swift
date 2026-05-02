@@ -21,7 +21,7 @@ struct HSTSConfigurationSheet: View {
 
                 Spacer()
 
-                Text("HSTS Configuration")
+                Text(L10n.Websites.hstsConfiguration)
                     .font(AXTypography.headline)
                     .foregroundColor(.axTextPrimary)
 
@@ -44,12 +44,12 @@ struct HSTSConfigurationSheet: View {
                             .font(AXTypography.title)
 
                         VStack(alignment: .leading, spacing: 4) {
-                            Text("HTTP Strict Transport Security")
+                            Text(L10n.Websites.httpStrictTransportSecurity)
                                 .font(AXTypography.subheadline)
                                 .fontWeight(.semibold)
                                 .foregroundColor(.axTextPrimary)
 
-                            Text("Forces browsers to only use HTTPS connections")
+                            Text(L10n.Websites.forcesBrowsersToOnlyUseHttpsConnections)
                                 .font(AXTypography.caption)
                                 .foregroundColor(.axTextSecondary)
                         }
@@ -99,7 +99,7 @@ struct HSTSConfigurationSheet: View {
                                         .foregroundColor(.axWarning)
                                         .font(AXTypography.subheadline)
 
-                                    Text("Preload is a permanent commitment. Removal from the preload list can take months.")
+                                    Text(L10n.Websites.preloadIsAPermanentCommitmentRemovalFromThePreloadListCanTakeMonths)
                                         .font(AXTypography.caption)
                                         .foregroundColor(.axWarning)
                                 }
@@ -109,7 +109,7 @@ struct HSTSConfigurationSheet: View {
 
                         // Header Preview
                         VStack(alignment: .leading, spacing: AXSpacing.sm) {
-                            Text("HSTS Header Preview")
+                            Text(L10n.Websites.hstsHeaderPreview)
                                 .font(AXTypography.subheadline)
                                 .fontWeight(.semibold)
                                 .foregroundColor(.axTextPrimary)
@@ -132,10 +132,10 @@ struct HSTSConfigurationSheet: View {
                             if viewModel.isConfiguringHSTS {
                                 ProgressView()
                                     .scaleEffect(0.8)
-                                Text("Configuring...")
+                                Text(L10n.Websites.configuring)
                             } else {
                                 Image(systemName: "checkmark.circle.fill")
-                                Text("Save Configuration")
+                                Text(L10n.Websites.saveConfiguration)
                             }
                         }
                         .frame(maxWidth: .infinity)

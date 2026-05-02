@@ -36,7 +36,7 @@ struct ApacheSnapshotsSection: View {
                     HStack(spacing: 4) {
                         if isCreating { ProgressView().scaleEffect(0.6) }
                         else { Image(systemName: "plus.circle.fill").font(.system(size: 12)) }
-                        Text("Create Snapshot").font(.system(size: 11, weight: .semibold))
+                        Text(L10n.Apps.createSnapshot).font(.system(size: 11, weight: .semibold))
                     }
                     .foregroundColor(.white).padding(.horizontal, 10).padding(.vertical, 5)
                     .background(apacheRed).cornerRadius(AXCornerRadius.sm)
@@ -53,8 +53,8 @@ struct ApacheSnapshotsSection: View {
             } else if snapshots.isEmpty {
                 VStack(spacing: AXSpacing.md) {
                     Image(systemName: "clock.arrow.circlepath").font(.system(size: 28)).foregroundColor(.axTextMuted)
-                    Text("No snapshots yet").font(AXTypography.caption).foregroundColor(.axTextMuted)
-                    Text("Create a snapshot to backup your config before changes")
+                    Text(L10n.Apps.noSnapshotsYet).font(AXTypography.caption).foregroundColor(.axTextMuted)
+                    Text(L10n.Apps.createASnapshotToBackupYourConfigBeforeChanges)
                         .font(.system(size: 11)).foregroundColor(.axTextMuted).multilineTextAlignment(.center)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)

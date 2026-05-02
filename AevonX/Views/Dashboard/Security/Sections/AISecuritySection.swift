@@ -80,10 +80,10 @@ struct AISecuritySection: View {
                     )
 
                 VStack(alignment: .leading, spacing: AXSpacing.xxs) {
-                    Text("AI Security Assistant")
+                    Text(L10n.Security.aiSecurityAssistant)
                         .font(.system(size: 16, weight: .bold))
                         .foregroundColor(.axTextPrimary)
-                    Text("AI-powered analysis of your server security posture")
+                    Text(L10n.Security.aiPoweredAnalysisOfYourServerSecurityPosture)
                         .font(AXTypography.caption)
                         .foregroundColor(.axTextMuted)
                 }

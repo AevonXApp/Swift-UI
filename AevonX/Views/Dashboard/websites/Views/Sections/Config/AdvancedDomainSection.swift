@@ -125,7 +125,7 @@ struct AdvancedDomainSection: View {
     private var dnsTab: some View {
         VStack(alignment: .leading, spacing: AXSpacing.md) {
             HStack {
-                Text("DNS Records")
+                Text(L10n.Websites.dnsRecords)
                     .font(AXTypography.headline)
                 Spacer()
                 Button(action: { Task { await viewModel.lookupDNS() } }) {

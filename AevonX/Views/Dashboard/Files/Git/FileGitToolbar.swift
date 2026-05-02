@@ -81,7 +81,7 @@ struct FileGitToolbar: View {
             HStack(spacing: AXSpacing.xs) {
                 Image(systemName: "lock.fill")
                     .font(.system(size: 10))
-                Text("Upgrade to unlock Git")
+                Text(L10n.Files.upgradeToUnlockGit)
                     .font(.system(size: 10, weight: .medium))
             }
             .foregroundColor(.axAccentBlue)

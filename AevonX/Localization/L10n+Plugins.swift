@@ -12,7 +12,6 @@ extension L10n {
         static let github = s("plugin.github", "GitHub")
         static let discord = s("plugin.discord", "Discord")
         static let editRawFile = s("plugin.editRawFile", "Edit Raw File")
-        static let marketplace = s("plugin.marketplace", "Marketplace")
         static let installed = s("plugin.installed", "Installed")
         static let install = s("plugin.install", "Install")
         static let uninstall = s("plugin.uninstall", "Uninstall")
@@ -25,14 +24,10 @@ extension L10n {
         static let noInstalled = s("plugin.noInstalled", "No plugins installed")
         static let browseHint = s("plugin.browseHint", "Browse the marketplace to find powerful extensions.")
         static let adjustFilters = s("plugin.adjustFilters", "Try adjusting your search or filters.")
-        static let buy = s("plugin.buy", "Purchase")
-        static let proOnly = s("plugin.proOnly", "Pro Only")
         static let all = s("plugin.all", "All")
         static let reinstall = s("plugin.reinstall", "Reinstall")
         static let downloads = s("plugin.downloads", "Downloads")
         static let rating = s("plugin.rating", "Rating")
-        static let support = s("plugin.support", "Support")
-        static let repository = s("plugin.repository", "Repository")
 
         // MARK: - Detail
         enum Detail {

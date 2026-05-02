@@ -64,7 +64,7 @@ struct DockerLogsView: View {
                                 Circle()
                                     .fill(Color.axSuccess)
                                     .frame(width: 5, height: 5)
-                                Text("Live")
+                                Text(L10n.Docker.live)
                                     .font(.system(size: 9, weight: .bold))
                                     .foregroundColor(.axSuccess)
                             }
@@ -109,7 +109,7 @@ struct DockerLogsView: View {
             // Footer — tail count
             HStack {
                 HStack(spacing: 4) {
-                    Text("Tail:")
+                    Text(L10n.Docker.tail)
                         .font(.system(size: 10))
                         .foregroundColor(.axTextMuted)
                     Picker("", selection: $tailCount) {

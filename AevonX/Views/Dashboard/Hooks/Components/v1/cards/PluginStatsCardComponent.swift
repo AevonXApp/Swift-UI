@@ -47,7 +47,7 @@ public struct PluginStatsCardComponent: View {
                     ProgressView()
                         .progressViewStyle(CircularProgressViewStyle(tint: accentColor))
                         .scaleEffect(0.6)
-                    Text("Loading...")
+                    Text(L10n.PluginsUI.loading)
                         .font(AXTypography.caption)
                         .foregroundColor(.axTextMuted)
                 }
@@ -61,7 +61,7 @@ public struct PluginStatsCardComponent: View {
                     Image(systemName: "exclamationmark.triangle.fill")
                         .font(.system(size: 10))
                         .foregroundColor(.axError)
-                    Text("Error")
+                    Text(L10n.PluginsUI.error)
                         .font(AXTypography.caption2)
                         .foregroundColor(.axError)
                 }

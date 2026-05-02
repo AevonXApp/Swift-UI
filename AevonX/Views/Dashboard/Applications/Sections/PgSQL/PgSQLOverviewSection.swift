@@ -68,7 +68,7 @@ struct PgSQLOverviewSection: View {
             }
 
             VStack(alignment: .leading, spacing: AXSpacing.xs) {
-                Text("PostgreSQL Service")
+                Text(L10n.Apps.postgresqlService)
                     .font(.system(size: 18, weight: .bold))
                     .foregroundColor(.axTextPrimary)
 

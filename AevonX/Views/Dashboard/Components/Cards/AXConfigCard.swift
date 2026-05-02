@@ -81,7 +81,7 @@ struct AXConfigCard<Content: View>: View {
             title: "Security Headers",
             iconColor: .axSuccess
         ) {
-            Text("Configure security headers for your website.")
+            Text(L10n.Label.configureSecurityHeaders)
                 .font(AXTypography.body)
                 .foregroundColor(.axTextSecondary)
         }

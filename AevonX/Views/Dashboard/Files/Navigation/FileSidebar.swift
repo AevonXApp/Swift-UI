@@ -15,7 +15,7 @@ struct FileSidebar: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text("QUICK ACCESS")
+            Text(L10n.Files.quickAccess)
                 .font(.system(size: 10, weight: .semibold))
                 .foregroundColor(.axTextMuted)
                 .padding(.horizontal, AXSpacing.md)
@@ -32,7 +32,7 @@ struct FileSidebar: View {
                     .background(Color.axBorder)
                     .padding(.vertical, AXSpacing.sm)
                 
-                Text("FAVORITES")
+                Text(L10n.Label.favorites)
                     .font(.system(size: 10, weight: .semibold))
                     .foregroundColor(.axTextMuted)
                     .padding(.horizontal, AXSpacing.md)
@@ -50,7 +50,7 @@ struct FileSidebar: View {
             }
             
             // Sort options
-            Text("SORT BY")
+            Text(L10n.Files.sortBy)
                 .font(.system(size: 10, weight: .semibold))
                 .foregroundColor(.axTextMuted)
                 .padding(.horizontal, AXSpacing.md)

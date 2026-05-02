@@ -122,7 +122,7 @@ public struct PluginProgressComponent: View {
                         Image(systemName: "clock.fill")
                             .font(.system(size: 20))
                             .foregroundColor(.axTextMuted)
-                        Text("Waiting to start...")
+                        Text(L10n.PluginsUI.waitingToStart)
                             .font(.system(size: 12))
                             .foregroundColor(.axTextMuted)
                     }
@@ -142,7 +142,7 @@ public struct PluginProgressComponent: View {
                         HStack(spacing: 4) {
                             Image(systemName: "play.fill")
                                 .font(.system(size: 10))
-                            Text("Start")
+                            Text(L10n.PluginsUI.start)
                                 .font(.system(size: 12, weight: .semibold))
                         }
                         .foregroundColor(.white)

@@ -35,7 +35,7 @@ struct LiteSpeedSitesSection: View {
                     VStack(spacing: AXSpacing.md) {
                         Spacer()
                         Image(systemName: "globe").font(AXTypography.largeTitle).foregroundColor(.axTextMuted.opacity(0.3))
-                        Text("No virtual hosts found").font(AXTypography.callout).foregroundColor(.axTextMuted)
+                        Text(L10n.Apps.noVirtualHostsFound).font(AXTypography.callout).foregroundColor(.axTextMuted)
                         Spacer()
                     }.frame(maxWidth: .infinity).padding(.vertical, AXSpacing.xl)
                 } else {

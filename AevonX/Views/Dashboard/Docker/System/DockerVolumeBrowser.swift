@@ -20,7 +20,7 @@ struct DockerVolumeBrowser: View {
                 HStack(spacing: 6) {
                     Image(systemName: "folder.fill")
                         .foregroundColor(.axAccentBlue)
-                    Text("Volume Browser")
+                    Text(L10n.Docker.volumeBrowser)
                         .font(AXTypography.headline)
                         .foregroundColor(.axTextPrimary)
                 }
@@ -38,7 +38,7 @@ struct DockerVolumeBrowser: View {
             // Volume picker + Path
             HStack(spacing: AXSpacing.sm) {
                 Picker("Volume", selection: $selectedVolume) {
-                    Text("Select volume...").tag("")
+                    Text(L10n.Docker.selectVolume).tag("")
                     ForEach(volumes, id: \.name) { v in
                         Text(v.name).tag(v.name)
                     }
@@ -84,7 +84,7 @@ struct DockerVolumeBrowser: View {
                     Image(systemName: "internaldrive")
                         .font(.system(size: 40))
                         .foregroundColor(.axTextMuted)
-                    Text("Select a volume to browse")
+                    Text(L10n.Docker.selectAVolumeToBrowse)
                         .font(AXTypography.caption)
                         .foregroundColor(.axTextSecondary)
                 }
@@ -97,7 +97,7 @@ struct DockerVolumeBrowser: View {
                     Image(systemName: "folder")
                         .font(.system(size: 40))
                         .foregroundColor(.axTextMuted)
-                    Text("Empty directory")
+                    Text(L10n.Docker.emptyDirectory)
                         .font(AXTypography.caption)
                         .foregroundColor(.axTextSecondary)
                 }

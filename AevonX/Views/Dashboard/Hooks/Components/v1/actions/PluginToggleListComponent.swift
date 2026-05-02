@@ -73,7 +73,7 @@ public struct PluginToggleListComponent: View {
             if let error = loadError {
                 errorState(error)
             } else if items.isEmpty {
-                Text("No items").font(.system(size: 12)).foregroundColor(.axTextMuted)
+                Text(L10n.PluginsUI.noItems).font(.system(size: 12)).foregroundColor(.axTextMuted)
                     .frame(maxWidth: .infinity).padding(AXSpacing.lg)
             } else {
                 itemsList

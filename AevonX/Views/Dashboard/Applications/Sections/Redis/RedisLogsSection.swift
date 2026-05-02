@@ -20,11 +20,11 @@ struct RedisLogsSection: View {
         VStack(spacing: 0) {
             HStack(spacing: AXSpacing.md) {
                 Picker("Log Type", selection: $selectedLogType) {
-                    Text("Server").tag("error"); Text("Slow").tag("slow")
+                    Text(L10n.Apps.server).tag("error"); Text(L10n.Apps.slow).tag("slow")
                 }.pickerStyle(.segmented).frame(width: 200)
                 Spacer()
                 HStack(spacing: 4) {
-                    Text("Lines:").font(.system(size: 11)).foregroundColor(.axTextMuted)
+                    Text(L10n.Apps.lines).font(.system(size: 11)).foregroundColor(.axTextMuted)
                     Picker("", selection: $logLines) { Text("50").tag(50); Text("100").tag(100); Text("200").tag(200); Text("500").tag(500) }.frame(width: 70)
                 }
                 AXRefreshButton(isLoading: isLoading) { await fetchLogs() }
@@ -33,7 +33,7 @@ struct RedisLogsSection: View {
             if isLoading { ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity) }
             else if logEntries.isEmpty {
                 VStack(spacing: AXSpacing.md) { Image(systemName: "text.alignleft").font(.system(size: 28)).foregroundColor(.axTextMuted)
-                    Text("No log entries found").font(AXTypography.caption).foregroundColor(.axTextMuted)
+                    Text(L10n.Apps.noLogEntriesFound).font(AXTypography.caption).foregroundColor(.axTextMuted)
                 }.frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 ScrollView { LazyVStack(spacing: 1) { ForEach(logEntries) { entry in logRow(entry) } }.padding(AXSpacing.sm) }

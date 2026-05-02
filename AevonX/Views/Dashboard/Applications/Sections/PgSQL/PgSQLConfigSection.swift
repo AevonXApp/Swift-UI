@@ -34,7 +34,7 @@ struct PgSQLConfigSection: View {
     private var configFileList: some View {
         VStack(spacing: 0) {
             HStack {
-                Text("Config Files")
+                Text(L10n.Apps.configFiles)
                     .font(.system(size: 13, weight: .semibold))
                     .foregroundColor(.axTextPrimary)
 
@@ -59,7 +59,7 @@ struct PgSQLConfigSection: View {
                     Image(systemName: "doc.text")
                         .font(.system(size: 24))
                         .foregroundColor(.axTextMuted)
-                    Text("No config files found")
+                    Text(L10n.Apps.noConfigFilesFound)
                         .font(AXTypography.caption)
                         .foregroundColor(.axTextMuted)
                 }
@@ -177,7 +177,7 @@ struct PgSQLConfigSection: View {
                     Image(systemName: "doc.text")
                         .font(.system(size: 28))
                         .foregroundColor(.axTextMuted)
-                    Text("Select a config file to edit")
+                    Text(L10n.Apps.selectAConfigFileToEdit)
                         .font(AXTypography.caption)
                         .foregroundColor(.axTextMuted)
                 }

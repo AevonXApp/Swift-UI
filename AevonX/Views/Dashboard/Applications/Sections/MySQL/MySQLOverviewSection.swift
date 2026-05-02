@@ -68,7 +68,7 @@ struct MySQLOverviewSection: View {
             }
 
             VStack(alignment: .leading, spacing: AXSpacing.xs) {
-                Text("MySQL Service")
+                Text(L10n.Apps.mysqlService)
                     .font(.system(size: 18, weight: .bold))
                     .foregroundColor(.axTextPrimary)
 

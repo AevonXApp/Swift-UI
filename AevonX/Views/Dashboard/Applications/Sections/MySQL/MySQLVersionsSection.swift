@@ -58,7 +58,7 @@ struct MySQLVersionsSection: View {
                             HStack {
                                 Image(systemName: "exclamationmark.triangle")
                                     .foregroundColor(.axWarning)
-                                Text("No installed version detected")
+                                Text(L10n.Apps.noInstalledVersionDetected)
                                     .font(AXTypography.caption)
                                     .foregroundColor(.axTextMuted)
                             }
@@ -77,7 +77,7 @@ struct MySQLVersionsSection: View {
                             HStack {
                                 Image(systemName: "checkmark.seal")
                                     .foregroundColor(.axTextMuted)
-                                Text("No additional versions available")
+                                Text(L10n.Apps.noAdditionalVersionsAvailable)
                                     .font(AXTypography.caption)
                                     .foregroundColor(.axTextMuted)
                             }
@@ -107,7 +107,7 @@ struct MySQLVersionsSection: View {
                         .foregroundColor(.axTextPrimary)
 
                     if version.isActive {
-                        Text("ACTIVE")
+                        Text(L10n.Label.active)
                             .font(.system(size: 8, weight: .heavy))
                             .foregroundColor(.axSuccess)
                             .padding(.horizontal, 6)
@@ -137,7 +137,7 @@ struct MySQLVersionsSection: View {
                             Image(systemName: "arrow.triangle.swap")
                                 .font(.system(size: 10))
                         }
-                        Text("Switch")
+                        Text(L10n.Apps.`switch`)
                             .font(.system(size: 11, weight: .medium))
                     }
                     .foregroundColor(.axAccentBlue)

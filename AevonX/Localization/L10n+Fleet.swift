@@ -25,14 +25,12 @@ extension L10n {
         static let connectionDetails = s("fleet.connectionDetails", "Connection Details")
         static let authentication = s("fleet.authentication", "Authentication")
         static let serverNameHelp = s("fleet.serverNameHelp", "Server name is not encrypted and visible in the server list.")
-        static let tagsHelp = s("fleet.tagsHelp", "Add tags like 'production', 'staging' to organize servers.")
         static let tagsPlaceholder = s("fleet.tagsPlaceholder", "production, staging, web, database")
         static let currentPasswordKept = s("fleet.currentPasswordKept", "• current password kept")
         static let currentKeyKept = s("fleet.currentKeyKept", "• current key kept")
         static let statusOnline = s("fleet.statusOnline", "Online")
         static let statusOffline = s("fleet.statusOffline", "Offline")
         static let freeLimit = s("fleet.freeLimit", "Free Limit")
-        static let upgradeToConnect = s("fleet.upgradeToConnect", "Upgrade to Connect")
         static let pro = s("fleet.pro", "PRO")
 
         static func online(_ count: Int) -> String {
@@ -64,5 +62,11 @@ extension L10n {
             let dv: String.LocalizationValue = "+\(count)"
             return String(localized: "fleet.moreTags", defaultValue: dv, table: table)
         }
+        static let pasteYourPrivateKeyOrImportAFile = s("fleet.pasteYourPrivateKeyOrImportAFile", "Paste your private key or import a file...")
+        static let chooseAPlan = s("fleet.chooseAPlan", "Choose a Plan")
+        static let mostPopular = s("fleet.mostPopular", "MOST POPULAR")
+        static let theServersIdentityHasChangedSinceYourLastConnectionThisCouldIndicateAManInTheMiddleAttackOrTheServerMayHaveBeenReinstalled = s("fleet.theServersIdentityHasChangedSinceYourLastConnectionThisCouldIndicateAManInTheMiddleAttackOrTheServerMayHaveBeenReinstalled", "The server's identity has changed since your last connection. This could indicate a man-in-the-middle attack, or the server may have been reinstalled.")
+        static let signInRequired = s("fleet.signInRequired", "Sign In Required")
+        static let signInOrCreateAnAccountToManageYourServers = s("fleet.signInOrCreateAnAccountToManageYourServers", "Sign in or create an account to manage your servers")
     }
 }

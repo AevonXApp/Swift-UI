@@ -67,7 +67,7 @@ struct PHPOPcacheSection: View {
                         HStack(spacing: AXSpacing.xs) {
                             if isResetting { ProgressView().scaleEffect(0.65).frame(width: 14, height: 14) }
                             else { Image(systemName: "arrow.clockwise").font(.system(size: 12, weight: .semibold)) }
-                            Text("Reset OPcache").font(.system(size: 12, weight: .semibold))
+                            Text(L10n.Apps.resetOpcache).font(.system(size: 12, weight: .semibold))
                         }
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)

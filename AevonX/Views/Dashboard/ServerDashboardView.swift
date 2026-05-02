@@ -367,7 +367,7 @@ struct ConnectionStatusBadge: View {
                     .foregroundColor(.axSuccess)
                     .font(.system(size: 12))
                 
-                Text("Live")
+                Text(L10n.Dashboard.live)
                     .font(AXTypography.caption)
                     .foregroundColor(.axSuccess)
             } else if let _ = viewModel.connectionError {
@@ -375,7 +375,7 @@ struct ConnectionStatusBadge: View {
                     .foregroundColor(.axError)
                     .font(.system(size: 12))
                 
-                Text("Error")
+                Text(L10n.Dashboard.error)
                     .font(AXTypography.caption)
                     .foregroundColor(.axError)
             }

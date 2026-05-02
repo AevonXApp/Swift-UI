@@ -88,7 +88,7 @@ struct DockerSchedulerView: View {
                                 
                                 // Schedule presets
                                 VStack(alignment: .leading, spacing: 6) {
-                                    Text("Schedule")
+                                    Text(L10n.Docker.schedule)
                                         .font(AXTypography.caption)
                                         .foregroundColor(.axTextSecondary)
                                     
@@ -133,7 +133,7 @@ struct DockerSchedulerView: View {
                                         if isAdding {
                                             ProgressView().scaleEffect(0.6)
                                         } else {
-                                            Text("Add Schedule")
+                                            Text(L10n.Docker.addSchedule)
                                         }
                                     }
                                     .buttonStyle(.plain)
@@ -161,14 +161,14 @@ struct DockerSchedulerView: View {
                             Image(systemName: "clock.badge.questionmark")
                                 .font(.system(size: 32))
                                 .foregroundColor(.axTextMuted)
-                            Text("No scheduled actions")
+                            Text(L10n.Docker.noScheduledActions)
                                 .font(AXTypography.body)
                                 .foregroundColor(.axTextSecondary)
                         }
                         .padding(30)
                     } else {
                         VStack(alignment: .leading, spacing: AXSpacing.sm) {
-                            Text("Active Schedules")
+                            Text(L10n.Docker.activeSchedules)
                                 .font(AXTypography.headline)
                                 .foregroundColor(.axTextPrimary)
                             

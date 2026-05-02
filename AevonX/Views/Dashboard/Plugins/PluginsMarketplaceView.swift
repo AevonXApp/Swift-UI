@@ -95,9 +95,9 @@ struct PluginsMarketplaceView: View {
             Image(systemName: "exclamationmark.triangle.fill")
                 .font(.largeTitle)
                 .foregroundColor(.axError)
-            Text("No Server Context")
+            Text(L10n.PluginsUI.noServerContext)
                 .font(AXTypography.title3)
-            Text("Please select a server first.")
+            Text(L10n.PluginsUI.pleaseSelectAServerFirst)
                 .font(AXTypography.caption)
                 .foregroundColor(.axTextSecondary)
             Button(L10n.Button.close) { pluginToInstall = nil }

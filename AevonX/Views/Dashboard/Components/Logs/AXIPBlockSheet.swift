@@ -27,7 +27,7 @@ struct AXIPBlockSheet: View {
             // Header
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Block IP Address")
+                    Text(L10n.Dashboard.blockIpAddress)
                         .font(.system(size: 18, weight: .bold))
                         .foregroundColor(.axTextPrimary)
                     Text(ip)
@@ -50,7 +50,7 @@ struct AXIPBlockSheet: View {
             // Form
             VStack(alignment: .leading, spacing: AXSpacing.lg) {
                 VStack(alignment: .leading, spacing: AXSpacing.sm) {
-                    Text("Duration")
+                    Text(L10n.Dashboard.duration)
                         .font(.system(size: 13, weight: .semibold))
                         .foregroundColor(.axTextPrimary)
                     Picker("Duration", selection: $selectedDuration) {
@@ -62,7 +62,7 @@ struct AXIPBlockSheet: View {
                 }
 
                 VStack(alignment: .leading, spacing: AXSpacing.sm) {
-                    Text("Reason (Optional)")
+                    Text(L10n.Dashboard.reasonOptional)
                         .font(.system(size: 13, weight: .semibold))
                         .foregroundColor(.axTextPrimary)
                     TextEditor(text: $reason)
@@ -88,7 +88,7 @@ struct AXIPBlockSheet: View {
                     Button(action: { onBlock(reason); dismiss() }) {
                         HStack {
                             Image(systemName: "hand.raised.fill")
-                            Text("Block IP")
+                            Text(L10n.Dashboard.blockIp)
                                 .font(.system(size: 13, weight: .semibold))
                         }
                         .foregroundColor(.white)

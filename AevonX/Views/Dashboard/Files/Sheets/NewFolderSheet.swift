@@ -21,7 +21,7 @@ struct NewFolderSheetView: View {
                 .foregroundColor(.axTextPrimary)
             
             VStack(alignment: .leading, spacing: AXSpacing.xs) {
-                Text("Folder Name")
+                Text(L10n.Files.folderName)
                     .font(AXTypography.caption)
                     .foregroundColor(.axTextSecondary)
                 TextField("folder-name", text: $folderName)

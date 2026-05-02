@@ -21,7 +21,7 @@ struct DockerOverviewTab: View {
             AXCard {
                 HStack(alignment: .top) {
                     VStack(alignment: .leading, spacing: AXSpacing.xs) {
-                        Text("Docker Engine")
+                        Text(L10n.Docker.dockerEngine)
                             .font(AXTypography.headline)
                             .foregroundColor(.axTextPrimary)
                         
@@ -127,7 +127,7 @@ struct DockerOverviewTab: View {
             // System Info
             AXCard {
                 VStack(alignment: .leading, spacing: AXSpacing.md) {
-                    Text("System Information")
+                    Text(L10n.Docker.systemInformation)
                         .font(AXTypography.headline)
                         .foregroundColor(.axTextPrimary)
                     
@@ -151,7 +151,7 @@ struct DockerOverviewTab: View {
                         Image(systemName: "bolt.fill")
                             .foregroundColor(.yellow)
                             .font(.system(size: 14))
-                        Text("Recent Activity")
+                        Text(L10n.Docker.recentActivity)
                             .font(AXTypography.headline)
                             .foregroundColor(.axTextPrimary)
                         Spacer()
@@ -165,7 +165,7 @@ struct DockerOverviewTab: View {
                     if recentEvents.isEmpty {
                         HStack {
                             Spacer()
-                            Text("No recent events")
+                            Text(L10n.Docker.noRecentEvents)
                                 .font(AXTypography.caption)
                                 .foregroundColor(.axTextMuted)
                                 .padding(.vertical, AXSpacing.md)

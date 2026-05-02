@@ -269,11 +269,11 @@ struct SystemHardeningSubTab: View {
                 }
 
                 VStack(alignment: .leading, spacing: AXSpacing.sm) {
-                    Text("Security Compliance")
+                    Text(L10n.Security.securityCompliance)
                         .font(AXTypography.title2)
                         .foregroundColor(.axTextPrimary)
 
-                    Text("Based on kernel parameters, SSH config, and security services")
+                    Text(L10n.Security.basedOnKernelParametersSshConfigAndSecurityServices)
                         .font(AXTypography.caption)
                         .foregroundColor(.axTextMuted)
 
@@ -294,7 +294,7 @@ struct SystemHardeningSubTab: View {
                     HStack(spacing: AXSpacing.xs) {
                         Image(systemName: "arrow.clockwise")
                             .font(.system(size: 12))
-                        Text("Re-scan")
+                        Text(L10n.Security.reScan)
                             .font(AXTypography.headline)
                     }
                     .padding(.horizontal, AXSpacing.lg)
@@ -367,7 +367,7 @@ struct SystemHardeningSubTab: View {
     private var loadingView: some View {
         VStack(spacing: AXSpacing.md) {
             ProgressView()
-            Text("Scanning system security…")
+            Text(L10n.Security.scanningSystemSecurity)
                 .font(AXTypography.body)
                 .foregroundColor(.axTextMuted)
         }
