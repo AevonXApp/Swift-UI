@@ -118,6 +118,12 @@ struct PluginDataTableComponent: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .background(Color.axBackground)
         .task(id: plugin.id) {
+            // Plugin identity changed → we're looking at a different tab.
+            // Clear stale rows BEFORE starting the new fetch so the table
+            // shows a clean skeleton instead of the previous tab's rows
+            // rendered through the new column schema (all cells resolve
+            // to `—` because the keys don't match).
+            vm.resetForNewPlugin()
             try? await Task.sleep(nanoseconds: 300_000_000)
             await vm.load(plugin: plugin, serverId: serverId, context: context)
         }
@@ -827,6 +833,28 @@ final class PluginDataTableViewModel: ObservableObject {
     @Published var lastUpdated: Date? = nil
     private var hasLoadedOnce: Bool = false
     private var refreshTask: Task<Void, Never>? = nil
+
+    /// Wipes all row state so stale data from a previous plugin doesn't
+    /// leak into the new tab. Must be called before `load` whenever the
+    /// caller is switching to a DIFFERENT plugin (new plugin.id).
+    ///
+    /// Without this, SwiftUI re-uses the same @StateObject across
+    /// sidebar tabs (sidebar_detail keeps one PluginDataTableComponent
+    /// instance); the old tab's rows render with the new tab's columns,
+    /// producing "3 rows of dashes" flicker before the fetch completes.
+    func resetForNewPlugin() {
+        refreshTask?.cancel()
+        refreshTask = nil
+        rows = []
+        // Flip isLoading true so the view shows the skeleton/progress state
+        // immediately — without this there's a visible "No data" flash while
+        // the first fetch for the new plugin is still in flight.
+        isLoading = true
+        isRefreshing = false
+        errorMessage = nil
+        lastUpdated = nil
+        hasLoadedOnce = false
+    }
 
     func load(plugin: HookPluginDefinition, serverId: String, context: [String: String]) async {
         guard let ds = plugin.dataSource else { return }

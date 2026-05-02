@@ -115,6 +115,13 @@ private struct HookComponentRendererV1: View {
         case .geoMap:
             PluginGeoMapComponent(plugin: plugin, serverId: serverId, context: context)
 
+        // ── v2.2 declarative widgets ─────────────────────────────────────
+        case .infoCard:
+            PluginInfoCardComponent(plugin: plugin, serverId: serverId, context: context)
+
+        case .commandBlock:
+            PluginCommandBlockComponent(plugin: plugin, serverId: serverId, context: context)
+
         // ── New component types (page-level layouts) ─────────────────────
         case .dashboard, .kanbanBoard, .splitView, .metricsGrid, .flowDiagram:
             PluginPageComponent(plugin: plugin, serverId: serverId, context: context)

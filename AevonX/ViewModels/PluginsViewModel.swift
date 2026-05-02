@@ -304,8 +304,16 @@ class PluginsViewModel: ObservableObject {
             installationProgress.removeValue(forKey: plugin.id)
         } catch {
             let totalDuration = CFAbsoluteTimeGetCurrent() - startTime
-            log.error("[PluginInstall] ✖ FAILED after \(String(format: "%.1f", totalDuration))s: \(error.localizedDescription)", module: "PluginsVM")
-            GlobalToastManager.shared.showError(L10n.Cerberus.Gate.installFailed)
+            let reason = error.localizedDescription
+            log.error("[PluginInstall] ✖ FAILED after \(String(format: "%.1f", totalDuration))s: \(reason)", module: "PluginsVM")
+            // Surface the actual reason instead of the opaque "try again later"
+            // so operators can see WHAT went wrong (SSH timeout, rsync refused,
+            // disk full, etc.). Fall back to the generic message only when the
+            // underlying error provides no usable description.
+            let friendly = reason.isEmpty
+                ? L10n.Cerberus.Gate.installFailed
+                : "\(L10n.Cerberus.Gate.installFailed) — \(reason)"
+            GlobalToastManager.shared.showError(friendly)
             installationStatus[plugin.id] = "Failed"
             installationProgress.removeValue(forKey: plugin.id)
         }

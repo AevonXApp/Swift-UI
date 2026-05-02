@@ -315,7 +315,45 @@ public struct PluginPageComponent: View {
     @ViewBuilder
     private func dashboardCardsContent(cards: [HookLayoutCard], columns: Int) -> some View {
         VStack(alignment: .leading, spacing: AXSpacing.md) {
-            let statCards = cards.filter { $0.component == .statsCard || ($0.command == nil && $0.component != .dataTable && $0.component != .form && $0.component != .chart) }
+            // info_card and command_block are routed first — they match only by
+            // explicit component type, so they don't slip into the "anything
+            // without a command" stat-card bucket below.
+            let infoCards = cards.filter { $0.component == .infoCard }
+            if !infoCards.isEmpty {
+                VStack(alignment: .leading, spacing: AXSpacing.md) {
+                    ForEach(infoCards, id: \.title) { card in
+                        PluginInfoCardComponent(
+                            plugin: cardToPlugin(card),
+                            serverId: serverId,
+                            context: context
+                        )
+                    }
+                }
+                .padding(.horizontal, AXSpacing.xxl)
+                .padding(.top, AXSpacing.md)
+            }
+            let cmdCards = cards.filter { $0.component == .commandBlock }
+            if !cmdCards.isEmpty {
+                VStack(alignment: .leading, spacing: AXSpacing.sm) {
+                    ForEach(cmdCards, id: \.title) { card in
+                        PluginCommandBlockComponent(
+                            plugin: cardToPlugin(card),
+                            serverId: serverId,
+                            context: context
+                        )
+                    }
+                }
+                .padding(.horizontal, AXSpacing.xxl)
+            }
+            let statCards = cards.filter {
+                $0.component == .statsCard
+                || ($0.command == nil
+                    && $0.component != .dataTable
+                    && $0.component != .form
+                    && $0.component != .chart
+                    && $0.component != .infoCard
+                    && $0.component != .commandBlock)
+            }
             if !statCards.isEmpty {
                 let chunkedStats = stride(from: 0, to: statCards.count, by: 4).map { Array(statCards[$0..<min($0 + 4, statCards.count)]) }
                 ForEach(Array(chunkedStats.enumerated()), id: \.offset) { _, row in
@@ -354,10 +392,26 @@ public struct PluginPageComponent: View {
     }
 
     private func cardToPlugin(_ card: HookLayoutCard) -> HookPluginDefinition {
-        HookPluginDefinition(id: "card_\(card.title.lowercased().replacingOccurrences(of: " ", with: "_"))",
-            name: card.title, description: card.description, hook: .sidebarTabs,
-            component: card.component ?? .form, icon: card.icon, command: card.command,
-            namespace: plugin.namespace, fields: card.fields)
+        HookPluginDefinition(
+            id: "card_\(card.title.lowercased().replacingOccurrences(of: " ", with: "_"))",
+            name: card.title,
+            description: card.description,
+            hook: .sidebarTabs,
+            component: card.component ?? .form,
+            icon: card.icon,
+            command: card.command,
+            dataSource: card.dataSource,
+            columns: card.columns,
+            namespace: plugin.namespace,
+            fields: card.fields,
+            rowActions: card.rowActions,
+            searchable: card.searchable,
+            searchKeys: card.searchKeys,
+            items: card.items,
+            commandText: card.commandText,
+            caption: card.caption,
+            note: card.note
+        )
     }
 
     /// Injects the parent plugin's namespace into sidebar content

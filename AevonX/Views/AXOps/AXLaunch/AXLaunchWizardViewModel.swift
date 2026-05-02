@@ -289,11 +289,10 @@ class AXLaunchWizardViewModel: ObservableObject {
         connectionError = nil
         isConnecting = true
 
-        // 1. Check if already connected
-        let alreadyConnected = SSHBridge.shared.isConnected(serverID: serverID)
-
-        if alreadyConnected {
-            // Already have an active SSH session — skip connection
+        // 1. Hot path: Remote Fleet keeps a session warm the moment you open
+        // a server, so in most cases isConnected returns true here and we
+        // skip the expensive re-authentication + decrypt round trip.
+        if SSHBridge.shared.isConnected(serverID: serverID) {
             connectionStage = .detecting
             if sourceType == .folder && !localPath.isEmpty {
                 await detectProject()
@@ -303,13 +302,22 @@ class AXLaunchWizardViewModel: ObservableObject {
             return
         }
 
-        // 2. Not connected — decrypt credentials and establish SSH
+        // 2. No warm session — decrypt credentials and establish a fresh SSH.
         connectionStage = .authenticating
 
-        guard let serverListVM = serverListViewModel,
-              let accessible = serverListVM.servers.first(where: { $0.id == serverID }) else {
+        // Accessible servers carry the encrypted credentials payload. A miss
+        // here usually means the wizard was opened before the fleet finished
+        // loading; surface the actual reason so operators can retry instead
+        // of seeing the opaque "Could not connect to server".
+        guard let serverListVM = serverListViewModel else {
             connectionStage = .failed
-            connectionError = L10n.AXLaunch.errorConnectionFailed
+            connectionError = "\(L10n.AXLaunch.errorConnectionFailed): server list unavailable"
+            isConnecting = false
+            return
+        }
+        guard let accessible = serverListVM.servers.first(where: { $0.id == serverID }) else {
+            connectionStage = .failed
+            connectionError = "\(L10n.AXLaunch.errorConnectionFailed): server \(serverID.prefix(8))… not in access list"
             isConnecting = false
             return
         }
@@ -333,6 +341,15 @@ class AXLaunchWizardViewModel: ObservableObject {
                 SSHBridge.shared.trustHostKey(hostPort: hostPort, fingerprint: storedFP)
             }
 
+            // Fetch a signed Connection Authorization Token (CAT) + the
+            // device fingerprint — the Go Core rejects SSHConnect with
+            // `CAT_REQUIRED: connection authorization token is mandatory`
+            // when either is missing. This mirrors the main dashboard
+            // connect flow in ServerConnectionViewModel so Launch Wizard
+            // uses the same trust path as the normal "Connect" button.
+            let deviceFingerprint = await DeviceIdentifier.shared.getDeviceID() ?? ""
+            let signedCATToken = try await requestCAT(serverID: serverID, deviceFingerprint: deviceFingerprint)
+
             let connectResult = await SSHBridge.shared.connectAsync(
                 serverID: serverID,
                 host: server.host,
@@ -341,16 +358,27 @@ class AXLaunchWizardViewModel: ObservableObject {
                 password: serverData.authentication.password ?? "",
                 privateKey: serverData.authentication.privateKey ?? "",
                 passphrase: serverData.authentication.keyPassphrase ?? "",
-                catToken: "",
-                deviceFingerprint: ""
+                catToken: signedCATToken,
+                deviceFingerprint: deviceFingerprint
             )
 
-            // Parse result
-            guard let data = connectResult.data(using: .utf8),
-                  let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-                  json["success"] as? Bool == true else {
+            // Parse the Go-Core envelope. When success=false, extract the
+            // underlying error (auth refused, network unreachable, host key
+            // mismatch) — the previous generic "Could not connect to server"
+            // made these indistinguishable and blocked debugging.
+            let data = connectResult.data(using: .utf8) ?? Data()
+            let json = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any]
+            let success = json?["success"] as? Bool == true
+
+            if !success {
+                let reason = (json?["error"] as? String)
+                    ?? (json?["message"] as? String)
+                    ?? String(connectResult.prefix(200)).trimmingCharacters(in: .whitespacesAndNewlines)
                 connectionStage = .failed
-                connectionError = L10n.AXLaunch.errorConnectionFailed
+                connectionError = reason.isEmpty
+                    ? L10n.AXLaunch.errorConnectionFailed
+                    : "\(L10n.AXLaunch.errorConnectionFailed): \(reason)"
+                AevonXCoreBridge.CoreLogger.shared.error("[AXLaunch] SSH connect failed for \(server.host):\(server.port) — \(reason)", module: "AXLaunch")
                 isConnecting = false
                 return
             }
@@ -364,10 +392,45 @@ class AXLaunchWizardViewModel: ObservableObject {
             connectionStage = .connected
         } catch {
             connectionStage = .failed
-            connectionError = error.localizedDescription
+            connectionError = "\(L10n.AXLaunch.errorConnectionFailed): \(error.localizedDescription)"
+            AevonXCoreBridge.CoreLogger.shared.error("[AXLaunch] SSH connect threw: \(error.localizedDescription)", module: "AXLaunch")
         }
 
         isConnecting = false
+    }
+
+    /// Requests a signed Connection Authorization Token from the backend.
+    /// Mirrors ServerConnectionViewModel.requestCATFromBackend() so the
+    /// Launch Wizard gets the same CAT the normal Connect button uses.
+    private func requestCAT(serverID: String, deviceFingerprint: String) async throws -> String {
+        guard !deviceFingerprint.isEmpty else {
+            throw NSError(domain: "AXLaunch", code: -1, userInfo: [
+                NSLocalizedDescriptionKey: "Device fingerprint unavailable"
+            ])
+        }
+        guard let token = await AevonXCoreBridge.AuthService.shared.getToken() else {
+            throw NSError(domain: "AXLaunch", code: -1, userInfo: [
+                NSLocalizedDescriptionKey: "User session expired — please sign in again"
+            ])
+        }
+        let baseURL = AevonXCoreBridge.ConfigurationManager.shared.currentConfiguration.fullBaseURL
+        let resultJSON = await APIBridge.shared.requestCATAsync(
+            baseURL: baseURL, token: token,
+            serverID: serverID, fingerprint: deviceFingerprint
+        )
+        guard let data = resultJSON.data(using: .utf8),
+              let result = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              result["success"] as? Bool == true,
+              let responseData = result["data"] as? [String: Any],
+              let catToken = responseData["token"] as? String else {
+            // Surface the real reason so users see "CAT request failed: …"
+            // instead of a silent CAT_REQUIRED fallback downstream.
+            let errMsg = (try? JSONSerialization.jsonObject(with: resultJSON.data(using: .utf8) ?? Data()) as? [String: Any])
+                .flatMap { ($0["error"] as? [String: Any])?["message"] as? String }
+                ?? "CAT request failed"
+            throw NSError(domain: "AXLaunch", code: -1, userInfo: [NSLocalizedDescriptionKey: errMsg])
+        }
+        return catToken
     }
 
     func detectProject() async {

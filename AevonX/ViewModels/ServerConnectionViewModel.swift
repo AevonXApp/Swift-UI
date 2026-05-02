@@ -471,14 +471,15 @@ public class ServerConnectionViewModel: ObservableObject {
         connectionProgress = 0.1
 
         do {
-            // Step 0: Ensure device keys are loaded (needed for CAT verification in Go Core)
-            let keyCount = await DeviceKeyManager.shared.keyCount()
-            if keyCount == 0 {
-                let deviceFP = await DeviceIdentifier.shared.getDeviceID() ?? ""
-                if !deviceFP.isEmpty {
-                    await DeviceKeyManager.shared.setDeviceFingerprint(deviceFP)
-                    await DeviceKeyManager.shared.fetchAndLoadKeys(forceRefresh: true)
-                }
+            // Step 0: Ensure device keys are loaded AND fresh (needed for CAT verification
+            // in Go Core). The previous `keyCount == 0` check missed rotated keys: if the
+            // local keystore had old kids cached, no refresh ever happened, so a backend
+            // rotation made every CAT fail with "unknown key ID". `fetchAndLoadKeys`
+            // respects its own 1h cache, so this stays cheap on the hot path.
+            let preconnectFP = await DeviceIdentifier.shared.getDeviceID() ?? ""
+            if !preconnectFP.isEmpty {
+                await DeviceKeyManager.shared.setDeviceFingerprint(preconnectFP)
+                await DeviceKeyManager.shared.fetchAndLoadKeys()
             }
 
             // Verify keys are loaded before proceeding
@@ -571,6 +572,35 @@ public class ServerConnectionViewModel: ObservableObject {
                         catToken: retryCATToken,
                         deviceFingerprint: deviceFP
                     )
+                }
+                // Auto-recover from CAT validation failure caused by stale device keys.
+                // Backend rotates per-device CAT keys every 7 days (24h overlap). If the
+                // local keystore missed a rotation, every CAT will fail with "unknown
+                // key ID <kid>". Force-refresh keys from the backend, mint a new CAT,
+                // and retry once.
+                else if errorMsg.hasPrefix("CAT_INVALID:") && errorMsg.contains("unknown key ID") {
+                    AevonXCoreBridge.CoreLogger.shared.warning(
+                        "CAT validation failed (stale device keys) — refreshing and retrying",
+                        module: "ServerConnection"
+                    )
+
+                    let loaded = await DeviceKeyManager.shared.fetchAndLoadKeys(forceRefresh: true)
+                    if loaded > 0 {
+                        let retryCATToken = try await requestCATFromBackend()
+                        let _ = try await CATEncryption.shared.encrypt(signedToken: retryCATToken, serverId: serverId)
+
+                        finalResult = await SSHBridge.shared.connectAsync(
+                            serverID: serverId,
+                            host: server.host,
+                            port: Int32(server.port),
+                            username: serverData.connectionDetails.username,
+                            password: serverData.authentication.password ?? "",
+                            privateKey: serverData.authentication.privateKey ?? "",
+                            passphrase: serverData.authentication.keyPassphrase ?? "",
+                            catToken: retryCATToken,
+                            deviceFingerprint: deviceFP
+                        )
+                    }
                 }
             }
 
