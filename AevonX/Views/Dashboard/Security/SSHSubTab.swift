@@ -52,10 +52,12 @@ struct SSHSubTab: View {
     @State private var successCount = 0
     @State private var failedCount = 0
     @State private var todayFailedCount = 0
-    @State private var publicKey: String? = nil
-    @State private var isGeneratingKey = false
-    @State private var showKeyCopied = false
-    @State private var showKeySheet = false
+    // Multi-key listing — replaces the single-publicKey property.
+    @State private var serverKeys: [KeygenAuthorizedKey] = []
+    @State private var isLoadingServerKeys = false
+    @State private var copiedFingerprint: String? = nil
+    @State private var showGenerateSheet = false
+    @State private var portDetectionMethod: KeygenPortMethod? = nil
 
     // Phase 2: Authorized Keys Manager
     @State private var authorizedKeys: [String] = []
@@ -150,10 +152,6 @@ struct SSHSubTab: View {
             failedCount = stats.failed
             todayFailedCount = stats.todayFailed
         }
-
-        // Public key (from Core)
-        let key = await securityManager.readSSHPublicKey(serverId: serverId)
-        await MainActor.run { publicKey = key }
 
         // Login logs
         await refreshLogs()
@@ -454,131 +452,247 @@ struct SSHSubTab: View {
                 }
             }
 
-            // SSH Key Management
-            AXCard {
-                VStack(alignment: .leading, spacing: AXSpacing.lg) {
+            // SSH Key Management — multi-key listing
+            sshKeyManagementCard
+        }
+        .task { await loadServerKeys() }
+        .sheet(isPresented: $showGenerateSheet) {
+            GenerateSSHKeySheet(
+                serverId: serverId,
+                username: usernameForKeyOps,
+                onCompleted: {
+                    Task {
+                        await loadServerKeys()
+                        await loadSSHData()
+                    }
+                }
+            )
+        }
+    }
+
+    // MARK: - SSH Key Management Card
+
+    private var sshKeyManagementCard: some View {
+        AXCard {
+            VStack(alignment: .leading, spacing: AXSpacing.lg) {
+                HStack {
                     AXSectionTitle(title: "SSH Key Management", icon: "key.horizontal.fill")
-                    Divider().background(Color.axBorder)
-
-                    if let key = publicKey {
-                        // Key exists
-                        VStack(alignment: .leading, spacing: AXSpacing.md) {
-                            HStack(spacing: AXSpacing.sm) {
-                                Image(systemName: "checkmark.circle.fill")
-                                    .foregroundColor(.axSuccess)
-                                Text(L10n.Security.sshKeyPairExists)
-                                    .font(AXTypography.body)
-                                    .foregroundColor(.axSuccess)
-                            }
-
-                            // Public key display
-                            Text(key)
-                                .font(.system(size: 10, design: .monospaced))
-                                .foregroundColor(.axTextSecondary)
-                                .padding(AXSpacing.md)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .background(
-                                    RoundedRectangle(cornerRadius: AXCornerRadius.md)
-                                        .fill(Color.axBackgroundTertiary)
-                                        .overlay(
-                                            RoundedRectangle(cornerRadius: AXCornerRadius.md)
-                                                .stroke(Color.axBorder, lineWidth: 1)
-                                        )
-                                )
-                                .lineLimit(3)
-
-                            HStack(spacing: AXSpacing.md) {
-                                Button(action: {
-                                    #if os(macOS)
-                                    NSPasteboard.general.clearContents()
-                                    NSPasteboard.general.setString(key, forType: .string)
-                                    #endif
-                                    showKeyCopied = true
-                                    DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-                                        showKeyCopied = false
-                                    }
-                                }) {
-                                    HStack(spacing: AXSpacing.xs) {
-                                        Image(systemName: showKeyCopied ? "checkmark" : "doc.on.doc")
-                                            .font(.system(size: 11))
-                                        Text(showKeyCopied ? "Copied!" : "Copy Public Key")
-                                            .font(AXTypography.headline)
-                                    }
-                                    .padding(.horizontal, AXSpacing.lg)
-                                    .padding(.vertical, AXSpacing.sm)
-                                    .background(
-                                        RoundedRectangle(cornerRadius: AXCornerRadius.md)
-                                            .fill(Color.axAccentBlue)
-                                    )
-                                    .foregroundColor(.white)
-                                }
-                                .buttonStyle(PlainButtonStyle())
-
-                                Button(action: {
-                                    downloadKey(key)
-                                }) {
-                                    HStack(spacing: AXSpacing.xs) {
-                                        Image(systemName: "arrow.down.circle")
-                                            .font(.system(size: 11))
-                                        Text(L10n.Security.downloadKey)
-                                            .font(AXTypography.headline)
-                                    }
-                                    .padding(.horizontal, AXSpacing.lg)
-                                    .padding(.vertical, AXSpacing.sm)
-                                    .background(
-                                        RoundedRectangle(cornerRadius: AXCornerRadius.md)
-                                            .fill(Color.axAccentGreen)
-                                    )
-                                    .foregroundColor(.white)
-                                }
-                                .buttonStyle(PlainButtonStyle())
-                            }
+                    Spacer()
+                    Button {
+                        showGenerateSheet = true
+                    } label: {
+                        HStack(spacing: AXSpacing.xs) {
+                            Image(systemName: "plus")
+                                .font(.system(size: 11, weight: .semibold))
+                            Text("Generate New Key")
+                                .font(AXTypography.headline)
                         }
-                    } else {
-                        // No key
-                        VStack(alignment: .leading, spacing: AXSpacing.md) {
-                            HStack(spacing: AXSpacing.sm) {
-                                Image(systemName: "xmark.circle.fill")
-                                    .foregroundColor(.axWarning)
-                                Text(L10n.Security.noSshKeyPairFound)
-                                    .font(AXTypography.body)
-                                    .foregroundColor(.axTextSecondary)
-                            }
+                        .foregroundColor(.white)
+                        .padding(.horizontal, AXSpacing.md)
+                        .padding(.vertical, AXSpacing.xs)
+                        .background(
+                            RoundedRectangle(cornerRadius: AXCornerRadius.md)
+                                .fill(Color.axAccentBlue)
+                        )
+                    }
+                    .buttonStyle(PlainButtonStyle())
 
-                            Text(L10n.Security.generateANewEd25519SshKeyPairToEnableKeyBasedAuthentication)
-                                .font(AXTypography.caption)
-                                .foregroundColor(.axTextMuted)
+                    Button {
+                        Task { await loadServerKeys() }
+                    } label: {
+                        Image(systemName: "arrow.clockwise")
+                            .font(.system(size: 12))
+                            .foregroundColor(.axTextMuted)
+                            .frame(width: 28, height: 28)
+                    }
+                    .buttonStyle(.plain)
+                }
 
-                            Button(action: {
-                                Task { await generateKey() }
-                            }) {
-                                HStack(spacing: AXSpacing.xs) {
-                                    if isGeneratingKey {
-                                        ProgressView()
-                                            .scaleEffect(0.7)
-                                    } else {
-                                        Image(systemName: "key.fill")
-                                            .font(.system(size: 11))
-                                    }
-                                    Text(isGeneratingKey ? "Generating..." : "Generate SSH Key Pair")
-                                        .font(AXTypography.headline)
-                                }
-                                .padding(.horizontal, AXSpacing.lg)
-                                .padding(.vertical, AXSpacing.sm)
-                                .background(
-                                    RoundedRectangle(cornerRadius: AXCornerRadius.md)
-                                        .fill(isGeneratingKey ? Color.axTextMuted : Color.axAccentBlue)
-                                )
-                                .foregroundColor(.white)
-                            }
-                            .buttonStyle(PlainButtonStyle())
-                            .disabled(isGeneratingKey)
+                Divider().background(Color.axBorder)
+
+                if isLoadingServerKeys && serverKeys.isEmpty {
+                    HStack(spacing: AXSpacing.sm) {
+                        ProgressView().scaleEffect(0.6)
+                        Text("Loading keys…")
+                            .font(AXTypography.caption)
+                            .foregroundColor(.axTextMuted)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, AXSpacing.lg)
+                } else if serverKeys.isEmpty {
+                    emptyKeysState
+                } else {
+                    VStack(spacing: AXSpacing.sm) {
+                        ForEach(serverKeys) { key in
+                            sshKeyRow(key)
                         }
                     }
                 }
             }
         }
     }
+
+    private var emptyKeysState: some View {
+        VStack(alignment: .leading, spacing: AXSpacing.md) {
+            HStack(spacing: AXSpacing.sm) {
+                Image(systemName: "key.slash")
+                    .foregroundColor(.axTextMuted)
+                Text(L10n.Security.noSshKeyPairFound)
+                    .font(AXTypography.body)
+                    .foregroundColor(.axTextSecondary)
+            }
+            Text("Generate a new key pair locally — the public half is injected into authorized_keys, the private half stays in the Keychain.")
+                .font(AXTypography.caption)
+                .foregroundColor(.axTextMuted)
+        }
+    }
+
+    private func sshKeyRow(_ key: KeygenAuthorizedKey) -> some View {
+        let isCopied = copiedFingerprint == key.fingerprint
+        return HStack(alignment: .top, spacing: AXSpacing.md) {
+            VStack(alignment: .leading, spacing: AXSpacing.xs) {
+                HStack(spacing: AXSpacing.sm) {
+                    Text(key.displayAlgorithm)
+                        .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                        .foregroundColor(.axAccentPurple)
+                        .padding(.horizontal, AXSpacing.sm)
+                        .padding(.vertical, AXSpacing.xxxs)
+                        .background(Capsule().fill(Color.axAccentPurple.opacity(0.12)))
+
+                    Text(key.suggestedFilename)
+                        .font(.system(size: 12, weight: .medium, design: .monospaced))
+                        .foregroundColor(.axTextPrimary)
+
+                    if key.isAuthorizedEntry {
+                        Text("authorized_keys")
+                            .font(.system(size: 10, design: .monospaced))
+                            .foregroundColor(.axTextMuted)
+                            .padding(.horizontal, AXSpacing.xs)
+                            .padding(.vertical, AXSpacing.xxxs)
+                            .background(Capsule().fill(Color.axTextMuted.opacity(0.12)))
+                    }
+                }
+
+                Text(key.publicKey)
+                    .font(.system(size: 10, design: .monospaced))
+                    .foregroundColor(.axTextSecondary)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+
+                if !key.fingerprint.isEmpty {
+                    Text(key.fingerprint)
+                        .font(.system(size: 10, design: .monospaced))
+                        .foregroundColor(.axTextMuted)
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                }
+
+                if !key.comment.isEmpty {
+                    HStack(spacing: AXSpacing.xs) {
+                        Image(systemName: "text.bubble")
+                            .font(.system(size: 9))
+                            .foregroundColor(.axTextMuted)
+                        Text(key.comment)
+                            .font(AXTypography.caption2)
+                            .foregroundColor(.axTextMuted)
+                    }
+                }
+            }
+
+            Spacer(minLength: AXSpacing.sm)
+
+            HStack(spacing: AXSpacing.xs) {
+                Button {
+                    copyKey(key)
+                } label: {
+                    HStack(spacing: AXSpacing.xxs) {
+                        Image(systemName: isCopied ? "checkmark" : "doc.on.doc")
+                            .font(.system(size: 10))
+                        Text(isCopied ? "Copied" : "Copy")
+                            .font(.system(size: 11, weight: .medium))
+                            .lineLimit(1)
+                            .fixedSize(horizontal: true, vertical: false)
+                    }
+                    .foregroundColor(.white)
+                    .padding(.horizontal, AXSpacing.md)
+                    .padding(.vertical, AXSpacing.xs)
+                    .background(
+                        RoundedRectangle(cornerRadius: AXCornerRadius.sm)
+                            .fill(isCopied ? Color.axSuccess : Color.axAccentBlue)
+                    )
+                }
+                .buttonStyle(.plain)
+
+                Button {
+                    downloadKey(key.publicKey, suggestedName: key.suggestedFilename)
+                } label: {
+                    HStack(spacing: AXSpacing.xxs) {
+                        Image(systemName: "arrow.down.circle")
+                            .font(.system(size: 10))
+                        Text("Download")
+                            .font(.system(size: 11, weight: .medium))
+                            .lineLimit(1)
+                            .fixedSize(horizontal: true, vertical: false)
+                    }
+                    .foregroundColor(.white)
+                    .padding(.horizontal, AXSpacing.md)
+                    .padding(.vertical, AXSpacing.xs)
+                    .background(
+                        RoundedRectangle(cornerRadius: AXCornerRadius.sm)
+                            .fill(Color.axAccentGreen)
+                    )
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(AXSpacing.md)
+        .background(
+            RoundedRectangle(cornerRadius: AXCornerRadius.md)
+                .fill(Color.axBackgroundTertiary.opacity(0.5))
+                .overlay(
+                    RoundedRectangle(cornerRadius: AXCornerRadius.md)
+                        .stroke(Color.axBorder.opacity(0.6), lineWidth: 1)
+                )
+        )
+    }
+
+    // MARK: - Server Keys Loading
+
+    private func loadServerKeys() async {
+        isLoadingServerKeys = true
+        defer { Task { @MainActor in isLoadingServerKeys = false } }
+
+        let cmd = KeygenBridge.shared.listAllKeysCmd(home: homeForCurrentUser)
+        let output = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
+        let parsed = KeygenBridge.shared.parseAllKeys(output: output)
+        await MainActor.run {
+            serverKeys = parsed
+        }
+    }
+
+    private func copyKey(_ key: KeygenAuthorizedKey) {
+        #if os(macOS)
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(key.publicKey, forType: .string)
+        #endif
+        copiedFingerprint = key.fingerprint
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+            if copiedFingerprint == key.fingerprint {
+                copiedFingerprint = nil
+            }
+        }
+    }
+
+    private var homeForCurrentUser: String {
+        // The Security view always operates as root via the existing
+        // SSH session. If that ever changes, fetch the username from the
+        // server registry instead.
+        "/root"
+    }
+
+    /// Username to use for new-key injection in the Generate sheet.
+    /// Currently mirrors `homeForCurrentUser` — root.
+    private var usernameForKeyOps: String { "root" }
 
     // MARK: - Login Logs
 
@@ -1044,20 +1158,10 @@ struct SSHSubTab: View {
         return formatter.string(from: NSNumber(value: n)) ?? "\(n)"
     }
 
-    private func generateKey() async {
-        isGeneratingKey = true
-        defer { Task { @MainActor in isGeneratingKey = false } }
-
-        let key = await securityManager.generateSSHKey(serverId: serverId)
-        if let key = key {
-            await MainActor.run { publicKey = key }
-        }
-    }
-
-    private func downloadKey(_ key: String) {
+    private func downloadKey(_ key: String, suggestedName: String) {
         #if os(macOS)
         let panel = NSSavePanel()
-        panel.nameFieldStringValue = "id_ed25519.pub"
+        panel.nameFieldStringValue = suggestedName
         panel.allowedContentTypes = [.plainText]
         panel.begin { response in
             if response == .OK, let url = panel.url {

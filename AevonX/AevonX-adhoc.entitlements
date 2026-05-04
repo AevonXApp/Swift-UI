@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Entitlements for AD-HOC LOCAL TESTING builds.
+
+  Differences vs AevonX.entitlements (production):
+    • keychain-access-groups removed: under ad-hoc signing the
+      $(AppIdentifierPrefix) macro expands to an empty string, so the
+      group becomes "app.aevonx.macos" with no team prefix. macOS
+      then fails biometry-protected SecItemAdd with errSecMissingEntitlement
+      (-34018). Without the entry, the OS assigns a default per-bundle
+      access group that works for local-testing Keychain items.
+
+  Use ONLY for ad-hoc builds. Production / Developer-ID signed builds
+  must use AevonX.entitlements (which keeps the access group).
+-->
+<plist version="1.0">
+<dict>
+    <key>com.apple.security.cs.disable-library-validation</key>
+    <true/>
+</dict>
+</plist>

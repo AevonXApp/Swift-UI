@@ -149,52 +149,6 @@ struct PremiumSecureField: View {
     }
 }
 
-// MARK: - Auth Type Picker
-struct AuthTypePicker: View {
-    @Binding var selection: AuthenticationType
-    
-    var body: some View {
-        HStack(spacing: 0) {
-            authOption(type: .password, icon: "lock.fill", label: L10n.Field.password)
-            authOption(type: .privateKey, icon: "key.fill", label: L10n.Field.privateKey)
-        }
-        .background(Color.axBackgroundTertiary)
-        .cornerRadius(AXCornerRadius.md)
-        .overlay(
-            RoundedRectangle(cornerRadius: AXCornerRadius.md)
-                .stroke(Color.axBorder, lineWidth: 1)
-        )
-    }
-    
-    private func authOption(type: AuthenticationType, icon: String, label: String) -> some View {
-        Button {
-            withAnimation(.spring(response: 0.3)) {
-                selection = type
-            }
-        } label: {
-            HStack(spacing: AXSpacing.xs) {
-                Image(systemName: icon)
-                    .font(.system(size: 12, weight: .medium))
-                Text(label)
-                    .font(.system(size: 13, weight: .medium))
-            }
-            .foregroundColor(selection == type ? .white : .axTextSecondary)
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, AXSpacing.md)
-            .background(
-                Group {
-                    if selection == type {
-                        RoundedRectangle(cornerRadius: AXCornerRadius.sm)
-                            .fill(Color.axAccentBlue)
-                            .padding(3)
-                    }
-                }
-            )
-        }
-        .buttonStyle(.plain)
-    }
-}
-
 // MARK: - Premium Progress View
 struct PremiumProgressView: View {
     let progress: ConnectionProgress
