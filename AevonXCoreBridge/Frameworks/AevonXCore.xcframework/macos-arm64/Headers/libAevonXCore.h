@@ -123,6 +123,12 @@ extern const char *_GoStringPtr(_GoString_ s);
 
 #line 1 "cgo-generated-wrapper"
 
+#line 9 "exports_db_explorer.go"
+
+#include <stdlib.h>
+
+#line 1 "cgo-generated-wrapper"
+
 #line 7 "exports_db_ext.go"
 
 #include <stdlib.h>
@@ -1388,6 +1394,58 @@ extern char* DBDuplicateRowCmd(char* cEngine, char* cDatabase, char* cTable, cha
 // DBDownloadBackupCmd returns the download backup command.
 //
 extern char* DBDownloadBackupCmd(char* cEngine, char* cBackupPath);
+
+// DBExplorerSupports reports whether the engine has explorer support.
+//
+extern char* DBExplorerSupports(char* cEngine);
+
+// DBExplorerListDatabasesCmd lists database names only (fast).
+//
+extern char* DBExplorerListDatabasesCmd(char* cEngine);
+
+// DBExplorerDatabaseStatsCmd returns size and table count per database.
+//
+extern char* DBExplorerDatabaseStatsCmd(char* cEngine);
+
+// DBExplorerListTablesCmd lists table/view names only (fast).
+//
+extern char* DBExplorerListTablesCmd(char* cEngine, char* cDatabase);
+
+// DBExplorerTableStatsCmd returns per-table statistics (run in background).
+//
+extern char* DBExplorerTableStatsCmd(char* cEngine, char* cDatabase);
+
+// DBExplorerDescribeCmd describes a table's columns.
+//
+extern char* DBExplorerDescribeCmd(char* cEngine, char* cDatabase, char* cTable);
+
+// DBExplorerBrowseCmd returns one page of rows (optionally searched).
+//
+extern char* DBExplorerBrowseCmd(char* cEngine, char* cRequestJSON);
+
+// DBExplorerCountCmd returns the exact row count for a request.
+//
+extern char* DBExplorerCountCmd(char* cEngine, char* cRequestJSON);
+
+// DBExplorerFetchRowCmd returns one complete row by key.
+//
+extern char* DBExplorerFetchRowCmd(char* cEngine, char* cRequestJSON);
+
+// DBExplorerFetchRowsCmd returns complete rows for several keys.
+//
+extern char* DBExplorerFetchRowsCmd(char* cEngine, char* cRequestJSON);
+
+// DBExplorerUpdateRowCmd updates one row (null values become SQL NULL).
+//
+extern char* DBExplorerUpdateRowCmd(char* cEngine, char* cRequestJSON);
+
+// DBExplorerInsertRowCmd inserts one row (null values become SQL NULL).
+//
+extern char* DBExplorerInsertRowCmd(char* cEngine, char* cRequestJSON);
+
+// DBExplorerDeleteRowsCmd deletes rows by key.
+//
+extern char* DBExplorerDeleteRowsCmd(char* cEngine, char* cRequestJSON);
 
 // DBEnableOnBootCmd returns the enable-on-boot command.
 //

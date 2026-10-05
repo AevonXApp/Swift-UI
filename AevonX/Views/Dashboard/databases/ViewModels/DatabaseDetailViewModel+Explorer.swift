@@ -413,7 +413,8 @@ extension DatabaseDetailViewModel {
     }
 
     /// Opens the add-row sheet prefilled with a complete copy of a row.
-    public func duplicateRow(at index: Int) async {
+    /// (`duplicateRow(at:)` in +Advanced duplicates directly on the server.)
+    public func prefillDuplicateRow(at index: Int) async {
         guard let values = await completeValues(forRowAt: index) else { return }
         let autoIncrement = Set(tableStructure?.columns.filter(\.isAutoIncrement).map(\.name) ?? [])
         duplicateRowValues = values.reduce(into: [String: String]()) { result, pair in

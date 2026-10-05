@@ -91,7 +91,7 @@ extension DBTableDataView {
                 AXMenuSection(L10n.Database.maintenance, items: [
                     AXMenuItem(L10n.Database.duplicateRowAction, icon: "plus.square.on.square", color: .purple) {
                         // Pre-populate the add row form with this row's complete values
-                        Task { await viewModel.duplicateRow(at: index) }
+                        Task { await viewModel.prefillDuplicateRow(at: index) }
                     },
                 ]),
                 AXMenuSection(items: [
@@ -145,7 +145,12 @@ extension DBTableDataView {
     /// `flags` is nil for results without per-cell flags (legacy engines),
     /// where the literal text "NULL" is the only NULL signal.
     func cellView(value: String, columnName: String, flags: UInt8?) -> some View {
-        let isNull = flags.map { $0 & BridgeQueryResult.cellNull != 0 } ?? (value == "NULL")
+        let isNull: Bool
+        if let flags {
+            isNull = flags & BridgeQueryResult.cellNull != 0
+        } else {
+            isNull = value == "NULL"
+        }
         let isBinary = (flags ?? 0) & BridgeQueryResult.cellBinary != 0
         let isPreview = (flags ?? 0) & BridgeQueryResult.cellTruncated != 0
         return Group {

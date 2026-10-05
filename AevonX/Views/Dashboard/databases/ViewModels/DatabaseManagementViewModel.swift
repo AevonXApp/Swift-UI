@@ -249,7 +249,9 @@ public final class DatabaseManagementViewModel: ObservableObject {
         loadDatabaseStatsInBackground(serverId: serverId)
     }
 
-    private nonisolated static func listDatabases(for state: DatabaseInstallationState, serverId: String) async -> [DatabaseInfo] {
+    /// Main-actor isolated like the rest of the app; engines still list in
+    /// parallel because each call suspends while its SSH command runs.
+    private static func listDatabases(for state: DatabaseInstallationState, serverId: String) async -> [DatabaseInfo] {
         let makeInfo = { (name: String, size: Double, tables: Int) in
             DatabaseInfo(
                 name: name,

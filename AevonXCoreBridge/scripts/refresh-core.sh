@@ -41,7 +41,10 @@ cd "$CORE_GO_DIR"
 # a tighter GC so the machine stays responsive (slower, but no freezes).
 export GOMAXPROCS=2
 export GOFLAGS="-p=1"
-export GOGC=50
+export GOGC=25
+# Soft heap cap per Go process: the compiler collects garbage harder instead
+# of growing (the obfuscated bridge package otherwise peaks around 9 GB).
+export GOMEMLIMIT=6GiB
 make build                       # default target: hardened (obfuscated) XCFramework
 
 echo "→ Refreshing ${XCFRAMEWORK_DEST}…"
