@@ -330,10 +330,14 @@ class PluginsViewModel: ObservableObject {
                 await loadMarketplace()
             }
 
-            // Load slugs and sources independently so one failure doesn't lose the other
+            // Load slugs and sources independently so one failure doesn't lose the other.
+            // Both requests start together (two SSH round trips in parallel).
+            async let slugsRequest = pluginManager.listInstalledPluginSlugs(on: serverId)
+            async let sourcesRequest = pluginManager.listInstalledSources(on: serverId)
+
             var installedSlugs: [String]
             do {
-                installedSlugs = try await pluginManager.listInstalledPluginSlugs(on: serverId)
+                installedSlugs = try await slugsRequest
             } catch {
                 log.error("[InstalledPlugins] SSH slugs failed: \(error.localizedDescription) — using cached", module: "PluginsVM")
                 if !lastKnownInstalledSlugs.isEmpty {
@@ -346,7 +350,7 @@ class PluginsViewModel: ObservableObject {
 
             // Sources are non-critical — use previous on failure
             do {
-                let sources = try await pluginManager.listInstalledSources(on: serverId)
+                let sources = try await sourcesRequest
                 self.installSources = sources
             } catch {
                 log.error("[InstalledPlugins] SSH sources failed: \(error.localizedDescription) — keeping previous", module: "PluginsVM")
