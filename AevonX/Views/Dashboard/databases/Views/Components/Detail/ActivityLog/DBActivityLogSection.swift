@@ -185,10 +185,12 @@ struct DBActivityLogSection: View {
     // MARK: - Timeline
 
     private var logTimeline: some View {
-        ScrollView(.vertical, showsIndicators: false) {
+        // Filter once per render, not once per row.
+        let entries = filteredLog
+        return ScrollView(.vertical, showsIndicators: false) {
             LazyVStack(spacing: 0) {
-                ForEach(Array(filteredLog.enumerated()), id: \.element.id) { index, entry in
-                    timelineRow(entry, isLast: index == filteredLog.count - 1)
+                ForEach(Array(entries.enumerated()), id: \.element.id) { index, entry in
+                    timelineRow(entry, isLast: index == entries.count - 1)
                 }
             }
             .padding(AXSpacing.lg)
