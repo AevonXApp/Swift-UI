@@ -95,8 +95,9 @@ struct FirewallSubTab: View {
                 }
             )
         }
+        // .task runs on every appearance; a second onAppear refresh loaded the
+        // rules twice in parallel (duplicate SSH calls racing on `rules`).
         .task { await loadFirewallData() }
-        .onAppear { Task { await refreshRules() } }
         .alert("Firewall Error", isPresented: Binding(
             get: { ruleError != nil },
             set: { if !$0 { ruleError = nil } }
@@ -110,16 +111,19 @@ struct FirewallSubTab: View {
     // MARK: - Load Data
 
     private func loadFirewallData() async {
-        let fwActive = await securityManager.firewallStatus(serverId: serverId)
-        await MainActor.run { firewallEnabled = fwActive }
+        // Status, rules and ports are independent — fetch them together.
+        async let fwActive = securityManager.firewallStatus(serverId: serverId)
         await refreshRules()
+        let active = await fwActive
+        await MainActor.run { firewallEnabled = active }
     }
 
     private func refreshRules() async {
         await MainActor.run { isLoading = true }
 
-        let coreRules = await securityManager.listFirewallRules(serverId: serverId)
-        let corePorts = await securityManager.listeningPorts(serverId: serverId)
+        async let rulesRequest = securityManager.listFirewallRules(serverId: serverId)
+        async let portsRequest = securityManager.listeningPorts(serverId: serverId)
+        let (coreRules, corePorts) = await (rulesRequest, portsRequest)
 
         await MainActor.run {
             rules = coreRules.map { r in

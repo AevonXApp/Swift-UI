@@ -41,12 +41,17 @@ struct AXDataTable<Item: Identifiable, RowContent: View, TrailingContent: View>:
     // Pagination
     @State private var currentPage = 1
 
+    /// How many items the current page shows (O(1), unlike counting `pagedItems`).
+    private var visibleCount: Int {
+        min(items.count, currentPage * pageSize)
+    }
+
     private var pagedItems: [Item] {
-        Array(items.prefix(currentPage * pageSize))
+        Array(items.prefix(visibleCount))
     }
 
     private var hasMorePages: Bool {
-        pagedItems.count < items.count
+        visibleCount < items.count
     }
 
     var body: some View {
@@ -69,15 +74,16 @@ struct AXDataTable<Item: Identifiable, RowContent: View, TrailingContent: View>:
                 } else if items.isEmpty {
                     AXPlaceholder(icon: emptyIcon, title: emptyTitle)
                 } else {
-                    // Rows
-                    ForEach(Array(pagedItems.enumerated()), id: \.element.id) { index, item in
+                    // Rows — the page is built once per render, not once per row
+                    let rows = pagedItems
+                    ForEach(Array(rows.enumerated()), id: \.element.id) { index, item in
                         VStack(spacing: 0) {
                             rowContent(item, index)
                                 .padding(.horizontal, AXSpacing.lg)
                                 .padding(.vertical, AXSpacing.sm)
                                 .background(index % 2 == 0 ? Color.clear : Color.axSurface.opacity(0.3))
 
-                            if index < pagedItems.count - 1 {
+                            if index < rows.count - 1 {
                                 Divider().background(Color.axBorder.opacity(0.5))
                             }
                         }
@@ -89,7 +95,7 @@ struct AXDataTable<Item: Identifiable, RowContent: View, TrailingContent: View>:
                             HStack(spacing: AXSpacing.sm) {
                                 Image(systemName: "arrow.down.circle")
                                     .font(.system(size: 12))
-                                Text("Load More (\(items.count - pagedItems.count) remaining)")
+                                Text("Load More (\(items.count - visibleCount) remaining)")
                                     .font(AXTypography.caption)
                             }
                             .foregroundColor(accentColor)
