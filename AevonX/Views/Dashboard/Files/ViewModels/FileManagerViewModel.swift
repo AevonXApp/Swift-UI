@@ -28,7 +28,9 @@ final class FileManagerViewModel: ObservableObject {
     @Published var activeTabIndex: Int = 0
     
     // File Listing
-    @Published var files: [RemoteFileItem] = []
+    @Published var files: [RemoteFileItem] = [] {
+        didSet { filesVersion &+= 1 }
+    }
     @Published var isLoading = false
     @Published var errorMessage: String?
     
@@ -206,8 +208,28 @@ final class FileManagerViewModel: ObservableObject {
         editorContent != editorOriginalContent
     }
     
-    /// Filtered and sorted file list
+    /// Bumped whenever `files` changes; part of the `displayFiles` cache key.
+    private var filesVersion = 0
+    private var displayFilesCache: (key: DisplayFilesKey, files: [RemoteFileItem])?
+
+    private struct DisplayFilesKey: Equatable {
+        let filesVersion: Int
+        let showHidden: Bool
+        let search: String
+        let sort: FileSortOrder
+    }
+
+    /// Filtered and sorted file list.
+    ///
+    /// Memoized: it is read several times per render (list, toolbar, status
+    /// bar), and re-sorting a large directory on every read made each click
+    /// or selection change slow. Recomputed only when its inputs change.
     var displayFiles: [RemoteFileItem] {
+        let key = DisplayFilesKey(filesVersion: filesVersion, showHidden: showHiddenFiles, search: searchText, sort: sortOrder)
+        if let cache = displayFilesCache, cache.key == key {
+            return cache.files
+        }
+
         var result = files
         
         if !showHiddenFiles {
@@ -220,7 +242,9 @@ final class FileManagerViewModel: ObservableObject {
             }
         }
         
-        return sortOrder.sort(result)
+        let sorted = sortOrder.sort(result)
+        displayFilesCache = (key, sorted)
+        return sorted
     }
     
     // MARK: - Initialization
