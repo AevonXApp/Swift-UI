@@ -85,7 +85,9 @@ class EnhancedLogsViewModel: ObservableObject {
 
         let safeQuery = ShellSanitizer.quote(searchQuery)
         let safePath = ShellSanitizer.escapePath(log.path)
-        let cmd = "grep -i \(safeQuery) \(safePath) 2>/dev/null | tail -50"
+        // -F: the query is literal text (IPs, "[error]", paths), not a regex;
+        // --: a query starting with "-" is not taken as an option.
+        let cmd = "grep -iF -- \(safeQuery) \(safePath) 2>/dev/null | tail -50"
         let result = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
         searchResults = result.components(separatedBy: "\n").filter { !$0.isEmpty }
     }
@@ -96,7 +98,13 @@ class EnhancedLogsViewModel: ObservableObject {
         defer { isLoading = false }
 
         let safePath = ShellSanitizer.escapePath(log.path)
-        let cmd = "grep -i 'error\\|warn\\|crit\\|fatal' \(safePath) 2>/dev/null | sort | uniq -c | sort -rn | head -20"
+        // Only the recent tail is summarized (error logs can be gigabytes), and
+        // timestamps / pids / client addresses are stripped first so repeated
+        // errors actually group together instead of every line being unique.
+        let cmd = #"tail -n 20000 \#(safePath) 2>/dev/null | grep -iE 'error|warn|crit|fatal|emerg|alert' | "#
+            + #"sed -E 's~^[0-9]{4}/[0-9]{2}/[0-9]{2} [0-9:]{8} ~~; s~^\[[^]]*\] ~~; s~[0-9]+#[0-9]+: \*[0-9]+ ~~; "#
+            + #"s~\[pid [^]]*\] ~~g; s~\[client [^]]*\] ~~g; s~client: [^,]*~client: *~g' | "#
+            + "sort | uniq -c | sort -rn | head -20"
         let result = await SSHBridge.shared.executeAsync(serverID: serverId, command: cmd)
         let lines = result.components(separatedBy: "\n").filter { !$0.isEmpty }
         errorSummaries = lines.compactMap { line in
@@ -109,6 +117,11 @@ class EnhancedLogsViewModel: ObservableObject {
     }
 
     // MARK: - Smart AI Analysis
+
+    // Compiled once — building them per log line was the analysis' main cost.
+    private static let statusPattern = try? NSRegularExpression(pattern: "\" (\\d{3}) ", options: [])
+    private static let urlPattern = try? NSRegularExpression(pattern: "\"(?:GET|POST|PUT|DELETE|PATCH|HEAD) ([^ ]+)", options: [])
+    private static let sizePattern = try? NSRegularExpression(pattern: "\" \\d{3} (\\d+)", options: [])
 
     func runSmartAnalysis() async {
         guard !logLines.isEmpty else {
@@ -128,12 +141,15 @@ class EnhancedLogsViewModel: ObservableObject {
         var botRequests = 0
         var largeResponses = 0
 
+        let statusPattern = Self.statusPattern
+        let urlPattern = Self.urlPattern
+        let sizePattern = Self.sizePattern
+
         for line in logLines {
             let lower = line.lowercased()
             totalRequests += 1
 
             // Extract HTTP status codes
-            let statusPattern = try? NSRegularExpression(pattern: "\" (\\d{3}) ", options: [])
             if let match = statusPattern?.firstMatch(in: line, options: [], range: NSRange(line.startIndex..., in: line)),
                let range = Range(match.range(at: 1), in: line) {
                 let code = String(line[range])
@@ -149,7 +165,6 @@ class EnhancedLogsViewModel: ObservableObject {
             }
 
             // Extract URLs
-            let urlPattern = try? NSRegularExpression(pattern: "\"(?:GET|POST|PUT|DELETE|PATCH|HEAD) ([^ ]+)", options: [])
             if let match = urlPattern?.firstMatch(in: line, options: [], range: NSRange(line.startIndex..., in: line)),
                let range = Range(match.range(at: 1), in: line) {
                 uniqueURLs.insert(String(line[range]))
@@ -168,7 +183,6 @@ class EnhancedLogsViewModel: ObservableObject {
             }
 
             // Large responses (>1MB)
-            let sizePattern = try? NSRegularExpression(pattern: "\" \\d{3} (\\d+)", options: [])
             if let match = sizePattern?.firstMatch(in: line, options: [], range: NSRange(line.startIndex..., in: line)),
                let range = Range(match.range(at: 1), in: line),
                let size = Int(line[range]), size > 1_000_000 {
