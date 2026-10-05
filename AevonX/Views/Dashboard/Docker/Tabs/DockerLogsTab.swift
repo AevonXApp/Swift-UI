@@ -264,7 +264,10 @@ struct DockerLogsTab: View {
     // MARK: - Logs Table
     
     private var logsTable: some View {
-        ScrollView {
+        // Filter once per render: re-evaluating `filteredEntries` inside the
+        // row loop re-filtered every entry for every row (quadratic).
+        let entries = filteredEntries
+        return ScrollView {
             LazyVStack(spacing: 0) {
                 // Table header
                 tableHeader
@@ -272,12 +275,12 @@ struct DockerLogsTab: View {
                 Divider().background(Color.axBorder)
                 
                 // Table rows
-                ForEach(Array(filteredEntries.enumerated()), id: \.offset) { index, entry in
+                ForEach(Array(entries.enumerated()), id: \.offset) { index, entry in
                     DockerLogTableRow(entry: entry, isEven: index % 2 == 0) {
                         selectedEntry = entry
                     }
                     
-                    if index < filteredEntries.count - 1 {
+                    if index < entries.count - 1 {
                         Divider().background(Color.axBorder.opacity(0.3))
                     }
                 }
