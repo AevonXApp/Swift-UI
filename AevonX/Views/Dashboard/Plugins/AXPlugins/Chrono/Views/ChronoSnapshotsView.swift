@@ -43,7 +43,7 @@ struct ChronoSnapshotsView: View {
         if viewModel.snapshots.isEmpty {
             emptyState
         } else {
-            VStack(spacing: AXSpacing.sm) {
+            LazyVStack(spacing: AXSpacing.sm) {
                 ForEach(viewModel.snapshots) { snap in
                     snapshotCard(snap)
                 }

@@ -20,7 +20,8 @@ struct ChronoDeployHistoryView: View {
                 if viewModel.deploys.isEmpty {
                     emptyState
                 } else {
-                    VStack(spacing: AXSpacing.xs) {
+                    // Lazy: a project's deploy history is unbounded.
+                    LazyVStack(spacing: AXSpacing.xs) {
                         ForEach(viewModel.deploys) { deploy in
                             ChronoDeployRow(deploy: deploy)
                                 .onTapGesture {

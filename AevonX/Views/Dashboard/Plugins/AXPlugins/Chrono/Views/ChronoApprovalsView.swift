@@ -158,7 +158,7 @@ struct ChronoApprovalsView: View {
                     .font(.system(size: 15, weight: .semibold))
                     .foregroundColor(.axTextPrimary)
 
-                VStack(spacing: AXSpacing.xs) {
+                LazyVStack(spacing: AXSpacing.xs) {
                     ForEach(viewModel.approvalHistory) { entry in
                         historyRow(entry)
                     }
