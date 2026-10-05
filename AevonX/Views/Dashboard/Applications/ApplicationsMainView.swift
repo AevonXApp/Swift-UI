@@ -33,6 +33,8 @@ struct ApplicationsMainView: View {
 
     @State private var apps: [BridgeAppInfo] = []
     @State private var isLoading = true
+    /// A background refresh while the current list stays on screen.
+    @State private var isRefreshing = false
     @State private var errorMessage: String?
     @State private var selectedApp: BridgeAppInfo?
     @State private var actionInProgress: String?
@@ -71,7 +73,7 @@ struct ApplicationsMainView: View {
                 mainView
             }
         }
-        .task { await discoverApps() }
+        .task { await openApplications() }
     }
 
     // MARK: - Main View
@@ -188,7 +190,7 @@ struct ApplicationsMainView: View {
             .cornerRadius(AXCornerRadius.md)
             .overlay(RoundedRectangle(cornerRadius: AXCornerRadius.md).stroke(Color.axBorder.opacity(0.2), lineWidth: 1))
 
-            AXRefreshButton(isLoading: isLoading) { await discoverApps() }
+            AXRefreshButton(isLoading: isLoading || isRefreshing) { await discoverApps() }
         }
         .padding(.horizontal, AXSpacing.xl)
         .padding(.vertical, AXSpacing.md)
@@ -415,9 +417,29 @@ struct ApplicationsMainView: View {
 
     // MARK: - Data Actions
 
-    private func discoverApps() async {
+    /// Shows the last known list instantly when the tab reopens, then refreshes
+    /// it in the background (skipped when it is only seconds old) so apps
+    /// installed elsewhere still appear.
+    private func openApplications() async {
         guard let sid = serverId else { return }
-        isLoading = true
+        guard let cached = AppDiscoveryMemo.apps[sid] else {
+            await discoverApps()
+            return
+        }
+        apps = cached
+        isLoading = false
+        if let fetchedAt = AppDiscoveryMemo.fetchedAt[sid],
+           Date().timeIntervalSince(fetchedAt) < AppDiscoveryMemo.freshFor {
+            return
+        }
+        await discoverApps(background: true)
+    }
+
+    /// Fresh discovery from the server. `background` keeps the current list on
+    /// screen instead of showing the skeleton.
+    private func discoverApps(background: Bool = false) async {
+        guard let sid = serverId else { return }
+        if background { isRefreshing = true } else { isLoading = true }
         errorMessage = nil
         bridge.invalidateDiscoveryCache(serverID: sid)
         let json = await bridge.discoverApps(serverID: sid)
@@ -425,6 +447,8 @@ struct ApplicationsMainView: View {
            let response = try? JSONDecoder().decode(BridgeDataResponse<[BridgeAppInfo]>.self, from: data),
            response.success {
             apps = response.data ?? []
+            AppDiscoveryMemo.apps[sid] = apps
+            AppDiscoveryMemo.fetchedAt[sid] = Date()
         } else {
             let adapterJSON = await bridge.listAdapters()
             if let data = adapterJSON.data(using: .utf8),
@@ -436,6 +460,7 @@ struct ApplicationsMainView: View {
             }
         }
         isLoading = false
+        isRefreshing = false
     }
 
     private func performAction(_ action: String, appID: String) async {
@@ -460,8 +485,20 @@ struct ApplicationsMainView: View {
             }
         }
         actionInProgress = nil
-        await discoverApps()
+        await discoverApps(background: true)
     }
+}
+
+// MARK: - Discovery Memo
+
+/// Last discovery per server, kept across tab switches (the tab's view is
+/// recreated every time it opens).
+@MainActor
+private enum AppDiscoveryMemo {
+    static var apps: [String: [BridgeAppInfo]] = [:]
+    static var fetchedAt: [String: Date] = [:]
+    /// Reopening within this window shows the list without re-probing.
+    static let freshFor: TimeInterval = 30
 }
 
 // MARK: - AppCard3D (Premium 3D-depth Installed App Card)
