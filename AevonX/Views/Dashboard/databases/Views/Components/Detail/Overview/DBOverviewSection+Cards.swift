@@ -362,11 +362,32 @@ extension DBOverviewSection {
                 tableColumnHeaders
                 Divider().background(Color.axBorder.opacity(0.5))
 
-                ForEach(Array(viewModel.tables.enumerated()), id: \.element.id) { index, table in
+                // The overview shows the largest tables only; the full list
+                // lives in the (lazy) Tables section.
+                let shown = overviewTables
+                ForEach(Array(shown.enumerated()), id: \.element.id) { index, table in
                     tableRow(table, index: index)
-                    if index < viewModel.tables.count - 1 {
+                    if index < shown.count - 1 {
                         Divider().background(Color.axBorder.opacity(0.3))
                     }
+                }
+
+                if viewModel.tables.count > shown.count {
+                    Divider().background(Color.axBorder.opacity(0.3))
+                    Button {
+                        viewModel.currentSection = .tables
+                    } label: {
+                        HStack(spacing: AXSpacing.xs) {
+                            Text(L10n.Database.viewAllTables(viewModel.tables.count))
+                                .font(AXTypography.caption).fontWeight(.semibold)
+                            Image(systemName: "arrow.right")
+                                .font(AXTypography.caption2)
+                        }
+                        .foregroundColor(.axAccentBlue)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, AXSpacing.sm)
+                    }
+                    .buttonStyle(.plain)
                 }
             }
         }
@@ -379,6 +400,13 @@ extension DBOverviewSection {
         .opacity(appear ? 1 : 0)
         .offset(y: appear ? 0 : 12)
         .animation(.spring(response: 0.5).delay(0.18), value: appear)
+    }
+
+    /// Largest tables first, capped for the overview card.
+    var overviewTables: [TableInfo] {
+        let limit = 50
+        guard viewModel.tables.count > limit else { return viewModel.tables }
+        return Array(viewModel.tables.sorted { ($0.dataSize + $0.indexSize) > ($1.dataSize + $1.indexSize) }.prefix(limit))
     }
 
     var tableColumnHeaders: some View {
@@ -405,7 +433,7 @@ extension DBOverviewSection {
     private func tableRow(_ table: TableInfo, index: Int) -> some View {
         VStack(spacing: 0) {
             Button {
-                viewModel.selectedTable = table
+                viewModel.selectTable(table)
                 viewModel.currentSection = .tables
             } label: {
                 HStack(spacing: 0) {
@@ -457,7 +485,7 @@ extension DBOverviewSection {
                         ]),
                         AXMenuSection(L10n.Database.navigate, items: [
                             AXMenuItem(L10n.Database.browseData, icon: "tablecells", color: .mint) {
-                                viewModel.selectedTable = table
+                                viewModel.selectTable(table, tab: .data)
                                 viewModel.currentSection = .tables
                             },
                             AXMenuItem(L10n.Database.countRows, icon: "number", color: .indigo) {

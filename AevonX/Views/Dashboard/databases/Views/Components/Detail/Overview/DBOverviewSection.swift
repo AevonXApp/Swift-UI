@@ -383,7 +383,7 @@ struct DBOverviewSection: View {
                 }
                 quickActionButton(icon: "tablecells.badge.ellipsis", title: L10n.Database.browseData, color: .axInfo) {
                     if let firstTable = viewModel.tables.first {
-                        viewModel.selectedTable = firstTable
+                        viewModel.selectTable(firstTable, tab: .data)
                         viewModel.currentSection = .tables
                     }
                 }

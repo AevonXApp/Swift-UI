@@ -17,48 +17,89 @@ extension DatabaseDetailViewModel {
         guard let serverId = serverId, let table = selectedTable else { return }
 
         do {
-            // Preserve NULL intent: nil → "NULL" so the Go adapter generates SQL NULL
-            let nonNilValues = values.reduce(into: [String: String]()) { result, pair in
-                result[pair.key] = pair.value ?? "NULL"
+            if explorerEnabled {
+                var request = ExplorerRequest(database: database.name, table: table.name)
+                request.values = values.filter { !binaryColumnNames.contains($0.key) }
+                _ = try await DatabaseRowService.shared.explorerWrite(.insert, request, type: database.type, serverId: serverId)
+            } else {
+                // Legacy adapters have no NULL literal; keep their old contract.
+                let nonNilValues = values.reduce(into: [String: String]()) { result, pair in
+                    result[pair.key] = pair.value ?? "NULL"
+                }
+                try await DatabaseRowService.shared.insertRow(
+                    database: database.name,
+                    table: table.name,
+                    values: nonNilValues,
+                    type: database.type,
+                    serverId: serverId
+                )
             }
-            try await DatabaseRowService.shared.insertRow(
-                database: database.name,
-                table: table.name,
-                values: nonNilValues,
-                type: database.type,
-                serverId: serverId
-            )
             GlobalToastManager.shared.showSuccess(L10n.Database.rowInserted)
             log(action: "Insert Row", detail: "Table '\(table.name)'", success: true)
             showAddRow = false
+            adjustRowCount(by: 1)
+            invalidateExplorerPages()
             await loadTableData()
-            await loadTables()
         } catch {
             GlobalToastManager.shared.showError("\(L10n.Database.rowInsertFailed): \(error.localizedDescription)")
             log(action: "Insert Row", detail: "Table '\(table.name)'", success: false, error: error.localizedDescription)
         }
     }
 
+    /// Saves only the columns that changed since the edit sheet opened
+    /// (binary columns are never written back from text).
     public func updateRow(primaryKey: [String: String], values: [String: String?]) async {
         guard let serverId = serverId, let table = selectedTable else { return }
 
-        do {
-            // Preserve NULL intent: nil → "NULL" so the Go adapter generates SQL NULL
-            let nonNilValues = values.reduce(into: [String: String]()) { result, pair in
-                result[pair.key] = pair.value ?? "NULL"
+        let binary = binaryColumnNames
+        var changed: [String: String?] = [:]
+        for (column, value) in values where !binary.contains(column) {
+            let original: String?? = editingOriginalValues[column]
+            if original == nil || original! != value {
+                changed[column] = value
             }
-            try await DatabaseRowService.shared.updateRow(
-                database: database.name,
-                table: table.name,
-                primaryKey: primaryKey,
-                values: nonNilValues,
-                type: database.type,
-                serverId: serverId
-            )
-            GlobalToastManager.shared.showSuccess(L10n.Database.rowUpdated)
-            log(action: "Update Row", detail: "Table '\(table.name)'", success: true)
+        }
+        guard !changed.isEmpty else {
+            GlobalToastManager.shared.showSuccess(L10n.Database.noChangesToSave)
             showEditRow = false
             editingRowIndex = nil
+            return
+        }
+
+        var key = primaryKey
+        if key.isEmpty, let index = editingRowIndex, let fallback = rowKey(forRowAt: index) {
+            key = fallback
+        }
+        guard !key.isEmpty else {
+            GlobalToastManager.shared.showError(L10n.Database.noPrimaryKey)
+            return
+        }
+
+        do {
+            if explorerEnabled {
+                var request = ExplorerRequest(database: database.name, table: table.name)
+                request.key = key
+                request.values = changed
+                _ = try await DatabaseRowService.shared.explorerWrite(.update, request, type: database.type, serverId: serverId)
+            } else {
+                let nonNilValues = changed.reduce(into: [String: String]()) { result, pair in
+                    result[pair.key] = pair.value ?? "NULL"
+                }
+                try await DatabaseRowService.shared.updateRow(
+                    database: database.name,
+                    table: table.name,
+                    primaryKey: key,
+                    values: nonNilValues,
+                    type: database.type,
+                    serverId: serverId
+                )
+            }
+            GlobalToastManager.shared.showSuccess(L10n.Database.rowUpdated)
+            log(action: "Update Row", detail: "Table '\(table.name)' (\(changed.count) columns)", success: true)
+            showEditRow = false
+            editingRowIndex = nil
+            editingOriginalValues = [:]
+            invalidateExplorerPages()
             await loadTableData()
         } catch {
             GlobalToastManager.shared.showError("\(L10n.Database.rowUpdateFailed): \(error.localizedDescription)")
@@ -74,18 +115,25 @@ extension DatabaseDetailViewModel {
         guard let serverId = serverId else { return }
 
         do {
-            try await DatabaseRowService.shared.deleteRow(
-                database: database.name,
-                table: table.name,
-                primaryKey: pk,
-                type: database.type,
-                serverId: serverId
-            )
+            if explorerEnabled {
+                var request = ExplorerRequest(database: database.name, table: table.name)
+                request.keys = [pk]
+                _ = try await DatabaseRowService.shared.explorerWrite(.delete, request, type: database.type, serverId: serverId)
+            } else {
+                try await DatabaseRowService.shared.deleteRow(
+                    database: database.name,
+                    table: table.name,
+                    primaryKey: pk,
+                    type: database.type,
+                    serverId: serverId
+                )
+            }
             GlobalToastManager.shared.showSuccess(L10n.Database.rowDeleted)
             log(action: "Delete Row", detail: "Table '\(table.name)'", success: true)
-            selectedRows.remove(index)
+            selectedRows.removeAll()
+            adjustRowCount(by: -1)
+            invalidateExplorerPages()
             await loadTableData()
-            await loadTables()
         } catch {
             GlobalToastManager.shared.showError("\(L10n.Database.rowDeleteFailed): \(error.localizedDescription)")
             log(action: "Delete Row", detail: "Table '\(table.name)'", success: false, error: error.localizedDescription)
@@ -108,18 +156,26 @@ extension DatabaseDetailViewModel {
         }
 
         do {
-            try await DatabaseRowService.shared.deleteRows(
-                database: database.name,
-                table: table.name,
-                primaryKeys: pks,
-                type: database.type,
-                serverId: serverId
-            )
-            GlobalToastManager.shared.showSuccess(L10n.Database.rowsDeleted(pks.count))
-            log(action: "Delete Rows", detail: "\(pks.count) rows from '\(table.name)'", success: true)
+            var deleted = Int64(pks.count)
+            if explorerEnabled {
+                var request = ExplorerRequest(database: database.name, table: table.name)
+                request.keys = pks
+                deleted = try await DatabaseRowService.shared.explorerWrite(.delete, request, type: database.type, serverId: serverId)
+            } else {
+                try await DatabaseRowService.shared.deleteRows(
+                    database: database.name,
+                    table: table.name,
+                    primaryKeys: pks,
+                    type: database.type,
+                    serverId: serverId
+                )
+            }
+            GlobalToastManager.shared.showSuccess(L10n.Database.rowsDeleted(Int(deleted)))
+            log(action: "Delete Rows", detail: "\(deleted) rows from '\(table.name)'", success: true)
             selectedRows.removeAll()
+            adjustRowCount(by: -deleted)
+            invalidateExplorerPages()
             await loadTableData()
-            await loadTables()
         } catch {
             GlobalToastManager.shared.showError("\(L10n.Database.rowsDeleteFailed): \(error.localizedDescription)")
             log(action: "Delete Rows", detail: "\(selectedRows.count) rows from '\(table.name)'", success: false, error: error.localizedDescription)
@@ -143,21 +199,41 @@ extension DatabaseDetailViewModel {
         selectedRows.removeAll()
     }
 
+    // MARK: - Search
+
+    /// Applies `dataSearchText` (empty text restores the unfiltered rows).
     public func searchData() async {
-        guard let serverId = serverId, let table = selectedTable else { return }
-        let search = dataSearchText.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !search.isEmpty else {
-            await clearSearch()
-            return
-        }
+        let text = dataSearchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        let search: String? = text.isEmpty ? nil : text
+        guard search != activeSearch else { return }
+        activeSearch = search
+        currentPage = 0
+        selectedRows.removeAll()
+        await loadTableData()
+    }
+
+    /// Re-runs the active search after the scope or mode changed.
+    public func searchOptionsChanged() async {
+        guard activeSearch != nil else { return }
+        currentPage = 0
+        await loadTableData()
+    }
+
+    public func clearSearch() async {
+        dataSearchText = ""
+        isSearching = false
+        guard activeSearch != nil else { return }
+        activeSearch = nil
+        currentPage = 0
+        selectedRows.removeAll()
+        await loadTableData()
+    }
+
+    /// Search for engines without the explorer (whole-row text search).
+    func searchDataLegacy() async {
+        guard let serverId = serverId, let table = selectedTable, let search = activeSearch else { return }
 
         isSearching = true
-        let columns = browseResult?.columns ?? tableStructure?.columns.map(\.name) ?? []
-        guard !columns.isEmpty else {
-            isSearching = false
-            return
-        }
-
         do {
             browseResult = try await DatabaseRowService.shared.searchRows(
                 database: database.name,
@@ -177,49 +253,23 @@ extension DatabaseDetailViewModel {
         isSearching = false
     }
 
-    public func clearSearch() async {
-        dataSearchText = ""
-        isSearching = false
-        currentPage = 0
-        selectedRows.removeAll()
-        await loadTableData()
-    }
+    // MARK: - Editing
 
+    /// Opens the edit sheet with the row's complete values (fetched first when
+    /// the grid only holds previews).
     public func startEditingRow(_ index: Int) {
         guard let result = browseResult, index < result.rows.count else { return }
         editingRowIndex = index
-        let row = result.rows[index]
-        var values: [String: String?] = [:]
-        for (colIdx, col) in result.columns.enumerated() {
-            values[col] = colIdx < row.count ? row[colIdx] : nil
+        Task {
+            guard let values = await completeValues(forRowAt: index) else { return }
+            guard editingRowIndex == index else { return }
+            editingRowValues = values
+            editingOriginalValues = values
+            showEditRow = true
         }
-        editingRowValues = values
-        showEditRow = true
     }
 
     func primaryKeyValues(forRowAt index: Int) -> [String: String]? {
-        guard let structure = tableStructure,
-              let result = browseResult,
-              index < result.rows.count else { return nil }
-
-        let pkColumns = structure.columns.filter { $0.isPrimaryKey }.map(\.name)
-        guard !pkColumns.isEmpty else {
-            // Fallback: use first column as pseudo-PK
-            if let firstCol = result.columns.first, !result.rows[index].isEmpty {
-                let val = result.rows[index][0]
-                return [firstCol: val]
-            }
-            return nil
-        }
-
-        var pk: [String: String] = [:]
-        for pkCol in pkColumns {
-            if let colIdx = result.columns.firstIndex(of: pkCol),
-               colIdx < result.rows[index].count {
-                pk[pkCol] = result.rows[index][colIdx]
-            }
-        }
-
-        return pk.isEmpty ? nil : pk
+        rowKey(forRowAt: index)
     }
 }

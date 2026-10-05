@@ -14,6 +14,7 @@ public actor DatabaseRowService {
 
     public static let shared = DatabaseRowService()
     private let bridge = DatabasesBridge.shared
+    private let explorer = ExplorerBridge.shared
     private let ssh = SSHBridge.shared
 
     private init() {}
@@ -23,14 +24,72 @@ public actor DatabaseRowService {
         CoreLogger.shared.debug("browseRows: \(database).\(table) page=\(page)", module: "DatabaseRowService")
         let output = await ssh.executeAsync(serverID: serverId, command: cmd)
         CoreLogger.shared.debug("browseRows response: \(output.count) chars", module: "DatabaseRowService")
-        return parseQueryResult(output, isSelect: true)
+        return try parseQueryResult(output, isSelect: true, type: type)
     }
 
     public func executeQuery(database: String, query: String, type: DatabaseType, serverId: String) async throws -> BridgeQueryResult {
         let cmd = bridge.executeQueryCmd(engine: type.rawValue, database: database, query: query)
         let output = await ssh.executeAsync(serverID: serverId, command: cmd)
-        let isSelect = query.trimmingCharacters(in: .whitespacesAndNewlines).uppercased().hasPrefix("SELECT")
-        return parseQueryResult(output, isSelect: isSelect)
+        return try parseQueryResult(output, isSelect: Self.returnsRows(query), type: type)
+    }
+
+    /// Statements whose output is a result set (not just a status).
+    static func returnsRows(_ query: String) -> Bool {
+        var text = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        while text.hasPrefix("(") { text.removeFirst() }
+        let keyword = text.prefix { $0.isLetter }.uppercased()
+        return ["SELECT", "SHOW", "DESCRIBE", "DESC", "EXPLAIN", "WITH", "VALUES", "TABLE", "PRAGMA", "CALL", "CHECK", "ANALYZE", "OPTIMIZE", "REPAIR"].contains(keyword)
+    }
+
+    // MARK: - Fast Explorer
+
+    public enum ExplorerWriteOperation: Sendable {
+        case insert, update, delete
+    }
+
+    /// One page of rows with previews and a has-more flag.
+    public func explorerBrowse(_ request: ExplorerRequest, type: DatabaseType, serverId: String) async throws -> BridgeQueryResult {
+        let cmd = explorer.browseCmd(engine: type.rawValue, request: request)
+        guard !cmd.isEmpty else { throw ExplorerError.invalidRequest }
+        let started = Date()
+        let output = await ssh.executeAsync(serverID: serverId, command: cmd)
+        var result = try ExplorerOutput.page(output, columns: request.columns.map(\.name), previewChars: request.previewChars, limit: request.limit)
+        result.executionTime = Date().timeIntervalSince(started)
+        return result
+    }
+
+    /// Exact number of rows matching the request's search (or the table).
+    public func explorerCount(_ request: ExplorerRequest, type: DatabaseType, serverId: String) async throws -> Int64 {
+        let cmd = explorer.countCmd(engine: type.rawValue, request: request)
+        guard !cmd.isEmpty else { throw ExplorerError.invalidRequest }
+        return try ExplorerOutput.count(await ssh.executeAsync(serverID: serverId, command: cmd))
+    }
+
+    /// One complete row by key (nil when it no longer exists).
+    public func explorerFetchRow(_ request: ExplorerRequest, type: DatabaseType, serverId: String) async throws -> [String: String?]? {
+        let cmd = explorer.fetchRowCmd(engine: type.rawValue, request: request)
+        guard !cmd.isEmpty else { throw ExplorerError.invalidRequest }
+        return try ExplorerOutput.row(await ssh.executeAsync(serverID: serverId, command: cmd), columns: request.columns.map(\.name))
+    }
+
+    /// Complete rows (no previews) for `request.keys`, in one round trip.
+    public func explorerFetchRows(_ request: ExplorerRequest, type: DatabaseType, serverId: String) async throws -> BridgeQueryResult {
+        let cmd = explorer.fetchRowsCmd(engine: type.rawValue, request: request)
+        guard !cmd.isEmpty else { throw ExplorerError.invalidRequest }
+        return try ExplorerOutput.page(await ssh.executeAsync(serverID: serverId, command: cmd), columns: request.columns.map(\.name), previewChars: 0, limit: nil)
+    }
+
+    /// Insert/update/delete with real NULLs; returns the affected row count.
+    @discardableResult
+    public func explorerWrite(_ operation: ExplorerWriteOperation, _ request: ExplorerRequest, type: DatabaseType, serverId: String) async throws -> Int64 {
+        let cmd: String
+        switch operation {
+        case .insert: cmd = explorer.insertRowCmd(engine: type.rawValue, request: request)
+        case .update: cmd = explorer.updateRowCmd(engine: type.rawValue, request: request)
+        case .delete: cmd = explorer.deleteRowsCmd(engine: type.rawValue, request: request)
+        }
+        guard !cmd.isEmpty else { throw ExplorerError.invalidRequest }
+        return try ExplorerOutput.affectedRows(await ssh.executeAsync(serverID: serverId, command: cmd))
     }
 
     public func insertRow(database: String, table: String, values: [String: String], type: DatabaseType, serverId: String) async throws {
@@ -86,7 +145,7 @@ public actor DatabaseRowService {
     public func searchRows(database: String, table: String, search: String, type: DatabaseType, serverId: String, page: Int = 1, pageSize: Int = 50, orderBy: String = "", ascending: Bool = true) async throws -> BridgeQueryResult {
         let cmd = bridge.searchRowsCmd(engine: type.rawValue, database: database, table: table, search: search, page: page, pageSize: pageSize, orderBy: orderBy, ascending: ascending)
         let output = await ssh.executeAsync(serverID: serverId, command: cmd)
-        return parseQueryResult(output, isSelect: true)
+        return try parseQueryResult(output, isSelect: true, type: type)
     }
 
     public func importSQL(database: String, sqlContent: String, type: DatabaseType, serverId: String) async throws {
@@ -99,29 +158,41 @@ public actor DatabaseRowService {
 
     // MARK: - Parsing
 
-    private func parseQueryResult(_ output: String, isSelect: Bool) -> BridgeQueryResult {
-        let lines = output.components(separatedBy: .newlines).filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+    /// Parses client output (MySQL batch / psql unaligned). Server errors are
+    /// thrown instead of being shown as a result row.
+    private func parseQueryResult(_ output: String, isSelect: Bool, type: DatabaseType) throws -> BridgeQueryResult {
+        var lines = output.components(separatedBy: "\n").map { $0.hasSuffix("\r") ? String($0.dropLast()) : $0 }
+        while let last = lines.last, last.trimmingCharacters(in: .whitespaces).isEmpty { lines.removeLast() }
+
+        if let errorLine = lines.first(where: Self.isServerError) {
+            let message = lines.drop { $0 != errorLine }.joined(separator: "\n")
+            throw DatabaseServiceError.operationFailed(message)
+        }
         guard !lines.isEmpty else {
             return BridgeQueryResult(isSelect: isSelect)
         }
 
+        // MySQL's batch mode escapes \n, \t, \\ and NUL inside values.
+        let unescape = type == .mysql || type == .mariadb
+        let split: (String) -> [String] = { line in
+            let fields = line.components(separatedBy: "\t")
+            return unescape ? fields.map(Self.unescapeMySQLBatch) : fields
+        }
+
         if isSelect {
             // First line = column headers, remaining lines = data rows
-            let columns = lines[0].components(separatedBy: "\t").map { $0.trimmingCharacters(in: .whitespaces) }
+            let columns = split(lines[0])
             var rows: [[String]] = []
             for line in lines.dropFirst() {
-                // Skip PostgreSQL separator lines (e.g. "----+----+----")
+                // Skip PostgreSQL separator and footer lines ("----+----", "(3 rows)")
                 let trimmed = line.trimmingCharacters(in: .whitespaces)
-                if trimmed.allSatisfy({ $0 == "-" || $0 == "+" || $0 == "|" }) { continue }
-                // Skip PostgreSQL footer lines (e.g. "(3 rows)")
-                if trimmed.hasPrefix("(") && trimmed.hasSuffix("rows)") { continue }
-                if trimmed.hasPrefix("(") && trimmed.hasSuffix("row)") { continue }
-                
-                let cols = line.components(separatedBy: "\t").map { $0.trimmingCharacters(in: .whitespaces) }
+                if !trimmed.isEmpty, trimmed.allSatisfy({ $0 == "-" || $0 == "+" || $0 == "|" }) { continue }
+                if trimmed.hasPrefix("(") && (trimmed.hasSuffix("rows)") || trimmed.hasSuffix("row)")) { continue }
+
+                let cols = split(line)
                 // For PostgreSQL pipe-separated output, try splitting by |
-                if cols.count == 1 && line.contains("|") {
-                    let pipeCols = line.components(separatedBy: "|").map { $0.trimmingCharacters(in: .whitespaces) }
-                    rows.append(pipeCols)
+                if cols.count == 1 && columns.count > 1 && line.contains("|") {
+                    rows.append(line.components(separatedBy: "|").map { $0.trimmingCharacters(in: .whitespaces) })
                 } else {
                     rows.append(cols)
                 }
@@ -130,5 +201,40 @@ public actor DatabaseRowService {
         } else {
             return BridgeQueryResult(affectedRows: Int64(lines.count), isSelect: false)
         }
+    }
+
+    /// Matches client error lines only, so data that merely starts with
+    /// "ERROR" (log tables) is not mistaken for a failure.
+    private static func isServerError(_ line: String) -> Bool {
+        // MySQL/MariaDB: "ERROR 1064 (42000) at line 1: …"
+        if line.hasPrefix("ERROR "), line.dropFirst(6).prefix(while: \.isNumber).count >= 4 { return true }
+        // psql: "ERROR:  …", "psql:<stdin>:1: ERROR:  …", "psql: error: …"
+        if line.hasPrefix("ERROR:  ") || line.hasPrefix("FATAL:  ") || line.hasPrefix("psql: error") { return true }
+        return line.hasPrefix("psql:") && (line.contains(" ERROR:  ") || line.contains(" FATAL:  "))
+    }
+
+    private static func unescapeMySQLBatch(_ field: String) -> String {
+        guard field.contains("\\") else { return field }
+        var result = ""
+        result.reserveCapacity(field.count)
+        var escaping = false
+        for character in field {
+            if escaping {
+                switch character {
+                case "n": result.append("\n")
+                case "t": result.append("\t")
+                case "0": result.append("\0")
+                case "\\": result.append("\\")
+                default: result.append("\\"); result.append(character)
+                }
+                escaping = false
+            } else if character == "\\" {
+                escaping = true
+            } else {
+                result.append(character)
+            }
+        }
+        if escaping { result.append("\\") }
+        return result
     }
 }

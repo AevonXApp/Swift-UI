@@ -42,18 +42,15 @@ extension DBTableDataView {
             ForEach(visibleCols, id: \.self) { colName in
                 let colIdx = columns.firstIndex(of: colName) ?? 0
                 let value = colIdx < row.count ? row[colIdx] : ""
-                cellView(value: value, columnName: colName)
+                let flags: UInt8? = viewModel.browseResult?.cellFlags == nil
+                    ? nil
+                    : viewModel.browseResult?.flags(row: index, column: colIdx)
+                cellView(value: value, columnName: colName, flags: flags)
                     .frame(width: colW, height: 30, alignment: .leading)
                     .padding(.horizontal, 6)
                     .contentShape(Rectangle())
                     .onTapGesture {
-                        NSPasteboard.general.clearContents()
-                        NSPasteboard.general.setString(value, forType: .string)
-                        copiedCell = "\(index)-\(colIdx)"
-                        GlobalToastManager.shared.showSuccess(L10n.Database.copiedPrefix(String(value.prefix(30))))
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-                            if copiedCell == "\(index)-\(colIdx)" { copiedCell = nil }
-                        }
+                        cellTapped(index: index, column: colName, columnIndex: colIdx, value: value, flags: flags ?? 0)
                     }
             }
 
@@ -66,33 +63,35 @@ extension DBTableDataView {
                 ]),
                 AXMenuSection(L10n.Button.copy, items: [
                     AXMenuItem(L10n.Database.copyRowValues, icon: "doc.on.doc", color: .cyan) {
-                        let values = row.joined(separator: "\t")
-                        NSPasteboard.general.clearContents()
-                        NSPasteboard.general.setString(values, forType: .string)
-                        GlobalToastManager.shared.showSuccess(L10n.Database.rowValuesCopied)
+                        Task {
+                            guard let values = await viewModel.completeValues(forRowAt: index) else { return }
+                            let line = columns.map { values[$0].map { $0 ?? "NULL" } ?? "" }.joined(separator: "\t")
+                            NSPasteboard.general.clearContents()
+                            NSPasteboard.general.setString(line, forType: .string)
+                            GlobalToastManager.shared.showSuccess(L10n.Database.rowValuesCopied)
+                        }
                     },
                     AXMenuItem(L10n.Database.copyAsINSERT, icon: "chevron.left.forwardslash.chevron.right", color: .mint) {
-                        let insert = generateInsertStatement(columns: columns, row: row)
-                        NSPasteboard.general.clearContents()
-                        NSPasteboard.general.setString(insert, forType: .string)
-                        GlobalToastManager.shared.showSuccess(L10n.Database.insertCopied)
+                        Task {
+                            guard let values = await viewModel.completeValues(forRowAt: index) else { return }
+                            NSPasteboard.general.clearContents()
+                            NSPasteboard.general.setString(generateInsertStatement(columns: columns, values: values), forType: .string)
+                            GlobalToastManager.shared.showSuccess(L10n.Database.insertCopied)
+                        }
                     },
                     AXMenuItem(L10n.Database.copyAsUPDATE, icon: "arrow.triangle.2.circlepath", color: .orange) {
-                        let update = generateUpdateStatement(columns: columns, row: row)
-                        NSPasteboard.general.clearContents()
-                        NSPasteboard.general.setString(update, forType: .string)
-                        GlobalToastManager.shared.showSuccess(L10n.Database.updateCopied)
+                        Task {
+                            guard let values = await viewModel.completeValues(forRowAt: index) else { return }
+                            NSPasteboard.general.clearContents()
+                            NSPasteboard.general.setString(generateUpdateStatement(columns: columns, values: values), forType: .string)
+                            GlobalToastManager.shared.showSuccess(L10n.Database.updateCopied)
+                        }
                     },
                 ]),
                 AXMenuSection(L10n.Database.maintenance, items: [
                     AXMenuItem(L10n.Database.duplicateRowAction, icon: "plus.square.on.square", color: .purple) {
-                        // Pre-populate add row form with this row's values
-                        var vals: [String: String] = [:]
-                        for (i, colName) in columns.enumerated() {
-                            if i < row.count { vals[colName] = row[i] }
-                        }
-                        viewModel.duplicateRowValues = vals
-                        viewModel.showAddRow = true
+                        // Pre-populate the add row form with this row's complete values
+                        Task { await viewModel.duplicateRow(at: index) }
                     },
                 ]),
                 AXMenuSection(items: [
@@ -119,11 +118,61 @@ extension DBTableDataView {
         }
     }
 
+    // MARK: - Cell Tap
+
+    /// Previews open the complete value; other cells are copied.
+    func cellTapped(index: Int, column: String, columnIndex: Int, value: String, flags: UInt8) {
+        if flags & BridgeQueryResult.cellBinary != 0 { return }
+        if flags & BridgeQueryResult.cellTruncated != 0 {
+            Task {
+                guard let full = await viewModel.fullCellValue(row: index, column: column) else { return }
+                jsonViewerContent = isJSONValue(full) ? formatJSON(full) : full
+                showJSONViewer = true
+            }
+            return
+        }
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(value, forType: .string)
+        copiedCell = "\(index)-\(columnIndex)"
+        GlobalToastManager.shared.showSuccess(L10n.Database.copiedPrefix(String(value.prefix(30))))
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+            if copiedCell == "\(index)-\(columnIndex)" { copiedCell = nil }
+        }
+    }
+
     // MARK: - Cell View
 
-    func cellView(value: String, columnName: String) -> some View {
-        Group {
-            if value == "NULL" {
+    /// `flags` is nil for results without per-cell flags (legacy engines),
+    /// where the literal text "NULL" is the only NULL signal.
+    func cellView(value: String, columnName: String, flags: UInt8?) -> some View {
+        let isNull = flags.map { $0 & BridgeQueryResult.cellNull != 0 } ?? (value == "NULL")
+        let isBinary = (flags ?? 0) & BridgeQueryResult.cellBinary != 0
+        let isPreview = (flags ?? 0) & BridgeQueryResult.cellTruncated != 0
+        return Group {
+            if isBinary {
+                HStack(spacing: AXSpacing.xxs) {
+                    Image(systemName: "doc.zipper")
+                        .font(AXTypography.caption2)
+                    Text(L10n.Database.binaryValue(AXFormatter.formatBytes(Int64(value) ?? 0)))
+                        .font(AXTypography.monoXs)
+                }
+                .foregroundColor(.axTextMuted)
+                .padding(.horizontal, 4)
+                .padding(.vertical, 1)
+                .background(Color.axSurface.opacity(0.5))
+                .cornerRadius(AXCornerRadius.xs)
+            } else if isPreview {
+                HStack(spacing: AXSpacing.xxs) {
+                    Text(value.prefix(80))
+                        .font(AXTypography.monoSm)
+                        .foregroundColor(.axTextPrimary)
+                        .lineLimit(1)
+                    Image(systemName: "ellipsis.rectangle")
+                        .font(AXTypography.caption2)
+                        .foregroundColor(.axAccentBlue)
+                }
+                .help(L10n.Database.previewCellHint)
+            } else if isNull {
                 Text(L10n.Literal.null)
                     .font(AXTypography.monoXs).fontWeight(.medium)
                     .foregroundColor(.axTextMuted.opacity(0.5))
@@ -211,10 +260,17 @@ extension DBTableDataView {
             if let result = viewModel.browseResult {
                 let offset = viewModel.currentPage * viewModel.pageSize
                 let end = offset + result.rows.count
-                let total = Int(viewModel.selectedTable?.rowCount ?? Int64(end))
-                Text(L10n.Database.showingRows(offset + 1, end, total))
-                    .font(AXTypography.caption)
-                    .foregroundColor(.axTextMuted)
+                Group {
+                    if let total = viewModel.displayedRowTotal {
+                        Text(viewModel.isRowTotalExact
+                             ? L10n.Database.showingRows(offset + 1, end, Int(total))
+                             : L10n.Database.showingRowsEstimated(offset + 1, end, Int(total)))
+                    } else {
+                        Text(L10n.Database.showingRowsOpen(offset + 1, end))
+                    }
+                }
+                .font(AXTypography.caption)
+                .foregroundColor(.axTextMuted)
             }
 
             Spacer()
@@ -260,7 +316,9 @@ extension DBTableDataView {
                                 jumpToPageText = "\(viewModel.currentPage + 1)"
                             }
                         }
-                    Text(L10n.Database.ofTotalPages(viewModel.totalPages))
+                    Text(viewModel.isRowTotalExact
+                         ? L10n.Database.ofTotalPages(viewModel.totalPages)
+                         : L10n.Database.ofTotalPagesEstimated(viewModel.totalPages))
                         .font(AXTypography.caption)
                         .foregroundColor(.axTextMuted)
                 }
@@ -286,7 +344,8 @@ extension DBTableDataView {
                         .font(AXTypography.caption)
                 }
                 .buttonStyle(.plain)
-                .disabled(!viewModel.hasNextPage)
+                // The last page is only reachable once the total is exact.
+                .disabled(!viewModel.hasNextPage || !viewModel.isRowTotalExact)
             }
             .foregroundColor(.axAccentBlue)
         }
@@ -385,26 +444,45 @@ extension DBTableDataView {
 
     // MARK: - Row SQL Generators
 
-    func generateInsertStatement(columns: [String], row: [String]) -> String {
-        let tableName = viewModel.selectedTable?.name ?? "table"
-        let cols = columns.map { "`\($0)`" }.joined(separator: ", ")
-        let vals = row.map { "'\($0.replacingOccurrences(of: "'", with: "''"))'" }.joined(separator: ", ")
-        return "INSERT INTO `\(tableName)` (\(cols)) VALUES (\(vals));"
+    /// Quotes an identifier for the current engine.
+    func quoteIdent(_ name: String) -> String {
+        switch viewModel.database.type {
+        case .postgresql, .cockroachdb, .sqlite:
+            return "\"" + name.replacingOccurrences(of: "\"", with: "\"\"") + "\""
+        default:
+            return "`" + name.replacingOccurrences(of: "`", with: "``") + "`"
+        }
     }
 
-    func generateUpdateStatement(columns: [String], row: [String]) -> String {
+    /// A SQL literal; nil is NULL.
+    func sqlLiteral(_ value: String?) -> String {
+        guard let value else { return "NULL" }
+        return "'" + value.replacingOccurrences(of: "'", with: "''") + "'"
+    }
+
+    /// `values`: column → value (nil = NULL); columns missing from `values`
+    /// (binary) are left out of the statement.
+    func generateInsertStatement(columns: [String], values: [String: String?]) -> String {
+        let tableName = viewModel.selectedTable?.name ?? "table"
+        let included = columns.filter { values[$0] != nil }
+        let cols = included.map(quoteIdent).joined(separator: ", ")
+        let vals = included.map { sqlLiteral(values[$0] ?? nil) }.joined(separator: ", ")
+        return "INSERT INTO \(quoteIdent(tableName)) (\(cols)) VALUES (\(vals));"
+    }
+
+    func generateUpdateStatement(columns: [String], values: [String: String?]) -> String {
         let tableName = viewModel.selectedTable?.name ?? "table"
         var sets: [String] = []
         var wheres: [String] = []
-        for (i, col) in columns.enumerated() {
-            let val = i < row.count ? row[i] : ""
-            sets.append("`\(col)` = '\(val.replacingOccurrences(of: "'", with: "''"))'")
+        for col in columns where values[col] != nil {
+            let literal = sqlLiteral(values[col] ?? nil)
+            sets.append("\(quoteIdent(col)) = \(literal)")
             if isPrimaryKey(col) {
-                wheres.append("`\(col)` = '\(val.replacingOccurrences(of: "'", with: "''"))'")
+                wheres.append("\(quoteIdent(col)) = \(literal)")
             }
         }
         let whereClause = wheres.isEmpty ? "WHERE 1=1 /* add condition */" : "WHERE \(wheres.joined(separator: " AND "))"
-        return "UPDATE `\(tableName)` SET \(sets.joined(separator: ", ")) \(whereClause);"
+        return "UPDATE \(quoteIdent(tableName)) SET \(sets.joined(separator: ", ")) \(whereClause);"
     }
 
     // MARK: - JSON Viewer Sheet
@@ -412,7 +490,7 @@ extension DBTableDataView {
     var jsonViewerSheet: some View {
         VStack(spacing: 0) {
             HStack {
-                Text(L10n.Database.jsonViewer)
+                Text(isJSONValue(jsonViewerContent ?? "") ? L10n.Database.jsonViewer : L10n.Database.fullValue)
                     .font(AXTypography.headline).fontWeight(.bold)
                     .foregroundColor(.axTextPrimary)
                 Spacer()
@@ -455,12 +533,48 @@ extension DBTableDataView {
 
     // MARK: - Export Helpers
 
+    /// Column indices worth exporting (binary placeholders are left out).
+    private func exportColumnIndices(_ result: QueryResult) -> [Int] {
+        let binary = viewModel.binaryColumnNames
+        return result.columns.indices.filter { !binary.contains(result.columns[$0]) }
+    }
+
+    /// The cell's value, nil for SQL NULL.
+    private func exportValue(_ result: QueryResult, row: Int, column: Int) -> String? {
+        let value = column < result.rows[row].count ? result.rows[row][column] : ""
+        if result.cellFlags != nil {
+            return result.flags(row: row, column: column) & BridgeQueryResult.cellNull != 0 ? nil : value
+        }
+        return value == "NULL" ? nil : value
+    }
+
+    private func jsonString(_ value: String) -> String {
+        var out = "\""
+        for scalar in value.unicodeScalars {
+            switch scalar {
+            case "\"": out += "\\\""
+            case "\\": out += "\\\\"
+            case "\n": out += "\\n"
+            case "\r": out += "\\r"
+            case "\t": out += "\\t"
+            default:
+                if scalar.value < 0x20 {
+                    out += String(format: "\\u%04x", scalar.value)
+                } else {
+                    out.unicodeScalars.append(scalar)
+                }
+            }
+        }
+        return out + "\""
+    }
+
     func exportCSV(_ result: QueryResult) -> String {
-        var lines: [String] = []
-        lines.append(result.columns.joined(separator: ","))
-        for row in result.rows {
-            let escaped = row.map { v -> String in
-                if v.contains(",") || v.contains("\"") || v.contains("\n") {
+        let indices = exportColumnIndices(result)
+        var lines: [String] = [indices.map { result.columns[$0] }.joined(separator: ",")]
+        for row in result.rows.indices {
+            let escaped = indices.map { column -> String in
+                let v = exportValue(result, row: row, column: column) ?? ""
+                if v.contains(",") || v.contains("\"") || v.contains("\n") || v.contains("\r") {
                     return "\"\(v.replacingOccurrences(of: "\"", with: "\"\""))\""
                 }
                 return v
@@ -471,39 +585,36 @@ extension DBTableDataView {
     }
 
     func exportJSON(_ result: QueryResult) -> String {
-        var lines: [String] = ["["]
-        for (idx, row) in result.rows.enumerated() {
-            var pairs: [String] = []
-            for (i, col) in result.columns.enumerated() {
-                let val = i < row.count ? row[i] : ""
-                pairs.append("    \"\(col)\": \"\(val.replacingOccurrences(of: "\"", with: "\\\""))\"")
+        let indices = exportColumnIndices(result)
+        var objects: [String] = []
+        for row in result.rows.indices {
+            let pairs = indices.map { column -> String in
+                let value = exportValue(result, row: row, column: column).map(jsonString) ?? "null"
+                return "    \(jsonString(result.columns[column])): \(value)"
             }
-            let comma = idx < result.rows.count - 1 ? "," : ""
-            lines.append("  {\n\(pairs.joined(separator: ",\n"))\n  }\(comma)")
+            objects.append("  {\n\(pairs.joined(separator: ",\n"))\n  }")
         }
-        lines.append("]")
-        return lines.joined(separator: "\n")
+        return "[\n" + objects.joined(separator: ",\n") + "\n]"
     }
 
     func exportSQL(_ result: QueryResult) -> String {
         let tableName = viewModel.selectedTable?.name ?? "table"
-        var statements: [String] = []
-        for row in result.rows {
-            let vals = row.map { v -> String in
-                return "'\(v.replacingOccurrences(of: "'", with: "''"))'"
-            }
-            let cols = result.columns.map { "`\($0)`" }.joined(separator: ", ")
-            statements.append("INSERT INTO `\(tableName)` (\(cols)) VALUES (\(vals.joined(separator: ", ")));")
-        }
-        return statements.joined(separator: "\n")
+        let indices = exportColumnIndices(result)
+        let cols = indices.map { quoteIdent(result.columns[$0]) }.joined(separator: ", ")
+        return result.rows.indices.map { row in
+            let vals = indices.map { sqlLiteral(exportValue(result, row: row, column: $0)) }
+            return "INSERT INTO \(quoteIdent(tableName)) (\(cols)) VALUES (\(vals.joined(separator: ", ")));"
+        }.joined(separator: "\n")
     }
 
     func exportMarkdown(_ result: QueryResult) -> String {
+        let indices = exportColumnIndices(result)
+        let cell: (String) -> String = { $0.replacingOccurrences(of: "|", with: "\\|").replacingOccurrences(of: "\n", with: " ") }
         var lines: [String] = []
-        lines.append("| " + result.columns.joined(separator: " | ") + " |")
-        lines.append("| " + result.columns.map { _ in "---" }.joined(separator: " | ") + " |")
-        for row in result.rows {
-            lines.append("| " + row.joined(separator: " | ") + " |")
+        lines.append("| " + indices.map { cell(result.columns[$0]) }.joined(separator: " | ") + " |")
+        lines.append("| " + indices.map { _ in "---" }.joined(separator: " | ") + " |")
+        for row in result.rows.indices {
+            lines.append("| " + indices.map { cell(exportValue(result, row: row, column: $0) ?? "NULL") }.joined(separator: " | ") + " |")
         }
         return lines.joined(separator: "\n")
     }

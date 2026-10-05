@@ -299,13 +299,41 @@ public struct BridgeQueryResult: Codable, Sendable {
 
     public var executionTime: Double
 
-    public init(columns: [String] = [], rows: [[String]] = [], affectedRows: Int64 = 0, isSelect: Bool = false, error: String? = nil, executionTime: Double = 0) {
+    /// Per-cell flags (`cellNull`, `cellTruncated`, `cellBinary`), parallel to
+    /// `rows`. Only explorer results carry them; legacy results leave it nil.
+    public var cellFlags: [[UInt8]]?
+
+    /// Whether more rows exist after this page (explorer results only).
+    public var hasMore: Bool?
+
+    /// The cell is SQL NULL (its display value is "NULL").
+    public static let cellNull: UInt8 = 1 << 0
+    /// The cell is a server-side preview; the full value must be fetched.
+    public static let cellTruncated: UInt8 = 1 << 1
+    /// The cell is binary; its value is the byte length.
+    public static let cellBinary: UInt8 = 1 << 2
+
+    public init(columns: [String] = [], rows: [[String]] = [], affectedRows: Int64 = 0, isSelect: Bool = false, error: String? = nil, executionTime: Double = 0, cellFlags: [[UInt8]]? = nil, hasMore: Bool? = nil) {
         self.columns = columns
         self.rows = rows
         self.affectedRows = affectedRows
         self.isSelect = isSelect
         self.error = error
         self.executionTime = executionTime
+        self.cellFlags = cellFlags
+        self.hasMore = hasMore
+    }
+
+    /// Flags for one cell (0 when the result carries no flags).
+    public func flags(row: Int, column: Int) -> UInt8 {
+        guard let cellFlags, row < cellFlags.count, column < cellFlags[row].count else { return 0 }
+        return cellFlags[row][column]
+    }
+
+    /// Whether any cell of the row is a preview or binary placeholder.
+    public func rowIsPartial(_ row: Int) -> Bool {
+        guard let cellFlags, row < cellFlags.count else { return false }
+        return cellFlags[row].contains { $0 & (Self.cellTruncated | Self.cellBinary) != 0 }
     }
 }
 

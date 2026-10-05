@@ -14,6 +14,7 @@ public actor DatabaseTableService {
 
     public static let shared = DatabaseTableService()
     private let bridge = DatabasesBridge.shared
+    private let explorer = ExplorerBridge.shared
     private let ssh = SSHBridge.shared
 
     private init() {}
@@ -28,6 +29,36 @@ public actor DatabaseTableService {
         let cmd = bridge.describeTableCmd(engine: type.rawValue, database: database, table: table)
         let output = await ssh.executeAsync(serverID: serverId, command: cmd)
         return parseColumns(output)
+    }
+
+    // MARK: - Fast Explorer
+
+    /// Table and view names only — instant even with thousands of tables.
+    public func listTableNames(database: String, type: DatabaseType, serverId: String) async throws -> [ExplorerOutput.TableName] {
+        let cmd = explorer.listTablesCmd(engine: type.rawValue, database: database)
+        guard !cmd.isEmpty else { throw ExplorerError.invalidRequest }
+        return try ExplorerOutput.tableNames(await ssh.executeAsync(serverID: serverId, command: cmd))
+    }
+
+    /// Estimated rows and sizes for every table (meant for the background).
+    public func loadTableStats(database: String, type: DatabaseType, serverId: String) async throws -> [BridgeTableInfo] {
+        let cmd = explorer.tableStatsCmd(engine: type.rawValue, database: database)
+        guard !cmd.isEmpty else { throw ExplorerError.invalidRequest }
+        return try ExplorerOutput.tableStats(await ssh.executeAsync(serverID: serverId, command: cmd))
+    }
+
+    /// Column descriptions via the explorer (any table name), falling back to
+    /// the adapter's DESCRIBE when the engine has no explorer or it fails.
+    public func describeColumns(database: String, table: String, type: DatabaseType, serverId: String) async throws -> [BridgeColumnInfo] {
+        if explorer.supports(engine: type.rawValue) {
+            let cmd = explorer.describeCmd(engine: type.rawValue, database: database, table: table)
+            if !cmd.isEmpty,
+               let columns = try? ExplorerOutput.columns(await ssh.executeAsync(serverID: serverId, command: cmd)),
+               !columns.isEmpty {
+                return columns
+            }
+        }
+        return try await describeTable(database: database, table: table, type: type, serverId: serverId)
     }
 
     public func getTableIndexes(database: String, table: String, type: DatabaseType, serverId: String) async throws -> String {

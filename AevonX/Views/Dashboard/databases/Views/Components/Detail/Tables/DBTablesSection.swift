@@ -70,7 +70,8 @@ struct DBTablesSection: View {
                 .padding(.bottom, AXSpacing.sm)
             },
             items: {
-                if viewModel.filteredTables.isEmpty {
+                let filtered = viewModel.filteredTables
+                if filtered.isEmpty {
                     VStack(spacing: AXSpacing.sm) {
                         Spacer(minLength: 40)
                         Image(systemName: "tablecells")
@@ -83,11 +84,12 @@ struct DBTablesSection: View {
                     }
                     .frame(maxWidth: .infinity)
                 } else {
-                    ForEach(viewModel.filteredTables) { table in
+                    // Lazy: only the visible rows are built, even for thousands of tables.
+                    LazyVStack(alignment: .leading, spacing: 3) {
+                    ForEach(filtered) { table in
                         PremiumTableRow(
                             table: table,
-                            isSelected: viewModel.selectedTable?.name == table.name,
-                            structure: viewModel.tableStructure
+                            isSelected: viewModel.selectedTable?.name == table.name
                         ) {
                             viewModel.selectTable(table)
                         }
@@ -120,6 +122,7 @@ struct DBTablesSection: View {
                             .padding(.trailing, AXSpacing.sm)
                         }
                     }
+                    }
                 }
             },
             footer: {
@@ -135,6 +138,12 @@ struct DBTablesSection: View {
                         Text(L10n.Database.tablesFooterCount(viewModel.tables.count))
                             .font(AXTypography.caption)
                             .foregroundColor(.axTextMuted.opacity(0.5))
+                        if !viewModel.tableStatsLoaded {
+                            ProgressView()
+                                .scaleEffect(0.4)
+                                .frame(width: 12, height: 12)
+                                .help(L10n.Database.loadingTableStats)
+                        }
                         Spacer()
                         Text(AXFormatter.formatSizeMB(viewModel.database.size))
                             .font(AXTypography.caption)
@@ -322,7 +331,6 @@ struct DBTablesSection: View {
 private struct PremiumTableRow: View {
     let table: TableInfo
     let isSelected: Bool
-    let structure: TableStructure?
     let action: () -> Void
 
     @State private var isHovered = false
@@ -352,7 +360,7 @@ private struct PremiumTableRow: View {
                         .font(AXTypography.callout).fontWeight(isSelected ? .semibold : .regular)
                         .foregroundColor(isSelected ? .axTextPrimary : .axTextSecondary)
                         .lineLimit(1)
-                    Text(AXFormatter.formatBytes(table.dataSize))
+                    Text(table.engine == "VIEW" ? L10n.Database.viewBadge : AXFormatter.formatBytes(table.dataSize))
                         .font(AXTypography.caption2)
                         .foregroundColor(.axTextMuted)
                 }

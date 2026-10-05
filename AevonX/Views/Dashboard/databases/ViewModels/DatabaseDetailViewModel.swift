@@ -121,15 +121,26 @@ public final class DatabaseDetailViewModel: ObservableObject {
     // MARK: - Tables
 
     @Published public var tables: [TableInfo] = []
-    @Published public var selectedTable: TableInfo?
+    @Published public var selectedTable: TableInfo? {
+        didSet {
+            // Every entry point (table list, sidebar, overview cards) gets a
+            // clean slate when the table actually changes — stats refreshes
+            // of the same table keep the current page and search.
+            guard oldValue?.name != selectedTable?.name else { return }
+            resetTableBrowsingState()
+        }
+    }
     @Published public var tableStructure: TableStructure?
     @Published public var showCreateTable = false
     @Published public var tableIndexes: [TableIndex] = []
     @Published public var tableSearchText = ""
+    /// False while per-table statistics are still loading in the background.
+    @Published public var tableStatsLoaded = true
 
+    /// Tables matching `tableSearchText`, best matches first (exact, prefix,
+    /// word prefix, contains, then in-order letters).
     public var filteredTables: [TableInfo] {
-        if tableSearchText.isEmpty { return tables }
-        return tables.filter { $0.name.localizedCaseInsensitiveContains(tableSearchText) }
+        TableNameFilter.filter(tables, query: tableSearchText)
     }
 
     // MARK: - Data Browsing
@@ -141,13 +152,14 @@ public final class DatabaseDetailViewModel: ObservableObject {
     @Published public var sortAscending: Bool = true
 
     public var totalPages: Int {
+        if explorerEnabled { return explorerTotalPages }
         guard let table = selectedTable else { return 0 }
         let total = Int(table.rowCount)
         return max(1, (total + pageSize - 1) / pageSize)
     }
 
     public var hasNextPage: Bool {
-        currentPage < totalPages - 1
+        explorerEnabled ? hasMoreRows : currentPage < totalPages - 1
     }
 
     public var hasPreviousPage: Bool {
@@ -164,6 +176,40 @@ public final class DatabaseDetailViewModel: ObservableObject {
     @Published public var duplicateRowValues: [String: String]?
     @Published public var dataSearchText = ""
     @Published public var isSearching = false
+
+    // MARK: - Fast Explorer (MySQL, MariaDB, PostgreSQL)
+
+    /// Whether more rows exist after the current page.
+    @Published public var hasMoreRows = false
+    /// Exact number of rows for the current table or search (nil = unknown).
+    @Published public var exactRowCount: Int64?
+    @Published public var isCountingRows = false
+    /// Column the search is scoped to (nil = all searchable columns).
+    @Published public var searchColumn: String?
+    @Published public var searchMode: ExplorerRequest.SearchMode = .contains
+    /// The search currently filtering the rows (nil = unfiltered).
+    @Published public var activeSearch: String?
+    /// True while a full row is fetched for editing, copying or viewing.
+    @Published public var isHydratingRow = false
+
+    /// Keyset cursors: page index → primary key value the page starts after.
+    var pageCursors: [Int: String] = [:]
+    var cursorSignature = ""
+    var countSignature = ""
+    var pageCache: [String: QueryResult] = [:]
+    var pageCacheOrder: [String] = []
+    var browsePageSignature = ""
+    var browseGeneration = 0
+    var prefetchTask: Task<Void, Never>?
+    var statsTask: Task<Void, Never>?
+    var countTask: Task<Void, Never>?
+    /// Complete rows fetched on demand, by row index on the current page.
+    var hydratedRows: [Int: [String: String?]] = [:]
+    /// Values the edit sheet started from, so only changed columns are saved.
+    var editingOriginalValues: [String: String?] = [:]
+
+    /// Explorer support is per engine; other engines keep the adapter commands.
+    public private(set) lazy var explorerEnabled: Bool = ExplorerBridge.shared.supports(engine: database.type.rawValue)
 
     // MARK: - SQL Console
 
@@ -203,7 +249,36 @@ public final class DatabaseDetailViewModel: ObservableObject {
 
     // MARK: - Loading
 
+    /// Loads table names first (instant even with thousands of tables), then
+    /// fills row counts and sizes in the background.
     public func loadTables() async {
+        guard let serverId = serverId else { return }
+        guard explorerEnabled else {
+            await loadTablesLegacy()
+            return
+        }
+
+        isLoading = true
+        do {
+            let names = try await DatabaseTableService.shared.listTableNames(
+                database: database.name,
+                type: database.type,
+                serverId: serverId
+            )
+            // Keep known statistics so a refresh doesn't flash zeros.
+            let previous = Dictionary(tables.map { ($0.name, $0) }, uniquingKeysWith: { first, _ in first })
+            tables = names.map { previous[$0.name] ?? TableInfo(name: $0.name, engine: $0.isView ? "VIEW" : "") }
+            log(action: "Load Tables", detail: "Loaded \(tables.count) tables from '\(database.name)'", success: true)
+            isLoading = false
+            loadTableStatsInBackground()
+        } catch {
+            debugLog("[DBDetailVM] fast table listing failed, using legacy: \(error)")
+            isLoading = false
+            await loadTablesLegacy()
+        }
+    }
+
+    func loadTablesLegacy() async {
         guard let serverId = serverId else { return }
 
         isLoading = true
@@ -221,14 +296,9 @@ public final class DatabaseDetailViewModel: ObservableObject {
         isLoading = false
     }
 
-    public func selectTable(_ table: TableInfo) {
+    public func selectTable(_ table: TableInfo, tab: TableDetailTab = .structure) {
         selectedTable = table
-        tableDetailTab = .structure
-        tableStructure = nil
-        tableIndexes = []
-        browseResult = nil
-        currentPage = 0
-        sortColumn = nil
+        tableDetailTab = tab
         Task {
             await loadTableStructure()
         }
@@ -236,9 +306,29 @@ public final class DatabaseDetailViewModel: ObservableObject {
 
     public func deselectTable() {
         selectedTable = nil
+    }
+
+    /// Clears everything that belongs to the previously selected table.
+    func resetTableBrowsingState() {
         tableStructure = nil
         tableIndexes = []
         browseResult = nil
+        currentPage = 0
+        sortColumn = nil
+        sortAscending = true
+        selectedRows.removeAll()
+        dataSearchText = ""
+        activeSearch = nil
+        searchColumn = nil
+        hasMoreRows = false
+        exactRowCount = nil
+        hydratedRows.removeAll()
+        pageCursors.removeAll()
+        cursorSignature = ""
+        countSignature = ""
+        browsePageSignature = ""
+        prefetchTask?.cancel()
+        countTask?.cancel()
     }
 
     public func loadTableStructure() async {
@@ -246,7 +336,7 @@ public final class DatabaseDetailViewModel: ObservableObject {
 
         isLoading = true
         do {
-            async let structure = DatabaseTableService.shared.describeTable(
+            async let structure = DatabaseTableService.shared.describeColumns(
                 database: database.name,
                 table: table.name,
                 type: database.type,
@@ -260,6 +350,11 @@ public final class DatabaseDetailViewModel: ObservableObject {
             )
 
             let cols = try await structure
+            // The user may have switched tables while this was loading.
+            guard selectedTable?.name == table.name else {
+                isLoading = false
+                return
+            }
             tableStructure = TableStructure(columns: cols)
             let indexStr = try await indexes
             tableIndexes = parseIndexString(indexStr)
@@ -270,6 +365,16 @@ public final class DatabaseDetailViewModel: ObservableObject {
     }
 
     public func loadTableData() async {
+        if explorerEnabled {
+            await loadExplorerPage(currentPage)
+        } else if activeSearch != nil {
+            await searchDataLegacy()
+        } else {
+            await loadTableDataLegacy()
+        }
+    }
+
+    func loadTableDataLegacy() async {
         guard let serverId = serverId, let table = selectedTable else {
             debugLog("[DBDetailVM] loadTableData: no serverId or selectedTable")
             return
@@ -492,8 +597,12 @@ public final class DatabaseDetailViewModel: ObservableObject {
                 )
             },
             onSuccess: {
-                await self.loadTables()
-                if self.selectedTable?.name == tableName { await self.loadTableData() }
+                self.setRowCount(0, forTable: tableName)
+                if self.selectedTable?.name == tableName {
+                    self.invalidateExplorerPages()
+                    self.currentPage = 0
+                    await self.loadTableData()
+                }
             }
         )
     }

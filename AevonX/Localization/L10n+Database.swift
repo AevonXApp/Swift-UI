@@ -459,6 +459,61 @@ extension L10n {
             return String(localized: "database.ofTotalPages", defaultValue: dv, table: table)
         }
 
+        // Fast explorer — search, previews, counts
+        static let noChangesToSave = s("database.noChangesToSave", "No changes to save")
+        static let rowNoLongerExists = s("database.rowNoLongerExists", "This row no longer exists")
+        static let loadingTableStats = s("database.loadingTableStats", "Loading table statistics…")
+        static let viewBadge = s("database.viewBadge", "View")
+        static let noMatchingRows = s("database.noMatchingRows", "No matching rows")
+        static let noMatchingRowsHint = s("database.noMatchingRowsHint", "Try another term, a different column, or a broader match mode.")
+        static let clearSearch = s("database.clearSearch", "Clear search")
+        static let searchSyntaxHint = s("database.searchSyntaxHint", "Tip: type column:value to search one column, or column=value for an exact match.")
+        static let searchIn = s("database.searchIn", "Search in")
+        static let allColumns = s("database.allColumns", "All columns")
+        static let matchMode = s("database.matchMode", "Match")
+        static let matchContains = s("database.matchContains", "Contains")
+        static let matchExact = s("database.matchExact", "Exact match")
+        static let matchPrefix = s("database.matchPrefix", "Starts with")
+        static let countExactly = s("database.countExactly", "Count")
+        static let countExactlyHint = s("database.countExactlyHint", "Count the exact number of rows (can take a while on very large tables)")
+        static let previewCellHint = s("database.previewCellHint", "Preview — click to load the full value")
+        static let fullValue = s("database.fullValue", "Full Value")
+
+        static func viewAllTables(_ count: Int) -> String {
+            let dv: String.LocalizationValue = "View all \(count) tables"
+            return String(localized: "database.viewAllTables", defaultValue: dv, table: table)
+        }
+
+        static func estimatedRowCount(_ count: Int) -> String {
+            let dv: String.LocalizationValue = "~\(count) rows"
+            return String(localized: "database.estimatedRowCount", defaultValue: dv, table: table)
+        }
+
+        static func manyRows(_ count: Int) -> String {
+            let dv: String.LocalizationValue = "\(count)+ rows"
+            return String(localized: "database.manyRows", defaultValue: dv, table: table)
+        }
+
+        static func binaryValue(_ size: String) -> String {
+            let dv: String.LocalizationValue = "BLOB · \(size)"
+            return String(localized: "database.binaryValue", defaultValue: dv, table: table)
+        }
+
+        static func showingRowsEstimated(_ start: Int, _ end: Int, _ total: Int) -> String {
+            let dv: String.LocalizationValue = "Showing \(start)-\(end) of ~\(total) rows"
+            return String(localized: "database.showingRowsEstimated", defaultValue: dv, table: table)
+        }
+
+        static func showingRowsOpen(_ start: Int, _ end: Int) -> String {
+            let dv: String.LocalizationValue = "Showing \(start)-\(end)"
+            return String(localized: "database.showingRowsOpen", defaultValue: dv, table: table)
+        }
+
+        static func ofTotalPagesEstimated(_ total: Int) -> String {
+            let dv: String.LocalizationValue = "of ~\(total)"
+            return String(localized: "database.ofTotalPagesEstimated", defaultValue: dv, table: table)
+        }
+
         static func editorLineInfo(_ lines: Int, _ chars: Int) -> String {
             let dv: String.LocalizationValue = "\(lines) lines \u{00B7} \(chars) chars"
             return String(localized: "database.editorLineInfo", defaultValue: dv, table: table)

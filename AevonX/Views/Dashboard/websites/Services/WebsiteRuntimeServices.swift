@@ -499,6 +499,21 @@ public actor DatabaseManagementService {
         }
     }
 
+    /// Database names only (explorer engines) — no size scan, so it stays fast
+    /// on servers with many databases and tables.
+    public func listDatabaseNames(type: String, serverId: String) async throws -> [String] {
+        let cmd = ExplorerBridge.shared.listDatabasesCmd(engine: type.lowercased())
+        guard !cmd.isEmpty else { throw ExplorerError.invalidRequest }
+        return try ExplorerOutput.databaseNames(await ssh.executeAsync(serverID: serverId, command: cmd))
+    }
+
+    /// Size and table count per database (explorer engines), for the background.
+    public func loadDatabaseStats(type: String, serverId: String) async throws -> [ExplorerOutput.DatabaseStats] {
+        let cmd = ExplorerBridge.shared.databaseStatsCmd(engine: type.lowercased())
+        guard !cmd.isEmpty else { throw ExplorerError.invalidRequest }
+        return try ExplorerOutput.databaseStats(await ssh.executeAsync(serverID: serverId, command: cmd))
+    }
+
     public func createDatabase(name: String, type: String, characterSet: String? = nil, collation: String? = nil, serverId: String) async throws {
         let cmd = bridge.createDatabaseCmd(engine: type.lowercased(), name: name, charset: characterSet ?? "", collation: collation ?? "")
         guard !cmd.isEmpty else {

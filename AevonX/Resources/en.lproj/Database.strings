@@ -1296,6 +1296,31 @@
 
 /* Of total pages */
 "database.ofTotalPages" = "of %lld";
+"database.noChangesToSave" = "No changes to save";
+"database.rowNoLongerExists" = "This row no longer exists";
+"database.loadingTableStats" = "Loading table statistics…";
+"database.viewBadge" = "View";
+"database.noMatchingRows" = "No matching rows";
+"database.noMatchingRowsHint" = "Try another term, a different column, or a broader match mode.";
+"database.clearSearch" = "Clear search";
+"database.searchSyntaxHint" = "Tip: type column:value to search one column, or column=value for an exact match.";
+"database.searchIn" = "Search in";
+"database.allColumns" = "All columns";
+"database.matchMode" = "Match";
+"database.matchContains" = "Contains";
+"database.matchExact" = "Exact match";
+"database.matchPrefix" = "Starts with";
+"database.countExactly" = "Count";
+"database.countExactlyHint" = "Count the exact number of rows (can take a while on very large tables)";
+"database.previewCellHint" = "Preview — click to load the full value";
+"database.fullValue" = "Full Value";
+"database.viewAllTables" = "View all %lld tables";
+"database.estimatedRowCount" = "~%lld rows";
+"database.manyRows" = "%lld+ rows";
+"database.binaryValue" = "BLOB · %@";
+"database.showingRowsEstimated" = "Showing %lld-%lld of ~%lld rows";
+"database.showingRowsOpen" = "Showing %lld-%lld";
+"database.ofTotalPagesEstimated" = "of ~%lld";
 
 /* Editor line info */
 "database.editorLineInfo" = "%lld lines \u00B7 %lld chars";

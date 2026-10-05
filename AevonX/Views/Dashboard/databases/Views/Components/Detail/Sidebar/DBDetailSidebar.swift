@@ -211,16 +211,15 @@ struct DBDetailSidebar: View {
             .cornerRadius(AXCornerRadius.sm)
             .padding(.horizontal, AXSpacing.sm)
 
-            // Filtered table list
-            let filtered = sidebarTableSearch.isEmpty
-                ? Array(viewModel.tables.prefix(20))
-                : viewModel.tables.filter { $0.name.localizedCaseInsensitiveContains(sidebarTableSearch) }
+            // Filtered table list (best matches first, capped so thousands of
+            // tables never render here at once)
+            let matches = TableNameFilter.filter(viewModel.tables, query: sidebarTableSearch)
+            let filtered = Array(matches.prefix(sidebarTableSearch.isEmpty ? 20 : 50))
 
             ForEach(filtered, id: \.name) { table in
                 Button {
                     viewModel.currentSection = .tables
-                    viewModel.selectedTable = table
-                    Task { await viewModel.loadTableData() }
+                    viewModel.selectTable(table, tab: .data)
                 } label: {
                     HStack(spacing: AXSpacing.xs) {
                         Image(systemName: "tablecells")
@@ -249,8 +248,8 @@ struct DBDetailSidebar: View {
                 .buttonStyle(.plain)
             }
 
-            if viewModel.tables.count > 20 && sidebarTableSearch.isEmpty {
-                Text(L10n.Database.moreTablesCount(viewModel.tables.count - 20))
+            if matches.count > filtered.count {
+                Text(L10n.Database.moreTablesCount(matches.count - filtered.count))
                     .font(AXTypography.caption2)
                     .foregroundColor(.axTextMuted)
                     .padding(.horizontal, AXSpacing.sm)

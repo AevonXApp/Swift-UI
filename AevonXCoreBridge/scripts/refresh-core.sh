@@ -37,7 +37,11 @@ fi
 
 echo "→ Building hardened Go Core framework from ${CORE_GO_DIR}…"
 cd "$CORE_GO_DIR"
-export GOMAXPROCS=3
+# The obfuscating build is memory-hungry: compile one package at a time with
+# a tighter GC so the machine stays responsive (slower, but no freezes).
+export GOMAXPROCS=2
+export GOFLAGS="-p=1"
+export GOGC=50
 make build                       # default target: hardened (obfuscated) XCFramework
 
 echo "→ Refreshing ${XCFRAMEWORK_DEST}…"

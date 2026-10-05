@@ -45,7 +45,7 @@ struct DBTableDataView: View {
             jsonViewerSheet
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .task {
+        .task(id: viewModel.selectedTable?.name) {
             if viewModel.tableStructure == nil {
                 await viewModel.loadTableStructure()
             }
@@ -82,12 +82,23 @@ struct DBTableDataView: View {
                     .font(AXTypography.largeTitle)
                     .foregroundColor(.axTextMuted.opacity(0.4))
             }
-            Text(L10n.Database.noData)
+            Text(viewModel.isSearchActive ? L10n.Database.noMatchingRows : L10n.Database.noData)
                 .font(AXTypography.title3).fontWeight(.bold)
                 .foregroundColor(.axTextPrimary)
-            Text(L10n.Database.tableIsEmpty)
+            Text(viewModel.isSearchActive ? L10n.Database.noMatchingRowsHint : L10n.Database.tableIsEmpty)
                 .font(AXTypography.subheadline)
                 .foregroundColor(.axTextMuted)
+                .multilineTextAlignment(.center)
+            if viewModel.isSearchActive {
+                Button {
+                    Task { await viewModel.clearSearch() }
+                } label: {
+                    Text(L10n.Database.clearSearch)
+                        .font(AXTypography.subheadline).fontWeight(.semibold)
+                        .foregroundColor(.axAccentBlue)
+                }
+                .buttonStyle(.plain)
+            } else {
             Button {
                 viewModel.showAddRow = true
             } label: {
@@ -104,6 +115,7 @@ struct DBTableDataView: View {
                 .cornerRadius(AXCornerRadius.md)
             }
             .buttonStyle(.plain)
+            }
             Spacer()
         }
     }
@@ -133,6 +145,9 @@ struct DBTableDataView: View {
                         }
                         .buttonStyle(.plain)
                     }
+                    if viewModel.explorerEnabled {
+                        searchOptionsMenu
+                    }
                 }
                 .padding(.horizontal, AXSpacing.sm)
                 .padding(.vertical, AXSpacing.xs + 1)
@@ -140,25 +155,14 @@ struct DBTableDataView: View {
                 .cornerRadius(AXCornerRadius.md)
                 .overlay(
                     RoundedRectangle(cornerRadius: AXCornerRadius.md)
-                        .stroke(Color.axBorder.opacity(0.3), lineWidth: 1)
+                        .stroke((viewModel.isSearchActive ? Color.axAccentBlue : Color.axBorder).opacity(0.3), lineWidth: 1)
                 )
-                .frame(maxWidth: 220)
+                .frame(maxWidth: 300)
+                .help(viewModel.explorerEnabled ? L10n.Database.searchSyntaxHint : "")
 
                 // Row count badge
-                if let result = viewModel.browseResult {
-                    let tableCount = Int(viewModel.selectedTable?.rowCount ?? 0)
-                    let displayCount = tableCount > 0 ? tableCount : result.rows.count
-                    HStack(spacing: AXSpacing.xxs) {
-                        Image(systemName: "number")
-                            .font(AXTypography.caption2)
-                        Text(L10n.Database.rowCountDisplay(displayCount))
-                    }
-                    .font(AXTypography.caption)
-                    .foregroundColor(.axTextMuted)
-                    .padding(.horizontal, AXSpacing.sm)
-                    .padding(.vertical, 3)
-                    .background(Color.axSurface)
-                    .cornerRadius(AXCornerRadius.sm)
+                if viewModel.browseResult != nil {
+                    rowCountBadge
                 }
 
                 // Sort indicator
@@ -213,34 +217,30 @@ struct DBTableDataView: View {
                 .buttonStyle(.plain)
 
                 // Export
-                if let result = viewModel.browseResult, !result.rows.isEmpty {
+                if viewModel.browseResult?.rows.isEmpty == false {
                     AXActionMenu(sections: [
                         AXMenuSection(L10n.Database.data, items: [
                             AXMenuItem(L10n.Database.copyAsCSV, icon: "tablecells", color: .axAccentBlue) {
-                                let csv = exportCSV(result)
-                                NSPasteboard.general.clearContents()
-                                NSPasteboard.general.setString(csv, forType: .string)
-                                GlobalToastManager.shared.showSuccess(L10n.Database.copiedRowsAsCSV(result.rows.count))
+                                copyCompletePage { page in
+                                    (exportCSV(page), L10n.Database.copiedRowsAsCSV(page.rows.count))
+                                }
                             },
                             AXMenuItem(L10n.Database.copyAsJSON, icon: "curlybraces", color: .orange) {
-                                let json = exportJSON(result)
-                                NSPasteboard.general.clearContents()
-                                NSPasteboard.general.setString(json, forType: .string)
-                                GlobalToastManager.shared.showSuccess(L10n.Database.copiedRowsAsJSON(result.rows.count))
+                                copyCompletePage { page in
+                                    (exportJSON(page), L10n.Database.copiedRowsAsJSON(page.rows.count))
+                                }
                             },
                         ]),
                         AXMenuSection("SQL", items: [
                             AXMenuItem(L10n.Database.copyAsSQLInsert, icon: "chevron.left.forwardslash.chevron.right", color: .mint) {
-                                let sql = exportSQL(result)
-                                NSPasteboard.general.clearContents()
-                                NSPasteboard.general.setString(sql, forType: .string)
-                                GlobalToastManager.shared.showSuccess(L10n.Database.copiedRowsAsSQLInsert(result.rows.count))
+                                copyCompletePage { page in
+                                    (exportSQL(page), L10n.Database.copiedRowsAsSQLInsert(page.rows.count))
+                                }
                             },
                             AXMenuItem(L10n.Database.copyAsMarkdown, icon: "text.document", color: .purple) {
-                                let md = exportMarkdown(result)
-                                NSPasteboard.general.clearContents()
-                                NSPasteboard.general.setString(md, forType: .string)
-                                GlobalToastManager.shared.showSuccess(L10n.Database.copiedAsMarkdownTable)
+                                copyCompletePage { page in
+                                    (exportMarkdown(page), L10n.Database.copiedAsMarkdownTable)
+                                }
                             },
                         ]),
                     ], triggerIcon: "square.and.arrow.up", triggerSize: 26)
@@ -339,15 +339,101 @@ struct DBTableDataView: View {
             .padding(.vertical, AXSpacing.sm)
         }
         .task(id: viewModel.dataSearchText) {
-            guard !viewModel.dataSearchText.isEmpty else { return }
+            // Debounced; clearing the field restores the unfiltered rows.
             try? await Task.sleep(nanoseconds: 300_000_000)
             guard !Task.isCancelled else { return }
-            viewModel.currentPage = 0
             await viewModel.searchData()
+        }
+        .onChange(of: viewModel.searchColumn) { _, _ in
+            Task { await viewModel.searchOptionsChanged() }
+        }
+        .onChange(of: viewModel.searchMode) { _, _ in
+            Task { await viewModel.searchOptionsChanged() }
         }
         .sheet(isPresented: $viewModel.showRenameTable) {
             DBRenameTableView(viewModel: viewModel)
         }
+    }
+
+    /// Completes preview cells of the page (one query), then copies it.
+    func copyCompletePage(_ render: @escaping (QueryResult) -> (text: String, toast: String)) {
+        Task {
+            guard let page = await viewModel.completePage() else { return }
+            let output = render(page)
+            NSPasteboard.general.clearContents()
+            NSPasteboard.general.setString(output.text, forType: .string)
+            GlobalToastManager.shared.showSuccess(output.toast)
+        }
+    }
+
+    // MARK: - Search Options
+
+    /// Scope (all columns or one) and match mode for the row search.
+    var searchOptionsMenu: some View {
+        Menu {
+            Picker(L10n.Database.searchIn, selection: $viewModel.searchColumn) {
+                Text(L10n.Database.allColumns).tag(String?.none)
+                ForEach(viewModel.tableStructure?.columns.map(\.name) ?? [], id: \.self) { name in
+                    Text(name).tag(String?.some(name))
+                }
+            }
+            Picker(L10n.Database.matchMode, selection: $viewModel.searchMode) {
+                Text(L10n.Database.matchContains).tag(ExplorerRequest.SearchMode.contains)
+                Text(L10n.Database.matchExact).tag(ExplorerRequest.SearchMode.exact)
+                Text(L10n.Database.matchPrefix).tag(ExplorerRequest.SearchMode.prefix)
+            }
+        } label: {
+            HStack(spacing: 2) {
+                Image(systemName: "line.3.horizontal.decrease.circle")
+                if let column = viewModel.searchColumn {
+                    Text(column)
+                        .lineLimit(1)
+                }
+            }
+            .font(AXTypography.caption)
+            .foregroundColor(viewModel.searchColumn != nil || viewModel.searchMode != .contains ? .axAccentBlue : .axTextMuted)
+        }
+        .menuStyle(.borderlessButton)
+        .menuIndicator(.hidden)
+        .fixedSize()
+    }
+
+    // MARK: - Row Count
+
+    /// Exact totals as-is, estimates with "~"; unknown totals offer a count.
+    var rowCountBadge: some View {
+        HStack(spacing: AXSpacing.xxs) {
+            Image(systemName: "number")
+                .font(AXTypography.caption2)
+            if let total = viewModel.displayedRowTotal {
+                Text(viewModel.isRowTotalExact
+                     ? L10n.Database.rowCountDisplay(Int(total))
+                     : L10n.Database.estimatedRowCount(Int(total)))
+            } else {
+                Text(L10n.Database.manyRows(viewModel.browseResult?.rows.count ?? 0))
+            }
+            if viewModel.explorerEnabled && !viewModel.isRowTotalExact {
+                if viewModel.isCountingRows {
+                    ProgressView().scaleEffect(0.4).frame(width: 12, height: 12)
+                } else {
+                    Button {
+                        Task { await viewModel.countRows() }
+                    } label: {
+                        Text(L10n.Database.countExactly)
+                            .fontWeight(.semibold)
+                            .foregroundColor(.axAccentBlue)
+                    }
+                    .buttonStyle(.plain)
+                    .help(L10n.Database.countExactlyHint)
+                }
+            }
+        }
+        .font(AXTypography.caption)
+        .foregroundColor(.axTextMuted)
+        .padding(.horizontal, AXSpacing.sm)
+        .padding(.vertical, 3)
+        .background(Color.axSurface)
+        .cornerRadius(AXCornerRadius.sm)
     }
 
     func sortIndicator(_ sortCol: String) -> some View {

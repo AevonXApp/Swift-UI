@@ -100,6 +100,7 @@ public final class DatabaseManagementViewModel: ObservableObject {
     let serverId: String?
     private weak var connectionViewModel: ServerConnectionViewModel?
     private var cancellables = Set<AnyCancellable>()
+    private var statsTask: Task<Void, Never>?
 
     // MARK: - Initialization
 
@@ -205,9 +206,18 @@ public final class DatabaseManagementViewModel: ObservableObject {
             uiStates[mi].isInstalled = false
         }
         
-        // For installed engines, also check service status
-        for i in 0..<uiStates.count where uiStates[i].isInstalled {
-            let status = await DatabaseEngineService.shared.getServiceStatus(type: uiStates[i].type, serverId: serverId)
+        // For installed engines, also check service status (concurrently)
+        let installedTypes = uiStates.filter(\.isInstalled).map(\.type)
+        let statuses = await withTaskGroup(of: (DatabaseType, BridgeServiceStatus).self) { group in
+            for type in installedTypes {
+                group.addTask { (type, await DatabaseEngineService.shared.getServiceStatus(type: type, serverId: serverId)) }
+            }
+            var collected: [DatabaseType: BridgeServiceStatus] = [:]
+            for await (type, status) in group { collected[type] = status }
+            return collected
+        }
+        for i in uiStates.indices {
+            guard let status = statuses[uiStates[i].type] else { continue }
             uiStates[i].serviceStatus = ServiceStatus(rawValue: status.rawValue) ?? .unknown
             uiStates[i].isRunning = status == .active
         }
@@ -216,46 +226,84 @@ public final class DatabaseManagementViewModel: ObservableObject {
         CoreLogger.shared.info("Detected engines: \(uiStates.filter { $0.isInstalled }.map { "\($0.type.displayName) v\($0.installedVersion ?? "?")" })", module: "DatabaseManagement")
     }
 
-    /// Loads all databases from the server via Core layer
+    /// Loads all databases from the server via Core layer.
+    ///
+    /// Engines are listed concurrently. MySQL, MariaDB and PostgreSQL list
+    /// names only (instant even with thousands of tables); sizes and table
+    /// counts are filled in by `loadDatabaseStatsInBackground`.
     private func loadAllDatabases(serverId: String) async {
-        var allDBs: [DatabaseInfo] = []
+        let engines = installationStates.filter(\.isInstalled)
 
-        // Get databases for each installed engine type
-        for state in installationStates where state.isInstalled {
-            CoreLogger.shared.debug("Listing databases for \(state.type.displayName)", module: "DatabaseManagement")
-            do {
-                let coreDatabases = try await DatabaseManagementService.shared.listDatabases(
-                    type: state.type.rawValue,
-                    serverId: serverId
-                )
-                CoreLogger.shared.debug("\(state.type.displayName): found \(coreDatabases.count) databases", module: "DatabaseManagement")
-
-                // Convert Core models to UI models
-                let uiDatabases = coreDatabases.map { coreDB in
-                    DatabaseInfo(
-                        name: coreDB.name,
-                        type: state.type,
-                        version: state.installedVersion,
-                        status: .online,
-                        size: coreDB.size,
-                        tables: coreDB.tables,
-                        connections: 0,
-                        host: "localhost",
-                        port: state.type.defaultPort,
-                        isReachable: true
-                    )
-                }
-
-                allDBs.append(contentsOf: uiDatabases)
-
-            } catch {
-                CoreLogger.shared.error("Failed to list \(state.type.displayName): \(error.localizedDescription)", module: "DatabaseManagement")
+        let allDBs = await withTaskGroup(of: (Int, [DatabaseInfo]).self) { group in
+            for (order, state) in engines.enumerated() {
+                group.addTask { (order, await Self.listDatabases(for: state, serverId: serverId)) }
             }
+            var collected: [(Int, [DatabaseInfo])] = []
+            for await result in group { collected.append(result) }
+            return collected.sorted { $0.0 < $1.0 }.flatMap(\.1)
         }
 
         CoreLogger.shared.info("Total databases loaded: \(allDBs.count)", module: "DatabaseManagement")
         allDatabases = allDBs
         filterDatabases()
+        loadDatabaseStatsInBackground(serverId: serverId)
+    }
+
+    private nonisolated static func listDatabases(for state: DatabaseInstallationState, serverId: String) async -> [DatabaseInfo] {
+        let makeInfo = { (name: String, size: Double, tables: Int) in
+            DatabaseInfo(
+                name: name,
+                type: state.type,
+                version: state.installedVersion,
+                status: .online,
+                size: size,
+                tables: tables,
+                connections: 0,
+                host: "localhost",
+                port: state.type.defaultPort,
+                isReachable: true
+            )
+        }
+
+        do {
+            if ExplorerBridge.shared.supports(engine: state.type.rawValue) {
+                let names = try await DatabaseManagementService.shared.listDatabaseNames(type: state.type.rawValue, serverId: serverId)
+                return names.map { makeInfo($0, 0, 0) }
+            }
+            let coreDatabases = try await DatabaseManagementService.shared.listDatabases(type: state.type.rawValue, serverId: serverId)
+            return coreDatabases.map { makeInfo($0.name, $0.size, $0.tables) }
+        } catch {
+            CoreLogger.shared.error("Failed to list \(state.type.displayName): \(error.localizedDescription)", module: "DatabaseManagement")
+            return []
+        }
+    }
+
+    /// Fills database sizes and table counts after the names are on screen.
+    private func loadDatabaseStatsInBackground(serverId: String) {
+        let engines = installationStates
+            .filter { $0.isInstalled && ExplorerBridge.shared.supports(engine: $0.type.rawValue) }
+            .map(\.type)
+        guard !engines.isEmpty else { return }
+
+        statsTask?.cancel()
+        statsTask = Task { [weak self] in
+            for type in engines {
+                guard let stats = try? await DatabaseManagementService.shared.loadDatabaseStats(type: type.rawValue, serverId: serverId) else { continue }
+                guard let self, !Task.isCancelled else { return }
+                let byName = Dictionary(stats.map { ($0.name, $0) }, uniquingKeysWith: { first, _ in first })
+                self.allDatabases = self.allDatabases.map { db in
+                    guard db.type == type, let stat = byName[db.name] else { return db }
+                    var updated = db
+                    updated.size = Double(stat.sizeBytes) / (1024.0 * 1024.0)
+                    if stat.tables >= 0 { updated.tables = stat.tables }
+                    return updated
+                }
+                self.filterDatabases()
+            }
+            guard let self, !Task.isCancelled else { return }
+            let cacheKey = SSHResultCache.key(serverId, "databases:all")
+            await SSHResultCache.shared.set(cacheKey, value: self.allDatabases, ttl: SSHResultCache.databaseListTTL)
+        }
     }
 
     /// Loads database users via Core layer
