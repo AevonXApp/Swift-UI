@@ -484,7 +484,7 @@ struct SSHSubTab: View {
                         HStack(spacing: AXSpacing.xs) {
                             Image(systemName: "plus")
                                 .font(.system(size: 11, weight: .semibold))
-                            Text("Generate New Key")
+                            Text(L10n.Security.generateNewKey)
                                 .font(AXTypography.headline)
                         }
                         .foregroundColor(.white)
@@ -629,7 +629,7 @@ struct SSHSubTab: View {
                     HStack(spacing: AXSpacing.xxs) {
                         Image(systemName: "arrow.down.circle")
                             .font(.system(size: 10))
-                        Text("Download")
+                        Text(L10n.Dashboard.download)
                             .font(.system(size: 11, weight: .medium))
                             .lineLimit(1)
                             .fixedSize(horizontal: true, vertical: false)

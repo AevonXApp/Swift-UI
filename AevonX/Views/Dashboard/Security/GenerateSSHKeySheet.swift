@@ -111,10 +111,10 @@ struct GenerateSSHKeySheet: View {
                     .foregroundColor(.axAccentBlue)
             }
             VStack(alignment: .leading, spacing: AXSpacing.xxxs) {
-                Text("Generate SSH Key")
+                Text(L10n.Security.generateSSHKey)
                     .font(AXTypography.title3)
                     .foregroundColor(.axTextPrimary)
-                Text("On this device, then inject the public half to the server")
+                Text(L10n.Security.generateSSHKeySubtitle)
                     .font(AXTypography.caption)
                     .foregroundColor(.axTextMuted)
             }
@@ -141,7 +141,7 @@ struct GenerateSSHKeySheet: View {
 
             // Algorithm
             VStack(alignment: .leading, spacing: AXSpacing.xs) {
-                Text("Algorithm")
+                Text(L10n.Field.algorithm)
                     .font(AXTypography.caption)
                     .foregroundColor(.axTextMuted)
                 HStack(spacing: AXSpacing.sm) {
@@ -153,7 +153,7 @@ struct GenerateSSHKeySheet: View {
 
             // Comment
             VStack(alignment: .leading, spacing: AXSpacing.xs) {
-                Text("Comment")
+                Text(L10n.Field.comment)
                     .font(AXTypography.caption)
                     .foregroundColor(.axTextMuted)
                 TextField("user@device", text: $comment)
@@ -172,7 +172,7 @@ struct GenerateSSHKeySheet: View {
             // Passphrase (optional)
             VStack(alignment: .leading, spacing: AXSpacing.xs) {
                 HStack {
-                    Text("Passphrase")
+                    Text(L10n.Field.passphrase)
                         .font(AXTypography.caption)
                         .foregroundColor(.axTextMuted)
                     Text("(optional)")
@@ -197,10 +197,10 @@ struct GenerateSSHKeySheet: View {
                 Image(systemName: "lock.shield.fill")
                     .foregroundColor(.axSuccess)
                 VStack(alignment: .leading, spacing: AXSpacing.xxxs) {
-                    Text("Touch ID required at creation")
+                    Text(L10n.Security.touchIDRequiredAtCreation)
                         .font(AXTypography.caption)
                         .foregroundColor(.axTextSecondary)
-                    Text("The private key is bound to your current biometric set and never leaves this device.")
+                    Text(L10n.Security.touchIDKeyBoundHint)
                         .font(AXTypography.caption2)
                         .foregroundColor(.axTextMuted)
                 }

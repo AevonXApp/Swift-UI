@@ -117,3 +117,9 @@
 /* Type name to confirm */
 "confirm.typeToConfirm" = "Type **%@** to confirm:";
 
+/* SSH key generation */
+"security.generateSSHKey" = "Generate SSH Key";
+"security.generateSSHKeySubtitle" = "On this device, then inject the public half to the server";
+"security.generateNewKey" = "Generate New Key";
+"security.touchIDRequiredAtCreation" = "Touch ID required at creation";
+"security.touchIDKeyBoundHint" = "The private key is bound to your current biometric set and never leaves this device.";

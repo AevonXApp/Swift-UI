@@ -10,6 +10,13 @@ extension L10n {
         static let authRequired = s("security.authRequired", "Authentication Required")
         static let unlockBiometrics = s("security.unlockBiometrics", "Unlock with Biometrics")
         static let usePassword = s("security.usePassword", "Use Password Instead")
+
+        // SSH key generation
+        static let generateSSHKey = s("security.generateSSHKey", "Generate SSH Key")
+        static let generateSSHKeySubtitle = s("security.generateSSHKeySubtitle", "On this device, then inject the public half to the server")
+        static let generateNewKey = s("security.generateNewKey", "Generate New Key")
+        static let touchIDRequiredAtCreation = s("security.touchIDRequiredAtCreation", "Touch ID required at creation")
+        static let touchIDKeyBoundHint = s("security.touchIDKeyBoundHint", "The private key is bound to your current biometric set and never leaves this device.")
         static let unlock = s("security.unlock", "Unlock")
         static let useBiometrics = s("security.useBiometrics", "Use Biometrics Instead")
         static let alert = s("security.alert", "Security Alert")

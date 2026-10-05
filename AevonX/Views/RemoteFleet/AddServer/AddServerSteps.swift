@@ -360,7 +360,7 @@ private struct AddServerGenerateSection: View {
         VStack(alignment: .leading, spacing: AXSpacing.md) {
             // Algorithm picker
             VStack(alignment: .leading, spacing: AXSpacing.sm) {
-                Text("Algorithm")
+                Text(L10n.Field.algorithm)
                     .font(AXTypography.caption)
                     .foregroundColor(.axTextMuted)
 

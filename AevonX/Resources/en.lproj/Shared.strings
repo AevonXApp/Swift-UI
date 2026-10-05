@@ -162,6 +162,9 @@
 
 /* Key passphrase field */
 "field.keyPassphrase" = "Key Passphrase (optional)";
+"field.algorithm" = "Algorithm";
+"field.comment" = "Comment";
+"field.passphrase" = "Passphrase";
 
 /* Full name field */
 "field.fullName" = "Full Name";
