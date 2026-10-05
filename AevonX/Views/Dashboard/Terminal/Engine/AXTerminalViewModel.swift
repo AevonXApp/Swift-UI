@@ -377,50 +377,48 @@ final class AXTerminalViewModel: ObservableObject {
 
         if lines.count > 1 {
             outputBuffer = lines.removeLast()
-
-            for line in lines {
-                appendLineToCurrentBlock(line)
-            }
+            appendLinesToCurrentBlock(lines)
         }
 
         // Flush buffer on prompt detection
         let stripped = ANSIParserCore.strip(outputBuffer).trimmingCharacters(in: .whitespaces)
         if stripped.hasSuffix("$") || stripped.hasSuffix("#") || stripped.hasSuffix("❯") || stripped.hasSuffix(">") || stripped.hasSuffix("%") {
             if !outputBuffer.isEmpty {
-                appendLineToCurrentBlock(outputBuffer)
+                appendLinesToCurrentBlock([outputBuffer])
                 outputBuffer = ""
             }
         }
     }
 
-    private func appendLineToCurrentBlock(_ text: String) {
-        // Handle \r for progress bars — overwrite the last line if \r present
-        let parts = text.components(separatedBy: "\r")
-        let finalText = parts.last ?? text
+    /// Appends complete output lines in one step per chunk. The block's line
+    /// array is shared with `blocks`, so appending line by line copied the
+    /// whole (growing) array for every line — a 50k-line `cat` froze the UI.
+    /// Lines are still rendered one by one (same ANSI behaviour) but emitted once.
+    private func appendLinesToCurrentBlock(_ texts: [String]) {
+        guard !texts.isEmpty else { return }
+        // Handle \r for progress bars — keep what follows the last \r
+        let finalTexts = texts.map { $0.components(separatedBy: "\r").last ?? $0 }
 
-        guard var block = currentBlock else {
-            // No active block — this is pre-command output (e.g., MOTD)
-            if !finalText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                let entry = AXSystemBlock(messages: [finalText])
-                blocks.append(.system(entry))
-            }
-            // Emit to unified view regardless of block state
-            let attributed = ANSITerminalRenderer.render(
-                finalText + "\n", theme: preferences.theme, font: preferences.nsFont
-            )
-            onOutput?(attributed)
-            return
+        let rendered = NSMutableAttributedString()
+        for text in finalTexts {
+            rendered.append(ANSITerminalRenderer.render(
+                text + "\n", theme: preferences.theme, font: preferences.nsFont
+            ))
         }
 
-        block.lines.append(AXTerminalLine(rawOutput: finalText))
-        currentBlock = block
-        updateCurrentBlockInEntries()
+        if var block = currentBlock {
+            block.lines.append(contentsOf: finalTexts.map { AXTerminalLine(rawOutput: $0) })
+            currentBlock = block
+            updateCurrentBlockInEntries()
+        } else {
+            // No active block — this is pre-command output (e.g., MOTD)
+            for text in finalTexts where !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                blocks.append(.system(AXSystemBlock(messages: [text])))
+            }
+        }
 
-        // Emit to unified view
-        let attributed = ANSITerminalRenderer.render(
-            finalText + "\n", theme: preferences.theme, font: preferences.nsFont
-        )
-        onOutput?(attributed)
+        // Emit to unified view regardless of block state
+        onOutput?(rendered)
     }
 
     private func updateCurrentBlockInEntries() {
@@ -795,18 +793,23 @@ final class AXTerminalViewModel: ObservableObject {
 
     // MARK: - CWD Tracking
 
+    /// Prompt patterns like "user@host:/path/to/dir$" — compiled once.
+    private static let cwdPatterns: [NSRegularExpression] = [
+        "(?:.*?):(.+?)[$#%>]\\s*$",
+        "(?:.*?)\\s(.+?)[$#%>]\\s*$",
+    ].compactMap { try? NSRegularExpression(pattern: $0) }
+
     private func updateCWDFromOutput(_ output: String) {
         let stripped = ANSIParserCore.strip(output)
-        // Try to extract CWD from prompt patterns like "user@host:/path/to/dir$"
-        let patterns = [
-            "(?:.*?):(.+?)[$#%>]\\s*$",
-            "(?:.*?)\\s(.+?)[$#%>]\\s*$",
-        ]
-        for pattern in patterns {
-            if let regex = try? NSRegularExpression(pattern: pattern),
-               let match = regex.firstMatch(in: stripped, range: NSRange(stripped.startIndex..., in: stripped)),
-               let range = Range(match.range(at: 1), in: stripped) {
-                let path = String(stripped[range]).trimmingCharacters(in: .whitespaces)
+        // The patterns can't cross a line break and must end at the end of the
+        // output, so a prompt can only be on the last non-blank line — scan that
+        // line instead of the whole (possibly huge) output chunk.
+        let trimmed = stripped.trimmingCharacters(in: .whitespacesAndNewlines)
+        let candidate = trimmed.range(of: "\n", options: .backwards).map { String(trimmed[$0.upperBound...]) } ?? trimmed
+        for regex in Self.cwdPatterns {
+            if let match = regex.firstMatch(in: candidate, range: NSRange(candidate.startIndex..., in: candidate)),
+               let range = Range(match.range(at: 1), in: candidate) {
+                let path = String(candidate[range]).trimmingCharacters(in: .whitespaces)
                 if path.hasPrefix("/") || path.hasPrefix("~") {
                     currentDirectory = path
                     break
