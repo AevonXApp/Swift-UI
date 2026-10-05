@@ -15,14 +15,20 @@ xcodebuild ... build        # must succeed
 
 ### 1. No raw networking in the UI
 
-The UI is a renderer. All HTTP, TLS, and request signing happen in
-`AevonXCoreBridge` / `core-go`. If you need a new endpoint:
+The UI is a renderer. All HTTP, TLS, and request signing happen inside the
+Go Core, reached through the `AevonXCoreBridge` wrappers. If you need a new
+endpoint:
 
-1. Add a Go function in `core-go/pkg/api/`.
-2. Expose it via a `bridge/exports_*.go` C symbol.
-3. Wrap it in `core-go/swift-bridge/Sources/AevonXCoreBridge/.../*Bridge.swift`.
-4. Call the wrapper from your `Services/` or `ViewModels/` Swift code via
+1. Add a Go function in the private `core-go` source (`pkg/api/`) and expose
+   it via a `bridge/exports_*.go` C symbol. This step needs maintainer access.
+2. Add the Swift wrapper in `AevonXCoreBridge/Sources/AevonXCoreBridge/.../*Bridge.swift`
+   (open source, in this repo).
+3. Call the wrapper from your `Services/` or `ViewModels/` Swift code via
    `APIBridge.shared.<method>Async(...)`.
+
+Because the C symbol lives in the closed Go Core, a wrapper for a brand-new
+endpoint only links once a maintainer ships an updated `AevonXCore.xcframework`.
+Open an issue describing the endpoint you need.
 
 Never reach for `URLSession`, `URLRequest`, or `HTTPURLResponse` directly.
 The audit will reject the PR.
@@ -118,9 +124,10 @@ Until step 3 happens, the app shows the English `defaultValue`. That's fine.
 
 ## Getting unstuck
 
-- **Build fails because `AevonXCoreBridge` is missing.** You need access
-  to a pre-built XCFramework in `../core-go/build/AevonXCore.xcframework`.
-  That repo is closed-source; ask a maintainer if you don't have it.
+- **Build fails because `AevonXCore.xcframework` is missing or empty.** The
+  binary is tracked with Git LFS — run `git lfs install` then `git lfs pull`
+  to fetch it. The framework ships in-repo; you do not need the private Go
+  source to build.
 - **Codesigning errors.** Build with the env overrides shown in the README
   to skip signing locally.
 - **`L10n.Foo.bar` doesn't compile.** The case is missing — add it to
