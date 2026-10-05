@@ -58,7 +58,8 @@ extension Fail2BanSection {
 
             // Banned IPs
             if !jail.bannedIPs.isEmpty {
-                VStack(alignment: .leading, spacing: AXSpacing.xxs) {
+                // Lazy: an internet-facing jail can hold thousands of bans.
+                LazyVStack(alignment: .leading, spacing: AXSpacing.xxs) {
                     Text(L10n.ServerSettings.currentlyBanned)
                         .font(AXTypography.caption2).fontWeight(.medium)
                         .foregroundColor(.axTextMuted)
