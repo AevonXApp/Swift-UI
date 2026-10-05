@@ -263,6 +263,7 @@
 
 /* Failed status */
 "status.failed" = "Failed";
+"status.successful" = "Successful";
 
 /* Percentage display */
 "status.percentage" = "%lld%%";

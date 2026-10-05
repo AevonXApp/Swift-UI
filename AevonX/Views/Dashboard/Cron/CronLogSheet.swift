@@ -86,14 +86,15 @@ struct CronLogSheet: View {
                 Spacer()
             } else {
                 ScrollView {
-                    VStack(spacing: AXSpacing.sm) {
+                    // Lazy: frequent jobs accumulate thousands of runs.
+                    LazyVStack(spacing: AXSpacing.sm) {
                         ForEach(vm.logEntries) { entry in
                             VStack(alignment: .leading, spacing: AXSpacing.xs) {
                                 HStack {
                                     Circle()
                                         .fill(entry.isSuccess ? Color.axSuccess : Color.axError)
                                         .frame(width: 8, height: 8)
-                                    Text(entry.isSuccess ? "Successful" : "Failed")
+                                    Text(entry.isSuccess ? L10n.Status.successful : L10n.Status.failed)
                                         .font(.system(size: 11, weight: .semibold))
                                         .foregroundColor(entry.isSuccess ? .axSuccess : .axError)
                                     

@@ -102,6 +102,7 @@ extension L10n {
         static let empty = s("status.empty", "Empty")
         static let error = s("status.error", "Error")
         static let failed = s("status.failed", "Failed")
+        static let successful = s("status.successful", "Successful")
 
         static func percentage(_ value: Int) -> String {
             let dv: String.LocalizationValue = "\(value)%"
