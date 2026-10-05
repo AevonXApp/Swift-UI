@@ -1,2 +1,5 @@
 /AevonXCore/*
 build/
+.DS_Store
+xcuserdata/
+*.xcuserstate

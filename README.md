@@ -2,46 +2,61 @@
 
 AevonX is a native macOS server-management app: SSH, databases, websites,
 Docker, plugins, and more from a single dashboard. This repository holds
-the **open-source UI layer** — the SwiftUI views, view models, and a thin
-Swift bridge that talks to the closed-source `AevonXCoreBridge` framework.
+the **open-source client** — the SwiftUI app, its view models and services,
+and the Swift bridge that talks to the AevonX Go Core.
 
-> **Scope of this repository.** Everything in `AevonX/AevonX/` is the
-> open-source UI. All proprietary logic — networking, cryptography,
-> SSH client, database adapters, license verification, etc. — lives in
-> `AevonXCoreBridge` (a binary framework) and the AevonX backend, neither
-> of which are part of this repository.
+> **What is open here.** The entire macOS client is open source: the SwiftUI
+> views, the `@MainActor` view models, the on-device services, and the
+> `AevonXCoreBridge` Swift wrappers. The one closed component is the Go Core
+> itself, which ships as a **pre-built binary framework** (`AevonXCore.xcframework`)
+> committed to this repo so the app builds and runs with no extra access. Its
+> Go source, and the AevonX backend, are distributed under separate terms.
 
 ## What lives here
 
 ```
 AevonX/
-├── AevonX.xcodeproj/         # Xcode project
-├── AevonX/                   # Source root
-│   ├── Views/                # SwiftUI views (Dashboard, Settings, Profile…)
-│   ├── ViewModels/           # @MainActor ObservableObject orchestrators
-│   ├── Services/             # Keychain, biometrics, app-lock, OS-only stuff
-│   ├── Helpers/              # CoreResult, error response mapping, etc.
-│   ├── Localization/         # L10n.* enums + en.lproj/*.strings
-│   ├── Components/           # Shared UI building blocks
-│   └── Resources/            # Assets, icons, .strings files
-├── LICENSE                   # MIT
-└── README.md                 # this file
+├── AevonX.xcodeproj/             # Xcode project
+├── AevonX/                       # App source root
+│   ├── Views/                    # SwiftUI views (Dashboard, Settings, Profile…)
+│   ├── ViewModels/               # @MainActor ObservableObject orchestrators
+│   ├── Services/                 # Keychain, biometrics, app-lock, OS-only stuff
+│   ├── Helpers/                  # CoreResult, error response mapping, etc.
+│   ├── Localization/             # L10n.* enums + en.lproj/*.strings
+│   ├── Components/               # Shared UI building blocks
+│   └── Resources/                # Assets, icons, .strings files
+├── AevonXCoreBridge/             # Local Swift package — the Core bridge
+│   ├── Package.swift             #   binary Go Core + open Swift wrappers
+│   ├── Sources/AevonXCoreBridge/ #   OPEN SOURCE: thin FFI wrappers (Swift)
+│   └── Frameworks/
+│       └── AevonXCore.xcframework/  # CLOSED binary: compiled, hardened Go Core (Git LFS)
+├── LICENSE                       # MIT
+└── README.md                     # this file
 ```
+
+## The Core bridge — open wrappers over a closed binary
+
+`AevonXCoreBridge/` is a local Swift package with two halves:
+
+| Half | What it is | Source? |
+|---|---|---|
+| `Sources/AevonXCoreBridge/*.swift` | Thin, auditable Swift wrappers around the Go Core's C FFI. No secrets — every endpoint, key, and protocol lives on the far side of the bridge. | **Open** |
+| `Frameworks/AevonXCore.xcframework` | The compiled Go Core, built hardened (symbol/string obfuscation, anti-tamper) and shipped as a static library. | **Closed binary** |
+
+The binary is tracked with **Git LFS**. A normal checkout pulls it
+automatically and the app builds — you never need the Go source.
 
 ## What does NOT live here
 
 | Concern | Where it lives | Why |
 |---|---|---|
-| HTTP requests / TLS / cert pinning | `AevonXCoreBridge` (Go-backed) | Network code stays in Go for cross-platform reuse and to keep server endpoints out of public source. |
-| AES-GCM / HKDF / ECDH / Ed25519 | `AevonXCoreBridge` | Crypto stays in Go for the same reason. |
-| SSH client + connection pool | `AevonXCoreBridge` | Same. |
-| Database adapters (MySQL, PostgreSQL, MongoDB, …) | `AevonXCoreBridge` | Same. |
+| Go Core **source** (HTTP/TLS, crypto, SSH client, DB adapters, license, plugin pipeline) | Private `core-go` repo; shipped here only as a compiled binary | Kept in Go for cross-platform reuse and to keep endpoints/keys out of source. |
 | License / subscription validation | Backend (`AevonX-Web`) | Authoritative server-side; the UI only renders the result. |
-| Plugin marketplace + binary protection | Backend + `AevonXCoreBridge` | Tamper-resistant pipeline. |
+| Plugin marketplace + binary protection | Backend + Go Core | Tamper-resistant pipeline. |
 
 ## What the UI is allowed to do
 
-- Render data and forward user actions to `AevonXCoreBridge`.
+- Render data and forward user actions through `AevonXCoreBridge`.
 - Read from / write to the macOS Keychain via `Services/SecureSettingsStore.swift`,
   `Services/HostKeyStore.swift`, `Services/LockPasswordService.swift`.
 - Handle biometric / app-lock prompts (`Services/BiometricAuthManager.swift`,
@@ -50,20 +65,25 @@ AevonX/
 - Manage in-app settings, theming, and navigation state.
 - Localize strings via the `L10n.*` enums.
 
-What the UI is NOT allowed to do — anywhere — is open a network socket,
+What the app code is NOT allowed to do — anywhere — is open a network socket,
 construct an HTTP request, perform a cryptographic operation outside the
-Keychain, or hardcode an API endpoint. These constraints are enforced by
-`scripts/oss-audit.sh`; CI fails on a single critical violation.
+Keychain, or hardcode an API endpoint. All of that happens inside the Go Core,
+reached only through the bridge.
 
 ## Building locally
 
+You need **Xcode 16+** on **macOS 14+**, and **Git LFS** (so the Core binary
+comes down with the clone):
+
 ```bash
-# 1. Make sure the AevonXCoreBridge XCFramework is built (closed-source
-#    repo; you'll need credentials for that one). Pre-built XCFrameworks
-#    are published as binaryTargets under `core-go/build/AevonXCore.xcframework`.
-# 2. Open AevonX.xcodeproj in Xcode 16 or later, macOS 14+ destination.
-# 3. Build the AevonX scheme.
+brew install git-lfs && git lfs install   # once per machine
+git clone <this-repo> && cd AevonX
+git lfs pull                               # fetch AevonXCore.xcframework
+open AevonX.xcodeproj                       # build the AevonX scheme
 ```
+
+That's it — the pre-built `AevonXCore.xcframework` is already in the repo, so
+there are no credentials or extra downloads to build the app.
 
 For headless / CI builds:
 
@@ -75,41 +95,29 @@ xcodebuild -project AevonX.xcodeproj -scheme AevonX \
   build
 ```
 
-## Audits and pre-commit hygiene
-
-Three scripts live in `../scripts/` (the parent of this UI repo):
-
-- `oss-audit.sh` — fails CI if the UI grows a `URLSession`, `URLRequest`,
-  raw crypto primitive, or hardcoded internal hostname. **Must stay at
-  `0 critical`.**
-- `l10n-audit.sh` — fails if any `L10n.X.y` reference points at a missing
-  declaration, or if any user-facing `Text("…")` / `navigationTitle("…")`
-  literal sneaks back in. **Must stay at `0 missing-decl, 0 hardcoded`.**
-- `migration-parity.sh` — utility for comparing ViewModel state snapshots
-  across migration phases.
-
-Run them all:
-
-```bash
-bash scripts/oss-audit.sh && bash scripts/l10n-audit.sh
-```
+> **Maintainers with Go source.** The Xcode build never rebuilds the Core —
+> it always uses the committed binary. When the private `core-go` checkout
+> sits beside this repo and its Go source changes, run
+> `AevonXCoreBridge/scripts/refresh-core.sh` by hand to rebuild the hardened
+> framework and refresh it in `Frameworks/`, then commit the updated binary.
 
 ## Architecture in 60 seconds
 
 ```
-SwiftUI View
-    ↓  reads @Published state, dispatches actions
-ViewModel (@MainActor ObservableObject)
-    ↓  calls APIBridge.shared.<method>Async(...)
-AevonXCoreBridge (Swift wrapper, closed source)
-    ↓  CGo FFI
-core-go (Go backend, closed source)
-    ↓  HTTPS + ECDH secure channel
-AevonX-Web backend (Laravel)
+SwiftUI View                          ┐
+    ↓  reads @Published state,        │
+       dispatches actions             │  open source
+ViewModel (@MainActor ObservableObject)│  (this repo)
+    ↓  calls Service / Bridge         │
+AevonXCoreBridge (Swift wrappers)     ┘
+    ↓  C FFI
+AevonXCore.xcframework (compiled Go)  ┐  closed binary (shipped here)
+    ↓  HTTPS + ECDH secure channel    ┘
+AevonX-Web backend (Laravel)             closed service
 ```
 
-Everything below the second arrow is closed source. Everything above it is
-in this repository.
+Everything above the FFI line is open source and in this repository. The Go
+Core below it is a compiled binary; its source and the backend are separate.
 
 ## Contributing
 
@@ -117,5 +125,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 
-[MIT](LICENSE). The AevonXCoreBridge binary framework and the AevonX-Web
-backend are NOT covered by this license — they are distributed separately.
+[MIT](LICENSE) — covers the source in this repository: the macOS client and
+the `AevonXCoreBridge` Swift wrappers. The `AevonXCore.xcframework` binary and
+the AevonX backend are NOT covered by this license and are distributed under
+separate terms.

@@ -168,7 +168,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "# Type a script or drag a script file from your workspace to insert its path.\n\"${SRCROOT}/../core-go/scripts/build_xcframework.sh\"\n";
+			shellScript = ": # AevonXCore is a pre-built binary framework committed to this repo\n: # (AevonXCoreBridge/Frameworks/AevonXCore.xcframework, via Git LFS).\n: # No build step is required. Maintainers with the private core-go source\n: # refresh it manually: AevonXCoreBridge/scripts/refresh-core.sh\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
@@ -431,7 +431,7 @@
 /* Begin XCLocalSwiftPackageReference section */
 		F86F50BB2F5CB08900DA237A /* XCLocalSwiftPackageReference "../core-go" */ = {
 			isa = XCLocalSwiftPackageReference;
-			relativePath = "../core-go";
+			relativePath = AevonXCoreBridge;
 		};
 /* End XCLocalSwiftPackageReference section */
 
