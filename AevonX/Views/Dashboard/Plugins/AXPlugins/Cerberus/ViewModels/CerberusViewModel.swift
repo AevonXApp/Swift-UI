@@ -327,8 +327,10 @@ class CerberusViewModel: ObservableObject {
         case .attacks:
             await loadAttacks()
         case .traffic:
-            await loadTrafficAnalytics()
-            await loadAccessLog()
+            // Independent requests — fetch them together.
+            async let analytics: () = loadTrafficAnalytics()
+            async let accessLog: () = loadAccessLog()
+            _ = await (analytics, accessLog)
         case .visitorLog:
             await loadAccessLog()
         case .domains:

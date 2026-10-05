@@ -200,8 +200,9 @@ private extension CerberusIPManagementView {
         }
     }
 
+    // Lazy: auto-ban blocklists can hold thousands of addresses.
     var blocklistContent: some View {
-        VStack(spacing: AXSpacing.xxs) {
+        LazyVStack(spacing: AXSpacing.xxs) {
             ForEach(filteredBlockedIPs, id: \.self) { ip in
                 ipRow(ip: ip, isBlock: true)
             }
@@ -247,7 +248,7 @@ private extension CerberusIPManagementView {
     }
 
     var allowlistContent: some View {
-        VStack(spacing: AXSpacing.xxs) {
+        LazyVStack(spacing: AXSpacing.xxs) {
             ForEach(filteredAllowedIPs, id: \.self) { ip in
                 ipRow(ip: ip, isBlock: false)
             }
