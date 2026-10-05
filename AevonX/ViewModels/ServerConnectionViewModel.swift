@@ -407,9 +407,14 @@ public class ServerConnectionViewModel: ObservableObject {
             await self?.stats.refreshStats()
         }
         
-        // Forward child VM objectWillChange to parent
+        // Forward child VM objectWillChange to parent.
+        // Stats publish on every metrics poll; relaying them everywhere would
+        // re-render whichever tab is open (file lists, database grids, …).
+        // Only the Overview tab shows them through this view model — the
+        // sidebar's live bars observe `stats` directly.
         stats.objectWillChange.sink { [weak self] _ in
-            self?.objectWillChange.send()
+            guard let self, self.selectedTab == .overview else { return }
+            self.objectWillChange.send()
         }.store(in: &childCancellables)
         databasesVM.objectWillChange.sink { [weak self] _ in
             self?.objectWillChange.send()

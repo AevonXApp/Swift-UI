@@ -122,16 +122,9 @@ struct DashboardSidebar: View {
                 }
 
                 if viewModel.isConnected {
-                    HStack(spacing: AXSpacing.xs) {
-                        SidebarMiniBar(label: "CPU", value: viewModel.cpuUsage,
-                            color: viewModel.cpuUsage < 50 ? .axAccentBlue : viewModel.cpuUsage < 80 ? .axWarning : .axError)
-                        SidebarMiniBar(label: "RAM", value: viewModel.memoryUsage,
-                            color: viewModel.memoryUsage < 60 ? .axAccentGreen : viewModel.memoryUsage < 85 ? .axWarning : .axError)
-                        SidebarMiniBar(label: "DSK", value: viewModel.diskUsage,
-                            color: viewModel.diskUsage < 70 ? .axAccentGreen : viewModel.diskUsage < 90 ? .axWarning : .axError)
-                    }
-                    .padding(.top, 3)
-                    .transition(.opacity.combined(with: .move(edge: .top)))
+                    SidebarLiveMetrics(stats: viewModel.stats)
+                        .padding(.top, 3)
+                        .transition(.opacity.combined(with: .move(edge: .top)))
                 }
             }
 
@@ -495,6 +488,23 @@ struct DashboardConnectionStatusIndicator: View {
 }
 
 // MARK: - Sidebar Mini Stat Bar
+
+/// CPU / RAM / disk bars. Observes the stats model directly, so each metrics
+/// poll refreshes only these bars instead of the whole dashboard.
+private struct SidebarLiveMetrics: View {
+    @ObservedObject var stats: ServerStatsViewModel
+
+    var body: some View {
+        HStack(spacing: AXSpacing.xs) {
+            SidebarMiniBar(label: "CPU", value: stats.cpuUsage,
+                color: stats.cpuUsage < 50 ? .axAccentBlue : stats.cpuUsage < 80 ? .axWarning : .axError)
+            SidebarMiniBar(label: "RAM", value: stats.memoryUsage,
+                color: stats.memoryUsage < 60 ? .axAccentGreen : stats.memoryUsage < 85 ? .axWarning : .axError)
+            SidebarMiniBar(label: "DSK", value: stats.diskUsage,
+                color: stats.diskUsage < 70 ? .axAccentGreen : stats.diskUsage < 90 ? .axWarning : .axError)
+        }
+    }
+}
 
 private struct SidebarMiniBar: View {
     let label: String
